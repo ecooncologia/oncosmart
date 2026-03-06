@@ -1,5 +1,14 @@
 // --- CONFIGURAÇÃO DA API E SEGURANÇA ---
-const API_BASE_URL = 'https://api.ecooncologia.com.br:3000';
+// --- CONFIGURAÇÃO DA API INTELIGENTE ---
+let API_BASE_URL = 'https://api.ecooncologia.com.br:3000'; // Padrão: Produção
+
+// Se a URL do navegador tiver a palavra "/teste/", ele muda a porta sozinho!
+if (window.location.href.includes('/teste/')) {
+    API_BASE_URL = 'https://api.ecooncologia.com.br:4000'; // Homologação
+}
+
+// Variável global de segurança...
+const API_HEADERS = {
 
 // Variável global de segurança para ser usada em qualquer fetch do sistema
 const API_HEADERS = {
