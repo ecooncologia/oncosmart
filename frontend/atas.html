@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mural de ATAs - ONCO SMART</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+    
+    <style>
+        .atas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .ata-card { background: white; padding: 25px; border-radius: 16px; box-shadow: var(--card-shadow); border-left: 4px solid var(--primary); transition: transform 0.2s; cursor: pointer; display: flex; flex-direction: column; height: 100%; }
+        .ata-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .ata-icon { font-size: 30px; color: var(--accent); margin-bottom: 15px; }
+        .ata-title { font-size: 16px; font-weight: 700; color: var(--secondary); margin-bottom: 10px; line-height: 1.3; }
+        .ata-date { font-size: 13px; color: var(--text-light); font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; }
+        .ata-excerpt { font-size: 13px; color: var(--text-light); flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.5; }
+        .read-more { margin-top: 15px; font-size: 13px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px; }
+
+        /* Modal Leitura Premium */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 850px; height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-header { padding: 20px 30px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-radius: 16px 16px 0 0; }
+        .modal-title { font-size: 1.3rem; font-weight: 800; color: var(--secondary); margin: 0; }
+        .modal-subtitle { font-size: 13px; color: var(--text-light); margin-top: 5px; }
+        .modal-body { padding: 30px; overflow-y: auto; flex: 1; background: #f4f7f6; }
+        .modal-footer { padding: 15px 30px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 0 0 16px 16px; width: 100%; box-sizing: border-box; }
+
+        /* Design Timeline (Linha do Tempo) */
+        .timeline-container { position: relative; padding-left: 25px; border-left: 3px solid #cbd5e1; margin-left: 15px; margin-top: 10px; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .timeline-block { margin-bottom: 30px; position: relative; }
+        .timeline-dot { position: absolute; left: -35px; top: 0; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; border: 3px solid #f4f7f6; box-shadow: 0 0 0 1px var(--primary); }
+        .timeline-header { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--primary); font-weight: 800; font-size: 14px; padding: 6px 15px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .timeline-content { color: #334155; font-size: 15px; line-height: 1.7; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .timeline-content ul { margin: 10px 0 0 0; padding-left: 20px; }
+        .timeline-content li { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="card" style="margin-bottom: 25px; border-left: 4px solid var(--accent);">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-book-open" style="font-size: 24px; color: var(--primary);"></i>
+                <div>
+                    <h2 style="margin: 0; color: var(--secondary); font-size: 18px;">Mural de ATAs</h2>
+                    <p style="margin: 0; color: var(--text-light); font-size: 13px;">Consulte os tópicos e a linha do tempo das reuniões.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" style="text-align: center; padding: 40px; color: var(--text-light);">
+            <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Carregando documentos...
+        </div>
+
+        <div class="atas-grid" id="atasGrid"></div>
+    </div>
+
+    <div id="ataModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="modalEventName">Nome do Evento</h3>
+                    <div class="modal-subtitle" id="modalEventDate">Data</div>
+                </div>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #888;">&times;</button>
+            </div>
+            
+            <div class="modal-body" id="modalAtaText"></div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-success" id="btnConfirmarLeitura" style="border-radius: 8px; font-weight: bold;">
+                    <i class="fas fa-check-double"></i> Confirmo a Leitura da ATA
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal()" style="border-radius: 8px;">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventsWithAtas = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initGlobal('atas', 'Mural de ATAs');
+            loadAtas();
+        });
+
+        async function loadAtas() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/events`, { headers: API_HEADERS });
+                const data = await res.json();
+                eventsWithAtas = Object.values(data).filter(e => e.ata && e.ata.trim() !== '');
+                eventsWithAtas.sort((a, b) => new Date(b.date) - new Date(a.date));
+                renderGrid();
+            } catch (e) {
+                document.getElementById('loading').innerHTML = '<span style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erro ao carregar as ATAs.</span>';
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('atasGrid');
+            document.getElementById('loading').style.display = 'none';
+
+            if (eventsWithAtas.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; background: white; border-radius: 16px; color: var(--text-light);">Nenhuma ATA publicada até o momento.</div>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            eventsWithAtas.forEach(event => {
+                const card = document.createElement('div');
+                card.className = 'ata-card';
+                card.onclick = () => openModal(event.id_firebase);
+
+                let previewText = event.ata.replace(/🎙️.*?\n/g, '').replace(/\[(.*?)\]/g, '').trim();
+                try {
+                    const parsed = JSON.parse(previewText);
+                    if (Array.isArray(parsed)) previewText = parsed.map(i => i.text || "").join(" ");
+                } catch(e) {}
+
+                const preview = previewText.substring(0, 150) + '...';
+
+                card.innerHTML = `
+                    <div class="ata-icon"><i class="fas fa-stream"></i></div>
+                    <div class="ata-title">${event.name}</div>
+                    <div class="ata-date"><i class="far fa-calendar-alt"></i> Realizado em: ${formatDate(event.date)}</div>
+                    <div class="ata-excerpt">${escapeHTML(preview)}</div>
+                    <div class="read-more">Ver linha do tempo <i class="fas fa-arrow-right"></i></div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openModal(eventId) {
+            const event = eventsWithAtas.find(e => e.id_firebase === eventId);
+            if (!event) return;
+
+            document.getElementById('modalEventName').textContent = event.name;
+            document.getElementById('modalEventDate').innerHTML = `<i class="far fa-calendar-alt"></i> Documento referente ao evento do dia ${formatDate(event.date)}`;
+            
+            document.getElementById('modalAtaText').innerHTML = formatarAtaVisualmente(event.ata);
+            
+            // Atrela o ID do evento ao botão de confirmar leitura
+            document.getElementById('btnConfirmarLeitura').onclick = () => marcarAtaLida(eventId);
+
+            document.getElementById('ataModal').style.display = 'flex';
+        }
+
+        function closeModal() { 
+            document.getElementById('ataModal').style.display = 'none'; 
+        }
+
+        // =========================================================================
+        // DESIGN PREMIUM: LEITOR FIEL AO FIREFLIES (Com auto-bolinhas)
+        // =========================================================================
+        function formatarAtaVisualmente(texto) {
+            if (!texto) return '<div style="text-align:center; color:#94a3b8; padding: 30px;">Resumo ainda não processado.</div>';
+
+            // Limpeza inicial de sujeiras da API
+            let cleanText = texto.trim();
+            if (cleanText.startsWith('"') && cleanText.endsWith('"')) {
+                cleanText = cleanText.substring(1, cleanText.length - 1).replace(/\\n/g, '\n').replace(/\\"/g, '"');
+            }
+            cleanText = cleanText.replace(/🎙️ Registro Automático(.*?)\n/g, ''); 
+
+            // Tratamento para legados
+            try {
+                const parsed = JSON.parse(cleanText);
+                if (Array.isArray(parsed)) {
+                    cleanText = parsed.map(item => item.text || item.raw_text).join('\n\n');
+                }
+            } catch(e) {}
+
+            let html = '<div style="background: white; padding: 15px 5px; border-radius: 12px; font-family: \'Segoe UI\', system-ui, sans-serif; color: #334155; line-height: 1.7;">';
+            const linhas = cleanText.split('\n');
+
+            linhas.forEach(linha => {
+                let l = linha.trim();
+                if (!l || l === 'undefined') return;
+
+                // Transforma **texto** em Negrito e pinta o relógio (00:00) de azul claro
+                let formattedLine = escapeHTML(l)
+                    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--secondary); font-size: 16px;">$1</strong>')
+                    .replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, '<span style="background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> $1</span>');
+
+                // 1. Identifica o Tópico Principal (Se tem Negrito ** ou se começa com emoji/traço)
+                if (l.includes('**') || l.startsWith('- ') || l.startsWith('* ') || l.startsWith('• ')) {
+                    let limpo = formattedLine.replace(/^[-*•]\s/, ''); // Remove traço se tiver
+                    html += `
+                        <div style="margin-top: 25px; margin-bottom: 12px; font-size: 16px; font-weight: 500; color: var(--secondary); border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                            ${limpo}
+                        </div>`;
+                } 
+                // 2. Identifica Cabeçalhos Curtos soltos (Ex: "Notes", "Action Items")
+                else if (l.length < 40 && !l.includes('.') && !l.includes(':')) {
+                    html += `<div style="margin-top: 30px; margin-bottom: 15px; font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">${formattedLine}</div>`;
+                } 
+                // 3. Todo o resto vira um Sub-tópico COM bolinha automaticamente!
+                else {
+                    let limpo = formattedLine.replace(/^[o○\-\+]\s/, ''); // Remove bolinha velha se vier da IA
+                    html += `
+                        <div style="margin-left: 15px; margin-top: 8px; font-size: 15px; color: #475569; display: flex; align-items: flex-start; gap: 10px;">
+                            <span style="color: var(--primary); font-size: 14px; line-height: 1.6;">•</span> 
+                            <span style="flex: 1;">${limpo}</span>
+                        </div>`;
+                }
+            });
+
+            html += '</div>';
+            return html;
+        }
+
+        // =========================================================================
+        // REGISTRO DE LEITURA (Inteligente: Mescla com inscrições existentes)
+        // =========================================================================
+        async function marcarAtaLida(eventId) {
+            // 1. Tenta achar o usuário no cache do navegador (várias possibilidades)
+            let usuarioLogado = null;
+            const chavesPossiveis = ['user', 'userData', 'usuarioLogado', 'usuario', 'currentUser', 'eco_user'];
+            
+            for (let chave of chavesPossiveis) {
+                try {
+                    const str = localStorage.getItem(chave);
+                    if (str) {
+                        const obj = JSON.parse(str);
+                        if (obj.nome || obj.name || obj.email) {
+                            usuarioLogado = obj;
+                            break;
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            let nomeUsuario = usuarioLogado ? (usuarioLogado.nome || usuarioLogado.name) : null;
+            let phoneUsuario = usuarioLogado ? (usuarioLogado.telefone || usuarioLogado.phone) : 'S/N';
+
+            // 2. Se a sessão expirou ou não achou, pede o nome para não travar o fluxo!
+            if (!nomeUsuario) {
+                nomeUsuario = prompt("Por favor, digite seu Nome Completo para confirmar a leitura:");
+                if (!nomeUsuario || nomeUsuario.trim() === '') return; 
+            }
+
+            const btn = document.getElementById('btnConfirmarLeitura');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+            btn.disabled = true;
+
+            try {
+                // 3. Puxa a lista de participantes para ver se essa pessoa JÁ ESTÁ INSCRITA
+                const resParts = await fetch(`${API_BASE_URL}/participants`, { headers: API_HEADERS });
+                const dataParts = await resParts.json();
+                const todosParticipantes = Object.values(dataParts);
+                
+                // Procura alguém com o mesmo nome neste mesmo evento
+                const participanteExistente = todosParticipantes.find(p => 
+                    p.eventId === eventId && 
+                    p.name.toLowerCase().trim() === nomeUsuario.toLowerCase().trim()
+                );
+
+                if (participanteExistente) {
+                    // CENÁRIO A: Pessoa já estava inscrita. Apenas atualizamos dizendo que leu a ATA.
+                    participanteExistente.readAta = true;
+                    
+                    await fetch(`${API_BASE_URL}/participants/${participanteExistente.id_firebase}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json', ...API_HEADERS},
+                        body: JSON.stringify(participanteExistente)
+                    });
+
+                } else {
+                    // CENÁRIO B: Pessoa não estava na lista. Criamos ela só com o registro de leitura.
+                    const novoId = `leitura_${eventId}_${Date.now()}`;
+                    const payload = {
+                        id_firebase: novoId,
+                        eventId: eventId,
+                        name: nomeUsuario,
+                        phone: phoneUsuario,
+                        present: false, // Inicia como falso porque é apenas leitura
+                        readAta: true,  
+                        source: 'leitura_ata',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    await fetch(`${API_BASE_URL}/participants/${novoId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json', ...API_HEADERS},
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                alert(`Obrigado, ${nomeUsuario.split(' ')[0]}! Sua leitura foi registrada com sucesso.`);
+                closeModal();
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao registrar leitura. Verifique sua conexão e tente novamente.");
+            } finally {
+                btn.innerHTML = '<i class="fas fa-check-double"></i> Confirmo a Leitura da ATA';
+                btn.disabled = false;
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
+        }
+
+        function formatDate(dStr) {
+            if (!dStr) return '';
+            const [y, m, d] = dStr.split('-'); return `${d}/${m}/${y}`;
+        }
+    </script>
+</body>
+</html>

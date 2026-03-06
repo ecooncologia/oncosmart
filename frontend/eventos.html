@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Eventos e Reuniões - ONCO SMART</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .datetime-group { display: flex; gap: 15px; margin-bottom: 15px; }
+        .datetime-group > div { flex: 1; }
+        .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 20px; }
+        .event-card-inner { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; border-left: 4px solid var(--primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s; }
+        .event-card-inner:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .event-card-title { font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin-bottom: 5px; }
+        .event-card-date { color: var(--primary); font-weight: 600; font-size: 13px; }
+        .event-card-expiration { color: var(--danger); font-size: 12px; margin-top: 5px; font-weight: 600; }
+        .inscription-link { background-color: #f8fafc; padding: 12px; border-radius: 8px; margin-top: 15px; border: 1px solid #e2e8f0; font-size: 13px; }
+        .link-container { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+        .link-input { flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #fff; font-size: 12px; color: var(--text-light); }
+        .copy-success { color: var(--success); font-size: 12px; margin-left: 5px; display: none; font-weight: bold; }
+        .participant-list, .winners-list { margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        .participant-item, .winner-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+        .participant-item:last-child, .winner-item:last-child { border-bottom: none; }
+        .participant-item:nth-child(even), .winner-item:nth-child(even) { background-color: #f8fafc; }
+        .participant-info strong { color: var(--secondary); display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+        .participant-info div { color: var(--text-light); font-size: 13px; }
+        .participant-actions { display: flex; gap: 10px; }
+        .draw-section { text-align: center; padding: 30px; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 20px; }
+        .winner-display { font-size: 24px; font-weight: 800; color: var(--primary); margin: 20px auto; padding: 30px; background-color: #f8fafc; border-radius: 12px; border: 2px dashed #cbd5e1; min-height: 120px; display: flex; align-items: center; justify-content: center; max-width: 500px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 25px; }
+        .stat-card { background-color: #fff; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .stat-number { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
+        .stat-card div:last-child { color: var(--text-light); font-size: 13px; font-weight: 600; text-transform: uppercase; }
+        .source-badge { background: var(--info); color: white; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        @media (max-width: 768px) {
+            .participant-item { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .participant-actions { width: 100%; justify-content: stretch; }
+            .participant-actions .btn { flex: 1; }
+            .datetime-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="nav-scroller" style="margin-bottom: 25px;">
+            <div class="nav-tabs" id="module-tabs">
+                <button class="nav-tab active" data-tab="events"><i class="fas fa-calendar-alt"></i> Eventos</button>
+                <button class="nav-tab" data-tab="meetings"><i class="fas fa-handshake"></i> Reuniões</button>
+                <button class="nav-tab" data-tab="presence"><i class="fas fa-clipboard-check"></i> Presença</button>
+                <button class="nav-tab" data-tab="draw"><i class="fas fa-gift"></i> Sorteio</button>
+                <button class="nav-tab" data-tab="winners"><i class="fas fa-trophy"></i> Ganhadores</button>
+                <button class="nav-tab" data-tab="stats"><i class="fas fa-chart-pie"></i> Estatísticas</button>
+                <button class="nav-tab" data-tab="atas"><i class="fas fa-file-signature"></i> Inserir ATA</button>
+            </div>
+        </div>
+
+        <div class="tab-content active" id="events">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-plus-circle"></i> Novo Evento</div>
+                <div class="row" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div><label style="font-weight: 600; font-size: 13px;">Nome do Evento</label><input type="text" id="eventName" class="form-control" maxlength="50"></div>
+                    <div class="datetime-group" style="margin: 0;">
+                        <div><label style="font-weight: 600; font-size: 13px;">Data</label><input type="date" id="eventDate" class="form-control"></div>
+                        <div><label style="font-weight: 600; font-size: 13px;">Horário</label><input type="time" id="eventTime" class="form-control"></div>
+                    </div>
+                    <button class="btn btn-success" onclick="addEvent('evento')" style="width: 100%; max-width: 250px;"><i class="fas fa-save"></i> Criar Evento</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fas fa-list"></i> Eventos Cadastrados</span>
+                    <input type="text" id="searchEvents" class="form-control" placeholder="Buscar eventos..." style="width: 250px; padding: 8px 15px;">
+                </div>
+                <div class="events-grid" id="eventsGrid"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="meetings">
+            <div class="card" style="border-left: 4px solid var(--accent);">
+                <div class="card-header"><i class="fas fa-handshake"></i> Agendar Nova Reunião</div>
+                <div class="row" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div><label style="font-weight: 600; font-size: 13px;">Pauta / Nome da Reunião</label><input type="text" id="meetingName" class="form-control" maxlength="50" placeholder="Ex: Sincronização Semanal"></div>
+                    <div class="datetime-group" style="margin: 0;">
+                        <div><label style="font-weight: 600; font-size: 13px;">Data</label><input type="date" id="meetingDate" class="form-control"></div>
+                        <div><label style="font-weight: 600; font-size: 13px;">Horário</label><input type="time" id="meetingTime" class="form-control"></div>
+                    </div>
+                    <button class="btn btn-info" onclick="addEvent('reuniao')" style="width: 100%; max-width: 250px;"><i class="fas fa-save"></i> Agendar Reunião</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fas fa-list"></i> Reuniões Cadastradas</span>
+                    <input type="text" id="searchMeetings" class="form-control" placeholder="Buscar reuniões..." style="width: 250px; padding: 8px 15px;">
+                </div>
+                <div class="events-grid" id="meetingsGrid"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="presence">
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div style="flex: 1; min-width: 250px;"><select id="selectedEvent" class="form-control"><option value="">Selecione um evento ou reunião...</option></select></div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-info" id="printList"><i class="fas fa-print"></i> Imprimir</button>
+                        <button class="btn btn-danger" id="generatePDF"><i class="fas fa-file-pdf"></i> PDF</button>
+                    </div>
+                </div>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 20px;">
+                    <h5 style="margin-top: 0; color: var(--secondary); margin-bottom: 15px;">Adicionar Participante Manual</h5>
+                    <div class="datetime-group" style="margin: 0;">
+                        <div><input type="text" id="participantName" class="form-control" placeholder="Nome Completo" maxlength="50"></div>
+                        <div><input type="tel" id="participantPhone" class="form-control" placeholder="(00) 00000-0000" maxlength="15"></div>
+                        <button class="btn btn-success" id="addParticipant"><i class="fas fa-user-plus"></i> Adicionar</button>
+                    </div>
+                </div>
+                <div class="participant-list" id="participantList"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="draw">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-gift"></i> Realizar Sorteio</div>
+                <select id="drawEvent" class="form-control" style="max-width: 400px; margin-bottom: 20px;"><option value="">Selecione um evento...</option></select>
+                <div class="draw-section">
+                    <h3 style="color: var(--secondary); margin-bottom: 5px;">Sorteio de Participantes Presentes</h3>
+                    <div class="winner-display" id="winnerDisplay"><span style="color: #cbd5e1; font-weight: 500; font-size: 18px;">Aguardando sorteio...</span></div>
+                    <button class="btn btn-warning" id="drawButton" style="font-size: 16px; padding: 15px 40px; border-radius: 30px; margin: 0 auto;"><i class="fas fa-random"></i> Sortear Agora</button>
+                    <div class="stats">
+                        <div class="stat-card"><div class="stat-number" id="totalParticipants">0</div><div>Inscritos</div></div>
+                        <div class="stat-card"><div class="stat-number" id="presentParticipants" style="color: var(--success);">0</div><div>Presentes</div></div>
+                        <div class="stat-card"><div class="stat-number" id="absentParticipants" style="color: var(--danger);">0</div><div>Ausentes</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="winners">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-trophy"></i> Histórico de Ganhadores</div>
+                <select id="winnersEvent" class="form-control" style="max-width: 400px; margin-bottom: 20px;"><option value="">Selecione um evento...</option></select>
+                <div class="winners-list" id="winnersList"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="stats">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-chart-pie"></i> Relatório do Evento</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                    <select id="statsEvent" class="form-control" style="flex: 1; max-width: 400px;"><option value="">Selecione um evento...</option></select>
+                    <button class="btn btn-secondary" id="exportData"><i class="fas fa-file-export"></i> Exportar Dados (JSON)</button>
+                </div>
+                <div class="stats" style="margin-top: 0;">
+                    <div class="stat-card"><div class="stat-number" id="statsTotal">0</div><div>Total Inscritos</div></div>
+                    <div class="stat-card"><div class="stat-number" id="statsPresent" style="color: var(--success);">0</div><div>Presentes</div></div>
+                    <div class="stat-card"><div class="stat-number" id="statsAbsent" style="color: var(--danger);">0</div><div>Ausentes</div></div>
+                    <div class="stat-card"><div class="stat-number" id="statsPercentage" style="color: var(--info);">0%</div><div>Taxa de Presença</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="atas">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-file-signature"></i> Gerenciar ATA Manual</div>
+                
+                <label style="font-weight: 600; font-size: 13px; color: var(--text-light);">Selecione o Evento/Reunião</label>
+                <select id="ataEventSelect" class="form-control" style="margin-bottom: 20px;">
+                    <option value="">Selecione...</option>
+                </select>
+
+                <div id="ataEditorArea" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label style="font-weight: 600; font-size: 13px; color: var(--text-light);">Texto da ATA</label>
+                        <label class="btn btn-info btn-sm" style="cursor: pointer; margin: 0;">
+                            <i class="fas fa-upload"></i> Importar .TXT
+                            <input type="file" id="ataFileInput" accept=".txt" style="display: none;">
+                        </label>
+                    </div>
+                    <textarea id="ataText" class="form-control" rows="10" placeholder="Cole o texto da ATA aqui ou importe um arquivo .txt..." style="resize: vertical; font-family: monospace;"></textarea>
+                    
+                    <button class="btn btn-success" id="saveAtaBtn" style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-save"></i> Salvar ATA Manualmente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis Locais
+        let events = []; let participants = []; let winners = [];
+        let selectedEventId = ''; let editingEventId = null;
+        
+        const INSCRIPTION_BASE_URL = 'https://ecooncologia.com.br/listadepresenca/inscricao';
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initGlobal('eventos', 'Gestão de Eventos');
+            setupEventListeners();
+            
+            await loadEvents();
+            await loadParticipants();
+            await loadWinners();
+        });
+        
+        function setupEventListeners() {
+            // Abas de navegação
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === tabId) content.classList.add('active');
+                    });
+                });
+            });
+            
+            document.getElementById('searchEvents').addEventListener('input', () => filterGrid('searchEvents', 'eventsGrid'));
+            document.getElementById('searchMeetings').addEventListener('input', () => filterGrid('searchMeetings', 'meetingsGrid'));
+            document.getElementById('selectedEvent').addEventListener('change', function() { selectedEventId = this.value; updateParticipantList(); });
+            document.getElementById('drawEvent').addEventListener('change', updateDrawStats);
+            document.getElementById('winnersEvent').addEventListener('change', updateWinnersList);
+            document.getElementById('statsEvent').addEventListener('change', updateStats);
+            document.getElementById('addParticipant').addEventListener('click', addParticipant);
+            
+            // Mascara de telefone
+            document.getElementById('participantPhone').addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length <= 10) value = value.replace(/(\d{2})(\d{0,4})(\d{0,4})/, '($1) $2-$3');
+                else value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+                e.target.value = value;
+            });
+            
+            document.getElementById('drawButton').addEventListener('click', performDraw);
+            document.getElementById('exportData').addEventListener('click', exportData);
+            document.getElementById('printList').addEventListener('click', printPresenceList);
+            document.getElementById('generatePDF').addEventListener('click', generatePDF);
+
+            // --- Lógica da Aba de ATAs ---
+            document.getElementById('ataEventSelect').addEventListener('change', function() {
+                const eventId = this.value;
+                const area = document.getElementById('ataEditorArea');
+                if (!eventId) { area.style.display = 'none'; return; }
+                area.style.display = 'block';
+                const event = events.find(e => e.id_firebase === eventId);
+                document.getElementById('ataText').value = event.ata || '';
+            });
+
+            document.getElementById('ataFileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) { document.getElementById('ataText').value = evt.target.result; };
+                reader.readAsText(file);
+            });
+
+            document.getElementById('saveAtaBtn').addEventListener('click', saveAta);
+        }
+        
+        // --- FUNÇÕES DA API ---
+        async function loadEvents() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/events`, { headers: API_HEADERS });
+                const data = await res.json();
+                events = Object.values(data);
+                
+                document.getElementById('eventsGrid').innerHTML = '';
+                document.getElementById('meetingsGrid').innerHTML = '';
+                const defaultOption = '<option value="">Selecione...</option>';
+                
+                document.getElementById('selectedEvent').innerHTML = defaultOption; 
+                document.getElementById('drawEvent').innerHTML = defaultOption;
+                document.getElementById('winnersEvent').innerHTML = defaultOption; 
+                document.getElementById('statsEvent').innerHTML = defaultOption;
+                document.getElementById('ataEventSelect').innerHTML = defaultOption;
+                
+                events.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(event => {
+                    // Separa: Se for tipo 'reuniao' ou tiver Reunião no nome, vai para a aba Reuniões
+                    const isMeeting = event.type === 'reuniao' || (event.name && event.name.toLowerCase().includes('reunião'));
+                    addEventCard(event, isMeeting ? 'meetingsGrid' : 'eventsGrid');
+                    
+                    const option = document.createElement('option');
+                    option.value = event.id_firebase;
+                    const prefixo = isMeeting ? '[REUNIÃO] ' : '[EVENTO] ';
+                    option.textContent = `${prefixo}${event.name} - ${formatDate(event.date)} ${event.time ? `(${event.time})` : ''}`;
+                    
+                    document.getElementById('selectedEvent').appendChild(option.cloneNode(true));
+                    document.getElementById('drawEvent').appendChild(option.cloneNode(true));
+                    document.getElementById('winnersEvent').appendChild(option.cloneNode(true));
+                    document.getElementById('statsEvent').appendChild(option.cloneNode(true));
+                    document.getElementById('ataEventSelect').appendChild(option);
+                });
+            } catch(e) { console.error("Erro GET events:", e); }
+        }
+
+        async function loadParticipants() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/participants`, { headers: API_HEADERS });
+                const data = await res.json();
+                participants = Object.values(data);
+                updateParticipantList(); updateDrawStats(); updateStats();
+            } catch(e) { console.error("Erro GET participants:", e); }
+        }
+
+        async function loadWinners() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/winners`, { headers: API_HEADERS });
+                const data = await res.json();
+                winners = Object.values(data);
+                updateWinnersList();
+            } catch(e) { console.error("Erro GET winners:", e); }
+        }
+        
+        async function addEvent(type) {
+            const prefix = type === 'reuniao' ? 'meeting' : 'event';
+            const nameField = document.getElementById(`${prefix}Name`);
+            const dateField = document.getElementById(`${prefix}Date`);
+            const timeField = document.getElementById(`${prefix}Time`);
+
+            const name = nameField.value.trim(); 
+            const date = dateField.value; 
+            const time = timeField.value;
+
+            if (!name || !date) return alert('Preencha nome e data corretamente.');
+            
+            // O sistema passa a gravar o 'type' para a separação funcionar
+            let finalName = name;
+            if (type === 'reuniao' && !name.toLowerCase().includes('reunião')) {
+                finalName = `Reunião: ${name}`; // Adiciona o prefixo para ficar organizado
+            }
+
+            const payload = { name: finalName, date, time, type, timestamp: new Date().toISOString() };
+            
+            try {
+                await fetch(`${API_BASE_URL}/events`, { method: 'POST', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(payload) });
+                nameField.value = ''; dateField.value = ''; timeField.value = '';
+                alert(`${type === 'reuniao' ? 'Reunião agendada' : 'Evento criado'} com sucesso!`);
+                await loadEvents();
+            } catch(e) { alert('Erro ao adicionar registro.'); }
+        }
+
+        async function saveEvent(eventId) {
+            const name = document.getElementById('editEventName').value.trim();
+            const date = document.getElementById('editEventDate').value;
+            const time = document.getElementById('editEventTime').value;
+            if (!name || !date) return alert('Preencha nome e data corretamente.');
+            
+            const event = events.find(e => e.id_firebase === eventId);
+            const payload = { ...event, name, date, time }; // Preserva os dados antigos, incluindo a ATA e o Type
+            
+            try {
+                await fetch(`${API_BASE_URL}/events/${eventId}`, { method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(payload) });
+                cancelEdit();
+                await loadEvents();
+            } catch(e) { alert('Erro ao atualizar evento.'); }
+        }
+
+        async function deleteEvent(eventId) {
+            if (confirm('Tem certeza que deseja excluir este registro e todos os seus participantes?')) {
+                try {
+                    await fetch(`${API_BASE_URL}/events/${eventId}`, { method: 'DELETE', headers: API_HEADERS });
+                    
+                    const partsToDelete = participants.filter(p => p.eventId === eventId);
+                    for(let p of partsToDelete) await fetch(`${API_BASE_URL}/participants/${p.id_firebase}`, { method: 'DELETE', headers: API_HEADERS });
+                    
+                    const winnersToDelete = winners.filter(w => w.eventId === eventId);
+                    for(let w of winnersToDelete) await fetch(`${API_BASE_URL}/winners/${w.id_firebase}`, { method: 'DELETE', headers: API_HEADERS });
+                    
+                    await loadEvents(); await loadParticipants(); await loadWinners();
+                } catch(e) { alert('Erro ao excluir registro.'); }
+            }
+        }
+
+        async function saveAta() {
+            const eventId = document.getElementById('ataEventSelect').value;
+            const ataText = document.getElementById('ataText').value.trim();
+            if (!eventId) return alert('Selecione um evento.');
+
+            const btn = document.getElementById('saveAtaBtn');
+            btn.innerHTML = 'Salvando...'; btn.disabled = true;
+
+            const event = events.find(e => e.id_firebase === eventId);
+            const payload = { ...event, ata: ataText };
+
+            try {
+                await fetch(`${API_BASE_URL}/events/${eventId}`, { method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(payload) });
+                alert('ATA salva com sucesso!');
+                await loadEvents();
+            } catch(e) { alert('Erro ao salvar ATA.'); } 
+            finally { btn.innerHTML = '<i class="fas fa-save"></i> Salvar ATA Manualmente'; btn.disabled = false; }
+        }
+        
+        async function addParticipant() {
+            const name = document.getElementById('participantName').value.trim(); 
+            const phone = document.getElementById('participantPhone').value.trim();
+            if (!name) return alert('Por favor, insira o nome.');
+            if (!selectedEventId) return alert('Selecione um evento primeiro.');
+            
+            const payload = { eventId: selectedEventId, name, phone, present: false, readAta: false, source: 'manual', timestamp: new Date().toISOString() };
+            try {
+                await fetch(`${API_BASE_URL}/participants`, { method: 'POST', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(payload) });
+                document.getElementById('participantName').value = ''; document.getElementById('participantPhone').value = '';
+                await loadParticipants();
+            } catch(e) { alert('Erro ao adicionar participante.'); }
+        }
+
+        async function togglePresence(participantId) {
+            const participant = participants.find(p => p.id_firebase === participantId);
+            if(!participant) return;
+            participant.present = !participant.present;
+            try {
+                await fetch(`${API_BASE_URL}/participants/${participantId}`, { method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(participant) });
+                await loadParticipants();
+            } catch(e) { alert('Erro ao mudar status.'); }
+        }
+
+        async function deleteParticipant(participantId) {
+            if (confirm('Excluir participante?')) {
+                try {
+                    await fetch(`${API_BASE_URL}/participants/${participantId}`, { method: 'DELETE', headers: API_HEADERS });
+                    await loadParticipants();
+                } catch(e) { alert('Erro ao excluir participante.'); }
+            }
+        }
+        
+        // --- FUNÇÕES DE INTERFACE ---
+        function addEventCard(event, gridId) {
+            const grid = document.getElementById(gridId);
+            const eventCard = document.createElement('div');
+            eventCard.className = 'event-card-inner event-card';
+            const expirationDate = calculateExpirationDate(event.date, event.time);
+            const inscriptionLink = `${INSCRIPTION_BASE_URL}?event=${event.id_firebase}`;
+            
+            // Muda a cor da borda se for reunião para diferenciar visualmente
+            if (gridId === 'meetingsGrid') eventCard.style.borderLeftColor = 'var(--accent)';
+
+            eventCard.innerHTML = `
+                <div>
+                    <div class="event-card-title">${event.name}</div>
+                    <div class="event-card-date"><i class="far fa-calendar-alt"></i> ${formatDate(event.date)} ${event.time ? `- <i class="far fa-clock"></i> ${event.time}` : ''}</div>
+                    <div class="event-card-expiration"><i class="fas fa-exclamation-circle"></i> Inscrições até: ${formatDateTime(expirationDate)}</div>
+                </div>
+                <div class="inscription-link">
+                    <strong style="color: var(--secondary);">Link de Inscrição:</strong>
+                    <div class="link-container">
+                        <input type="text" class="link-input" value="${inscriptionLink}" readonly id="link-${event.id_firebase}">
+                        <button class="btn btn-info btn-sm" onclick="copyInscriptionLink('${event.id_firebase}')" style="padding: 8px 12px; font-size: 12px;"><i class="fas fa-copy"></i> Copiar</button>
+                    </div>
+                    <span class="copy-success" id="copy-success-${event.id_firebase}"><i class="fas fa-check"></i> Copiado!</span>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <button class="btn btn-warning btn-sm" data-id="${event.id_firebase}" data-action="edit" style="flex:1; justify-content:center;"><i class="fas fa-edit"></i> Editar</button>
+                    <button class="btn btn-danger btn-sm" data-id="${event.id_firebase}" data-action="delete" style="flex:1; justify-content:center;"><i class="fas fa-trash"></i> Excluir</button>
+                </div>
+            `;
+            grid.appendChild(eventCard);
+            eventCard.querySelector('[data-action="edit"]').addEventListener('click', () => editEvent(event.id_firebase));
+            eventCard.querySelector('[data-action="delete"]').addEventListener('click', () => deleteEvent(event.id_firebase));
+        }
+
+        function editEvent(eventId) {
+            const event = events.find(e => e.id_firebase === eventId);
+            if (!event) return;
+            if (editingEventId === eventId) return cancelEdit();
+            cancelEdit(); editingEventId = eventId;
+            
+            const eventCard = document.querySelector(`.event-card [data-id="${eventId}"]`).closest('.event-card');
+            const editForm = document.createElement('div');
+            editForm.className = 'card'; editForm.id = `edit-form-${eventId}`; editForm.style.marginTop = '15px'; editForm.style.borderLeft = '4px solid var(--warning)';
+            
+            editForm.innerHTML = `
+                <div style="font-weight:bold; margin-bottom:15px; color:var(--secondary);"><i class="fas fa-edit"></i> Editando Registro</div>
+                <div class="row" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" id="editEventName" value="${event.name}" class="form-control" maxlength="50">
+                    <div class="datetime-group" style="margin:0;">
+                        <input type="date" id="editEventDate" value="${event.date}" class="form-control">
+                        <input type="time" id="editEventTime" value="${event.time || ''}" class="form-control">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn btn-success" id="saveEdit-${eventId}"><i class="fas fa-check"></i> Salvar</button>
+                        <button class="btn btn-secondary" id="cancelEdit-${eventId}">Cancelar</button>
+                    </div>
+                </div>
+            `;
+            eventCard.after(editForm);
+            document.getElementById(`saveEdit-${eventId}`).addEventListener('click', () => saveEvent(eventId));
+            document.getElementById(`cancelEdit-${eventId}`).addEventListener('click', cancelEdit);
+        }
+
+        function cancelEdit() {
+            if (editingEventId) {
+                const editForm = document.getElementById(`edit-form-${editingEventId}`);
+                if (editForm) editForm.remove();
+                editingEventId = null;
+            }
+        }
+        
+        function updateParticipantList() {
+            const list = document.getElementById('participantList');
+            list.innerHTML = '';
+            if (!selectedEventId) return;
+            participants.filter(p => p.eventId === selectedEventId).forEach(p => addParticipantToUI(p));
+        }
+        
+        function addParticipantToUI(participant) {
+            const list = document.getElementById('participantList');
+            const item = document.createElement('div');
+            item.className = 'participant-item';
+            
+            const statusBtnClass = participant.present ? 'btn-success' : 'btn-danger';
+            const statusIcon = participant.present ? 'fa-check-circle' : 'fa-times-circle';
+            
+            // Adiciona o status visual de Leitura da ATA
+            const badgeLeitura = participant.readAta ? '<span class="source-badge" style="background: var(--info);"><i class="fas fa-book-reader"></i> Leu a ATA</span>' : '';
+            const sourceBadge = participant.source === 'public_inscription' ? '<span class="source-badge">Online</span>' : '<span class="source-badge" style="background:#64748b;">Manual</span>';
+            
+            item.innerHTML = `
+                <div class="participant-info">
+                    <strong>${participant.name} ${sourceBadge} ${badgeLeitura}</strong>
+                    <div><i class="fas fa-phone-alt"></i> ${participant.phone || 'S/N'}</div>
+                </div>
+                <div class="participant-actions">
+                    <button class="btn btn-sm ${statusBtnClass}" data-action="toggle" style="width:110px;"><i class="fas ${statusIcon}"></i> ${participant.present ? 'Presente' : 'Ausente'}</button>
+                    <button class="btn btn-sm btn-secondary" data-action="delete"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            list.appendChild(item);
+            item.querySelector('[data-action="toggle"]').addEventListener('click', () => togglePresence(participant.id_firebase));
+            item.querySelector('[data-action="delete"]').addEventListener('click', () => deleteParticipant(participant.id_firebase));
+        }
+
+        function updateWinnersList() {
+            const list = document.getElementById('winnersList');
+            list.innerHTML = ''; const eventId = document.getElementById('winnersEvent').value;
+            if (!eventId) return;
+            const eventWinners = winners.filter(w => w.eventId === eventId);
+            if (eventWinners.length === 0) { list.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Nenhum ganhador registrado.</div>'; return; }
+            eventWinners.forEach(w => {
+                list.innerHTML += `<div class="winner-item"><div class="participant-info"><strong><i class="fas fa-crown" style="color:var(--warning);"></i> ${w.winnerName}</strong><div><i class="fas fa-phone-alt"></i> ${w.winnerPhone || 'S/N'} &nbsp;|&nbsp; <i class="far fa-clock"></i> ${formatDateTime(w.timestamp)}</div></div></div>`;
+            });
+        }
+        
+        function updateDrawStats() {
+            const eventId = document.getElementById('drawEvent').value;
+            if (!eventId) { document.getElementById('totalParticipants').textContent = '0'; document.getElementById('presentParticipants').textContent = '0'; document.getElementById('absentParticipants').textContent = '0'; return; }
+            const eventParticipants = participants.filter(p => p.eventId === eventId);
+            const present = eventParticipants.filter(p => p.present).length;
+            document.getElementById('totalParticipants').textContent = eventParticipants.length; 
+            document.getElementById('presentParticipants').textContent = present; 
+            document.getElementById('absentParticipants').textContent = eventParticipants.length - present;
+        }
+
+        function updateStats() {
+            const eventId = document.getElementById('statsEvent').value;
+            if (!eventId) { document.getElementById('statsTotal').textContent = '0'; document.getElementById('statsPresent').textContent = '0'; document.getElementById('statsAbsent').textContent = '0'; document.getElementById('statsPercentage').textContent = '0%'; return; }
+            const evParts = participants.filter(p => p.eventId === eventId);
+            const present = evParts.filter(p => p.present).length; const total = evParts.length;
+            document.getElementById('statsTotal').textContent = total; document.getElementById('statsPresent').textContent = present; document.getElementById('statsAbsent').textContent = total - present;
+            document.getElementById('statsPercentage').textContent = total > 0 ? `${Math.round((present / total) * 100)}%` : '0%';
+        }
+        
+        async function performDraw() {
+            const eventId = document.getElementById('drawEvent').value;
+            const display = document.getElementById('winnerDisplay');
+            if (!eventId) return alert('Selecione um evento.');
+            const presentParticipants = participants.filter(p => p.eventId === eventId && p.present);
+            if (presentParticipants.length === 0) { display.innerHTML = '<span style="color:var(--danger); font-size:18px;">Nenhum presente para o sorteio.</span>'; return; }
+            
+            let counter = 0;
+            const interval = setInterval(async () => {
+                display.textContent = presentParticipants[Math.floor(Math.random() * presentParticipants.length)].name;
+                if (++counter >= 20) {
+                    clearInterval(interval);
+                    const winner = presentParticipants[Math.floor(Math.random() * presentParticipants.length)];
+                    display.innerHTML = `<div style="text-align:center;"><div style="font-size:16px; color:var(--text-light); text-transform:uppercase;">🎉 Parabéns! 🎉</div><div style="font-size: 32px; margin: 10px 0; color:var(--primary); line-height:1.2;">${winner.name}</div><div style="font-size:18px; color:var(--success);"><i class="fas fa-phone-alt"></i> ${winner.phone || ''}</div></div>`;
+                    
+                    try {
+                        await fetch(`${API_BASE_URL}/winners`, { method: 'POST', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify({ eventId, winnerName: winner.name, winnerPhone: winner.phone, timestamp: new Date().toISOString() }) });
+                        await loadWinners();
+                    } catch(e) { console.error("Erro ao salvar ganhador"); }
+                }
+            }, 100);
+        }
+        
+        // --- UTILITÁRIOS ---
+        function filterGrid(inputId, gridId) {
+            const term = document.getElementById(inputId).value.toLowerCase();
+            document.querySelectorAll(`#${gridId} .event-card`).forEach(card => card.style.display = card.querySelector('.event-card-title').textContent.toLowerCase().includes(term) ? 'block' : 'none');
+        }
+        function calculateExpirationDate(date, time) {
+            if (!date || !time) return new Date();
+            return new Date(new Date(`${date}T${time}`).getTime() + (2 * 60 * 60 * 1000));
+        }
+        function copyInscriptionLink(eventId) {
+            const linkInput = document.getElementById(`link-${eventId}`);
+            const copySuccess = document.getElementById(`copy-success-${eventId}`);
+            linkInput.select(); linkInput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(linkInput.value).then(() => { copySuccess.style.display = 'inline-block'; setTimeout(() => copySuccess.style.display = 'none', 2000); }).catch(() => { document.execCommand('copy'); copySuccess.style.display = 'inline-block'; setTimeout(() => copySuccess.style.display = 'none', 2000); });
+        }
+        function formatDate(dStr) { if (!dStr) return ''; const [y, m, d] = dStr.split('-'); return `${d}/${m}/${y}`; }
+        function formatDateTime(dStr) { return new Date(dStr).toLocaleString('pt-BR'); }
+        
+        function exportData() {
+            const eventId = document.getElementById('statsEvent').value;
+            if (!eventId) return alert('Selecione um evento.');
+            const dataToExport = { event: events.find(e => e.id_firebase === eventId), participants: participants.filter(p => p.eventId === eventId), winners: winners.filter(w => w.eventId === eventId) };
+            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' })); link.download = `relatorio_${dataToExport.event.name.replace(/\s+/g, '_')}.json`; link.click();
+        }
+        
+        function printPresenceList() {
+            if (!selectedEventId) return alert('Selecione um evento.');
+            const event = events.find(e => e.id_firebase === selectedEventId);
+            const evParts = participants.filter(p => p.eventId === selectedEventId);
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>Lista - ${event.name}</title><style>body { font-family: sans-serif; padding: 20px; color: #333; } .header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 20px; } img { height: 50px; } table { width: 100%; border-collapse: collapse; margin-top: 20px; } th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 14px; } th { background-color: #f8fafc; } .present { color: #16a34a; font-weight: bold; } .absent { color: #dc2626; font-weight: bold; } .leitura { font-size: 11px; color: #0284c7; font-weight: bold; }</style></head><body><div class="header"><img src="https://imgur.com/kpCeqqJ.png"><div><h2 style="margin:0;">Lista de Presença</h2><p style="margin:5px 0 0;">${event.name} • ${formatDate(event.date)}</p></div></div><table><tr><th>Nome</th><th>Telefone</th><th>Status</th><th>Origem</th></tr>${evParts.map(p => `<tr><td>${p.name} ${p.readAta?'<span class="leitura">(Leu a ATA)</span>':''}</td><td>${p.phone||''}</td><td class="${p.present?'present':'absent'}">${p.present?'PRESENTE':'AUSENTE'}</td><td>${p.source==='public_inscription'?'Online':'Manual'}</td></tr>`).join('')}</table><script>window.onload=function(){window.print();}<\/script></body></html>`);
+            win.document.close();
+        }
+        
+        function generatePDF() {
+            if (!selectedEventId) return alert('Selecione um evento.');
+            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            const event = events.find(e => e.id_firebase === selectedEventId); const evParts = participants.filter(p => p.eventId === selectedEventId);
+            doc.setFillColor(32, 52, 61); doc.rect(0, 0, 210, 40, 'F'); doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text('Lista de Presença', 15, 20); doc.setFontSize(12); doc.text(`${event.name} • ${formatDate(event.date)}`, 15, 30);
+            let y = 50; doc.setFontSize(10); doc.setFillColor(243, 246, 248); doc.rect(10, y-6, 190, 8, 'F'); doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'bold'); doc.text('Nome', 15, y); doc.text('Telefone', 100, y); doc.text('Status', 150, y); doc.text('Origem', 180, y);
+            doc.setFont(undefined, 'normal'); y += 10;
+            evParts.forEach((p, i) => {
+                if (y > 280) { doc.addPage(); y = 20; }
+                if (i % 2 === 0) { doc.setFillColor(250, 250, 250); doc.rect(10, y-6, 190, 8, 'F'); }
+                const nameDisplay = p.name + (p.readAta ? ' (Leu a ATA)' : '');
+                doc.text(nameDisplay.substring(0, 40), 15, y); doc.text(p.phone||'', 100, y);
+                doc.setTextColor(p.present ? 22 : 220, p.present ? 163 : 38, p.present ? 74 : 38); doc.text(p.present ? 'PRESENTE' : 'AUSENTE', 150, y);
+                doc.setTextColor(0,0,0); doc.text(p.source === 'public_inscription' ? 'Online' : 'Manual', 180, y); y += 8;
+            });
+            doc.save(`lista_${event.name.replace(/\s+/g, '_')}.pdf`);
+        }
+    </script>
+</body>
+</html>

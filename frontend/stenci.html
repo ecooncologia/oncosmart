@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Sistema de Cadastro de Pacientes - ECO Sistema</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    
+  <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        /* Estilos do Stenci (Mantendo Original) */
+        .upload-section { background: #f8f9fa; padding: 25px; border-radius: 10px; border: 2px dashed #03A63C; text-align: center; margin-bottom: 30px; }
+        .file-input { display: none; }
+        .upload-btn { background: #04D939; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: all 0.3s ease; margin: 10px; }
+        .upload-btn:hover { background: #03A63C; transform: translateY(-2px); }
+        .status-section { margin-top: 30px; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .status-card { background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 5px solid #027333; }
+        .status-card.error { border-left-color: #dc3545; }
+        .progress-container { margin: 20px 0; }
+        .progress-info { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; color: #666; }
+        .progress-bar { width: 100%; height: 12px; background: #e9ecef; border-radius: 10px; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #04D939, #03A63C); width: 0%; transition: width 0.5s ease; border-radius: 10px; }
+        .progress-fill.animated { background: linear-gradient(90deg, #04D939, #03A63C, #04D939); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .patients-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); table-layout: fixed; }
+        .patients-table th, .patients-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .patients-table th { background: #025939; color: white; font-weight: 600; }
+        .patients-table tr:hover { background: #f8f9fa; }
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; white-space: nowrap; }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .log-container { background: #1a1a1a; color: #00ff00; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; height: 200px; overflow-y: auto; margin-top: 20px; font-size: 0.9em; white-space: pre-wrap; word-wrap: break-word; }
+        .hidden { display: none; }
+        .action-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .btn-remove { background: #dc3545; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; font-size: 0.9em; transition: all 0.3s ease; white-space: nowrap; }
+        .btn-remove:hover { background: #c82333; transform: scale(1.1); }
+        .btn { padding: 12px 25px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.3s ease; font-weight: 600; white-space: nowrap; }
+        .btn-primary { background: #04D939; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #03A63C; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover:not(:disabled) { background: #545b62; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .filter-section { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .filter-label { font-weight: 600; color: #333; white-space: nowrap; }
+        .filter-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; background-color: white; font-size: 0.95em; min-width: 200px; cursor: pointer; }
+        .filter-select:focus { outline: none; border-color: #04D939; box-shadow: 0 0 0 2px rgba(4, 217, 57, 0.2); }
+        .filter-info { background: #e7f3ff; padding: 10px 15px; border-radius: 5px; border-left: 4px solid #027333; margin-bottom: 15px; font-size: 0.9em; white-space: normal; word-wrap: break-word; }
+        .filter-info.warning { background: #fff3cd; border-left-color: #ffc107; }
+        .table-container { overflow-x: auto; margin-bottom: 20px; }
+        .completion-animation { text-align: center; padding: 20px; margin: 20px 0; border-radius: 10px; background: linear-gradient(135deg, #04D939, #03A63C); color: white; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(4, 217, 57, 0.7); } 50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(4, 217, 57, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(4, 217, 57, 0); } }
+        .confetti { position: fixed; width: 10px; height: 10px; background: #ff0000; opacity: 0; pointer-events: none; }
+        @keyframes confetti-fall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(1000px) rotate(360deg); opacity: 0; } }
+        @media (max-width: 768px) { .status-grid { grid-template-columns: 1fr; } .patients-table { font-size: 0.8em; } .patients-table th, .patients-table td { padding: 8px 10px; } .filter-section { flex-direction: column; align-items: flex-start; } .filter-select { width: 100%; } .action-buttons { flex-direction: column; align-items: center; } .btn { width: 100%; max-width: 300px; } }
+        .patients-table th:nth-child(1), .patients-table td:nth-child(1) { width: 13%; }
+        .patients-table th:nth-child(2), .patients-table td:nth-child(2) { width: 10%; }
+        .patients-table th:nth-child(3), .patients-table td:nth-child(3) { width: 9%; }
+        .patients-table th:nth-child(4), .patients-table td:nth-child(4) { width: 12%; }
+        .patients-table th:nth-child(5), .patients-table td:nth-child(5) { width: 7%; }
+        .patients-table th:nth-child(6), .patients-table td:nth-child(6) { width: 7%; }
+        .patients-table th:nth-child(7), .patients-table td:nth-child(7) { width: 9%; }
+        .patients-table th:nth-child(8), .patients-table td:nth-child(8) { width: 10%; }
+        .patients-table th:nth-child(9), .patients-table td:nth-child(9) { width: 8%; }
+        .patients-table th:nth-child(10), .patients-table td:nth-child(10) { width: 8%; }
+        .patients-table th:nth-child(11), .patients-table td:nth-child(11) { width: 6%; }
+        .patients-table th:nth-child(12), .patients-table td:nth-child(12) { width: 4%; }
+        
+        /* Ajuste do container para design novo */
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="card">
+            <div class="upload-section">
+                <h3>📊 Importar Planilha de Pacientes</h3>
+                <p>Selecione um arquivo Excel (.xlsx) com os dados dos pacientes</p>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx, .xls">
+                <button onclick="document.getElementById('fileInput').click()" class="upload-btn">
+                    📁 Selecionar Arquivo
+                </button>
+                <span id="fileName" style="margin-left: 10px; color: #666;"></span>
+            </div>
+
+            <div id="dataSection" class="hidden">
+                <h3>👥 Pacientes para Cadastrar</h3>
+                
+                <div class="filter-section">
+                    <label class="filter-label" for="medicoFilter">Filtrar por Médico:</label>
+                    <select id="medicoFilter" class="filter-select" onchange="filterByMedico()">
+                        <option value="">Todos os Médicos</option>
+                    </select>
+                </div>
+
+                <div id="filterInfo" class="filter-info hidden"></div>
+                
+                <div class="table-container">
+                    <table class="patients-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Data Nasc.</th>
+                                <th>Local</th><th>Convênio</th><th>Médico</th><th>Agenda</th><th>Carteirinha</th>
+                                <th>Status</th><th>Remover</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientsTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="startBtn" class="btn btn-primary" onclick="startRegistration()">
+                        🚀 Iniciar Cadastro em Lote
+                    </button>
+                    <button id="clearBtn" class="btn btn-secondary" onclick="clearAllPatients()">
+                        🗑️ Limpar Lista
+                    </button>
+                    <button id="cancelBtn" class="btn btn-secondary" onclick="cancelRegistration()">
+                        ❌ Cancelar
+                    </button>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span id="progressText">0%</span>
+                        <span id="progressCount">0/0</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="status-grid">
+                    <div class="status-card">
+                        <h4>✅ Sucessos</h4>
+                        <p id="successCount">0</p>
+                    </div>
+                    <div class="status-card error">
+                        <h4>❌ Erros</h4>
+                        <p id="errorCount">0</p>
+                    </div>
+                </div>
+
+                <div class="log-container" id="logContainer">
+                    <div>🔧 Sistema inicializado. Aguardando arquivo...</div>
+                </div>
+
+                <div id="completionAnimation" class="completion-animation hidden">
+                    <h2>🎉 Processamento Concluído com Sucesso!</h2>
+                    <p id="completionStats"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initGlobal('stenci', 'Integração Stenci');
+            // Reatribui eventos após carregamento
+            const fileInput = document.getElementById('fileInput');
+            if(fileInput) fileInput.addEventListener('change', handleFileSelect);
+        });
+
+        // Configurações e Mapeamentos
+        const AGENDA_QUIMIO = {
+            scheduleId: '67b47f507883db09d2feec8f',
+            name: 'Medicação (Quimio)', // ADICIONADO PARA CORRIGIR UNDEFINED NA TABELA E LOGS
+            council: { record: 'XXXXX', name: 'CRM', state: 'PR' }
+        };
+
+        const medicoMapping = {
+            '655': { id: '6116b386637eb907468a2828', name: 'Alessandro Hartmann', scheduleId: '67aa552145f82d09d1c0c548', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '46913': { id: '659a015cee376abb346e2f10', name: 'Audrey Tieko Tsunoda', scheduleId: '6913845ef7e592de627cfd0d', council: { name: 'CRM', state: 'PR', record: '18223' } },
+            '31842': { id: '60c8794d6f70f1171a93f01b', name: 'Maikol Kurahashi', scheduleId: '67aa58d598f0bcfe5724de62', council: { record: '22050', name: 'CRM', state: 'PR' } },
+            '31901': { id: '64af776603a890807e991c05', name: 'Caroline Barros Pizzani', scheduleId: '67aa57d3973fc609f59475f4', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '31483': { id: '67570492331dc02907b344cc', name: 'Pablo Zanatta', scheduleId: '67aa59095137e309d1705bb3', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '37992': { id: '67aa374b5137e309d15fd1f3', name: 'Aline Leticia Kozak', scheduleId: '67aa5587473c660a1608d6ed', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            'QUIMIO_ALINE': { id: '67aa374b5137e309d15fd1f3', name: 'Aline Leticia Kozak', scheduleId: '67b47f507883db09d2feec8f', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '223505': { id: "5fd44b29941f2587bb4f0523", name: "Andrielle Sousa dos Santos", scheduleId: '67b47f507883db09d2feec8f', council:{ name: "COREN", state: "PR", record: "598125" } },
+            '31867': { id: '6233703d9e636a0b7d92d066', name: 'Raquel Cristina Skrsypcsak Andrade', scheduleId: '67aa59952f9a2409d019ada1', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '38606': { id: '65d7547d7bad7a0ac7f66a24', name: 'Ana Maria de Oliveira Santos', scheduleId: '67aa56402f9a2409d0176843', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '40621': { id: '642b26c4e6295b0f40ba2120', name: 'Shirlei Kugler Aiçar de Súss', scheduleId: '67aa5a1d2f9a2409d019ef25', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '41147': { id: '6366d99f730f755d5634ed28', name: 'Cristiane de Oliveira Henriques', scheduleId: '67aa580f45f82d09d1c20d7f', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '1336': { id: '661c4cde912105b783865592', name: 'João Samuel de Holanda Farias', scheduleId: '67aa58b42f9a2409d019111f', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '36555': { id: '60c8a5b76f70f1171a94a208', name: 'Rafael Hartog Ressetti', scheduleId: '67aa595a473c660a160a9d92', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '31920': { id: '620a93d1c1d4380b94017123', name: 'Georgia Cristina de Mello Kons', scheduleId: '67aa588bbbb8471cfbf36721', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '38605': { id: '67aa39fa473c660a16fb7e1a', name: 'Eduardo Kulak Nadolny', scheduleId: '67aa58415137e309d16ff7ce', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '31549': { id: '682bed3119df3949c2aaaa43', name: 'Valeria Aparecida Santos', scheduleId: '68926882cac185e1f5810694', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '35335': { id: '655644a1baaf660af383d1df', name: 'Elisangela Bruske Cordeiro Shiroma', scheduleId: '68a75268cf08345c3ae24bb4', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '41207': { id: '67bfd5a9cab88a540810f5cb', name: 'Ana Julia Rieger', scheduleId: '682f287f28255b08bbddf8ea', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '46045': { id: '6278277c73e4fa0dcee73d63', name: 'Jose Dyego dos Santos Silva', scheduleId: '688bcc1f45a9c0d64ed71fa8', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '46402': { id: '60b586bf6004451cfcff7776', name: 'Lenisa Albanske Raboni', scheduleId: '681bc485cc783e08c2089739', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            '46910': { id: '684c734de4006508bf587cf0', name: 'Bruno Roberto Braga Azevedo', scheduleId: '684c738f0dbe0108b9513147', council: { record: 'XXXXX', name: 'CRM', state: 'PR' } },
+            'default': { id: '60c8794d6f70f1171a93f01b', name: 'Maikol Kurahashi', scheduleId: '67aa58d598f0bcfe5724de62', council: { record: '22050', name: 'CRM', state: 'PR' } }
+        };
+
+        const convenioMapping = {
+            '1': { id: '637d1419bbc77d0a7107056f', name: 'Particular', planId: '5e824f3e907b920e6a403492' },
+            '2': { id: '67a654259d72be5c484aea5b', name: 'Amil', planId: '5e824f41907b920e6a4036e7' },
+            '3': { id: '67a654259d72be5c484aea5b', name: 'Amil', planId: '5e824f41907b920e6a4036e7' },
+            '4': { id: '67aa0c19473c660a16e91e81', name: 'Unimed Curitiba', planId: '5e824f41907b920e6a4036bf' },
+            '5': { id: '67a66db69d72be5c4853492c', name: 'Fundação Copel', planId: '5e824f41907b920e6a4036f0' },
+            '28': { id: '67aa0c19473c660a16e91e81', name: 'Unimed Curitiba', planId: '5e824f41907b920e6a4036bf' },
+            '21': { id: '67a6703536f3cd0a0f7a147e', name: 'Geap', planId: '5e824f41907b920e6a4036e7' },
+            '29': { id: '67a9f8a2973fc609f569dad5', name: 'Saúde Petrobras', planId: '60b64342cc43eb0c1c1b5441' },
+            '17': { id: '67a671896af4f909d1178465', name: 'Saúde Caixa', planId: '5e824f41907b920e6a4036ec' },
+            '47': { id: '67aa0862973fc609f5720c6e', name: 'Sul America Companhia de Seguro Saúde', planId: '5e824f41907b920e6a4036b5' },
+            '40': { id: '637d1419bbc77d0a7107056f', name: 'Particular', planId: '5e824f3e907b920e6a403492' },
+            'default': { id: '67aa0c19473c660a16e91e81', name: 'Unimed Curitiba', planId: '5e824f41907b920e6a4036bf' }
+        };
+
+        // Cache de pacientes já existentes
+        const existingPatientsCache = new Map();
+
+        // Variáveis globais
+        let patientsData = [];
+        let filteredPatientsData = [];
+        let currentIndex = 0;
+        let isProcessing = false;
+        let successCount = 0;
+        let errorCount = 0;
+        let authToken = '';
+        let isFilterActive = false;
+
+        // Variáveis para controle de progresso
+        let totalPatientsToProcess = 0;
+        let processedPatients = 0;
+
+        // Elementos DOM
+        const fileName = document.getElementById('fileName');
+        const dataSection = document.getElementById('dataSection');
+        const patientsTableBody = document.getElementById('patientsTableBody');
+        const startBtn = document.getElementById('startBtn');
+        const progressFill = document.getElementById('progressFill');
+        const successCountElem = document.getElementById('successCount');
+        const errorCountElem = document.getElementById('errorCount');
+        const logContainer = document.getElementById('logContainer');
+        const medicoFilter = document.getElementById('medicoFilter');
+        const filterInfo = document.getElementById('filterInfo');
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                readExcelFile(file);
+            }
+        }
+
+        function clearAllPatients() {
+            if (patientsData.length === 0) {
+                addLog('ℹ️ Lista já está vazia');
+                return;
+            }
+            
+            if (confirm(`Tem certeza que deseja remover todos os ${patientsData.length} pacientes da lista?`)) {
+                patientsData = [];
+                filteredPatientsData = [];
+                successCount = 0;
+                errorCount = 0;
+                displayPatientsTable();
+                updateCounters();
+                updateMedicoFilter();
+                addLog('🗑️ Todos os pacientes foram removidos da lista');
+            }
+        }
+
+        function readExcelFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    console.log('📊 Dados da planilha:', jsonData);
+                    
+                    if (jsonData.length === 0) {
+                        addLog('❌ Planilha vazia ou sem dados válidos');
+                        return;
+                    }
+                    
+                    detectAndProcessExcelData(jsonData);
+                    addLog(`✅ ${jsonData.length} registros carregados da planilha`);
+                    
+                } catch (error) {
+                    addLog(`❌ Erro ao ler planilha: ${error.message}`);
+                    console.error('Erro detalhado:', error);
+                }
+            };
+            
+            reader.onerror = function() {
+                addLog('❌ Erro ao ler o arquivo');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function formatPhone(phone) {
+            if (!phone) return '(41) 9999-9999';
+            
+            const cleanPhone = phone.toString().replace(/\D/g, '');
+            
+            if (cleanPhone.length === 10) {
+                return `(${cleanPhone.substring(0,2)}) ${cleanPhone.substring(2,6)}-${cleanPhone.substring(6)}`;
+            } else if (cleanPhone.length === 11) {
+                return `(${cleanPhone.substring(0,2)}) ${cleanPhone.substring(2,7)}-${cleanPhone.substring(7)}`;
+            }
+            
+            return phone;
+        }
+
+        function formatCPF(cpf) {
+            if (!cpf) return 'N/A';
+            
+            const cleanCPF = cpf.toString().replace(/[^\d]/g, '');
+            
+            if (cleanCPF.length === 11) {
+                return `${cleanCPF.substring(0,3)}.${cleanCPF.substring(3,6)}.${cleanCPF.substring(6,9)}-${cleanCPF.substring(9)}`;
+            }
+            
+            return cleanCPF;
+        }
+
+        function ensureString(value) {
+            if (value === null || value === undefined) return '';
+            if (typeof value === 'number') return value.toString();
+            if (typeof value === 'string') return value;
+            return String(value);
+        }
+
+        function processSeparateDateTime(dia, mes, ano, horario) {
+            console.log('📅 Processando data separada:', { dia, mes, ano, horario });
+            
+            if (!dia || !mes || !ano) {
+                const defaultDate = new Date();
+                defaultDate.setDate(defaultDate.getDate() + 1);
+                defaultDate.setHours(9, 30, 0, 0);
+                
+                const startDate = formatToLocalISO(defaultDate);
+                defaultDate.setMinutes(defaultDate.getMinutes() + 30);
+                const endDate = formatToLocalISO(defaultDate);
+                
+                addLog('⚠️ Usando data padrão (dados incompletos)');
+                return { startDate, endDate };
+            }
+            
+            try {
+                const dayNum = parseInt(dia);
+                const monthNum = parseInt(mes) - 1;
+                const yearNum = parseInt(ano);
+                
+                if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) {
+                    throw new Error('Dia, mês ou ano inválidos');
+                }
+                
+                let hours = 9;
+                let minutes = 0;
+                
+                if (horario) {
+                    const timeStr = horario.toString().replace(/[^0-9:]/g, '');
+                    if (timeStr.includes(':')) {
+                        const [h, m] = timeStr.split(':');
+                        hours = parseInt(h) || 9;
+                        minutes = parseInt(m) || 0;
+                    } else if (timeStr.length >= 3) {
+                        hours = parseInt(timeStr.substring(0, timeStr.length - 2)) || 9;
+                        minutes = parseInt(timeStr.substring(timeStr.length - 2)) || 0;
+                    }
+                }
+                
+                const dateObj = new Date(yearNum, monthNum, dayNum, hours, minutes, 0);
+                
+                if (isNaN(dateObj.getTime())) {
+                    throw new Error('Data inválida após criação');
+                }
+                
+                const startDate = formatToLocalISO(dateObj);
+                dateObj.setMinutes(dateObj.getMinutes() + 30);
+                const endDate = formatToLocalISO(dateObj);
+                
+                addLog(`📅 Data processada: ${startDate} até ${endDate}`);
+                
+                return { startDate, endDate };
+                
+            } catch (error) {
+                addLog(`⚠️ Erro ao processar data separada: ${error.message}, usando data padrão`);
+                
+                const defaultDate = new Date();
+                defaultDate.setDate(defaultDate.getDate() + 1);
+                defaultDate.setHours(9, 30, 0, 0);
+                
+                const startDate = formatToLocalISO(defaultDate);
+                defaultDate.setMinutes(defaultDate.getMinutes() + 30);
+                const endDate = formatToLocalISO(defaultDate);
+                
+                return { startDate, endDate };
+            }
+        }
+
+        function processDateTime(dateTimeStr) {
+            console.log('-------DATA---------', dateTimeStr)
+                
+            if (!dateTimeStr) {
+                const defaultDate = new Date();
+                defaultDate.setDate(defaultDate.getDate() + 1);
+                defaultDate.setHours(9, 30, 0, 0);
+                
+                const startDate = formatToLocalISO(defaultDate);
+                defaultDate.setMinutes(defaultDate.getMinutes() + 30);
+                const endDate = formatToLocalISO(defaultDate);
+                
+                return { startDate, endDate };
+            }
+            
+            try {
+                let dateObj;
+                
+                if (dateTimeStr instanceof Date) {
+                    dateObj = dateTimeStr;
+                } else if (typeof dateTimeStr === 'string') {
+                    if (dateTimeStr.includes('/') && dateTimeStr.includes(':')) {
+                        const [datePart, timePart] = dateTimeStr.split(' ');
+                        const [day, month, year] = datePart.split('/');
+                        
+                        let hours, minutes, seconds = '00';
+                        
+                        if (timePart.includes(':')) {
+                            const timeParts = timePart.split(':');
+                            hours = timeParts[0];
+                            minutes = timeParts[1];
+                            seconds = timeParts[2] || '00';
+                        } else {
+                            hours = '09';
+                            minutes = '00';
+                        }
+                        
+                        dateObj = new Date(
+                            parseInt(year),
+                            parseInt(month) - 1,
+                            parseInt(day),
+                            parseInt(hours),
+                            parseInt(minutes),
+                            parseInt(seconds)
+                        );
+                        
+                        addLog(`🕒 Data processada: ${dateObj.toString()} (Local)`);
+                        
+                    } else if (dateTimeStr.includes('T')) {
+                        dateObj = new Date(dateTimeStr);
+                    } else {
+                        dateObj = new Date(dateTimeStr);
+                    }
+                }
+                
+                if (isNaN(dateObj.getTime())) {
+                    throw new Error('Data inválida');
+                }
+                
+                const startDate = formatToLocalISO(dateObj);
+                dateObj.setMinutes(dateObj.getMinutes() + 30);
+                const endDate = formatToLocalISO(dateObj);
+                
+                addLog(`📅 Horários: ${startDate} até ${endDate}`);
+                console.log('-------DATA---------', startDate, endDate)
+
+                return { startDate, endDate };
+                
+            } catch (error) {
+                addLog(`⚠️ Erro ao processar data: ${dateTimeStr}, usando data padrão. Erro: ${error.message}`);
+                
+                const defaultDate = new Date();
+                defaultDate.setDate(defaultDate.getDate() + 1);
+                defaultDate.setHours(9, 30, 0, 0);
+                
+                const startDate = formatToLocalISO(defaultDate);
+                defaultDate.setMinutes(defaultDate.getMinutes() + 30);
+                const endDate = formatToLocalISO(defaultDate);
+                
+                return { startDate, endDate };
+            }
+        }
+            
+        function formatToLocalISO(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+        }
+
+        function mapGender(gender) {
+            const genderMap = {
+                'M': 'male',
+                'F': 'female',
+                'male': 'male',
+                'female': 'female',
+                'masculino': 'male',
+                'feminino': 'female'
+            };
+            return genderMap[gender.toString().toUpperCase()] || 'male';
+        }
+
+        function formatDate(date) {
+            if (!date) return '2000-01-01';
+            
+            if (date instanceof Date) {
+                return date.toISOString().split('T')[0];
+            }
+            
+            if (typeof date === 'string') {
+                const parts = date.split('/');
+                if (parts.length === 3) {
+                    const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                    const month = parts[1].padStart(2, '0');
+                    const day = parts[0].padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+                
+                if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    return date;
+                }
+            }
+            
+            return '2000-01-01';
+        }
+
+        function displayPatientsTable() {
+            console.log('🎯 DISPLAY TABLE - filteredPatientsData:', filteredPatientsData);
+            
+            patientsTableBody.innerHTML = '';
+            
+            if (filteredPatientsData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="12" style="text-align: center; color: red;">Nenhum paciente encontrado</td>`;
+                patientsTableBody.appendChild(row);
+                dataSection.classList.remove('hidden');
+                return;
+            }
+            
+            filteredPatientsData.forEach((patient, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td title="${patient.name || 'N/A'}">${patient.name || 'N/A'}</td>
+                    <td>${formatCPF(patient.cpf)}</td>
+                    <td>${patient.phone || 'N/A'}</td>
+                    <td title="${patient.email || ''}">${patient.email || ''}</td> <td>${patient.birthDate || 'N/A'}</td>
+                    <td>${patient.local || 'N/A'}</td>
+                    <td title="${patient.convenio?.name || 'N/A'}">${patient.convenio?.name || 'N/A'}</td>
+                    <td title="${patient.medico?.name || 'N/A'}">${patient.medico?.name || 'N/A'}</td>
+                    <td>${patient.local === 'AGENDA_QUIMIO' ? 'Medicação' : (patient.medico?.name || 'N/A')}</td>
+                    <td title="${patient.cdUsuarioConvenio || 'N/A'}">${patient.cdUsuarioConvenio || 'N/A'}</td>
+                    <td><span class="status-badge status-${patient.status}">${getStatusText(patient.status)}</span></td>
+                    <td>
+                        <button class="btn-remove" onclick="removePatient(${index})" title="Remover paciente">
+                            🗑️
+                        </button>
+                    </td>
+                `;
+                patientsTableBody.appendChild(row);
+            });
+            
+            dataSection.classList.remove('hidden');
+            addLog(`📋 ${filteredPatientsData.length} pacientes carregados na tabela`);
+        }
+
+        function removePatient(index) {
+            const patient = filteredPatientsData[index];
+            const realIndex = patientsData.findIndex(p => p.id === patient.id);
+            
+            if (realIndex !== -1 && confirm(`Tem certeza que deseja remover ${patient.name} da lista?`)) {
+                const removedPatient = patientsData.splice(realIndex, 1)[0];
+                addLog(`🗑️ Paciente removido: ${removedPatient.name}`);
+                
+                filterByMedico();
+                updateCounters();
+            }
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'Pendente',
+                'success': 'OK',
+                'error': 'Erro'
+            };
+            return statusMap[status] || status;
+        }
+
+        function updateProgress() {
+            if (totalPatientsToProcess === 0) return;
+            
+            const progress = Math.round((processedPatients / totalPatientsToProcess) * 100);
+            
+            // Atualizar barra de progresso
+            progressFill.style.width = `${progress}%`;
+            
+            // Adicionar animação quando estiver completo
+            if (progress === 100) {
+                progressFill.classList.add('animated');
+            } else {
+                progressFill.classList.remove('animated');
+            }
+            
+            // Atualizar textos informativos
+            document.getElementById('progressText').textContent = `${progress}%`;
+            document.getElementById('progressCount').textContent = `${processedPatients}/${totalPatientsToProcess}`;
+        }
+
+        function updateCounters() {
+            successCountElem.textContent = successCount;
+            errorCountElem.textContent = errorCount;
+        }
+
+        function addLog(message) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateMedicoFilter() {
+            medicoFilter.innerHTML = '<option value="">Todos os Médicos</option>';
+            
+            if (patientsData.length === 0) return;
+            
+            const medicos = [...new Set(patientsData.map(p => p.medico?.name).filter(Boolean))];
+            medicos.sort();
+            
+            const hasQuimioPatients = patientsData.some(p => p.local === 'AGENDA_QUIMIO');
+            
+            if (hasQuimioPatients) {
+                medicos.push('Medicação');
+            }
+            
+            medicos.forEach(medico => {
+                const option = document.createElement('option');
+                option.value = medico;
+                option.textContent = medico;
+                medicoFilter.appendChild(option);
+            });
+            
+            addLog(`🔍 Filtro de médicos atualizado: ${medicos.length} opções`);
+        }
+
+        function filterByMedico() {
+            const selectedMedico = medicoFilter.value;
+            
+            if (!selectedMedico) {
+                filteredPatientsData = [...patientsData];
+                isFilterActive = false;
+                filterInfo.classList.add('hidden');
+            } else if (selectedMedico === 'Medicação') {
+                filteredPatientsData = patientsData.filter(patient => 
+                    patient.local === 'AGENDA_QUIMIO'
+                );
+                isFilterActive = true;
+                
+                filterInfo.innerHTML = `
+                    <strong>⚠️ FILTRO ATIVO:</strong> 
+                    Mostrando apenas pacientes de <strong>Medicação (Quimioterapia)</strong>. 
+                    Ao iniciar o cadastro, apenas os ${filteredPatientsData.length} pacientes visíveis serão processados.
+                `;
+                filterInfo.classList.remove('hidden');
+                filterInfo.classList.add('warning');
+            } else {
+                filteredPatientsData = patientsData.filter(patient => 
+                    patient.medico?.name === selectedMedico
+                );
+                isFilterActive = true;
+                
+                filterInfo.innerHTML = `
+                    <strong>⚠️ FILTRO ATIVO:</strong> 
+                    Mostrando apenas pacientes do médico <strong>${selectedMedico}</strong>. 
+                    Ao iniciar o cadastro, apenas os ${filteredPatientsData.length} pacientes visíveis serão processados.
+                `;
+                filterInfo.classList.remove('hidden');
+                filterInfo.classList.add('warning');
+            }
+            
+            displayPatientsTable();
+            addLog(`🔍 Filtro aplicado: ${selectedMedico || 'Todos os médicos'} (${filteredPatientsData.length} pacientes)`);
+        }
+
+        async function startRegistration() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            startBtn.disabled = true;
+            successCount = 0;
+            errorCount = 0;
+            currentIndex = 0;
+            processedPatients = 0;
+            
+            updateCounters();
+            
+            const patientsToProcess = isFilterActive ? filteredPatientsData : patientsData;
+            totalPatientsToProcess = patientsToProcess.length;
+            
+            if (totalPatientsToProcess === 0) {
+                addLog('❌ Nenhum paciente para processar');
+                isProcessing = false;
+                startBtn.disabled = false;
+                return;
+            }
+            
+            // Resetar animação de conclusão
+            document.getElementById('completionAnimation').classList.add('hidden');
+            
+            addLog(`🔐 Iniciando autenticação no sistema...`);
+            addLog(`📋 Processando ${totalPatientsToProcess} paciente(s) ${isFilterActive ? '(filtro ativo)' : ''}`);
+            
+            try {
+                authToken = await performLogin();
+                addLog('✅ Login realizado com sucesso');
+                
+                addLog(`🔄 Iniciando cadastro de ${totalPatientsToProcess} pacientes...`);
+                
+                for (let i = 0; i < totalPatientsToProcess; i++) {
+                    if (!isProcessing) break;
+                    
+                    currentIndex = i;
+                    const patient = patientsToProcess[i];
+                    
+                    addLog(`📝 Processando: ${patient.name} (${patient.medico.name}) - Horário: ${patient.startDate}`);
+                    
+                    try {
+                        await registerPatient(patient);
+                        patient.status = 'success';
+                        successCount++;
+                        addLog(`✅ Sucesso: ${patient.name}`);
+                    } catch (error) {
+                        patient.status = 'error';
+                        errorCount++;
+                        addLog(`❌ Erro em ${patient.name}: ${error.message}`);
+                    }
+                    
+                    processedPatients++;
+                    updateProgress();
+                    updateCounters();
+                    filterByMedico();
+                    
+                    // Reduzir o tempo de espera entre requisições para processamento mais rápido
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                addLog(`🎉 Processamento concluído! Sucessos: ${successCount}, Erros: ${errorCount}`);
+                
+                // Mostrar animação de conclusão
+                showCompletionAnimation();
+                
+            } catch (error) {
+                addLog(`💥 Erro fatal: ${error.message}`);
+            } finally {
+                isProcessing = false;
+                startBtn.disabled = false;
+            }
+        }
+
+        function showCompletionAnimation() {
+            const completionElement = document.getElementById('completionAnimation');
+            const statsElement = document.getElementById('completionStats');
+            
+            // Atualizar estatísticas
+            statsElement.textContent = `✅ ${successCount} sucessos | ❌ ${errorCount} erros | 📊 ${totalPatientsToProcess} total`;
+            
+            // Mostrar animação
+            completionElement.classList.remove('hidden');
+            
+            // Criar efeito de confete
+            createConfetti();
+            
+            // Remover animação após alguns segundos
+            setTimeout(() => {
+                completionElement.classList.add('hidden');
+            }, 5000);
+        }
+
+        function createConfetti() {
+            const colors = ['#04D939', '#03A63C', '#027333', '#025939', '#04D939'];
+            const container = document.body;
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animation = `confetti-fall ${Math.random() * 3 + 2}s linear forwards`;
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                
+                container.appendChild(confetti);
+                
+                // Remover confete após animação
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        function cancelRegistration() {
+            isProcessing = false;
+            addLog('⏹️ Processamento cancelado pelo usuário');
+            
+            // Resetar barra de progresso
+            progressFill.style.width = '0%';
+            progressFill.classList.remove('animated');
+            document.getElementById('progressText').textContent = '0%';
+            document.getElementById('progressCount').textContent = '0/0';
+        }
+
+        async function performLogin() {
+            const loginData = {
+                username: "02801114952",
+                password: "028011"
+            };
+
+            const response = await fetch("https://api-x.stenci.pro/v1/auth", {
+                method: "POST",
+                headers: {
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+                    "authorization": "JWT null",
+                    "content-type": "application/json",
+                    "priority": "u=1, i",
+                    "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"Windows\"",
+                    "sec-fetch-dest": "empty",
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-site": "cross-site",
+                    "Referer": "https://stenci.app/"
+                },
+                body: JSON.stringify(loginData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Falha no login: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.token;
+        }
+
+        async function getPatientByName(patientName, cpf) {
+            try {
+                addLog(`🔍 Buscando paciente: ${patientName} (CPF: ${cpf})`);
+                
+                const cleanCPF = typeof cpf === 'string' ? cpf.replace(/\D/g, '') : String(cpf).replace(/\D/g, '');
+                
+                const response = await fetch(`https://api-x.stenci.pro/v1/patients/search?notFilterBranch=true&search=${cpf}`, {
+                    method: "GET",
+                    headers: {
+                        "accept": "application/json, text/plain, */*",
+                        "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+                        "authorization": `JWT ${authToken}`,
+                        "priority": "u=1, i",
+                        "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+                        "sec-ch-ua-mobile": "?0",
+                        "sec-ch-ua-platform": "\"Windows\"",
+                        "sec-fetch-dest": "empty",
+                        "sec-fetch-mode": "cors",
+                        "sec-fetch-site": "cross-site",
+                        "Referer": "https://stenci.app/"
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.items && data.items.length > 0) {
+                        const foundPatient = data.items.find(p => {
+                            const patientCPF = p.identity?.value ? p.identity.value.replace(/\D/g, '') : '';
+                            return patientCPF === cleanCPF;
+                        }) || data.items[0];
+                        
+                        if (foundPatient) {
+                            existingPatientsCache.set(cleanCPF, foundPatient);
+                            addLog(`✅ Paciente encontrado: ${foundPatient.name} (ID: ${foundPatient.id})`);
+                            return foundPatient;
+                        }
+                    }
+                }
+                
+                addLog(`⚠️ Paciente não encontrado: ${patientName}`);
+                return null;
+                
+            } catch (error) {
+                addLog(`❌ Erro ao buscar paciente: ${error.message}`);
+                return null;
+            }
+        }
+
+        function hasDateColumns(row) {
+            const dateColumns = ['DIA', 'MES', 'ANO', 'HORARIO'];
+            const foundColumns = dateColumns.filter(col => 
+                Object.keys(row).some(key => key.toUpperCase() === col)
+            );
+            console.log('📅 Colunas de data encontradas:', foundColumns);
+            return foundColumns.length >= 3;
+        }
+
+        function detectAndProcessExcelData(data) {
+            console.log('🔍 Detectando formato da planilha...');
+            
+            if (!data || data.length === 0) {
+                addLog('❌ Planilha vazia');
+                return;
+            }
+
+            const firstRow = data[0];
+            console.log('📋 Estrutura da primeira linha:', firstRow);
+            console.log('🔑 Chaves disponíveis:', Object.keys(firstRow));
+
+            const hasSeparateDateColumns = hasDateColumns(firstRow);
+            const isSqlFormat = firstRow.hasOwnProperty('nome') && firstRow.hasOwnProperty('CPF');
+            const isTasyFormat = Object.keys(firstRow).some(key => 
+                key.toLowerCase().includes('paciente') || key.toLowerCase().includes('nm_')
+            );
+
+            console.log('🎯 Resultado detecção:', { hasSeparateDateColumns, isSqlFormat, isTasyFormat });
+
+            if (hasSeparateDateColumns) {
+                addLog('✅ Formato com colunas de data separadas detectado (DIA/MES/ANO/HORARIO)');
+                processSeparateDateColumns(data);
+            } else if (isSqlFormat) {
+                addLog('✅ Formato SQL detectado');
+                processSqlFormat(data);
+            } else if (isTasyFormat) {
+                addLog('✅ Formato Tasy Java detectado');
+                processTasyFormat(data);
+            } else {
+                addLog('🔍 Tentando detecção automática de colunas...');
+                processAutoDetectFormat(data);
+            }
+        }
+
+        function processSeparateDateColumns(data) {
+            console.log('🔄 Processando formato com colunas de data separadas...');
+            
+            patientsData = data.map((row, index) => {
+                const nome = findValue(row, ['nome', 'NOME', 'NOMEPACIENTE', 'PACIENTE', 'NOMEPAC', 'NOME_PACIENTE']);
+                const cpf = findValue(row, ['CPF', 'cpf', 'NRCPF', 'CPF_PACIENTE', 'NR_CPF']);
+                
+                if (!nome || !cpf) {
+                    console.log(`❌ Linha ${index + 1} ignorada - Nome: "${nome}", CPF: "${cpf}"`);
+                    return null;
+                }
+
+                // NOVO: Buscar cd_usuario_convenio da planilha e garantir que é string
+                const cdUsuarioConvenio = ensureString(findValue(row, ['cd_usuario_convenio', 'CD_USUARIO_CONVENIO', 'CARTEIRINHA', 'NR_CARTEIRA', 'CARTEIRA']));
+                
+                // NOVO: Buscar E-mail
+                const email = findValue(row, ['email', 'EMAIL', 'E-MAIL', 'e-mail', 'mail', 'MAIL', 'ds_email', 'DS_EMAIL']) || '';
+
+                const dia = row['DIA'] || row['dia'] || '';
+                const mes = row['MES'] || row['mes'] || '';
+                const ano = row['ANO'] || row['ano'] || '';
+                const horario = row['HORARIO'] || row['horario'] || row['HORA'] || row['hora'] || '';
+
+                const codigoConvenio = (findValue(row, ['CODIGO_CONVENIO', 'CONVENIO', 'CD_CONVENIO', 'CONV']) || '1').toString();
+                const local = findValue(row, ['LOCAL', 'local', 'TP_AGENDA', 'AGENDA']) || 'AGENDA_CONSULTA';
+                const agendaResp = findValue(row, ['AGENDA_RESP', 'MEDICO', 'MEDICO_RESP', 'NM_MEDICO']) || '';
+                const telefone = findValue(row, ['telefone', 'TELEFONE', 'FONE', 'CELULAR', 'NR_TELEFONE']) || '';
+                const nascimento = findValue(row, ['nascimento', 'NASCIMENTO', 'DT_NASCIMENTO', 'NASC']) || '';
+                const genero = findValue(row, ['GENERO', 'genero', 'SEXO', 'TP_SEXO', 'IE_SEXO']) || 'M';
+
+                console.log(`✅ Data Sep - Linha ${index + 1}: ${nome}, Data: ${dia}/${mes}/${ano} ${horario}, Carteirinha: ${cdUsuarioConvenio}, Email: ${email}`);
+
+                return createPatientObject({
+                    nome, cpf, codigoConvenio, local, agendaResp, 
+                    telefone, nascimento, genero, row, index,
+                    dia, mes, ano, horario, cdUsuarioConvenio, email
+                });
+            }).filter(patient => patient !== null);
+
+            finalizeProcessing();
+        }
+
+        function processSqlFormat(data) {
+            console.log('🔄 Processando formato SQL...');
+            
+            const firstRow = data[0];
+            const hasSeparateDates = hasDateColumns(firstRow);
+            
+            if (hasSeparateDates) {
+                addLog('✅ Formato SQL com colunas de data separadas detectado');
+                processSeparateDateColumns(data);
+                return;
+            }
+            
+            patientsData = data.map((row, index) => {
+                const nome = row['nome'] || row['NOME'] || '';
+                const cpf = row['CPF'] || row['cpf'] || '';
+                
+                if (!nome || !cpf) return null;
+
+                // NOVO: Buscar cd_usuario_convenio da planilha e garantir que é string
+                const cdUsuarioConvenio = ensureString(findValue(row, ['cd_usuario_convenio', 'CD_USUARIO_CONVENIO', 'CARTEIRINHA', 'NR_CARTEIRA', 'CARTEIRA']));
+                
+                // NOVO: Buscar E-mail
+                const email = findValue(row, ['email', 'EMAIL', 'E-MAIL', 'e-mail', 'mail', 'MAIL']) || '';
+                
+                const codigoConvenio = (row['CODIGO_CONVENIO'] || '1').toString();
+                const local = row['LOCAL'] || 'AGENDA_CONSULTA';
+                const agendaResp = row['AGENDA_RESP'] || '';
+                const dataReal = row['DATAREAL'] || '';
+                const telefone = row['telefone'] || row['TELEFONE'] || '';
+                const nascimento = row['nascimento'] || row['NASCIMENTO'] || '';
+                const genero = row['GENERO'] || row['ie_sexo'] || 'M';
+
+                return createPatientObject({
+                    nome, cpf, codigoConvenio, local, agendaResp, dataReal, 
+                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email
+                });
+            }).filter(patient => patient !== null);
+
+            finalizeProcessing();
+        }
+
+        function processTasyFormat(data) {
+            console.log('🔄 Processando formato Tasy Java...');
+            
+            const firstRow = data[0];
+            const hasSeparateDates = hasDateColumns(firstRow);
+            
+            if (hasSeparateDates) {
+                addLog('✅ Formato Tasy com colunas de data separadas detectado');
+                processSeparateDateColumns(data);
+                return;
+            }
+            
+            patientsData = data.map((row, index) => {
+                const nome = findValue(row, ['nm_paciente', 'nome_paciente', 'paciente', 'nm_pac', 'nome']);
+                const cpf = findValue(row, ['nr_cpf', 'cpf_paciente', 'cpf', 'nr_cpf_paciente']);
+                
+                if (!nome || !cpf) {
+                    console.log(`❌ Linha ${index + 1} ignorada - Nome: "${nome}", CPF: "${cpf}"`);
+                    return null;
+                }
+
+                // NOVO: Buscar cd_usuario_convenio da planilha e garantir que é string
+                const cdUsuarioConvenio = ensureString(findValue(row, ['cd_usuario_convenio', 'CD_USUARIO_CONVENIO', 'CARTEIRINHA', 'NR_CARTEIRA', 'CARTEIRA']));
+                
+                // NOVO: Buscar E-mail
+                const email = findValue(row, ['ds_email', 'email', 'e-mail', 'nm_email']) || '';
+                
+                const codigoConvenio = findValue(row, ['cd_convenio', 'convenio', 'cod_convenio', 'nr_convenio']) || '1';
+                const local = findValue(row, ['tp_agenda', 'local', 'cd_local', 'local_atend']) || 'AGENDA_CONSULTA';
+                const agendaResp = findValue(row, ['nm_medico', 'medico', 'cd_med', 'medico_resp']) || '';
+                const dataReal = findValue(row, ['dt_real', 'data_real', 'data_agenda', 'dt_agenda']) || '';
+                const telefone = findValue(row, ['nr_telefone', 'telefone', 'fone', 'celular']) || '';
+                const nascimento = findValue(row, ['dt_nascimento', 'nascimento', 'data_nasc']) || '';
+                const genero = findValue(row, ['tp_sexo', 'sexo', 'genero', 'ie_sexo']) || 'M';
+
+                console.log(`✅ Tasy - Linha ${index + 1}: ${nome}, CPF: ${cpf}, Carteirinha: ${cdUsuarioConvenio}, Email: ${email}`);
+
+                return createPatientObject({
+                    nome, cpf, codigoConvenio, local, agendaResp, dataReal, 
+                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email
+                });
+            }).filter(patient => patient !== null);
+
+            finalizeProcessing();
+        }    
+
+        function processAutoDetectFormat(data) {
+            console.log('🔄 Tentando detecção automática...');
+            
+            const firstRow = data[0];
+            const hasSeparateDates = hasDateColumns(firstRow);
+            
+            if (hasSeparateDates) {
+                addLog('✅ Formato automático com colunas de data separadas detectado');
+                processSeparateDateColumns(data);
+                return;
+            }
+            
+            const sampleRow = data[0];
+            console.log('🔍 TODAS AS COLUNAS DISPONÍVEIS:', Object.keys(sampleRow));
+            
+            addLog(`🔍 Colunas encontradas: ${Object.keys(sampleRow).join(', ')}`);
+
+            patientsData = data.map((row, index) => {
+                const nome = findValueInAnyColumn(row, ['nome', 'paciente', 'nm_', 'name', 'patient']);
+                const cpf = findValueInAnyColumn(row, ['cpf', 'nr_cpf', 'documento', 'doc']);
+                
+                if (!nome || !cpf) {
+                    console.log(`❌ Linha ${index + 1} - Não encontrou nome/CPF`);
+                    return null;
+                }
+
+                // NOVO: Buscar cd_usuario_convenio
+                const cdUsuarioConvenio = ensureString(findValueInAnyColumn(row, ['cd_usuario_convenio', 'carteirinha', 'nr_carteira', 'carteira', 'usuario_convenio']));
+                
+                // NOVO: Buscar E-mail
+                const email = findValueInAnyColumn(row, ['email', 'e-mail', 'mail', 'ds_email', 'correio']) || '';
+                
+                const codigoConvenio = findValueInAnyColumn(row, ['convenio', 'conv', 'cd_conv', 'cod_conv']) || '1';
+                const local = findValueInAnyColumn(row, ['local', 'agenda', 'tp_', 'cd_local']) || 'AGENDA_CONSULTA';
+                const agendaResp = findValueInAnyColumn(row, ['medico', 'med', 'cd_med', 'nm_med']) || '';
+                const dataReal = findValueInAnyColumn(row, ['data', 'dt_', 'data_real', 'datareal']) || '';
+                const telefone = findValueInAnyColumn(row, ['telefone', 'fone', 'tel', 'celular', 'phone']) || '';
+                const nascimento = findValueInAnyColumn(row, ['nascimento', 'nasc', 'dt_nasc', 'birth']) || '';
+                const genero = findValueInAnyColumn(row, ['sexo', 'genero', 'gender', 'tp_sexo']) || 'M';
+
+                console.log(`✅ Auto - Linha ${index + 1}: ${nome}, Carteirinha: ${cdUsuarioConvenio}, Email: ${email}`);
+
+                return createPatientObject({
+                    nome, cpf, codigoConvenio, local, agendaResp, dataReal, 
+                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email
+                });
+            }).filter(patient => patient !== null);
+
+            finalizeProcessing();
+        }
+
+        function findValue(row, possibleKeys) {
+            for (const key of possibleKeys) {
+                if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+                    return row[key];
+                }
+                const foundKey = Object.keys(row).find(k => k.toLowerCase() === key.toLowerCase());
+                if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null && row[foundKey] !== '') {
+                    return row[foundKey];
+                }
+            }
+            return '';
+        }
+
+        function findValueInAnyColumn(row, possibleTerms) {
+            for (const term of possibleTerms) {
+                const foundKey = Object.keys(row).find(k => 
+                    k.toLowerCase().includes(term.toLowerCase())
+                );
+                if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null && row[foundKey] !== '') {
+                    console.log(`🔍 Encontrado "${term}" na coluna "${foundKey}": ${row[foundKey]}`);
+                    return row[foundKey];
+                }
+            }
+            return '';
+        }
+
+        // FUNÇÃO MODIFICADA: Criar objeto do paciente com cd_usuario_convenio e EMAIL
+        function createPatientObject({ nome, cpf, codigoConvenio, local, agendaResp, dataReal, telefone, nascimento, genero, row, index, dia, mes, ano, horario, cdUsuarioConvenio, email }) {
+            const convenio = convenioMapping[codigoConvenio] || convenioMapping['default'];
+            
+            let medico;
+            if (local === 'AGENDA_QUIMIO') {
+                medico = AGENDA_QUIMIO;
+                QUIMIO = true;
+                console.log('É AGENDA QUIMIO', QUIMIO, medico);
+            } else {
+                console.log('Buscando médico para:', agendaResp);
+                const agendaRespStr = String(agendaResp);
+                const medicoCodigo = Object.keys(medicoMapping).find(key => 
+                    agendaRespStr === key || agendaRespStr.includes(medicoMapping[key]?.name)
+                );
+                medico = medicoMapping[medicoCodigo] || medicoMapping['default'];
+                console.log('Médico encontrado:', medico.name);
+            }
+
+            const formattedPhone = formatPhone(telefone);
+            
+            let startDate, endDate;
+            if (dia && mes && ano) {
+                const dates = processSeparateDateTime(dia, mes, ano, horario);
+                startDate = dates.startDate;
+                endDate = dates.endDate;
+            } else {
+                const dates = processDateTime(dataReal);
+                startDate = dates.startDate;
+                endDate = dates.endDate;
+            }
+
+            return {
+                id: `patient-${Date.now()}-${index}`,
+                name: nome,
+                name: nome,
+                cpf: cpf,
+                phone: formattedPhone,
+                email: email, // Adicionado
+                birthDate: formatDate(nascimento),
+                gender: mapGender(genero),
+                local: local,
+                convenio: convenio,
+                startDate: startDate,
+                endDate: endDate,
+                medico: medico,
+                cdUsuarioConvenio: cdUsuarioConvenio || '', 
+                status: 'pending',
+                rawData: row
+            };
+        }
+
+        function finalizeProcessing() {
+            console.log(`✅ Processamento concluído: ${patientsData.length} pacientes`);
+            
+            if (patientsData.length === 0) {
+                addLog('❌ Nenhum paciente válido encontrado');
+                return;
+            }
+            
+            addLog(`📊 ${patientsData.length} pacientes carregados`);
+            
+            updateMedicoFilter();
+            filteredPatientsData = [...patientsData];
+            displayPatientsTable();
+        }
+
+        async function registerPatient(patient) {
+            const existingPatient = await getPatientByName(patient.name, patient.cpf);
+            
+            let patientData;
+            
+            if (existingPatient) {
+                addLog(`✅ Paciente encontrado no sistema: ${existingPatient.name}`);
+                
+                patientData = {
+                    canSave: false,
+                    id: existingPatient.id,
+                    identity: existingPatient.identity,
+                    secondaryIdentity: existingPatient.secondaryIdentity || null,
+                    name: existingPatient.name,
+                    socialName: existingPatient.socialName || "",
+                    birthDate: existingPatient.birthDate,
+                    gender: existingPatient.gender,
+                    civilStatus: existingPatient.civilStatus || "",
+                    profession: existingPatient.profession,
+                    phone: existingPatient.phone || patient.phone,
+                    cellphone: existingPatient.cellphone || patient.phone,
+                    email: existingPatient.email || patient.email, // Tenta usar o existente, senão usa o da planilha
+                    address: existingPatient.addresses && existingPatient.addresses.length > 0 ? {
+                        id: existingPatient.addresses[0].id,
+                        type: existingPatient.addresses[0].type,
+                        postalCode: existingPatient.addresses[0].postalCode || "",
+                        addressLine1: existingPatient.addresses[0].addressLine1 || "",
+                        addressLine2: existingPatient.addresses[0].addressLine2 || "",
+                        neighborhood: existingPatient.addresses[0].neighborhood || "",
+                        city: existingPatient.addresses[0].city || "",
+                        state: existingPatient.addresses[0].state || ""
+                    } : {
+                        id: "",
+                        type: "",
+                        postalCode: "",
+                        addressLine1: "",
+                        addressLine2: "",
+                        neighborhood: "",
+                        city: "",
+                        state: ""
+                    },
+                    notes: existingPatient.notes || "",
+                    alert: existingPatient.alert || "",
+                    cns: existingPatient.patient?.cns || null,
+                    insurance: {
+                        id: patient.convenio.id,
+                        // CORREÇÃO: Garantir que é string usando ensureString
+                        record: ensureString(patient.cdUsuarioConvenio || existingPatient.patient?.insurance?.record || "00320000008375186"),
+                        validity: existingPatient.patient?.insurance?.validity || null,
+                        planId: patient.convenio.planId
+                    },
+                    motherName: existingPatient.patient?.motherName || null,
+                    fatherName: existingPatient.patient?.fatherName || null
+                };
+            } else {
+                addLog(`🆕 Paciente NÃO encontrado, criando novo: ${patient.name}`);
+                
+                patientData = {
+                    canSave: true,
+                    id: null,
+                    identity: {
+                        type: "cpf",
+                        value: patient.cpf
+                    },
+                    secondaryIdentity: null,
+                    name: patient.name,
+                    socialName: "",
+                    birthDate: patient.birthDate,
+                    gender: patient.gender,
+                    civilStatus: "",
+                    profession: null,
+                    phone: patient.phone,
+                    cellphone: patient.phone,
+                    email: patient.email || null, // ADICIONADO: Pega o e-mail do objeto paciente
+                    address: {
+                        id: "",
+                        type: "",
+                        postalCode: "",
+                        addressLine1: "",
+                        addressLine2: "",
+                        neighborhood: "",
+                        city: "",
+                        state: ""
+                    },
+                    notes: "",
+                    alert: "",
+                    cns: null,
+                    insurance: {
+                        id: patient.convenio.id,
+                        // CORREÇÃO: Garantir que é string usando ensureString
+                        record: ensureString(patient.cdUsuarioConvenio || ""),
+                        validity: null,
+                        planId: patient.convenio.planId
+                    },
+                    motherName: null,
+                    fatherName: null
+                };
+            }
+
+            let professionalData;
+            let stats;
+
+            if (patient.local === 'AGENDA_QUIMIO') {
+                addLog(`💊 Paciente de QUIMIOTERAPIA detectado: ${patient.name}`);
+                
+                professionalData = {
+                    id: '5fd44b29941f2587bb4f0523',
+                    name: 'Andrielle Sousa dos Santos',
+                    council: {
+                        name: "COREN", 
+                        state: "PR", 
+                        record: "598125"
+                    },
+                    specialty: "223505"
+                };
+                
+                stats = 'scheduled';
+                
+            } else {
+                addLog(`🩺 Paciente de CONSULTA detectado: ${patient.name}`);
+                
+                professionalData = {
+                    id: patient.medico.id,
+                    name: patient.medico.name,
+                    council: patient.medico.council,
+                    specialty: "225121"
+                };
+
+                stats = 'waiting';
+            }
+
+            const appointmentData = {
+                "scheduleId": patient.medico.scheduleId,
+                "startDate": patient.startDate,
+                "endDate": patient.endDate,
+                "professional": professionalData,
+                "patient": patientData,
+                "insurance": {
+                    "id": patient.convenio.id,
+                    // CORREÇÃO: Garantir que é string usando ensureString
+                    "record": ensureString(patientData.insurance.record),
+                    "validity": null,
+                    "planId": patient.convenio.planId
+                },
+                "status": stats,
+                "expenses": [],
+                "arrivedAt": null,
+                "notes": "",
+                "slot": false,
+                "reserves": 1,
+                "indicated": {
+                    "id": "",
+                    "entityId": "",
+                    "name": "",
+                    "type": "professional",
+                    "council": {
+                        "name": "CRM",
+                        "state": "PR",
+                        "record": ""
+                    },
+                    "specialty": {
+                        "code": "",
+                        "name": ""
+                    }
+                },
+                "asoClient": null,
+                "type": null,
+                "markerId": null,
+                "placeId": null
+            };
+
+            addLog(`📝 Tipo: ${patient.local === 'AGENDA_QUIMIO' ? 'QUIMIO' : 'CONSULTA'}, canSave: ${patientData.canSave}, Status: ${stats}, Carteirinha: ${patientData.insurance.record}, Email: ${patientData.email}`);
+
+            const response = await fetch("https://api-x.stenci.pro/v1/appointments?toCalendar=true", {
+                method: "POST",
+                headers: {
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+                    "authorization": `JWT ${authToken}`,
+                    "content-type": "application/json",
+                    "priority": "u=1, i",
+                    "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"Windows\"",
+                    "sec-fetch-dest": "empty",
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-site": "cross-site",
+                    "Referer": "https://stenci.app/"
+                },
+                body: JSON.stringify(appointmentData)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            return await response.json();
+        }
+
+        // Inicialização
+        addLog('✅ Sistema carregado e pronto para uso');
+    </script>
+</body>
+</html>

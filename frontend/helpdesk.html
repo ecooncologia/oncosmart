@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Meus Chamados - ONCO SMART</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        .budget-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-top: 20px; }
+        @media (max-width: 1024px) { .budget-grid { grid-template-columns: 1fr; } }
+        
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; text-transform: uppercase; display: inline-block;}
+        .st-pendente { background: #FEF3C7; color: #D97706; }
+        .st-em_andamento { background: #DBEAFE; color: #1E40AF; }
+        .st-finalizado { background: #D1FAE5; color: #065F46; }
+        
+        .cat-icon { color: var(--text-light); margin-right: 5px; width: 15px; text-align: center; }
+        .btn-action { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 3px; color: white; transition: 0.2s; }
+        .btn-action:hover { opacity: 0.8; transform: translateY(-1px); }
+        .btn-details { background: #6B7280; } 
+        .btn-eval { background: #F59E0B; } 
+        .btn-note { background: #3B82F6; }
+        .btn-reopen { background: #E53E3E; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); animation: fadeIn 0.3s; max-height: 90vh; overflow-y: auto;}
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .detail-row { display: flex; border-bottom: 1px solid #eee; padding: 10px 0; font-size: 13px; }
+        .detail-label { font-weight: bold; width: 120px; color: var(--secondary); }
+        
+        .dynamic-field { animation: fadeIn 0.3s; margin-bottom: 15px; }
+        
+        .stars i { font-size: 28px; color: #E2E8F0; cursor: pointer; margin: 0 5px; transition: 0.2s; }
+        .stars i:hover, .stars i.active { color: #F59E0B; transform: scale(1.1); }
+        
+        .sidebar-form .card { position: sticky; top: 20px; }
+        .form-control { transition: border-color 0.2s; width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; }
+        .form-control:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0, 133, 91, 0.1); }
+
+        .tech-badge { font-size: 11px; font-weight: bold; color: #0284c7; background: #e0f2fe; padding: 3px 8px; border-radius: 6px; display: inline-block; white-space: nowrap; }
+        .tech-waiting { font-size: 11px; color: #94a3b8; font-style: italic; }
+
+        .ticket-id { font-family: monospace; font-weight: bold; color: var(--primary); font-size: 14px; }
+        .reopened-tag { color: #DC2626; font-size: 10px; font-weight: bold; display: block; margin-top: 3px;}
+
+        .file-upload-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .custom-file-upload { border: 1px solid #cbd5e0; display: inline-block; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 12px; background: white; color: #4a5568; transition: 0.2s; }
+        .custom-file-upload:hover { background: #edf2f7; }
+        #detContent img { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        /* BARRA DE PROGRESSO & CHECKLIST */
+        .progress-wrapper { width: 100%; min-width: 80px; }
+        .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 4px; height: 8px; margin-bottom: 3px; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+        .progress-text { font-size: 10px; color: #64748b; font-weight: bold; }
+        
+        .user-checklist { margin-top: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; }
+        .user-checklist h4 { margin: 0 0 10px 0; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 5px; }
+        .chk-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
+        .chk-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="budget-grid">
+            <div class="main-form">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-list-ul"></i> Meus Chamados
+                        <button onclick="loadTickets()" style="float:right; background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div class="table-container">
+                        <table id="ticketsTable">
+                            <thead>
+                                <tr>
+                                    <th>Nº Chamado</th>
+                                    <th>Data</th>
+                                    <th>Tipo / Item</th>
+                                    <th>Resumo</th>
+                                    <th>Atendente</th>
+                                    <th>Status</th>
+                                    <th>Progresso</th>
+                                    <th>Avaliação</th>
+                                    <th style="text-align:right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="9" style="text-align:center;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-form">
+                <div class="card summary-card"> 
+                    <div class="card-header"><i class="fas fa-headset"></i> Abrir Chamado</div>
+                    <div style="padding: 15px;">
+                        
+                        <div id="blockAlert" style="display:none; background:#FFF5F5; color:#C53030; padding:12px; border-radius:8px; font-size:13px; margin-bottom:20px; border:1px solid #FEB2B2; display:flex; align-items:center; gap:10px;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 16px;"></i>
+                            <div><b>Atenção:</b><br>Avalie o chamado finalizado para liberar novos.</div>
+                        </div>
+
+                        <div id="dynamic-categories-container"></div>
+
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="font-weight:bold; margin-bottom:5px; display:block;">Prioridade</label>
+                            <select id="newSLA" class="form-control">
+                                <option value="Baixa">Baixa (48h)</option>
+                                <option value="Media" selected>Média (24h)</option>
+                                <option value="Alta">Alta (Urgente - 4h)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="font-weight:bold; margin-bottom:5px; display:block;">Descrição Detalhada</label>
+                            <textarea id="newDesc" class="form-control" rows="4" placeholder="Descreva o que aconteceu, informe mensagens de erro, etc..."></textarea>
+                            
+                            <div class="file-upload-wrapper">
+                                <label for="newTicketFile" class="custom-file-upload"><i class="fas fa-paperclip"></i> Anexar Arquivo (Opcional)</label>
+                                <input type="file" id="newTicketFile" style="display:none;" onchange="document.getElementById('newTicketFileName').innerText = this.files[0] ? this.files[0].name : ''">
+                                <span id="newTicketFileName" style="font-size:11px; color:#666; margin-left:10px;"></span>
+                            </div>
+                        </div>
+
+                        <button id="btnSave" class="btn btn-success" style="width: 100%; font-weight: bold; padding: 12px; cursor:pointer;" onclick="saveTicket()">
+                            <i class="fas fa-paper-plane"></i> ENVIAR CHAMADO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalDetails" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="color:var(--secondary); border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px;">Detalhes do Chamado</h3>
+            <div id="detContent"></div>
+            <button class="btn btn-info" onclick="closeModal('modalDetails')" style="width:100%; margin-top:20px;">Fechar</button>
+        </div>
+    </div>
+
+    <div id="modalRate" class="modal-overlay">
+        <div class="modal-box" style="text-align:center;">
+            <h3 style="color:var(--secondary);">Avaliar Atendimento</h3>
+            <p style="font-size:13px; color:#666; margin-bottom:15px;">Sua opinião é fundamental para melhorarmos.</p>
+            <div class="stars" id="starContainer" style="margin-bottom:15px;">
+                <i class="fas fa-star" onclick="setStar(1)"></i>
+                <i class="fas fa-star" onclick="setStar(2)"></i>
+                <i class="fas fa-star" onclick="setStar(3)"></i>
+                <i class="fas fa-star" onclick="setStar(4)"></i>
+                <i class="fas fa-star" onclick="setStar(5)"></i>
+            </div>
+            <textarea id="rateObs" class="form-control" placeholder="Deixe um comentário (opcional)..." rows="3"></textarea>
+            <input type="hidden" id="rateId">
+            <input type="hidden" id="rateValue">
+            <button class="btn btn-success" style="width:100%; margin-top:15px;" onclick="sendRate()">Confirmar Avaliação</button>
+        </div>
+    </div>
+
+    <div id="modalNote" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Nova Observação</h3>
+            <p style="font-size:12px; color:#666; margin-bottom:10px;">Adicione informações extras ao chamado.</p>
+            <textarea id="noteText" class="form-control" rows="4"></textarea>
+            <div class="file-upload-wrapper" style="margin-bottom: 15px;">
+                <label for="noteFile" class="custom-file-upload"><i class="fas fa-paperclip"></i> Anexar Documento / Imagem</label>
+                <input type="file" id="noteFile" style="display:none;" onchange="document.getElementById('noteFileName').innerText = this.files[0] ? this.files[0].name : ''">
+                <span id="noteFileName" style="font-size:11px; color:#666; margin-left:10px;"></span>
+            </div>
+            <input type="hidden" id="noteTicketId">
+            <div style="display:flex;gap:10px;margin-top:15px;">
+                <button class="btn btn-danger" style="flex:1" onclick="closeModal('modalNote')">Cancelar</button>
+                <button class="btn btn-success" style="flex:1" id="btnSendNote" onclick="sendNote()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalReopen" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="color:#DC2626;"><i class="fas fa-exclamation-triangle"></i> Reabrir Chamado</h3>
+            <p style="font-size:12px; color:#666; margin-bottom:10px;">O problema não foi resolvido? Por favor, informe o motivo da reabertura para que o técnico possa analisar novamente.</p>
+            <textarea id="reopenReason" class="form-control" rows="4" placeholder="Ex: O sistema voltou a apresentar o mesmo erro..."></textarea>
+            <input type="hidden" id="reopenTicketId">
+            <div style="display:flex;gap:10px;margin-top:15px;">
+                <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modalReopen')">Cancelar</button>
+                <button class="btn btn-danger" style="flex:1" onclick="confirmReopen()">Reabrir Chamado</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let pendingEvaluation = false;
+        let allTicketsCache = {};
+        
+        let loadedCategories = []; 
+        let activeCategoryPath = []; 
+        let globalTicketsList = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('helpdesk', 'Helpdesk');
+            const u = localStorage.getItem('ecoUser');
+            if(u) { 
+                currentUser = JSON.parse(u); 
+                
+                try {
+                    // BLINDADO
+                    const resU = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
+                    const dataU = await resU.json();
+                    const cleanU = normalizeData(dataU);
+                    const freshUser = Object.values(cleanU).find(user => user.email.toLowerCase() === currentUser.email.toLowerCase());
+                    if(freshUser) {
+                        currentUser.setor = freshUser.setor;
+                        currentUser.nome = (freshUser.nome && freshUser.nome.trim() !== 'Usuario') ? freshUser.nome : currentUser.nome;
+                        localStorage.setItem('ecoUser', JSON.stringify(currentUser));
+                    }
+                } catch(e){}
+
+                loadSystemConfig(); 
+                loadTickets(); 
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        async function loadSystemConfig() {
+            try {
+                // BLINDADO
+                const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
+                const data = await res.json();
+                
+                if (data.helpdesk_config && data.helpdesk_config.categorias) {
+                    loadedCategories = data.helpdesk_config.categorias;
+                }
+
+                renderCategorySelects();
+            } catch (error) { 
+                console.error("Erro config:", error); 
+            }
+        }
+
+        function renderCategorySelects() {
+            const container = document.getElementById('dynamic-categories-container');
+            container.innerHTML = ''; 
+
+            let currentLevelNodes = loadedCategories;
+            let level = 0;
+
+            while (currentLevelNodes && currentLevelNodes.length > 0) {
+                const selectGroup = document.createElement('div');
+                selectGroup.className = 'form-group dynamic-field';
+                
+                const label = document.createElement('label');
+                label.style.cssText = 'font-weight:bold; margin-bottom:5px; display:block;';
+                label.innerText = level === 0 ? 'Categoria' : 'Detalhes';
+                
+                const select = document.createElement('select');
+                select.className = 'form-control';
+                select.dataset.level = level; 
+                
+                select.innerHTML = '<option value="">Selecione...</option>';
+                
+                currentLevelNodes.forEach(node => {
+                    const nome = (typeof node === 'object') ? node.nome : node;
+                    const opt = document.createElement('option');
+                    opt.value = nome;
+                    opt.innerText = nome;
+                    
+                    if (activeCategoryPath[level] === nome) {
+                        opt.selected = true;
+                    }
+                    select.appendChild(opt);
+                });
+
+                select.onchange = (e) => handleCategoryChange(e.target.dataset.level, e.target.value);
+                
+                selectGroup.appendChild(label);
+                selectGroup.appendChild(select);
+                container.appendChild(selectGroup);
+
+                if (activeCategoryPath[level]) {
+                    const selectedNode = currentLevelNodes.find(n => {
+                        const nName = (typeof n === 'object') ? n.nome : n;
+                        return nName === activeCategoryPath[level];
+                    });
+                    
+                    if (selectedNode && selectedNode.subs && selectedNode.subs.length > 0) {
+                        currentLevelNodes = selectedNode.subs; 
+                        level++;
+                    } else {
+                        break; 
+                    }
+                } else {
+                    break; 
+                }
+            }
+        }
+
+        function handleCategoryChange(levelStr, value) {
+            const level = parseInt(levelStr, 10);
+            activeCategoryPath = activeCategoryPath.slice(0, level);
+            if (value) {
+                activeCategoryPath.push(value);
+            }
+            renderCategorySelects();
+        }
+
+        function processFile(file, callback) {
+            if (!file) return callback(null);
+            if (file.size > 5 * 1024 * 1024) { 
+                alert("O arquivo é muito grande. O tamanho máximo permitido é 5MB."); 
+                return callback(null); 
+            }
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => callback({ name: file.name, type: file.type, base64: reader.result });
+            reader.onerror = () => callback(null);
+        }
+
+        async function saveTicket() {
+            if (pendingEvaluation) return alert("Por favor, avalie o chamado finalizado antes de abrir um novo.");
+            
+            const setor = currentUser.setor || 'Não Informado';
+            const desc = document.getElementById('newDesc').value;
+            const sla = document.getElementById('newSLA').value;
+            const fileInput = document.getElementById('newTicketFile');
+
+            if(activeCategoryPath.length === 0 || !desc) {
+                return alert("Preencha Categoria e Descrição.");
+            }
+
+            const categoriaFinal = activeCategoryPath.join(' > ');
+            const assuntoFinal = activeCategoryPath[activeCategoryPath.length - 1];
+
+            const btn = document.getElementById('btnSave');
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            const sendTicketToAPI = async (finalDesc) => {
+                const ticket = {
+                    uid: currentUser.email,
+                    user: currentUser.nome || 'Usuario',
+                    setor: setor, 
+                    categoria: categoriaFinal, 
+                    assunto: assuntoFinal, 
+                    sla: sla, 
+                    desc: finalDesc,
+                    status: 'pendente',
+                    is_reopened: false,
+                    date: Date.now(),
+                    id_firebase: `tk_${Date.now()}`
+                };
+
+                try {
+                    // BLINDADO
+                    await fetch(`${API_BASE_URL}/chamados`, {
+                        method: 'POST', 
+                        headers: {
+                            'Content-Type':'application/json',
+                            ...API_HEADERS
+                        }, 
+                        body: JSON.stringify(ticket)
+                    });
+                    alert("Chamado aberto com sucesso!");
+                    location.reload();
+                } catch (e) {
+                    alert("Erro ao abrir chamado.");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> ENVIAR CHAMADO';
+                }
+            };
+
+            if (fileInput && fileInput.files.length > 0) {
+                processFile(fileInput.files[0], (fData) => {
+                    if(!fData) return sendTicketToAPI(desc);
+                    
+                    let anexoHtml = '';
+                    if (fData.type.startsWith('image/')) {
+                        anexoHtml = `<br><br><b>Anexo:</b><br><img src="${fData.base64}" style="max-width:300px; border-radius:5px; border:1px solid #ccc;">`;
+                    } else {
+                        anexoHtml = `<br><br><b>Anexo:</b> <a href="${fData.base64}" download="${fData.name}" style="padding:6px 12px; background:#e2e8f0; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none; color:#1e293b;"><i class="fas fa-paperclip"></i> Baixar ${fData.name}</a>`;
+                    }
+                    sendTicketToAPI(desc + anexoHtml);
+                });
+            } else {
+                sendTicketToAPI(desc);
+            }
+        }
+
+        function formatarId(id) {
+            if (!id) return '-';
+            return '#' + String(id).padStart(4, '0');
+        }
+
+        async function loadTickets() {
+            try {
+                // BLINDADO
+                const res = await fetch(`${API_BASE_URL}/chamados`, { headers: API_HEADERS });
+                const data = await res.json();
+                
+                let arrayTodos = Object.entries(data).map(([k, v]) => (typeof v === 'string' ? JSON.parse(v) : v));
+                arrayTodos = arrayTodos.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+                
+                arrayTodos.forEach((t, idx) => { 
+                    t.visual_id = idx + 1; 
+                });
+
+                const list = [];
+                arrayTodos.forEach(t => {
+                    if (t.uid === currentUser.email) {
+                        list.push(t);
+                        allTicketsCache[t.id_firebase] = t;
+                        if (t.status === 'finalizado' && !t.rate) {
+                            pendingEvaluation = true;
+                        }
+                    }
+                });
+
+                toggleBlockUI(pendingEvaluation);
+                renderTable(list);
+            } catch (e) { 
+                console.error(e); 
+            }
+        }
+
+        function renderTable(list) {
+            const tbody = document.querySelector('#ticketsTable tbody');
+            if (list.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#999;">Você não tem chamados abertos.</td></tr>'; 
+                return; 
+            }
+            
+            tbody.innerHTML = list.sort((a,b) => b.date - a.date).map(t => {
+                let iconClass = 'fa-tag';
+                const catText = String(t.categoria || '').toLowerCase();
+                if(catText.includes('sistema')) iconClass = 'fa-desktop';
+                if(catText.includes('impressora')) iconClass = 'fa-print';
+                if(catText.includes('internet')) iconClass = 'fa-wifi';
+
+                let actions = `<button class="btn-action btn-details" onclick="openDetails('${t.id_firebase}')" title="Ver Detalhes"><i class="fas fa-eye"></i></button>`;
+                actions += `<button class="btn-action btn-note" onclick="openNoteModal('${t.id_firebase}')" title="Adicionar Observação"><i class="fas fa-comment-dots"></i></button>`;
+                
+                if (t.status === 'finalizado' && !t.rate) {
+                    actions += `<button class="btn-action btn-eval" onclick="openRateModal('${t.id_firebase}')" title="Avaliar Atendimento"><i class="fas fa-star"></i></button>`;
+                    actions += `<button class="btn-action btn-reopen" onclick="openReopenModal('${t.id_firebase}')" title="Reabrir Chamado"><i class="fas fa-undo"></i></button>`;
+                }
+
+                const techName = t.atendente_nome ? t.atendente_nome.split(' ')[0] : null;
+                const techHtml = techName 
+                    ? `<span class="tech-badge"><i class="fas fa-user-cog"></i> ${techName}</span>` 
+                    : `<span class="tech-waiting">Aguardando...</span>`;
+
+                const reabertoHtml = t.is_reopened ? `<span class="reopened-tag">[REABERTO]</span>` : '';
+
+                let rawDesc = String(t.desc || '');
+                let cleanDesc = rawDesc.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                let shortDesc = cleanDesc.substring(0, 45) + (cleanDesc.length > 45 ? '...' : '');
+
+                let progressHtml = '<span style="color:#cbd5e1; font-size:11px;">-</span>';
+                if (t.checklist && t.checklist.length > 0) {
+                    const total = t.checklist.length;
+                    const feitas = t.checklist.filter(c => c.feita).length;
+                    const pct = Math.round((feitas / total) * 100);
+                    const barColor = pct === 100 ? '#10b981' : '#3b82f6';
+                    
+                    progressHtml = `
+                        <div class="progress-wrapper" title="${feitas} de ${total} tarefas concluídas">
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width: ${pct}%; background-color: ${barColor};"></div>
+                            </div>
+                            <div class="progress-text">${pct}% (${feitas}/${total})</div>
+                        </div>
+                    `;
+                }
+
+                return `<tr>
+                    <td class="ticket-id">${formatarId(t.visual_id)}</td>
+                    <td>${new Date(t.date).toLocaleDateString()} <small style="color:#999">${new Date(t.date).toLocaleTimeString().slice(0,5)}</small></td>
+                    <td><i class="fas ${iconClass} cat-icon"></i> <b>${t.categoria}</b></td>
+                    <td title="${cleanDesc}">${shortDesc}<br>${reabertoHtml}</td>
+                    <td>${techHtml}</td>
+                    <td><span class="status-badge st-${t.status.replace(' ','_')}">${t.status}</span></td>
+                    <td>${progressHtml}</td>
+                    <td style="text-align:center; color:#F59E0B; font-weight:bold;">${t.rate ? '★ '+t.rate : '<span style="color:#eee">-</span>'}</td>
+                    <td style="text-align:right; min-width: 100px;">${actions}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function toggleBlockUI(blocked) {
+            const btn = document.getElementById('btnSave');
+            const alertBox = document.getElementById('blockAlert');
+            if(blocked) {
+                btn.disabled = true; 
+                btn.style.opacity = '0.5'; 
+                btn.innerHTML = '<i class="fas fa-lock"></i> Bloqueado';
+                alertBox.style.display = 'flex';
+            } else {
+                btn.disabled = false; 
+                btn.style.opacity = '1'; 
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> ENVIAR CHAMADO';
+                alertBox.style.display = 'none';
+            }
+        }
+
+        function openDetails(k) {
+            const t = allTicketsCache[k];
+            const techName = t.atendente_nome ? t.atendente_nome : 'Aguardando atribuição';
+            
+            let checklistHtml = '';
+            if (t.checklist && t.checklist.length > 0) {
+                const total = t.checklist.length;
+                const feitas = t.checklist.filter(c => c.feita).length;
+                const pct = Math.round((feitas / total) * 100);
+                const barColor = pct === 100 ? '#10b981' : '#3b82f6';
+                
+                let listHtml = t.checklist.map(c => {
+                    const icon = c.feita ? '<i class="fas fa-check-circle" style="color:#10b981;"></i>' : '<i class="far fa-circle" style="color:#cbd5e1;"></i>';
+                    const txtStyle = c.feita ? 'style="text-decoration: line-through; color: #94a3b8;"' : 'style="color: #475569; font-weight: 600;"';
+                    return `<div class="chk-item"><span style="width:20px;text-align:center;">${icon}</span> <span ${txtStyle}>${c.tarefa}</span></div>`;
+                }).join('');
+
+                checklistHtml = `
+                    <div class="user-checklist">
+                        <h4><i class="fas fa-tasks" style="color:#3b82f6;"></i> Progresso do Chamado</h4>
+                        <div class="progress-wrapper" style="margin-bottom: 15px;">
+                            <div class="progress-container" style="height: 10px;">
+                                <div class="progress-bar" style="width: ${pct}%; background-color: ${barColor};"></div>
+                            </div>
+                            <div class="progress-text" style="font-size: 11px;">${pct}% Concluído (${feitas} de ${total} tarefas)</div>
+                        </div>
+                        <div>${listHtml}</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('detContent').innerHTML = `
+                <div class="detail-row"><div class="detail-label">ID / Data:</div> <div><span class="ticket-id">${formatarId(t.visual_id)}</span> - ${new Date(t.date).toLocaleString()}</div></div>
+                <div class="detail-row"><div class="detail-label">Rota:</div> <div>${t.categoria}</div></div>
+                <div class="detail-row"><div class="detail-label">Assunto:</div> <div>${t.assunto}</div></div>
+                <div class="detail-row"><div class="detail-label">Atendente:</div> <div><b>${techName}</b></div></div>
+                <div class="detail-row"><div class="detail-label">Status:</div> <div><span class="status-badge st-${t.status.replace(' ','_')}">${t.status}</span></div></div>
+                <div class="detail-row"><div class="detail-label">SLA:</div> <div>${t.sla || 'Padrão'}</div></div>
+                
+                ${checklistHtml}
+
+                <div style="margin-top:15px;">
+                    <div class="detail-label" style="margin-bottom:5px;">Descrição Original:</div>
+                    <div style="background:#f9f9f9; padding:10px; border-radius:8px; font-size:13px; border:1px solid #eee; white-space: pre-wrap; word-break: break-word;">${t.desc}</div>
+                </div>
+                ${t.solution ? `
+                <div style="margin-top:15px;">
+                    <div class="detail-label" style="margin-bottom:5px; color:green;"><i class="fas fa-check-circle"></i> Solução Técnica:</div>
+                    <div style="background:#F0FFF4; padding:10px; border-radius:8px; font-size:13px; border:1px solid #C6F6D5; color:#276749; white-space: pre-wrap; word-break: break-word;">${t.solution}</div>
+                </div>` : ''}
+            `;
+            document.getElementById('modalDetails').style.display = 'flex';
+        }
+
+        function openNoteModal(k) { 
+            document.getElementById('modalNote').style.display='flex'; 
+            document.getElementById('noteTicketId').value=k; 
+            document.getElementById('noteText').value=''; 
+            document.getElementById('noteFile').value='';
+            document.getElementById('noteFileName').innerText='';
+        }
+        
+        async function sendNote() {
+            const k = document.getElementById('noteTicketId').value; 
+            const txt = document.getElementById('noteText').value;
+            const fileInput = document.getElementById('noteFile');
+            
+            if(!txt && fileInput.files.length === 0) return alert("Escreva uma mensagem ou envie um anexo.");
+            
+            const btn = document.getElementById('btnSendNote');
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+
+            const t = allTicketsCache[k]; 
+            const timestamp = new Date().toLocaleString();
+            let baseEntry = `\n<hr><div style="margin-top:10px; color:#3B82F6;"><strong>[${currentUser.nome} ${timestamp}]:</strong> ${txt}</div>`;
+
+            const saveToDb = async (anexoHtml) => {
+                // BLINDADO
+                await fetch(`${API_BASE_URL}/chamados/${k}`, { 
+                    method:'PUT', 
+                    headers:{
+                        'Content-Type':'application/json',
+                        ...API_HEADERS
+                    }, 
+                    body:JSON.stringify({...t, desc: t.desc + baseEntry + anexoHtml}) 
+                });
+                btn.disabled = false;
+                btn.innerText = "Enviar";
+                closeModal('modalNote'); 
+                loadTickets();
+            };
+
+            if (fileInput.files.length > 0) {
+                processFile(fileInput.files[0], (fData) => {
+                    if(!fData) return saveToDb("");
+                    let anexoHtml = fData.type.startsWith('image/') 
+                        ? `<br><br><img src="${fData.base64}" style="max-width:300px; border-radius:5px; border:1px solid #ccc;">`
+                        : `<br><br><a href="${fData.base64}" download="${fData.name}" style="padding:6px 12px; background:#e2e8f0; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none; color:#1e293b;"><i class="fas fa-paperclip"></i> Baixar ${fData.name}</a>`;
+                    saveToDb(anexoHtml);
+                });
+            } else {
+                saveToDb("");
+            }
+        }
+
+        function openRateModal(k) { 
+            document.getElementById('modalRate').style.display='flex'; 
+            document.getElementById('rateId').value=k; 
+            setStar(0); 
+        }
+
+        function setStar(n) { 
+            document.getElementById('rateValue').value=n; 
+            document.querySelectorAll('#starContainer i').forEach((s,i)=>s.className=i<n?'fas fa-star active':'fas fa-star'); 
+        }
+        
+        async function sendRate() {
+            const k = document.getElementById('rateId').value; 
+            const val = document.getElementById('rateValue').value;
+            if(val == 0) return alert("Selecione pelo menos 1 estrela.");
+            const t = allTicketsCache[k];
+            
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, { 
+                method:'PUT', 
+                headers:{
+                    'Content-Type':'application/json',
+                    ...API_HEADERS
+                }, 
+                body:JSON.stringify({...t, rate:val}) 
+            });
+            
+            pendingEvaluation = false; 
+            closeModal('modalRate'); 
+            loadTickets();
+        }
+
+        function openReopenModal(k) {
+            document.getElementById('modalReopen').style.display='flex'; 
+            document.getElementById('reopenTicketId').value=k; 
+            document.getElementById('reopenReason').value='';
+        }
+
+        async function confirmReopen() {
+            const k = document.getElementById('reopenTicketId').value; 
+            const reason = document.getElementById('reopenReason').value;
+            
+            if(!reason) return alert("Por favor, informe o motivo da reabertura.");
+            
+            const t = allTicketsCache[k]; 
+            const timestamp = new Date().toLocaleString();
+            
+            const nota = `\n<hr><div style="margin-top:10px; color:#DC2626; font-size:12px;"><strong><i class="fas fa-exclamation-triangle"></i> CHAMADO REABERTO POR ${currentUser.nome} EM ${timestamp}</strong><br>Motivo: ${reason}</div>`;
+            const newDesc = t.desc + nota;
+
+            let updatedTicket = { 
+                ...t, 
+                status: 'pendente', 
+                is_reopened: true, 
+                solution: '', 
+                desc: newDesc 
+            };
+
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, { 
+                method:'PUT', 
+                headers:{
+                    'Content-Type':'application/json',
+                    ...API_HEADERS
+                }, 
+                body:JSON.stringify(updatedTicket) 
+            });
+            
+            alert("Chamado reaberto com sucesso. A equipe de TI foi notificada no Teams!");
+            pendingEvaluation = false; 
+            closeModal('modalReopen'); 
+            loadTickets();
+        }
+
+        function closeModal(id) { 
+            document.getElementById(id).style.display = 'none'; 
+        }
+        
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { 
+                        normalized[key] = JSON.parse(val); 
+                    } catch(e) { 
+                        normalized[key] = val; 
+                    }
+                } else { 
+                    normalized[key] = val; 
+                }
+            });
+            return normalized;
+        }
+    </script>
+</body>
+</html>

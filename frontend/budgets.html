@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Histórico de Orçamentos - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        /* --- ESTILOS --- */
+        .toolbar { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 25px; border-bottom: 1px solid #f0f0f0; padding-bottom: 20px; 
+            flex-wrap: wrap; gap: 15px; 
+        }
+        .status-filters { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .filter-btn { 
+            padding: 8px 20px; border-radius: 6px; border: 1px solid #E2E8F0; 
+            background: #FFFFFF; color: var(--text-light); 
+            cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;
+        }
+        .filter-btn:hover { background: #F7FAFC; border-color: #CBD5E0; color: var(--text-dark); }
+        .filter-btn.active { 
+            background: var(--secondary); color: white; border-color: var(--secondary);
+            box-shadow: 0 2px 4px rgba(32, 52, 61, 0.2);
+        }
+        .filter-btn[data-type="excluido"].active {
+            background: #EF4444; border-color: #EF4444; color: white;
+        }
+
+        .search-box { position: relative; display: flex; align-items: center; }
+        .search-box input { 
+            padding: 10px 15px 10px 40px; border-radius: 50px; border: 1px solid #E2E8F0; 
+            background: #fff; width: 300px; font-size: 13px; outline: none; transition: 0.2s; color: var(--text-dark);
+        }
+        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 133, 91, 0.1); }
+        .search-box i { position: absolute; left: 15px; color: #A0AEC0; font-size: 14px; }
+
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        thead th { 
+            text-align: left; padding: 15px 20px; background: #F9FAFB; color: #718096; 
+            font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0;
+        }
+        tbody td { padding: 18px 20px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: var(--text-dark); vertical-align: middle; }
+        tbody tr:hover { background: #f8fdfb; }
+
+        .patient-name { font-weight: 500; color: #2D3748; font-size: 13px; }
+
+        .badge { padding: 6px 12px; border-radius: 30px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
+        .badge.aprovado { background: #DEF7EC; color: #03543F; }
+        .badge.reprovado { background: #FDE8E8; color: #9B1C1C; }
+        .badge.pendente { background: #FEF3C7; color: #92400E; }
+        .badge.excluido { background: #FEE2E2; color: #991B1B; text-decoration: line-through; }
+
+        .actions-cell { display: flex; gap: 6px; }
+        .btn-icon { 
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; 
+            border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; color: white; font-size: 14px;
+        }
+        .btn-icon:hover { transform: translateY(-3px); box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+        
+        .btn-pdf { background: #20343D; }
+        .btn-approve { background: #38A169; }
+        .btn-reject { background: #DD6B20; }
+        .btn-delete { background: #E53E3E; }
+        
+        .deletion-reason {
+            font-size: 11px; color: #E53E3E; font-style: italic;
+            background: #FFF5F5; padding: 5px 10px; border-radius: 4px; border: 1px solid #FED7D7;
+            max-width: 250px; white-space: normal; line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="card">
+            <div class="toolbar">
+                <div class="status-filters">
+                    <button class="filter-btn active" onclick="filterBudgets('all', this)">Todos</button>
+                    <button class="filter-btn" onclick="filterBudgets('aprovado', this)">Aprovados</button>
+                    <button class="filter-btn" onclick="filterBudgets('pendente', this)">Pendentes</button>
+                    <button class="filter-btn" onclick="filterBudgets('reprovado', this)">Reprovados</button>
+                    <button class="filter-btn" data-type="excluido" onclick="filterBudgets('excluido', this)"><i class="fas fa-trash-alt"></i> Excluídos</button>
+                </div>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar por Nome ou ID (#)..." onkeyup="filterByName()">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Data</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Responsável</th>
+                            <th>Procedimentos</th>
+                            <th>Valor Final</th>
+                            <th>Status</th>
+                            <th>Ações / Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="9" style="text-align:center; padding: 30px; color:#888;">Carregando dados...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allBudgets = {};
+        let currentFilter = 'all';
+        let searchTerm = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initGlobal('budgets', 'Histórico de Orçamentos');
+            setTimeout(loadBudgets, 300);
+        });
+
+        async function loadBudgets() {
+            try {
+                // BLINDADO
+                const res = await fetch(`${API_BASE_URL}/orcamentos`, { headers: API_HEADERS });
+                const rawData = await res.json();
+                allBudgets = normalizeData(rawData);
+                renderTable();
+            } catch (error) {
+                console.error("Erro ao ler dados:", error);
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" style="text-align:center; color:red">Erro de conexão com API</td></tr>';
+            }
+        }
+
+        function filterBudgets(status, btn) {
+            currentFilter = status;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            renderTable();
+        }
+
+        function filterByName() {
+            searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            let rawList = Object.entries(allBudgets).map(([id, budget]) => {
+                const rawDate = budget.data || budget.created_at || budget.data_criacao || '1970-01-01T00:00:00Z';
+                return {
+                    firebaseId: id,
+                    _timestamp: new Date(rawDate).getTime(),
+                    ...budget
+                };
+            });
+
+            rawList.sort((a, b) => {
+                if (a._timestamp === b._timestamp) return a.firebaseId.localeCompare(b.firebaseId);
+                return a._timestamp - b._timestamp;
+            });
+
+            rawList.forEach((budget, index) => { budget.displayId = index + 1; });
+            rawList.sort((a, b) => b.displayId - a.displayId);
+
+            const filteredRows = rawList.filter(budget => {
+                const isDeleted = budget.status === 'excluido' || budget.deleted === true;
+                
+                if (currentFilter === 'excluido') {
+                    if (!isDeleted) return false; 
+                } else if (currentFilter === 'all') {
+                     if (isDeleted) return false;
+                } else {
+                    if (isDeleted) return false;
+                    let status = (budget.status || 'pendente').toLowerCase();
+                    if (budget.aprovado === true) status = 'aprovado';
+                    if (budget.aprovado === false && status !== 'reprovado') status = 'reprovado';
+                    if (status !== currentFilter) return false;
+                }
+
+                const term = searchTerm.replace('#', '');
+                const pName = (budget.paciente_nome || budget.paciente || '').toLowerCase();
+                const dName = (budget.medico_nome || budget.medico || '').toLowerCase();
+                const dispId = (budget.displayId || '').toString();
+
+                const matchSearch = !searchTerm || pName.includes(searchTerm) || dName.includes(searchTerm) || dispId.includes(term);
+                return matchSearch;
+            });
+
+            if (filteredRows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px; color:#A0AEC0;">Nenhum registro encontrado.</td></tr>';
+                return;
+            }
+
+            filteredRows.forEach((budget) => {
+                const id = budget.firebaseId;
+                
+                const isDeleted = (budget.status === 'excluido' || budget.deleted === true);
+                
+                let status = (budget.status || 'pendente').toLowerCase();
+                if (isDeleted) {
+                    status = 'excluido'; 
+                } else if (budget.aprovado === true) {
+                    status = 'aprovado';
+                } else if (budget.aprovado === false && status !== 'reprovado') {
+                    status = 'reprovado';
+                }
+                
+                const rawDate = budget.data || budget.data_criacao || budget.created_at;
+                const dataFmt = rawDate ? new Date(rawDate).toLocaleDateString('pt-BR') : '-';
+                
+                // TRAVA VISUAL: Força a conversão para float e crava em 2 casas decimais estritamente
+                let valor = parseFloat(budget.valor_final || budget.total || 0);
+                if (isNaN(valor)) valor = 0;
+                const valorFmt = valor.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                let procs = '-';
+                if (Array.isArray(budget.procedimentos)) procs = budget.procedimentos.join(', ');
+                else if (budget.procedimento) procs = budget.procedimento;
+
+                const paciente = budget.paciente_nome || budget.paciente || 'Sem nome';
+                const medico = budget.medico_nome || budget.medico || '-';
+                const responsavel = budget.responsavel || '-'; 
+
+                let actionContent = '';
+                if (isDeleted) {
+                    actionContent = `<div class="deletion-reason"><strong>Motivo:</strong> ${budget.deletionReason || budget.motivo_exclusao || 'Não informado'}</div>`;
+                } else {
+                    actionContent = `
+                        <div class="actions-cell">
+                            <button class="btn-icon btn-pdf" onclick="printBudget('${id}')" title="Gerar PDF"><i class="fas fa-file-pdf"></i></button>
+                            ${status === 'pendente' ? `
+                                <button class="btn-icon btn-approve" onclick="updateStatus('${id}', 'aprovado')" title="Aprovar"><i class="fas fa-check"></i></button>
+                                <button class="btn-icon btn-reject" style="background:#FFA500" onclick="updateStatus('${id}', 'reprovado')" title="Reprovar"><i class="fas fa-times"></i></button>
+                            ` : ''}
+                            <button class="btn-icon btn-delete" onclick="deleteBudget('${id}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color:#2D3748; font-size:13px; font-weight:800">#${budget.displayId}</td>
+                    <td style="color:#718096; font-size:12px; font-weight:600">${dataFmt}</td>
+                    <td><div class="patient-name">${paciente}</div></td>
+                    <td style="color:#4A5568">${medico}</td>
+                    <td style="color:#4A5568; font-size:12px; font-weight:bold;">${responsavel}</td>
+                    <td style="max-width:280px; font-size:12px; color:#718096; white-space:normal; line-height:1.4;">${procs}</td>
+                    <td style="font-weight:800; color:var(--primary); font-size:13px;">${valorFmt}</td>
+                    <td><span class="badge ${status}">${status.toUpperCase()}</span></td>
+                    <td>${actionContent}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        async function updateStatus(id, newStatus) {
+            if (!confirm(`Confirmar status: ${newStatus.toUpperCase()}?`)) return;
+            try {
+                const currentBudget = allBudgets[id];
+                
+                // BLINDADO
+                await fetch(`${API_BASE_URL}/orcamentos/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...API_HEADERS
+                    },
+                    body: JSON.stringify({ 
+                        ...currentBudget, 
+                        status: newStatus,
+                        aprovado: (newStatus === 'aprovado')
+                    })
+                });
+                
+                loadBudgets();
+            } catch (e) { alert("Erro ao atualizar: " + e.message); }
+        }
+
+        async function deleteBudget(id) {
+            const reason = prompt("Por favor, descreva o motivo da exclusão:");
+            if (reason === null) return; 
+            if (reason.trim() === "") return alert("É obrigatório informar o motivo para excluir.");
+
+            try {
+                const currentBudget = allBudgets[id];
+
+                // BLINDADO
+                await fetch(`${API_BASE_URL}/orcamentos/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...API_HEADERS
+                    },
+                    body: JSON.stringify({
+                        ...currentBudget, 
+                        status: 'excluido',
+                        deleted: true,
+                        deletionReason: reason,
+                        motivo_exclusao: reason,
+                        deletedAt: new Date().toISOString()
+                    })
+                });
+
+                alert("Orçamento movido para a aba Excluídos.");
+                loadBudgets();
+            } catch (e) { 
+                console.error(e);
+                alert("Erro ao excluir: " + e.message); 
+            }
+        }
+
+        function printBudget(id) {
+            const b = allBudgets[id]; if(!b) return;
+            const win = window.open('', '_blank');
+            
+            // Trava visual também no PDF
+            const fmt = v => {
+                let val = parseFloat(v);
+                if(isNaN(val)) val = 0;
+                return val.toLocaleString('pt-BR',{style:'currency',currency:'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2});
+            };
+            
+            const procs = Array.isArray(b.procedimentos) ? b.procedimentos.join(', ') : b.procedimento;
+            const paciente = b.paciente_nome || b.paciente;
+            const medico = b.medico_nome || b.medico;
+            const valFinal = b.valor_final || b.total;
+            const totMat = b.total_material;
+            const totMed = b.total_medicamento;
+            const totProc = b.total_procedimento;
+            
+            const HOST_URL = "https://ecooncologia.com.br/smart/"; 
+
+            const html = `
+                <html>
+                <head>
+                    <title>Orçamento - ${paciente}</title>
+                    <style>
+                        @page { size: A4; margin: 8mm; }
+                        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 10px; background: white; color: #333; -webkit-print-color-adjust: exact; }
+                        .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; }
+                        .header-row img { height: 60px; }
+                        .header-text { margin-left: 20px; }
+                        .header-text h1 { margin: 0; color: #00855B; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
+                        .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; }
+                        .intro-box { background: #F3F4F6; padding: 10px 15px; border-radius: 6px; border: 1px solid #E5E7EB; font-size: 11px; margin-bottom: 15px; text-align: justify; line-height: 1.4; color: #1F2937; }
+                        .gallery-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+                        .gallery-item { text-align: center; background: #fff; }
+                        .gallery-item img { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #eee; }
+                        .gallery-item img.touca-img { width: 100px; height: 100px; object-fit: contain; background: #fff; border: none !important; }
+                        .gallery-label { font-size: 9px; font-weight: bold; text-transform: uppercase; margin-top: 4px; color: #555; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+                        .info-box { background: #f8f9fa; padding: 8px 12px; border-left: 4px solid #00855B; border-radius: 4px; }
+                        .label { font-weight: bold; font-size: 10px; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+                        .value { font-size: 13px; font-weight: 500; color: #000; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
+                        th { background: #00855B; color: white; padding: 8px; text-align: left; text-transform: uppercase; }
+                        td { padding: 8px; border-bottom: 1px solid #eee; }
+                        .total-row { background: #e8f5e8; font-weight: bold; font-size: 14px; color: #00855B; }
+                        .footer-row { display: flex; justify-content: space-between; background: #f0fdf4; padding: 15px; border-radius: 6px; border: 1px solid #00855B; font-size: 11px; align-items: flex-start; }
+                        .bank-title { color: #00855B; font-weight: bold; margin-bottom: 3px; font-size: 12px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header-row">
+                        <img src="${HOST_URL}logo.png" alt="Logo">
+                        <div class="header-text">
+                            <h1>Orçamento Médico</h1>
+                            <p>Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
+                        </div>
+                    </div>
+                    <div class="intro-box">Nosso Centro de Infusão conta com um ambiente humanizado e seguro...</div>
+                    <div class="gallery-grid">
+                        <div class="gallery-item"><img src="${HOST_URL}recepcao_interna.jpg"><div class="gallery-label">Recepção Interna</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}leito_poltrona.jpg"><div class="gallery-label">Sala de Infusão - Poltrona</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}enfermagem.jpg"><div class="gallery-label">Posto de Enfermagem</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}leito_cama.jpg"><div class="gallery-label">Sala de Infusão - Cama</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}touca_capilar.jpg" class="touca-img"><div class="gallery-label">Paxman - Touca Capilar</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}recepcao_externa.jpg"><div class="gallery-label">Recepção - Consultórios</div></div>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-box"><div class="label">Paciente</div><div class="value">${paciente}</div></div>
+                        <div class="info-box"><div class="label">Médico Solicitante</div><div class="value">${medico}</div></div>
+                        <div class="info-box"><div class="label">Procedimentos</div><div class="value">${procs}</div></div>
+                        <div class="info-box"><div class="label">Responsável ECO</div><div class="value">${b.responsavel || '-'}</div></div>
+                    </div>
+                    <table>
+                        <thead><tr><th>DESCRIÇÃO</th><th style="text-align:right">VALOR</th></tr></thead>
+                        <tbody>
+                            <tr><td>Materiais</td><td align="right">${fmt(totMat)}</td></tr>
+                            <tr><td>Medicamentos</td><td align="right">${fmt(totMed)}</td></tr>
+                            <tr><td>Honorários</td><td align="right">${fmt(totProc)}</td></tr>
+                            ${(parseFloat(b.desconto) > 0) ? `<tr><td>Desconto</td><td align="right" style="color:red">-${fmt(b.desconto)}</td></tr>` : ''}
+                            <tr class="total-row"><td>VALOR TOTAL</td><td align="right">${fmt(valFinal)}</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="footer-row">
+                        <div><div class="bank-title">DADOS BANCÁRIOS</div>PIX: 54.385.647/0001-08...</div>
+                        <div style="text-align:right"><div class="bank-title">FORMAS DE PAGAMENTO</div>Dinheiro, PIX...</div>
+                    </div>
+                    <script>window.onload = function() { window.print(); }<\/script>
+                </body>
+                </html>
+            `;
+            win.document.write(html);
+            win.document.close();
+        }
+
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+    </script>
+</body>
+</html>

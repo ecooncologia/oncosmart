@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Triagem e Transporte - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        /* --- DESIGN ORIGINAL --- */
+        .calls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 20px; }
+        
+        .call-card { 
+            border-left: 6px solid #ccc; 
+            transition: transform 0.2s; 
+            position: relative; 
+            border-radius: 16px !important; 
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .call-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        
+        /* Status Cores e Animações */
+        .call-card.called { border-left-color: #F59E0B; background: #FFFBEB; animation: pulse-orange 2s infinite; }
+        .call-card.on_sofa { border-left-color: #0EA5E9; background: #E0F2FE; }
+        .call-card.attending { border-left-color: #3B82F6; background: #EFF6FF; opacity: 0.8; }
+        .call-card.returning { border-left-color: #8B5CF6; background: #F3E8FF; animation: pulse-purple 2s infinite; }
+        .call-card.completed { border-left-color: #10B981; background: #F0FDF4; opacity: 0.8; }
+        
+        .call-card.externo { border-right: 6px solid #805AD5; }
+
+        @keyframes pulse-orange { 0%, 100% { box-shadow: 0 0 0 0 rgba(221, 107, 32, 0.3); } 50% { box-shadow: 0 0 0 10px rgba(221, 107, 32, 0); } }
+        @keyframes pulse-purple { 0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); } 50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); } }
+
+        .status-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; color: white; text-transform: uppercase; margin-bottom: 12px; }
+        .bg-gray { background: #9CA3AF; }
+        .bg-orange { background: #F59E0B; } 
+        .bg-cyan { background: #0EA5E9; } 
+        .bg-blue { background: #3B82F6; } 
+        .bg-purple { background: #8B5CF6; } 
+        .bg-green { background: #10B981; } 
+
+        .external-form { display: flex; gap: 15px; margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #ddd; align-items: flex-end; }
+        
+        #ext-patient-name {
+            width: 100%; padding: 10px 15px; font-size: 14px; height: 42px;
+            border: 1px solid #CBD5E0; border-radius: 6px; transition: border-color 0.2s;
+        }
+        #ext-patient-name:focus { outline: none; border-color: var(--primary); }
+
+        .audio-btn-float { position: fixed; bottom: 25px; right: 25px; z-index: 9999; border-radius: 50px; padding: 15px 25px; font-weight: 800; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; border:none; color:white; cursor:pointer; }
+        
+        .patient-name { font-size: 18px; font-weight: 800; color: var(--secondary); text-transform: uppercase; margin-bottom: 5px; }
+        .route-indicator { background: #EDF2F7; padding: 8px; border-radius: 8px; text-align: center; font-size: 11px; font-weight: 700; margin: 15px 0; color: #718096; border: 1px solid #e2e8f0; }
+        
+        .btn-action { width: 100%; font-weight: bold; margin-top: 10px; padding: 12px; border:none; border-radius:8px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .btn-action:hover { opacity:0.9; }
+        .btn-info { background: #0EA5E9; }
+        .btn-primary { background: #3B82F6; } 
+        .btn-success { background: #10B981; }
+
+        .nav-scroller { 
+            overflow-x: auto; margin-bottom: 20px; white-space: nowrap; 
+            -webkit-overflow-scrolling: touch; text-align: center; 
+            display: flex; justify-content: center;
+        }
+        .nav-tabs { display: inline-flex; gap: 10px; }
+        .nav-tab { padding: 10px 25px; border: none; background: white; border-radius: 20px; cursor: pointer; font-weight: 600; color: #555; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-tab.active { background: var(--primary); color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+        /* --- ESTILOS PAGINAÇÃO --- */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 30px; padding-bottom: 20px; }
+        .page-btn { background: #E2E8F0; color: #4A5568; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .page-btn:hover:not(:disabled) { background: var(--primary); color: white; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-info { font-size: 14px; font-weight: 700; color: var(--secondary); }
+    </style>
+</head>
+<body>
+    <audio id="notification-sound" preload="auto"><source src="notification.mp3" type="audio/mpeg"></audio>
+    <button class="audio-btn-float" id="audio-btn" onclick="toggleSound()" style="background:#F59E0B;">
+        <i class="fas fa-volume-mute"></i> SOM
+    </button>
+
+    <div class="container">
+        <div id="global-header"></div>
+        <div id="global-nav"></div>
+
+        <div class="nav-scroller">
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="setOrigin('interna', this)">🏠 Recepção Interna</button>
+                <button class="nav-tab" onclick="setOrigin('externa', this)">🏢 Recepção Externa</button>
+                <button class="nav-tab" onclick="setOrigin('historico', this)">✅ Histórico</button>
+            </div>
+        </div>
+
+        <div id="form-externa" style="display:none;">
+            <div class="external-form">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Nome Completo do Paciente</label>
+                    <input type="text" id="ext-patient-name" class="form-control" placeholder="Digite aqui...">
+                </div>
+                <button class="btn btn-success" onclick="registerPatient()" style="height: 42px; padding: 0 25px; font-weight:bold;">
+                    <i class="fas fa-paper-plane"></i> ENVIAR
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 18px; font-weight: 700; color: var(--primary); margin:0;" id="viewTitle">Recepção Interna</h2>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <span id="last-update" style="font-size:11px; color:#888;"></span>
+                    <div class="user-avatar" id="total-badge" style="background: var(--primary); color: white; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-weight:bold;" title="Total de Registros">0</div>
+                </div>
+            </div>
+            
+            <div id="grid" class="calls-grid"></div>
+            
+            <div id="pagination-controls" class="pagination" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentOrigin = 'interna';
+        let audioEnabled = false;
+        let lastCount = 0;
+
+        // Variáveis de Paginação
+        let currentPage = 1;
+        const itemsPerPage = 25;
+        let cachedAssessments = [];
+        let cachedCalls = [];
+
+        const translations = {
+            care: { 'silence': 'Silêncio', 'conversation': 'Conversa', 'questions': 'Dúvidas' },
+            emotion: { 'muito-feliz': 'Muito Feliz', 'feliz': 'Feliz', 'neutro': 'Neutro', 'triste': 'Triste', 'muito-triste': 'Muito Triste', 'ansioso': 'Ansioso' }
+        };
+
+        function updateSoundBtn() {
+            const btn = document.getElementById('audio-btn');
+            if(audioEnabled) {
+                btn.style.background = "#10B981";
+                btn.innerHTML = '<i class="fas fa-volume-up"></i> SOM ATIVO';
+            } else {
+                btn.style.background = "#F59E0B";
+                btn.innerHTML = '<i class="fas fa-volume-mute"></i> SOM OFF';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initGlobal('transporte', 'Recepção (Triagem)');
+            if(localStorage.getItem('audioTransportEnabled') === 'true') {
+                audioEnabled = true;
+                updateSoundBtn();
+            }
+            
+            // --- WEB WORKER PARA BACKGROUND TIMER ---
+            const workerBlob = new Blob([`
+                setInterval(() => { postMessage("tick"); }, 3000);
+            `], { type: "application/javascript" });
+            const worker = new Worker(URL.createObjectURL(workerBlob));
+            
+            worker.onmessage = () => {
+                loadData();
+            };
+
+            loadData();
+        });
+
+        async function loadData() {
+            try {
+                // BLINDADO
+                const [resAssessments, resCalls] = await Promise.all([
+                    fetch(`${API_BASE_URL}/painAssessments?_t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/patientCalls?_t=${Date.now()}`, { headers: API_HEADERS })
+                ]);
+                const rawAssessments = await resAssessments.json();
+                const rawCalls = await resCalls.json();
+
+                // Guarda em cache para a paginação poder usar sem precisar buscar no banco toda hora
+                cachedAssessments = Object.entries(normalizeData(rawAssessments)).map(([k, v]) => ({...v, key: k}));
+                cachedCalls = Object.entries(normalizeData(rawCalls)).map(([k, v]) => ({...v, id: k}));
+
+                renderGrid();
+                document.getElementById('last-update').textContent = 'Atualizado: ' + new Date().toLocaleTimeString();
+            } catch (e) { console.error("Erro polling:", e); }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            let list = [];
+            const now = new Date();
+
+            if(currentOrigin === 'historico') {
+                // HISTÓRICO: Traz todos que estão finalizados
+                const completedCalls = cachedCalls.filter(c => c.status === 'completed');
+                
+                completedCalls.forEach(c => {
+                    const a = cachedAssessments.find(ass => ass.key === c.patientId) || {};
+                    list.push({ type: 'call', data: { ...a, ...c, id: c.id } });
+                });
+            } else {
+                // FILAS ATIVAS: Mantém o limite de 24h
+                // CORREÇÃO: Mostra se NÃO foi atendido OU se tem uma chamada pendente presa no sistema!
+                const assessmentsFiltered = cachedAssessments.filter(a => {
+                    const hasActiveCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
+                    const isRecent = (now - new Date(a.timestamp) < 86400000);
+                    return (!a.atendido || hasActiveCall) && isRecent;
+                });
+                
+                assessmentsFiltered.forEach(a => {
+                    const call = cachedCalls.find(c => c.patientId === a.key && c.status !== 'completed');
+                    const isExternal = a.origin === 'externa';
+                    const showInView = (currentOrigin === 'externa' && isExternal) || (currentOrigin === 'interna' && !isExternal);
+
+                    if (showInView) {
+                        list.push({ type: call ? 'call' : 'assessment', data: call ? {...a, ...call, id: call.id} : a });
+                    }
+                });
+            }
+
+            // Alerta de Som
+            const actionItems = list.filter(i => i.data.status === 'called' || i.data.status === 'returning').length;
+            if (audioEnabled && actionItems > lastCount && currentOrigin !== 'historico') {
+                document.getElementById('notification-sound').play().catch(()=>{});
+            }
+            lastCount = actionItems;
+
+            // Atualiza o contador de total de registros reais
+            document.getElementById('total-badge').innerText = list.length;
+
+            // ORDENAÇÃO
+            if (currentOrigin === 'historico') {
+                list.sort((a,b) => new Date(b.data.transportEndTime || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.timestamp || 0));
+            } else {
+                list.sort((a,b) => new Date(a.data.timestamp || 0) - new Date(b.data.timestamp || 0));
+            }
+
+            if(list.length === 0) { 
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">Nenhum paciente na lista.</p>'; 
+                document.getElementById('pagination-controls').style.display = 'none';
+                return; 
+            }
+
+            // --- LÓGICA DE PAGINAÇÃO ---
+            const totalItems = list.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedList = list.slice(startIndex, endIndex);
+
+            // --- RENDERIZAÇÃO DA PÁGINA ATUAL ---
+            paginatedList.forEach(item => {
+                const d = item.data;
+                const isExternal = d.origin === 'externa';
+                let statusText = 'Aguardando Enf.';
+                let badgeColor = '#9CA3AF'; 
+                let cardClass = 'call-card';
+                if(isExternal) cardClass += ' externo';
+                let btn = '';
+
+                if (!d.status || d.status === 'pending') {
+                    statusText = 'AGUARDANDO CHAMADO'; badgeColor = '#9CA3AF';
+                }
+                else if (d.status === 'called') {
+                    statusText = 'CHAMADO PELA ENFERMAGEM'; badgeColor = '#F59E0B'; cardClass += ' called';
+                    
+                    if (isExternal) {
+                        btn = `<button class="btn-action btn-info" onclick="updateStatus('${d.id}', 'on_sofa')"><i class="fas fa-couch"></i> LEVAR AO SOFÁ</button>`;
+                    } else {
+                        btn = `<button class="btn-action btn-primary" onclick="updateStatus('${d.id}', 'transporting')"><i class="fas fa-walking"></i> INICIAR TRANSPORTE</button>`;
+                    }
+                } 
+                else if (d.status === 'transporting') {
+                    statusText = 'EM TRANSPORTE'; badgeColor = '#3B82F6'; cardClass += ' transporting';
+                    btn = `<button class="btn-action btn-success" onclick="finishTransport('${d.id}')"><i class="fas fa-check-circle"></i> FINALIZAR (ENTREGUE)</button>`;
+                }
+                else if (d.status === 'on_sofa') {
+                    statusText = 'NO SOFÁ / SALA'; badgeColor = '#0EA5E9'; cardClass += ' on_sofa';
+                    btn = `<div style="text-align:center; color:#0EA5E9; font-size:12px; margin-top:10px;"><i class="fas fa-clock"></i> Aguardando Enfermagem</div>`;
+                }
+                else if (d.status === 'attending') {
+                    statusText = 'EM ATENDIMENTO'; badgeColor = '#6366f1'; cardClass += ' attending';
+                    btn = `<div style="text-align:center; color:#6366f1; font-size:12px; margin-top:10px;"><i class="fas fa-user-nurse"></i> Procedimento em curso</div>`;
+                }
+                else if (d.status === 'returning') {
+                    statusText = 'RETORNO (MÉDICO)'; badgeColor = '#8B5CF6'; cardClass += ' returning';
+                    btn = `<button class="btn-action btn-success" onclick="finishTransport('${d.id}')"><i class="fas fa-check-circle"></i> FINALIZAR (MÉDICO)</button>`;
+                }
+                else if (d.status === 'completed') {
+                    statusText = 'FINALIZADO'; badgeColor = '#10B981'; cardClass += ' completed';
+                }
+
+                const ptName = d.patientName || d.name || 'Paciente Indefinido';
+                const timeToUse = d.timestamp || d.transportEndTime || d.date || 0;
+                const timeStr = timeToUse ? new Date(timeToUse).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                
+                const painVal = d.painLevel ?? d.pain_level ?? d.dor ?? '?';
+                const emotionVal = translations.emotion[d.emotion] || d.emotion || '---';
+
+                grid.innerHTML += `
+                    <div class="${cardClass}">
+                        <div class="patient-header">
+                            <div class="patient-name">${ptName}</div>
+                            <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
+                        </div>
+                        <span class="status-pill" style="background:${badgeColor}">${statusText}</span>
+                        
+                        ${!isExternal ? `<div style="font-size:13px;margin-top:5px;"><b>Dor:</b> ${painVal}/10 | <b>Humor:</b> ${emotionVal}</div>` : ''}
+                        
+                        <div class="route-indicator">
+                            ${isExternal ? 'RECEPÇÃO EXTERNA' : 'RECEPÇÃO INTERNA'} <i class="fas fa-arrow-right"></i> ENFERMAGEM
+                        </div>
+                        ${btn}
+                    </div>
+                `;
+            });
+
+            // --- DESENHA OS BOTÕES DE PAGINAÇÃO ---
+            const paginationDiv = document.getElementById('pagination-controls');
+            if (totalItems > itemsPerPage) {
+                paginationDiv.style.display = 'flex';
+                paginationDiv.innerHTML = `
+                    <button class="page-btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> Anterior</button>
+                    <span class="page-info">Página ${currentPage} de ${totalPages}</span>
+                    <button class="page-btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Próxima <i class="fas fa-chevron-right"></i></button>
+                `;
+            } else {
+                paginationDiv.style.display = 'none';
+            }
+        }
+
+        // Função de Troca de Página
+        function changePage(direction) {
+            currentPage += direction;
+            renderGrid(); // Redesenha a tela instantaneamente usando o cache local
+            
+            // Rola a tela suavemente para o topo da lista
+            document.querySelector('.nav-scroller').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        async function registerPatient() {
+            const name = document.getElementById('ext-patient-name').value.trim();
+            if(!name) return alert("Nome obrigatório");
+            const data = { name: name, origin: 'externa', timestamp: new Date().toISOString(), atendido: false, id_firebase: 'ext_' + Date.now() };
+            
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/painAssessments`, { 
+                method:'POST', 
+                headers:{
+                    'Content-Type':'application/json',
+                    ...API_HEADERS
+                }, 
+                body:JSON.stringify(data) 
+            });
+            document.getElementById('ext-patient-name').value = '';
+            loadData();
+        }
+
+        async function updateStatus(id, status) {
+            // BLINDADO
+            const res = await fetch(`${API_BASE_URL}/patientCalls`, { headers: API_HEADERS });
+            const all = await res.json();
+            const current = all[id];
+            
+            if(current) {
+                current.status = status;
+                if(status === 'transporting') current.transportStartTime = new Date().toISOString();
+                
+                await fetch(`${API_BASE_URL}/patientCalls/${id}`, { 
+                    method:'PUT', 
+                    headers:{
+                        'Content-Type':'application/json',
+                        ...API_HEADERS
+                    }, 
+                    body:JSON.stringify(current) 
+                });
+                loadData();
+            }
+        }
+
+        async function finishTransport(id) {
+            const confirmMsg = currentOrigin === 'externa' ? "Encaminhar para consulta médica?" : "Paciente entregue na sala?";
+            if(confirm(confirmMsg)) {
+                try {
+                    // BLINDADO
+                    const resCalls = await fetch(`${API_BASE_URL}/patientCalls`, { headers: API_HEADERS });
+                    const allCalls = await resCalls.json();
+                    const currentCall = allCalls[id];
+                    
+                    if (currentCall) {
+                        currentCall.status = 'completed';
+                        currentCall.transportEndTime = new Date().toISOString();
+                        
+                        await fetch(`${API_BASE_URL}/patientCalls/${id}`, { 
+                            method: 'PUT', 
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...API_HEADERS
+                            }, 
+                            body: JSON.stringify(currentCall) 
+                        });
+
+                        if(currentCall.patientId) {
+                            const resAss = await fetch(`${API_BASE_URL}/painAssessments`, { headers: API_HEADERS });
+                            const allAss = await resAss.json();
+                            const currentAss = allAss[currentCall.patientId];
+                            
+                            if (currentAss) {
+                                currentAss.atendido = true; 
+                                await fetch(`${API_BASE_URL}/painAssessments/${currentCall.patientId}`, { 
+                                    method: 'PUT', 
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        ...API_HEADERS
+                                    }, 
+                                    body: JSON.stringify(currentAss) 
+                                });
+                            }
+                        }
+                    }
+                    loadData();
+                } catch (e) {
+                    console.error("Erro ao finalizar transporte:", e);
+                }
+            }
+        }
+
+        function setOrigin(orig, btn) {
+            currentOrigin = orig;
+            currentPage = 1; // Reseta para a primeira página sempre que trocar de aba
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('form-externa').style.display = orig === 'externa' ? 'block' : 'none';
+            document.getElementById('viewTitle').innerText = btn.innerText;
+            loadData();
+        }
+
+        function toggleSound() {
+            audioEnabled = !audioEnabled;
+            localStorage.setItem('audioTransportEnabled', audioEnabled);
+            updateSoundBtn();
+            if(audioEnabled) {
+                const audio = document.getElementById('notification-sound');
+                audio.play().then(() => {
+                    setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 100);
+                }).catch(()=>{});
+            }
+        }
+
+        function normalizeData(d) {
+            const n = {}; Object.entries(d||{}).forEach(([k,v])=>{if(typeof v==='string' && (v.startsWith('{')||v.startsWith('['))) try{n[k]=JSON.parse(v)}catch(e){n[k]=v} else n[k]=v}); return n;
+        }
+    </script>
+</body>
+</html>

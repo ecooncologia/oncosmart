@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Procedimentos - ECO Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        .content-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; } .form-group { flex: 1; }
+        .total-preview { background: #F0FDF4; padding: 15px; border-radius: 10px; border: 1px solid #BBF7D0; margin-top: 10px; text-align: center; }
+        .total-preview strong { font-size: 24px; color: var(--primary); }
+        
+        /* Badges de Tipo */
+        .badge-type { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .badge-part { background-color: #dbeafe; color: #1e40af; } /* Azul - Particular */
+        .badge-orc { background-color: #fef3c7; color: #92400e; } /* Amarelo - Orçamento */
+        .badge-lim { background-color: #e0e7ff; color: #3730a3; } /* Roxo escuro - Liminar */
+        .badge-ambos { background-color: #f3e8ff; color: #6b21a8; } /* Roxo - Ambos */
+
+        .actions-cell { display: flex; gap: 5px; justify-content: center; }
+        .btn-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; transition: 0.2s; color: white; }
+        .btn-edit { background: #3182ce; }
+        .btn-delete { background: #e53e3e; } 
+        
+        /* Barra de Ferramentas (Busca e Bulk) */
+        .toolbar-container {
+            background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;
+        }
+        .search-filters { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .bulk-actions { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 6px; }
+
+        @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="content-grid">
+            
+            <div class="form-area">
+                <div class="card">
+                    <div class="card-header">
+                        <span id="formTitle"><i class="fas fa-plus-circle"></i> Novo Procedimento</span>
+                    </div>
+                    <form id="procForm" onsubmit="saveProcedure(event)">
+                        <input type="hidden" id="editingId">
+
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label>Disponibilidade (Tipo)</label>
+                            <select id="procType" class="form-control" required>
+                                <option value="Particular">Particular (Venda)</option>
+                                <option value="Liminar">Liminar Judicial</option>
+                                <option value="Orcamento">Orçamento (Cotação)</option>
+                                <option value="Ambos">Todos (Venda, Liminar e Cotação)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label>Nome</label>
+                            <input type="text" id="procName" class="form-control" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Material (R$)</label>
+                                <input type="number" id="procMat" class="form-control" step="0.01" value="0" oninput="calc()">
+                            </div>
+                            <div class="form-group">
+                                <label>Medicamento (R$)</label>
+                                <input type="number" id="procMed" class="form-control" step="0.01" value="0" oninput="calc()">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Honorários (R$)</label>
+                                <input type="number" id="procServ" class="form-control" step="0.01" value="0" oninput="calc()">
+                            </div>
+                            <div class="form-group">
+                                <label>Desconto (R$)</label>
+                                <input type="number" id="procDesc" class="form-control" step="0.01" value="0" oninput="calc()">
+                            </div>
+                        </div>
+
+                        <div class="total-preview">
+                            <span>Preço Final</span><br>
+                            <strong id="previewTotal">R$ 0,00</strong>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-top:15px;">
+                            <button type="submit" id="btnSave" class="btn btn-success" style="flex:1;">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="button" id="btnCancel" class="btn btn-warning" style="display:none; flex:1;" onclick="resetForm()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="list-area">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-list"></i> Cadastrados</div>
+                    
+                    <div class="toolbar-container">
+                        <div class="search-filters">
+                            <div style="flex: 2;">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nome..." onkeyup="renderList()">
+                            </div>
+                            <div style="flex: 1;">
+                                <select id="filterType" class="form-control" onchange="renderList()">
+                                    <option value="">Todos os Tipos</option>
+                                    <option value="Particular">Particular</option>
+                                    <option value="Liminar">Liminar</option>
+                                    <option value="Orcamento">Orçamento</option>
+                                    <option value="Ambos">Ambos / Todos</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="bulk-actions">
+                            <span style="font-size:11px; font-weight:bold; color:#64748b; white-space:nowrap;"><i class="fas fa-check-square"></i> SELEÇÃO:</span>
+                            <select id="bulkActionType" class="form-control" style="padding: 5px; height: 35px;">
+                                <option value="Particular">Mudar para Particular</option>
+                                <option value="Liminar">Mudar para Liminar</option>
+                                <option value="Orcamento">Mudar para Orçamento</option>
+                                <option value="Ambos">Mudar para Todos</option>
+                            </select>
+                            <button class="btn btn-edit" style="width: auto; padding: 5px 15px; height: 35px;" onclick="applyBulkUpdate()">
+                                Aplicar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 30px; text-align: center;">
+                                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                                    </th>
+                                    <th>Tipo</th>
+                                    <th>Nome</th>
+                                    <th>Total</th>
+                                    <th style="text-align:center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="procList">
+                                <tr><td colspan="5" style="text-align:center;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let proceduresList = {}; 
+
+        document.addEventListener('DOMContentLoaded', () => { 
+            initGlobal('procedures', 'Procedimentos'); 
+            loadProcedures(); 
+        });
+
+        function getSafeFloat(val) {
+            let v = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.') || 0);
+            return isNaN(v) ? 0 : v;
+        }
+
+        function calc() {
+            const mat = getSafeFloat(document.getElementById('procMat').value);
+            const med = getSafeFloat(document.getElementById('procMed').value);
+            const serv = getSafeFloat(document.getElementById('procServ').value);
+            const desc = getSafeFloat(document.getElementById('procDesc').value);
+            
+            const vals = mat + med + serv;
+            const totalFinal = vals - desc;
+            
+            document.getElementById('previewTotal').textContent = totalFinal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        }
+
+        async function saveProcedure(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('editingId').value;
+            
+            const proc = {
+                tipo: document.getElementById('procType').value,
+                nome: document.getElementById('procName').value,
+                custo_material: Number(getSafeFloat(document.getElementById('procMat').value).toFixed(2)),
+                custo_medicamento: Number(getSafeFloat(document.getElementById('procMed').value).toFixed(2)),
+                custo_procedimento: Number(getSafeFloat(document.getElementById('procServ').value).toFixed(2)),
+                desconto: Number(getSafeFloat(document.getElementById('procDesc').value).toFixed(2))
+            };
+            
+            proc.preco = proc.custo_procedimento; 
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_BASE_URL}/procedimentos/${id}` : `${API_BASE_URL}/procedimentos`;
+
+            try {
+                // BLINDADO
+                await fetch(url, { 
+                    method: method, 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...API_HEADERS
+                    },
+                    body: JSON.stringify(proc) 
+                });
+                alert(id ? 'Atualizado com sucesso!' : 'Cadastrado com sucesso!');
+                resetForm();
+                loadProcedures();
+            } catch(err) {
+                alert('Erro ao salvar: ' + err.message);
+            }
+        }
+
+        async function loadProcedures() {
+            try {
+                // BLINDADO
+                const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
+                const rawData = await res.json();
+                proceduresList = normalizeData(rawData);
+                renderList(); 
+            } catch(err) {
+                console.error(err);
+            }
+        }
+
+        function renderList() {
+            const list = document.getElementById('procList'); 
+            list.innerHTML = '';
+            document.getElementById('selectAll').checked = false;
+
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterType = document.getElementById('filterType').value;
+
+            let items = Object.entries(proceduresList).map(([id, p]) => ({ id, ...p }));
+
+            if (searchTerm) items = items.filter(p => (p.nome || "").toLowerCase().includes(searchTerm));
+            if (filterType) items = items.filter(p => p.tipo === filterType);
+
+            items.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+
+            if(items.length === 0) {
+                return list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum procedimento encontrado.</td></tr>';
+            }
+
+            const fmt = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+            items.forEach(p => {
+                const c_mat = getSafeFloat(p.custo_material);
+                const c_med = getSafeFloat(p.custo_medicamento);
+                const c_proc = getSafeFloat(p.custo_procedimento || p.preco);
+                const c_desc = getSafeFloat(p.desconto);
+                
+                const tot = c_mat + c_med + c_proc - c_desc;
+                
+                let tipoClass = 'badge-part'; 
+                let tipoLabel = 'Particular';
+
+                if(p.tipo === 'Orcamento') {
+                    tipoClass = 'badge-orc';
+                    tipoLabel = 'Orçamento';
+                } else if(p.tipo === 'Liminar') {
+                    tipoClass = 'badge-lim';
+                    tipoLabel = 'Liminar';
+                } else if (p.tipo === 'Ambos') {
+                    tipoClass = 'badge-ambos';
+                    tipoLabel = 'Todos';
+                }
+
+                list.innerHTML += `
+                    <tr>
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="proc-checkbox" value="${p.id}">
+                        </td>
+                        <td><span class="badge-type ${tipoClass}">${tipoLabel}</span></td>
+                        <td>${p.nome}</td>
+                        <td style="font-weight:bold">${fmt(tot)}</td>
+                        <td class="actions-cell">
+                            <button class="btn-icon btn-edit" onclick="editProc('${p.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-delete" onclick="del('${p.id}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function toggleSelectAll() {
+            const masterCheck = document.getElementById('selectAll');
+            const checks = document.querySelectorAll('.proc-checkbox');
+            checks.forEach(c => c.checked = masterCheck.checked);
+        }
+
+        async function applyBulkUpdate() {
+            const selectedChecks = document.querySelectorAll('.proc-checkbox:checked');
+            if(selectedChecks.length === 0) return alert('Selecione ao menos um item.');
+
+            const newType = document.getElementById('bulkActionType').value;
+            if(!confirm(`Mudar ${selectedChecks.length} itens para "${newType}"?`)) return;
+
+            try {
+                const promises = Array.from(selectedChecks).map(chk => {
+                    const id = chk.value;
+                    const current = proceduresList[id];
+                    // BLINDADO
+                    return fetch(`${API_BASE_URL}/procedimentos/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...API_HEADERS
+                        },
+                        body: JSON.stringify({ ...current, tipo: newType })
+                    });
+                });
+                await Promise.all(promises);
+                alert('Atualizado com sucesso!');
+                loadProcedures();
+            } catch (err) { alert('Erro na atualização.'); }
+        }
+
+        function editProc(id) {
+            const p = proceduresList[id];
+            if(!p) return;
+
+            document.getElementById('editingId').value = id;
+            document.getElementById('procType').value = p.tipo || 'Particular';
+            document.getElementById('procName').value = p.nome;
+            
+            document.getElementById('procMat').value = getSafeFloat(p.custo_material).toFixed(2);
+            document.getElementById('procMed').value = getSafeFloat(p.custo_medicamento).toFixed(2);
+            document.getElementById('procServ').value = getSafeFloat(p.custo_procedimento || p.preco).toFixed(2);
+            document.getElementById('procDesc').value = getSafeFloat(p.desconto).toFixed(2);
+
+            calc();
+
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Procedimento';
+            document.getElementById('btnSave').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
+            document.getElementById('btnCancel').style.display = 'block';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            document.getElementById('procForm').reset();
+            document.getElementById('editingId').value = '';
+            document.getElementById('procType').value = 'Particular';
+            calc();
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Novo Procedimento';
+            document.getElementById('btnSave').innerHTML = '<i class="fas fa-save"></i> Salvar';
+            document.getElementById('btnCancel').style.display = 'none';
+        }
+
+        async function del(id) { 
+            if(confirm('Excluir este procedimento?')) { 
+                // BLINDADO
+                await fetch(`${API_BASE_URL}/procedimentos/${id}`, {
+                    method:'DELETE',
+                    headers: API_HEADERS
+                }); 
+                loadProcedures(); 
+            } 
+        }
+
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+    </script>
+</body>
+</html>

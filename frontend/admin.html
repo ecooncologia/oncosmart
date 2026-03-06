@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Administração - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+    
+    <style>
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; text-transform: uppercase; }
+        
+        .user-cell { display: flex; align-items: center; gap: 15px; }
+        .table-avatar { width: 40px; height: 40px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .user-details { display: flex; flex-direction: column; }
+        .user-name { font-weight: 700; color: var(--text-dark); }
+        .user-email { font-size: 12px; color: var(--text-light); }
+        .user-sector { font-size: 10px; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-top: 2px; }
+        
+        .action-btn { border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-edit-user { background: #f1f5f9; color: #475569; } .btn-edit-user:hover { background: #e2e8f0; }
+        .btn-edit { background: #E0F2FE; color: #0284C7; } .btn-edit:hover { background: #BAE6FD; }
+        .btn-delete { background: #FEE2E2; color: #DC2626; margin-left: 5px; } .btn-delete:hover { background: #FECACA; }
+
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .fab-config { position: fixed; bottom: 20px; right: 20px; width: 45px; height: 45px; background-color: var(--primary); color: white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: transform 0.3s; z-index: 900; }
+        .fab-config:hover { transform: rotate(90deg) scale(1.1); background-color: var(--primary-hover); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 900px; height: 85vh; max-height: 800px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.2); overflow: hidden; }
+        .modal-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; flex-shrink: 0; }
+        .modal-title { font-size: 1.2rem; font-weight: 800; color: var(--secondary); margin: 0; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid #eee; background: #fff; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+
+        .config-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+        .config-sidebar { width: 200px; background: #f1f5f9; border-right: 1px solid #e2e8f0; padding: 20px 0; overflow-y: auto; }
+        .config-main { flex: 1; padding: 30px; overflow-y: auto; }
+        .config-nav-item { padding: 12px 20px; cursor: pointer; color: #64748b; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .config-nav-item:hover { background: #e2e8f0; color: var(--primary); }
+        .config-nav-item.active { background: white; color: var(--primary); border-left: 4px solid var(--primary); box-shadow: -5px 0 10px rgba(0,0,0,0.05); }
+        .config-section-content { display: none; animation: fadeIn 0.3s; }
+        .config-section-content.active { display: block; }
+
+        .config-box { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 20px; overflow: hidden; background: #fff; }
+        .config-box-header { background: #f8fafc; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid transparent; transition: 0.2s; }
+        .config-box-header:hover { background: #f1f5f9; }
+        .config-box-header.open { border-bottom-color: #e2e8f0; }
+        .config-box-title { font-size: 14px; font-weight: 700; color: #1e293b; margin: 0; display: flex; align-items: center; gap: 10px; }
+        .config-box-body { padding: 15px; display: none; }
+        .config-box-body.open { display: block; }
+
+        .list-manager { border: 1px solid #e2e8f0; border-radius: 8px; max-height: 300px; overflow-y: auto; margin-bottom: 15px; background: #f8fafc; }
+        .list-item { display: flex; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid #eee; align-items: center; font-size: 14px; background: #fff; }
+        .btn-del-item { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 14px; padding: 5px; }
+        .btn-del-item:hover { background: #fee2e2; border-radius: 4px; }
+        
+        .input-add-wrapper { display: flex; gap: 10px; margin-bottom: 15px; }
+        .input-add { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
+        .input-add:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+
+        .btn-sm { padding: 4px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-sm:hover:not(:disabled) { opacity: 0.8; }
+        .btn-add-sub { background: #dcfce7; color: #166534; }
+
+        .toggle-arrow { color: #64748b; margin-right: 8px; width: 16px; text-align: center; display: inline-block; transition: 0.2s; font-size: 12px; cursor: pointer; }
+        .toggle-arrow:hover { color: var(--primary); transform: scale(1.2); }
+        .empty-arrow-space { display: inline-block; width: 24px; } 
+
+        .fila-checkbox-wrapper { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #334155; cursor: pointer; background: #f1f5f9; padding: 6px 12px; border-radius: 20px; border: 1px solid #e2e8f0; transition: 0.2s; }
+        .fila-checkbox-wrapper:hover { background: #e2e8f0; border-color: #cbd5e1; }
+        .fila-checkbox-wrapper input { cursor: pointer; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .perm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .perm-group { background: #F8FAFC; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0; }
+        .perm-group h4 { margin: 0 0 15px 0; color: var(--primary); font-size: 14px; text-transform: uppercase; border-bottom: 2px solid #E2E8F0; padding-bottom: 5px; }
+        .perm-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+        .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); animation: fadeIn 0.3s; position: relative; }
+        .modal-box h3 { margin-top: 0; color: var(--secondary); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; outline: none; }
+        .form-control:focus { border-color: var(--primary); }
+        .btn-close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="card" style="margin-bottom: 25px;">
+            <div class="card-header"><i class="fas fa-user-plus"></i> Novo Usuário</div>
+            <div style="padding: 20px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group"><label>Nome Completo</label><input type="text" id="newUserName" class="form-control" placeholder="Ex: João Silva" style="margin-bottom:0;"></div>
+                <div class="form-group"><label>E-mail Corporativo</label><input type="email" id="newUserEmail" class="form-control" placeholder="Ex: joao@ecooncologia.com.br" style="margin-bottom:0;"></div>
+                <button class="btn btn-warning" onclick="registerUserManual()" style="height: 42px; padding: 0 25px;"><i class="fas fa-save"></i> Cadastrar</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-users-cog"></i> Gestão de Acessos</div>
+            <div class="table-container">
+                <table id="usersTable">
+                    <thead><tr><th>Usuário</th><th style="width: 100px; text-align: center;">Admin Global</th><th style="text-align: right;">Ações</th></tr></thead>
+                    <tbody><tr><td colspan="3" style="text-align:center; padding:20px;">Carregando...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="fab-config" onclick="openConfigModal()" title="Configurações do Sistema">
+        <i class="fas fa-cog"></i>
+    </div>
+
+    <div id="modalConfig" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-sliders-h"></i> Configurações do Sistema</h3>
+                <button onclick="closeModal('modalConfig')" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div class="config-layout">
+                <div class="config-sidebar">
+                    <div class="config-nav-item active" onclick="switchConfigTab('helpdesk', this)"><i class="fas fa-headset"></i> Helpdesk</div>
+                    <div class="config-nav-item" onclick="switchConfigTab('financeiro', this)"><i class="fas fa-file-invoice-dollar"></i> Financeiro</div>
+                    <div class="config-nav-item" onclick="switchConfigTab('clinico', this)"><i class="fas fa-user-nurse"></i> Clínico</div>
+                </div>
+
+                <div class="config-main">
+                    <div id="cfg-helpdesk" class="config-section-content active">
+                        <div class="config-box">
+                            <div class="config-box-header" onclick="toggleConfigBox('wrap-setores', 'icon-setores')">
+                                <h4 class="config-box-title"><i class="fas fa-building"></i> Setores da Clínica</h4>
+                                <i id="icon-setores" class="fas fa-chevron-right toggle-arrow" style="margin:0;"></i>
+                            </div>
+                            <div id="wrap-setores" class="config-box-body">
+                                <div class="input-add-wrapper">
+                                    <input type="text" id="new-helpdesk-setor" class="input-add" placeholder="Novo Setor (Ex: Marketing)...">
+                                    <button class="btn btn-success" onclick="addItem('helpdesk', 'setores')"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <div class="list-manager" id="list-helpdesk-setores"></div>
+                            </div>
+                        </div>
+
+                        <div class="config-box">
+                            <div class="config-box-header open" onclick="toggleConfigBox('wrap-categorias', 'icon-categorias')">
+                                <h4 class="config-box-title"><i class="fas fa-sitemap"></i> Árvore de Categorias (Filas)</h4>
+                                <i id="icon-categorias" class="fas fa-chevron-down toggle-arrow" style="margin:0;"></i>
+                            </div>
+                            <div id="wrap-categorias" class="config-box-body open">
+                                <div class="input-add-wrapper">
+                                    <input type="text" id="new-helpdesk-categoria" class="input-add" placeholder="Criar Categoria Principal (Fila)...">
+                                    <button class="btn btn-success" onclick="addRootCategory()"><i class="fas fa-plus"></i> Raiz</button>
+                                </div>
+                                <div id="container-categorias-complexas" style="max-height: 350px; overflow-y: auto; padding-right:10px;"></div>
+                            </div>
+                        </div>
+
+                        <div class="config-box">
+                            <div class="config-box-header open" onclick="toggleConfigBox('wrap-filas', 'icon-filas')">
+                                <h4 class="config-box-title"><i class="fas fa-users-cog"></i> Gestão de Atendentes x Filas</h4>
+                                <i id="icon-filas" class="fas fa-chevron-down toggle-arrow" style="margin:0;"></i>
+                            </div>
+                            <div id="wrap-filas" class="config-box-body open" style="padding: 0;"></div>
+                        </div>
+                    </div>
+
+                    <div id="cfg-financeiro" class="config-section-content">
+                        <div class="config-box">
+                            <div class="config-box-header open">
+                                <h4 class="config-box-title"><i class="fas fa-tags"></i> Status de Orçamentos</h4>
+                            </div>
+                            <div class="config-box-body open">
+                                <div class="input-add-wrapper">
+                                    <input type="text" id="new-financeiro-status" class="input-add" placeholder="Novo Status...">
+                                    <button class="btn btn-success" onclick="addItem('financeiro', 'status')"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <div class="list-manager" id="list-financeiro-status"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="cfg-clinico" class="config-section-content">
+                        <div class="config-box">
+                            <div class="config-box-header open">
+                                <h4 class="config-box-title"><i class="fas fa-map-marker-alt"></i> Origem dos Pacientes</h4>
+                            </div>
+                            <div class="config-box-body open">
+                                <div class="input-add-wrapper">
+                                    <input type="text" id="new-clinico-origem" class="input-add" placeholder="Nova Origem (Ex: Indicação)...">
+                                    <button class="btn btn-success" onclick="addItem('clinico', 'origens')"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <div class="list-manager" id="list-clinico-origens"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalConfig')">Cancelar</button>
+                <button class="btn btn-success" onclick="saveSystemConfig()"><i class="fas fa-save"></i> Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalPerms" class="modal-overlay">
+        <div class="modal-content" style="height: auto; max-height: 90vh;">
+            <div class="modal-header">
+                <h2 style="margin:0; font-size:1.2rem; color:var(--secondary);">Gerenciar Permissões</h2>
+                <button onclick="closeModal('modalPerms')" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalUserEmail" style="color:#64748b; margin-bottom:20px; font-weight:600;"></p>
+                <input type="hidden" id="modalPermUserId">
+                <div class="perm-grid">
+                    <div class="perm-group"><h4><i class="fas fa-globe"></i> Geral</h4><div class="perm-item"><span class="perm-label">Dashboard</span> <label class="switch"><input type="checkbox" id="p_dashboard"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Eventos</span> <label class="switch"><input type="checkbox" id="p_eventos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Mural de ATAS</span> <label class="switch"><input type="checkbox" id="p_atas"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Helpdesk (Usuário)</span> <label class="switch"><input type="checkbox" id="p_helpdesk"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Helpdesk (Admin TI)</span> <label class="switch"><input type="checkbox" id="p_helpdesk_admin"><span class="slider"></span></label></div></div>
+                    <div class="perm-group"><h4><i class="fas fa-user-nurse"></i> Clínico</h4><div class="perm-item"><span class="perm-label">Triagem (Recepção)</span> <label class="switch"><input type="checkbox" id="p_transporte"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Triagem (Enfermagem)</span> <label class="switch"><input type="checkbox" id="p_enfermagem"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Indicadores Enf.</span> <label class="switch"><input type="checkbox" id="p_indicadores_enf"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Médicos</span> <label class="switch"><input type="checkbox" id="p_medicos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Escala Plantão</span> <label class="switch"><input type="checkbox" id="p_plantao"><span class="slider"></span></label></div></div>
+                    <div class="perm-group"><h4><i class="fas fa-file-invoice-dollar"></i> Financeiro</h4><div class="perm-item"><span class="perm-label">Orçamentos</span> <label class="switch"><input type="checkbox" id="p_orcamentos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Particulares (Vendas)</span> <label class="switch"><input type="checkbox" id="p_consultas"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Repasse Médico</span> <label class="switch"><input type="checkbox" id="p_repasse"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Procedimentos</span> <label class="switch"><input type="checkbox" id="p_procedimentos"><span class="slider"></span></label></div></div>
+                    <div class="perm-group"><h4><i class="fas fa-laptop-code"></i> Sistemas</h4><div class="perm-item"><span class="perm-label">Controle de Selos</span> <label class="switch"><input type="checkbox" id="p_selos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Stenci</span> <label class="switch"><input type="checkbox" id="p_stenci"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Canvas</span> <label class="switch"><input type="checkbox" id="p_canvas"><span class="slider"></span></label></div></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalPerms')">Cancelar</button>
+                <button class="btn btn-success" onclick="savePermissions()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEditUser" class="modal-overlay" style="z-index: 1200; align-items:center; justify-content:center;">
+        <div class="modal-box">
+            <button class="btn-close-modal" onclick="closeModal('modalEditUser')">&times;</button>
+            <h3><i class="fas fa-user-edit"></i> Perfil do Usuário</h3>
+            
+            <label style="font-weight:bold; font-size:12px;">Nome Completo</label>
+            <input type="text" id="editUserName" class="form-control">
+
+            <label style="font-weight:bold; font-size:12px;">Setor de Trabalho</label>
+            <select id="editUserSector" class="form-control"></select>
+
+            <input type="hidden" id="editUserId">
+            <button class="btn btn-success" style="width:100%; margin-top:10px; padding:12px; font-weight:bold;" onclick="saveUserEdit()">Salvar Alterações</button>
+        </div>
+    </div>
+
+    <div id="modalImportSub" class="modal-overlay" style="z-index: 1050;">
+        <div class="modal-content" style="width: 90%; max-width: 450px; height: auto;">
+            <div class="modal-header" style="padding: 15px 20px;">
+                <h3 class="modal-title" style="font-size:16px;"><i class="fas fa-copy"></i> Clonar Subcategorias</h3>
+                <button onclick="closeModal('modalImportSub')" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="font-size:13px; color:#666; margin-bottom:15px;">
+                    Copiando itens para dentro de: <strong id="importTargetName" style="color:var(--primary);"></strong>
+                </p>
+                <label style="font-size: 11px; font-weight: bold; color: var(--text-light); text-transform: uppercase;">Origem da Cópia:</label>
+                <select id="importSourceSelect" class="form-control" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:5px;"></select>
+                <input type="hidden" id="importTargetPath">
+            </div>
+            <div class="modal-footer" style="padding: 15px 20px;">
+                <button class="btn btn-secondary" onclick="closeModal('modalImportSub')">Cancelar</button>
+                <button class="btn btn-success" onclick="confirmImportSubs()"><i class="fas fa-check"></i> Importar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allUsersData = {};
+        let systemConfig = { helpdesk: { setores: [], categorias: [], filas: {} }, financeiro: { status: [] }, clinico: { origens: [] } };
+        let expandedCategoryNodes = new Set();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('admin', 'Administração');
+            await loadSystemConfig();
+            await loadUsers();
+        });
+
+        function openConfigModal() { document.getElementById('modalConfig').style.display = 'flex'; renderAllConfigs(); }
+        
+        function switchConfigTab(tabName, element) {
+            document.querySelectorAll('.config-nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.config-section-content').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('cfg-' + tabName).classList.add('active');
+        }
+
+        function toggleConfigBox(boxId, iconId) {
+            const body = document.getElementById(boxId);
+            const icon = document.getElementById(iconId);
+            const header = body.previousElementSibling;
+            
+            if (body.classList.contains('open')) {
+                body.classList.remove('open');
+                header.classList.remove('open');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            } else {
+                body.classList.add('open');
+                header.classList.add('open');
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+
+        function normalizeCategoryTree(cats) {
+            if (!cats) return [];
+            return cats.map(c => {
+                if (typeof c === 'string') return { nome: c, subs: [] };
+                if (typeof c === 'object') return { nome: c.nome, subs: c.subs ? normalizeCategoryTree(c.subs) : [] };
+                return c;
+            });
+        }
+
+        async function loadSystemConfig() {
+            try {
+                // BLINDADO
+                const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
+                const data = await res.json();
+                
+                if(data.helpdesk_config) systemConfig.helpdesk = data.helpdesk_config;
+                if(data.financeiro_config) systemConfig.financeiro = data.financeiro_config;
+                if(data.clinico_config) systemConfig.clinico = data.clinico_config;
+                
+                if(!systemConfig.helpdesk.filas) systemConfig.helpdesk.filas = {};
+                systemConfig.helpdesk.categorias = normalizeCategoryTree(systemConfig.helpdesk.categorias || []);
+            } catch(e) { console.error("Erro config", e); }
+        }
+
+        function renderAllConfigs() {
+            renderList('helpdesk', 'setores', 'list-helpdesk-setores');
+            renderCategoryTree(); 
+            renderFilasConfig(); 
+            renderList('financeiro', 'status', 'list-financeiro-status');
+            renderList('clinico', 'origens', 'list-clinico-origens');
+        }
+
+        function renderFilasConfig() {
+            const wrap = document.getElementById('wrap-filas');
+            wrap.innerHTML = '';
+            
+            const rootCats = (systemConfig.helpdesk.categorias || []).map(c => c.nome);
+            const techs = Object.values(allUsersData).filter(u => u.permissoes && u.permissoes.helpdesk_admin);
+            
+            if(techs.length === 0) {
+                wrap.innerHTML = '<p style="font-size:13px; color:#666; padding:15px;">Nenhum usuário com permissão de "Helpdesk (Admin TI)" encontrado.</p>';
+                return;
+            }
+            if(rootCats.length === 0) {
+                wrap.innerHTML = '<p style="font-size:13px; color:#666; padding:15px;">Crie Categorias Principais (Raízes) primeiro.</p>';
+                return;
+            }
+
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">';
+            techs.forEach((tech, index) => {
+                const email = tech.email.toLowerCase();
+                const userFilas = systemConfig.helpdesk.filas[email] || [];
+                const borderClass = index !== techs.length - 1 ? 'border-bottom:1px solid #eee;' : '';
+                
+                html += `
+                    <tr style="${borderClass}">
+                        <td style="padding:15px; font-weight:bold; color:var(--secondary); width:200px; vertical-align:top; border-right:1px solid #eee;">
+                            ${tech.nome}<br><span style="font-weight:normal; font-size:11px; color:#888;">${email}</span>
+                        </td>
+                        <td style="padding:15px;">
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                `;
+                
+                rootCats.forEach(cat => {
+                    const checked = userFilas.includes(cat) ? 'checked' : '';
+                    html += `
+                        <label class="fila-checkbox-wrapper">
+                            <input type="checkbox" onchange="toggleFila('${email}', '${cat}', this.checked)" ${checked}> 
+                            ${cat}
+                        </label>
+                    `;
+                });
+                
+                html += `</div></td></tr>`;
+            });
+            html += '</table>';
+            wrap.innerHTML = html;
+        }
+
+        function toggleFila(email, cat, isChecked) {
+            if(!systemConfig.helpdesk.filas[email]) systemConfig.helpdesk.filas[email] = [];
+            if(isChecked) {
+                if(!systemConfig.helpdesk.filas[email].includes(cat)) systemConfig.helpdesk.filas[email].push(cat);
+            } else {
+                systemConfig.helpdesk.filas[email] = systemConfig.helpdesk.filas[email].filter(c => c !== cat);
+            }
+        }
+
+        function toggleCategoryNode(pathKey) {
+            if (expandedCategoryNodes.has(pathKey)) expandedCategoryNodes.delete(pathKey);
+            else expandedCategoryNodes.add(pathKey);
+            renderCategoryTree();
+        }
+
+        function renderCategoryTree() {
+            const container = document.getElementById('container-categorias-complexas');
+            container.innerHTML = buildCategoryHTML(systemConfig.helpdesk.categorias, [], 0);
+        }
+
+        function buildCategoryHTML(subs, path, level) {
+            if(!subs || subs.length === 0) return '';
+            let html = '';
+            subs.forEach((cat, index) => {
+                const currentPath = [...path, index];
+                const pathStr = `[${currentPath.join(',')}]`; 
+                const pathKey = currentPath.join('-');
+                
+                const isRoot = level === 0;
+                const hasChildren = cat.subs && cat.subs.length > 0;
+                const isOpen = expandedCategoryNodes.has(pathKey);
+                
+                const blockStyle = isRoot 
+                    ? `background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 12px; overflow: hidden;`
+                    : `margin-left: 20px; border-left: 2px solid #e2e8f0; padding-left: 10px; margin-top: 8px;`;
+                
+                const headerStyle = isRoot
+                    ? `background: #f1f5f9; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0;`
+                    : `display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f1f5f9;`;
+
+                const nameStyle = isRoot ? `font-weight: 800; color: #0f172a; display:flex; align-items:center;` : `font-size: 13px; font-weight: 600; color: #475569; display:flex; align-items:center;`;
+
+                let arrowHtml = '';
+                if (hasChildren) {
+                    const iconClass = isOpen ? 'fa-chevron-down' : 'fa-chevron-right';
+                    arrowHtml = `<i class="fas ${iconClass} toggle-arrow" onclick="toggleCategoryNode('${pathKey}')"></i>`;
+                } else { arrowHtml = `<span class="empty-arrow-space"></span>`; }
+
+                const isFirst = index === 0;
+                const isLast = index === subs.length - 1;
+
+                const reorderBtns = `
+                    <button class="btn-sm" style="background:#f1f5f9; color:#64748b; ${isFirst ? 'opacity:0.3; cursor:not-allowed;' : ''}" onclick="moveCategoryNode(${pathStr}, -1)" title="Mover para cima" ${isFirst ? 'disabled' : ''}><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn-sm" style="background:#f1f5f9; color:#64748b; ${isLast ? 'opacity:0.3; cursor:not-allowed;' : ''}" onclick="moveCategoryNode(${pathStr}, 1)" title="Mover para baixo" ${isLast ? 'disabled' : ''}><i class="fas fa-arrow-down"></i></button>
+                `;
+
+                html += `
+                    <div style="${blockStyle}">
+                        <div style="${headerStyle}">
+                            <span style="${nameStyle}">${arrowHtml}${cat.nome}</span>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                ${reorderBtns}
+                                <div style="width:1px; height:15px; background:#cbd5e1; margin:0 4px;"></div>
+                                <button class="btn-sm" style="background:#fef08a; color:#854d0e;" onclick="openImportModal(${pathStr})" title="Copiar subcategorias de outro local"><i class="fas fa-copy"></i></button>
+                                <button class="btn-sm" style="background:#e0f2fe; color:#0284c7;" onclick="editCategoryNode(${pathStr})" title="Editar Nome"><i class="fas fa-pencil-alt"></i></button>
+                                <button class="btn-sm btn-add-sub" onclick="addSubCategoryNode(${pathStr})" title="Adicionar Subcategoria"><i class="fas fa-plus"></i></button>
+                                <button class="btn-sm" style="background:#fee2e2; color:#dc2626;" onclick="removeCategoryNode(${pathStr})" title="Excluir"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="${isRoot ? 'padding: 0 15px 10px 5px;' : ''} display: ${isOpen ? 'block' : 'none'};">
+                            ${buildCategoryHTML(cat.subs, currentPath, level + 1)}
+                        </div>
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function getNodeByPath(path) {
+            let currentArray = systemConfig.helpdesk.categorias;
+            for (let i = 0; i < path.length - 1; i++) { currentArray = currentArray[path[i]].subs; }
+            const index = path[path.length - 1];
+            return { parentArray: currentArray, index: index, node: currentArray[index] };
+        }
+
+        function addRootCategory() {
+            const input = document.getElementById('new-helpdesk-categoria');
+            const val = input.value.trim();
+            if(val) {
+                systemConfig.helpdesk.categorias.push({ nome: val, subs: [] });
+                input.value = '';
+                renderAllConfigs();
+            }
+        }
+
+        function editCategoryNode(path) {
+            const { node } = getNodeByPath(path);
+            const newName = prompt("Renomear:", node.nome);
+            if (newName && newName.trim() !== '') {
+                node.nome = newName.trim();
+                renderAllConfigs();
+            }
+        }
+
+        function addSubCategoryNode(path) {
+            const { node } = getNodeByPath(path);
+            const newName = prompt(`Criar subcategoria dentro de "${node.nome}":`);
+            if (newName && newName.trim() !== '') {
+                if (!node.subs) node.subs = [];
+                node.subs.push({ nome: newName.trim(), subs: [] });
+                expandedCategoryNodes.add(path.join('-'));
+                renderAllConfigs();
+            }
+        }
+
+        function removeCategoryNode(path) {
+            const { parentArray, index, node } = getNodeByPath(path);
+            if (confirm(`Tem certeza que deseja excluir "${node.nome}" e TODAS as subcategorias dentro dela?`)) {
+                parentArray.splice(index, 1);
+                renderAllConfigs();
+            }
+        }
+
+        function moveCategoryNode(path, direction) {
+            const { parentArray, index } = getNodeByPath(path);
+            if (direction === -1 && index > 0) {
+                const temp = parentArray[index];
+                parentArray[index] = parentArray[index - 1];
+                parentArray[index - 1] = temp;
+                renderAllConfigs();
+            } else if (direction === 1 && index < parentArray.length - 1) {
+                const temp = parentArray[index];
+                parentArray[index] = parentArray[index + 1];
+                parentArray[index + 1] = temp;
+                renderAllConfigs();
+            }
+        }
+
+        function openImportModal(path) {
+            const { node } = getNodeByPath(path);
+            document.getElementById('importTargetName').innerText = node.nome;
+            document.getElementById('importTargetPath').value = JSON.stringify(path);
+            const sel = document.getElementById('importSourceSelect');
+            sel.innerHTML = '<option value="">Selecione de onde copiar...</option>';
+
+            const flatCats = [];
+            function traverse(arr, prefix, currentPath) {
+                arr.forEach((c, i) => {
+                    const newPath = [...currentPath, i];
+                    const newPrefix = prefix ? prefix + ' > ' + c.nome : c.nome;
+                    const isSelfOrDescendant = newPath.join('-').startsWith(path.join('-'));
+                    if (!isSelfOrDescendant && c.subs && c.subs.length > 0) flatCats.push({ name: newPrefix, path: newPath });
+                    if (c.subs) traverse(c.subs, newPrefix, newPath);
+                });
+            }
+            traverse(systemConfig.helpdesk.categorias, '', []);
+
+            if(flatCats.length === 0) return alert("Não há outras categorias com conteúdo disponível.");
+
+            flatCats.forEach(c => { sel.innerHTML += `<option value='${JSON.stringify(c.path)}'>${c.name}</option>`; });
+            document.getElementById('modalImportSub').style.display = 'flex';
+        }
+
+        function confirmImportSubs() {
+            const sourcePathStr = document.getElementById('importSourceSelect').value;
+            const targetPathStr = document.getElementById('importTargetPath').value;
+            if(!sourcePathStr) return alert('Selecione uma categoria de origem.');
+
+            const sourceNode = getNodeByPath(JSON.parse(sourcePathStr)).node;
+            const targetNode = getNodeByPath(JSON.parse(targetPathStr)).node;
+
+            const copySubs = JSON.parse(JSON.stringify(sourceNode.subs));
+            if(!targetNode.subs) targetNode.subs = [];
+            targetNode.subs.push(...copySubs);
+
+            expandedCategoryNodes.add(JSON.parse(targetPathStr).join('-'));
+            closeModal('modalImportSub');
+            renderAllConfigs();
+        }
+
+        function renderList(module, key, elementId) {
+            const list = systemConfig[module][key] || [];
+            const el = document.getElementById(elementId);
+            el.innerHTML = '';
+            list.forEach((item, index) => {
+                el.innerHTML += `<div class="list-item"><span>${item}</span><button class="btn-del-item" onclick="removeItem('${module}', '${key}', ${index})"><i class="fas fa-trash-alt"></i></button></div>`;
+            });
+        }
+
+        function addItem(module, key) {
+            const inputId = `new-${module}-${key === 'status' ? 'status' : (key === 'origens' ? 'origem' : 'setor')}`;
+            const input = document.getElementById(inputId);
+            const val = input.value.trim();
+            if(val) {
+                if(!systemConfig[module][key]) systemConfig[module][key] = [];
+                systemConfig[module][key].push(val);
+                input.value = '';
+                renderList(module, key, `list-${module}-${key === 'origens' ? 'origens' : key}`);
+            }
+        }
+
+        function removeItem(module, key, index) {
+            systemConfig[module][key].splice(index, 1);
+            renderList(module, key, `list-${module}-${key === 'origens' ? 'origens' : key}`);
+        }
+
+        async function saveSystemConfig() {
+            try {
+                const btn = document.querySelector('#modalConfig .btn-success');
+                btn.innerHTML = 'Salvando...'; btn.disabled = true;
+                
+                // BLINDADO
+                await fetch(`${API_BASE_URL}/system_configs`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({ id_firebase: 'helpdesk_config', ...systemConfig.helpdesk }) });
+                await fetch(`${API_BASE_URL}/system_configs`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({ id_firebase: 'financeiro_config', ...systemConfig.financeiro }) });
+                await fetch(`${API_BASE_URL}/system_configs`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({ id_firebase: 'clinico_config', ...systemConfig.clinico }) });
+                
+                setTimeout(() => {
+                    alert("Configurações atualizadas!");
+                    btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações'; btn.disabled = false;
+                    closeModal('modalConfig');
+                }, 500);
+            } catch(e) { alert("Erro ao salvar."); btn.disabled = false; }
+        }
+
+        // ========================
+        // USUÁRIOS
+        // ========================
+        async function loadUsers() {
+            try { 
+                // BLINDADO
+                const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }); 
+                const data = await res.json(); 
+                allUsersData = normalizeData(data); 
+                renderTable(allUsersData); 
+            } catch(e) { console.error("Erro usuarios", e) }
+        }
+
+        function renderTable(users) {
+            const tbody = document.querySelector('#usersTable tbody'); tbody.innerHTML = '';
+            Object.entries(users).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||'')).forEach(([key, user]) => {
+                const tr = document.createElement('tr');
+                const p = (typeof user.permissoes === 'string') ? JSON.parse(user.permissoes) : (user.permissoes || {});
+                user.permissoes = p;
+                
+                const setorDisplay = user.setor ? user.setor : 'SEM SETOR';
+
+                tr.innerHTML = `
+                    <td>
+                        <div class="user-cell">
+                            <img src="${user.foto||'https://ui-avatars.com/api/?name='+user.nome}" class="table-avatar">
+                            <div class="user-details">
+                                <span class="user-name">${user.nome||'Sem Nome'}</span>
+                                <span class="user-email">${user.email}</span>
+                                <span class="user-sector">${setorDisplay}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <label class="switch">
+                            <input type="checkbox" ${p.admin?'checked':''} onchange="toggleAdmin('${key}', this.checked, '${user.email}')">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="action-btn btn-edit-user" onclick="openEditUserModal('${key}')" title="Editar Perfil"><i class="fas fa-user-edit"></i></button>
+                        <button class="action-btn btn-edit" onclick="openPermsModal('${key}')" title="Permissões"><i class="fas fa-sliders-h"></i></button>
+                        <button class="action-btn btn-delete" onclick="deleteUser('${key}', '${user.email}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openPermsModal(key) {
+            const user = allUsersData[key]; 
+            document.getElementById('modalPermUserId').value = key; 
+            document.getElementById('modalUserEmail').innerText = user.nome;
+            const p = user.permissoes || {};
+            const fields = ['dashboard', 'helpdesk', 'helpdesk_admin', 'transporte', 'enfermagem', 'indicadores_enf', 'medicos', 'plantao', 'orcamentos', 'consultas', 'repasse', 'procedimentos', 'selos', 'stenci', 'canvas', 'eventos', 'atas'];
+            fields.forEach(f => { const el = document.getElementById('p_' + f); if(el) el.checked = (p[f] === true); });
+            document.getElementById('modalPerms').style.display = 'flex';
+        }
+
+        async function savePermissions() {
+            const key = document.getElementById('modalPermUserId').value; 
+            const user = allUsersData[key];
+            const newPerms = { admin: user.permissoes.admin };
+            const fields = ['dashboard', 'helpdesk', 'helpdesk_admin', 'transporte', 'enfermagem', 'indicadores_enf', 'medicos', 'plantao', 'orcamentos', 'consultas', 'repasse', 'procedimentos', 'selos', 'stenci', 'canvas', 'eventos', 'atas'];
+            fields.forEach(f => { const el = document.getElementById('p_' + f); if(el) newPerms[f] = el.checked; });
+            user.permissoes = newPerms;
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/usuarios/${key}`, { method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(user) });
+            closeModal('modalPerms'); loadUsers();
+        }
+
+        // --- EDIÇÃO DE NOME E SETOR ---
+        function openEditUserModal(key) {
+            const user = allUsersData[key];
+            document.getElementById('editUserId').value = key;
+            document.getElementById('editUserName').value = user.nome || '';
+            
+            const selSector = document.getElementById('editUserSector');
+            selSector.innerHTML = '<option value="">Sem Setor Definido</option>';
+            const setores = systemConfig.helpdesk.setores || [];
+            setores.forEach(s => {
+                const selected = (user.setor === s) ? 'selected' : '';
+                selSector.innerHTML += `<option value="${s}" ${selected}>${s}</option>`;
+            });
+
+            document.getElementById('modalEditUser').style.display = 'flex';
+        }
+
+        async function saveUserEdit() {
+            const key = document.getElementById('editUserId').value;
+            const user = allUsersData[key];
+            const newName = document.getElementById('editUserName').value.trim();
+            const newSector = document.getElementById('editUserSector').value;
+
+            if(!newName) return alert("O nome não pode ficar vazio.");
+
+            user.nome = newName;
+            user.setor = newSector;
+
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/usuarios/${key}`, { 
+                method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(user) 
+            });
+            
+            closeModal('modalEditUser'); 
+            loadUsers();
+        }
+
+        async function toggleAdmin(key, isChecked, email) { 
+            const user = allUsersData[key]; 
+            user.permissoes.admin = isChecked; 
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/usuarios/${key}`, { method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(user) }); 
+        }
+        
+        async function registerUserManual() {
+            const name = document.getElementById('newUserName').value.trim(); const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+            if(!name || !email) return alert("Preencha os campos.");
+            const id = email.replace(/\./g, ',');
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/usuarios`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({id_firebase: id, nome: name, email: email, permissoes: {dashboard: false}}) });
+            alert("Criado!"); loadUsers();
+        }
+        
+        // BLINDADO
+        async function deleteUser(key) { if(confirm("Excluir?")) { await fetch(`${API_BASE_URL}/usuarios/${key}`, { method: 'DELETE', headers: API_HEADERS }); loadUsers(); } }
+        
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function normalizeData(d) { const n={}; Object.entries(d||{}).forEach(([k,v])=>{ if(typeof v==='string' && v.startsWith('{')) try{n[k]=JSON.parse(v)}catch(e){n[k]=v} else n[k]=v; n[k].id_firebase=k; }); return n; }
+    </script>
+</body>
+</html>

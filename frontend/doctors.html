@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Médicos - ECO Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        .content-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; } 
+        .form-group { flex: 1; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-bottom: 3px; }
+        .badge.sim { background: #DEF7EC; color: #03543F; } 
+        .badge.nao { background: #F3F4F6; color: #6B7280; }
+        .badge.liminar { background: #e0e7ff; color: #3730a3; }
+        .badge.vita { background: #e0f2fe; color: #0284c7; } 
+        .badge.cirurgiao { background: #fef3c7; color: #b45309; } 
+        .badge.eco { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .actions-cell { display: flex; gap: 8px; justify-content: center; align-items: center;}
+        
+        /* Grid flexível para caber todas as opções novas */
+        .options-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+
+        @media (max-width: 1024px) { 
+            .content-grid { grid-template-columns: 1fr; } 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="content-grid">
+            <div class="form-area">
+                <div class="card">
+                    <div class="card-header"><span id="formTitle"><i class="fas fa-user-md"></i> Novo Médico</span></div>
+                    <form id="doctorForm">
+                        <input type="hidden" id="editingDoctorId">
+                        
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label>Nome Completo</label>
+                            <input type="text" id="doctorName" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Especialidade</label>
+                                <input type="text" id="doctorSpecialty" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>CRM</label>
+                                <input type="text" id="doctorCRM" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label>Telefone</label>
+                            <input type="text" id="doctorPhone" class="form-control">
+                        </div>
+                        
+                        <div class="options-row">
+                            <div class="form-group">
+                                <label>Plantão Geral?</label>
+                                <select id="doctorShift" class="form-control">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao">Não</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Consulta?</label>
+                                <select id="doctorConsulta" class="form-control">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao">Não</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="color:#00855B; font-weight:bold;">Atende Eco?</label>
+                                <select id="doctorEco" class="form-control" style="border-color:#00855B;">
+                                    <option value="sim" selected>Sim</option>
+                                    <option value="nao">Não</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="color:#0284c7; font-weight:bold;">Atende Vita?</label>
+                                <select id="doctorVita" class="form-control" style="border-color:#0284c7;">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao" selected>Não</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="color:#d97706; font-weight:bold;">Cirurgião?</label>
+                                <select id="doctorCirurgiao" class="form-control" style="border-color:#d97706;">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao" selected>Não</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="color:#3730a3; font-weight:bold;">Atende Liminar?</label>
+                                <select id="doctorLiminar" class="form-control" style="border-color:#3730a3;">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao" selected>Não</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="color:#00995D; font-weight:bold;">Repasse?</label>
+                                <select id="doctorRepasse" class="form-control" style="border-color:#00995D;">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao" selected>Não</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="display:flex; gap:10px; margin-top:15px;">
+                            <button type="submit" id="submitBtn" class="btn btn-success" style="flex:1">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="button" id="cancelBtn" class="btn btn-warning" style="display:none; flex:1" onclick="resetForm()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="list-area">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-list-ul"></i> Médicos Cadastrados</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CRM</th>
+                                    <th>Atendimentos & Locais</th>
+                                    <th>Repasse</th>
+                                    <th style="text-align:center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doctorsList">
+                                <tr><td colspan="5" style="text-align:center;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let doctors = {};
+        
+        document.addEventListener('DOMContentLoaded', () => { 
+            initGlobal('doctors', 'Médicos'); 
+            loadDoctors(); 
+            document.getElementById('doctorForm').addEventListener('submit', saveDoctor);
+        });
+
+        async function saveDoctor(e) {
+            e.preventDefault();
+            const data = {
+                nome: document.getElementById('doctorName').value,
+                especialidade: document.getElementById('doctorSpecialty').value,
+                crm: document.getElementById('doctorCRM').value,
+                telefone: document.getElementById('doctorPhone').value,
+                plantao: document.getElementById('doctorShift').value,
+                consulta: document.getElementById('doctorConsulta').value,
+                liminar: document.getElementById('doctorLiminar').value,
+                repasse: document.getElementById('doctorRepasse').value,
+                eco: document.getElementById('doctorEco').value,
+                vita: document.getElementById('doctorVita').value,
+                cirurgiao: document.getElementById('doctorCirurgiao').value 
+            };
+            
+            const id = document.getElementById('editingDoctorId').value;
+            
+            try {
+                if (id) {
+                    await fetch(`${API_BASE_URL}/medicos/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    data.id_firebase = 'medico_' + Date.now();
+                    await fetch(`${API_BASE_URL}/medicos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                alert('Salvo com sucesso!'); 
+                resetForm(); 
+                loadDoctors();
+                
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao salvar: " + error.message);
+            }
+        }
+
+        async function loadDoctors() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                const rawData = await res.json();
+                doctors = normalizeData(rawData);
+                renderTable();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('doctorsList').innerHTML = '<tr><td colspan="5" style="text-align:center;">Erro ao carregar dados.</td></tr>';
+            }
+        }
+
+        function renderTable() {
+            const list = document.getElementById('doctorsList'); 
+            list.innerHTML = '';
+            
+            if(!doctors || Object.keys(doctors).length === 0) {
+                return list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum médico cadastrado.</td></tr>';
+            }
+            
+            const sorted = Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''));
+
+            sorted.forEach(([id,d]) => {
+                const p = d.plantao==='sim' ? '<span class="badge sim">Plantão</span>' : '';
+                const c = d.consulta==='sim' ? '<span class="badge sim">Consulta</span>' : '';
+                const l = d.liminar==='sim' ? '<span class="badge liminar">Liminar</span>' : '';
+                
+                const eco = (!d.eco || d.eco === 'sim') ? '<span class="badge eco">Eco</span>' : ''; 
+                const v = d.vita==='sim' ? '<span class="badge vita">Vita</span>' : ''; 
+                const cir = d.cirurgiao==='sim' ? '<span class="badge cirurgiao">Cirurgião</span>' : ''; 
+                
+                const r = d.repasse==='sim' ? '<span class="badge sim" style="background:#d1fae5; color:#065f46;">SIM</span>' : '<span class="badge nao">NÃO</span>';
+
+                let atendimentos = [p, c, l, eco, v, cir].filter(x => x).join(' ');
+                if (!atendimentos) atendimentos = '<span class="badge nao">NENHUM</span>';
+
+                list.innerHTML += `
+                    <tr>
+                        <td style="font-weight:600">${d.nome}<br><small style="color:#666">${d.especialidade}</small></td>
+                        <td>${d.crm}</td>
+                        <td>${atendimentos}</td>
+                        <td>${r}</td>
+                        <td class="actions-cell">
+                            <button class="btn-icon" style="background:var(--info)" onclick="edit('${id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon" style="background:var(--danger)" onclick="del('${id}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function edit(id) {
+            const d = doctors[id]; if(!d) return;
+            document.getElementById('doctorName').value = d.nome;
+            document.getElementById('doctorSpecialty').value = d.especialidade;
+            document.getElementById('doctorCRM').value = d.crm;
+            document.getElementById('doctorPhone').value = d.telefone||'';
+            document.getElementById('doctorShift').value = d.plantao;
+            document.getElementById('doctorConsulta').value = d.consulta||'sim';
+            document.getElementById('doctorLiminar').value = d.liminar||'nao';
+            document.getElementById('doctorRepasse').value = d.repasse || 'nao';
+            
+            document.getElementById('doctorEco').value = d.eco || 'sim'; // Padrão é sim
+            document.getElementById('doctorVita').value = d.vita || 'nao'; 
+            document.getElementById('doctorCirurgiao').value = d.cirurgiao || 'nao'; 
+
+            document.getElementById('editingDoctorId').value = id;
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editando Médico';
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
+            document.getElementById('cancelBtn').style.display = 'block';
+        }
+
+        function resetForm() {
+            document.getElementById('doctorForm').reset();
+            document.getElementById('editingDoctorId').value = '';
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-user-md"></i> Novo Médico';
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Salvar';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        async function del(id) { 
+            if(confirm('Tem certeza que deseja excluir este médico?')) { 
+                try {
+                    await fetch(`${API_BASE_URL}/medicos/${id}`, { method:'DELETE', headers: API_HEADERS }); 
+                    loadDoctors(); 
+                } catch (e) {
+                    alert("Erro ao excluir.");
+                }
+            } 
+        }
+
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+    </script>
+</body>
+</html>

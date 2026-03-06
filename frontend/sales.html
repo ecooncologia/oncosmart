@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Particulares - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; }
+        
+        .sales-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; align-items: start; padding-bottom: 50px; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; } 
+        .form-group { flex: 1; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
+        .form-control:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1); }
+        
+        /* TOGGLE DE TIPO */
+        .type-toggle { display: flex; background: #e2e8f0; border-radius: 8px; padding: 4px; margin-bottom: 20px; }
+        .type-btn { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 6px; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.3s; }
+        .type-btn.active-particular { background: #f97316; color: white; box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3); }
+        .type-btn.active-liminar { background: #8b5cf6; color: white; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3); }
+
+        /* CHIPS DE DESCONTO */
+        .discount-options { display: flex; gap: 10px; margin-top:5px; }
+        .discount-chip { flex: 1; padding: 10px; border: 1px solid #D1D5DB; border-radius: 8px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-light); background: #F9FAFB; transition: 0.2s; }
+        .discount-chip:hover { background: #fff; border-color: var(--primary); }
+        .discount-chip.selected { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 4px rgba(0, 133, 91, 0.2); }
+
+        /* PREVIEW DE TOTAIS */
+        .total-preview { background: #F0FDF4; padding: 15px; border-radius: 10px; border: 1px solid #BBF7D0; margin-top: 15px; text-align: center; }
+        .total-preview span { display: block; font-size: 11px; color: #166534; font-weight: 700; text-transform: uppercase; }
+        .total-preview strong { font-size: 26px; color: var(--primary); font-weight: 800; display: block; margin-top: 5px; }
+        .total-preview .total-details { font-size: 11px; color: #666; margin-top: 5px; }
+
+        /* --- TOOLBAR DE FILTROS --- */
+        .filters-toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px 20px; padding: 25px; background: white; border-radius: 12px; margin-bottom: 25px; box-shadow: var(--card-shadow); border: 1px solid #e2e8f0; align-items: end; }
+        .filter-item label { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-item-wide { grid-column: span 2; }
+        .filter-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; padding-top: 20px; border-top: 1px solid #f1f5f9; }
+        .date-filters { background: #f1f5f9; padding: 4px; border-radius: 8px; display: flex; gap: 2px; border: 1px solid #e2e8f0; }
+        .btn-sm-filter { flex: 1; border: none; background: transparent; padding: 8px; font-size: 11px; font-weight: 600; color: #64748b; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: center; }
+        .btn-sm-filter:hover { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        @media (max-width: 1200px) { .sales-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .filters-toolbar { grid-template-columns: 1fr; gap: 15px; }
+            .filter-item-wide { grid-column: span 1; }
+            .filter-actions { flex-wrap: wrap; justify-content: stretch; }
+            .filter-actions button { flex: 1; }
+        }
+        
+        /* BADGES E BOTÕES DA TABELA */
+        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; min-width: 60px; text-align: center; display: inline-block; }
+        .st-pago { background: #dcfce7; color: #166534; }
+        .st-pendente { background: #fee2e2; color: #991b1b; }
+        .st-parcial { background: #fef9c3; color: #854d0e; }
+        .st-liminar { background: #e0e7ff; color: #3730a3; } 
+        .st-rec { background: #e0f2fe; color: #0284c7; font-size: 9px; padding: 2px 6px; border-radius: 4px; }
+
+        .btn-pay-parcel { background: #10b981; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; height: 30px; }
+        .btn-pay-parcel:hover { background: #059669; }
+        
+        .btn-remarcar { background: #f59e0b; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; height: 30px; margin-left:5px; }
+        .btn-remarcar:hover { background: #d97706; }
+
+        .btn-stop-treatment { background: #ef4444; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; height: 30px; margin-left: 5px; }
+        
+        .inp-parcela { width: 90px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; text-align: right; }
+        .inp-date { width: 110px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+        .inp-method { width: 130px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+
+        .multi-pay-toggle { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dark); background: #eef2ff; padding: 5px 10px; border-radius: 6px; border: 1px solid #c7d2fe; cursor: pointer; }
+        .hidden-field { display: none !important; }
+
+        .details-row { background-color: #f8fafc; display: none; }
+        .details-row.active { display: table-row; }
+        .cascade-container { padding: 15px 20px; border-left: 4px solid #3b82f6; margin: 10px 0; background: white; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .parcela-item { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+
+        .btn-icon { width: 30px; height: 30px; border-radius: 6px; border:none; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; }
+        .btn-icon:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+        .modal-header h3 { margin: 0; font-size: 16px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        
+        .doc-card { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; margin-top: 15px; }
+        .doc-card-left { display: flex; align-items: center; gap: 12px; }
+        .doc-icon-box { width: 40px; height: 40px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .doc-info h4 { margin: 0; font-size: 13px; color: #1e293b; }
+        .doc-info span { font-size: 11px; color: #64748b; }
+        .doc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        .btn-doc { padding: 6px 10px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; color: #475569; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-doc:hover { background: #f1f5f9; }
+        .btn-doc.primary { background: #0ea5e9; color: white; border-color: #0ea5e9; }
+        .btn-doc.primary:hover { background: #0284c7; }
+        .btn-doc.danger { color: #ef4444; border-color: #fca5a5; }
+        .btn-doc.danger:hover { background: #fef2f2; }
+        
+        .actual-preview-area { margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 15px; display: none; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header"></div>
+        <div id="global-nav"></div>
+
+        <div class="sales-grid">
+            
+            <div class="form-area">
+                <div class="card">
+                    <div class="card-header">
+                        <span id="formTitle"><i class="fas fa-plus-circle"></i> Novo Cadastro</span>
+                    </div>
+                    <form id="saleForm" style="padding: 20px;">
+                        <input type="hidden" id="editingId">
+                        
+                        <div class="type-toggle">
+                            <button type="button" id="btnTypeParticular" class="type-btn active-particular" onclick="setSaleType('particular')">Particular</button>
+                            <button type="button" id="btnTypeLiminar" class="type-btn" onclick="setSaleType('liminar')">Liminar Judicial</button>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Paciente</label>
+                                <input type="text" id="salePatientName" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Médico Responsável</label>
+                                <select id="saleDoctorName" class="form-control" required>
+                                    <option value="">Carregando...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Procedimento / Medicamento</label>
+                                <select id="saleProcedureName" class="form-control" required onchange="updateCostFromSelect()">
+                                    <option value="">Carregando...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Custo Total (R$)</label>
+                                <input type="number" id="saleProcedureCost" class="form-control" step="0.01" value="0" oninput="calc(); recalcInitial();">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Data Início</label>
+                                <input type="date" id="saleDate" class="form-control" required onchange="calcLiminarDates()">
+                            </div>
+                        </div>
+
+                        <div id="blockParticular">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Forma Pgto 1 (Principal)</label>
+                                    <select id="salePaymentType" class="form-control">
+                                        <option value="Dinheiro">Dinheiro</option>
+                                        <option value="PIX">PIX</option>
+                                        <option value="Cartao">Cartão</option>
+                                    </select>
+                                    <div class="multi-pay-toggle">
+                                        <input type="checkbox" id="chkMultiPay" onchange="toggleMultiPay()">
+                                        <label for="chkMultiPay" style="cursor:pointer; font-weight:600;">2 formas de pagamento?</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group hidden-field" id="divPaymentMethod2">
+                                    <label>Forma Pgto 2</label>
+                                    <select id="salePaymentType2" class="form-control">
+                                        <option value="Dinheiro">Dinheiro</option>
+                                        <option value="PIX">PIX</option>
+                                        <option value="Cartao">Cartão</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Parcelas</label>
+                                    <select id="saleInstallments" class="form-control" onchange="recalcInitial()">
+                                        <option value="1x">1x (À vista)</option>
+                                        <option value="2x">2x</option><option value="3x">3x</option><option value="4x">4x</option>
+                                        <option value="5x">5x</option><option value="6x">6x</option><option value="7x">7x</option>
+                                        <option value="8x">8x</option><option value="9x">9x</option><option value="10x">10x</option>
+                                        <option value="11x">11x</option><option value="12x">12x</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Pagamento Para (Recebedor)</label>
+                                    <select id="salePayee" class="form-control">
+                                        <option value="Clinica">Clínica</option>
+                                        <option value="Medico">Médico</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Aplicações Compradas</label>
+                                    <input type="number" id="saleAppsDone" class="form-control" value="1" min="1" oninput="updateCostFromSelect()">
+                                </div>
+                            </div>
+
+                            <div class="form-row" id="extraFieldsRow">
+                                <div class="form-group">
+                                    <label id="lblAmountPaid1">Valor Entrada (R$)</label>
+                                    <input type="number" id="saleAmountPaid" class="form-control" step="0.01" placeholder="0.00">
+                                </div>
+                                
+                                <div class="form-group hidden-field" id="divAmountPaid2">
+                                    <label>Valor Pgto 2 (R$)</label>
+                                    <input type="number" id="saleAmountPaid2" class="form-control" step="0.01" value="0" placeholder="0.00">
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label>Desconto (Taxa Maquininha)</label>
+                                <div class="discount-options">
+                                    <div class="discount-chip selected" data-val="0" onclick="setDisc(0, this)">Nenhum</div>
+                                    <div class="discount-chip" data-val="1.2" onclick="setDisc(1.2, this)">Débito 1.2%</div>
+                                    <div class="discount-chip" data-val="3.3" onclick="setDisc(3.3, this)">Crédito 3.3%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="blockLiminar" class="hidden-field">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Qtd. de Ciclos</label>
+                                    <input type="number" id="liminarCycles" class="form-control" value="1" min="1" oninput="calcLiminarDates(); updateCostFromSelect();">
+                                </div>
+                                <div class="form-group">
+                                    <label>Intervalo (Dias)</label>
+                                    <input type="number" id="liminarInterval" class="form-control" value="21" min="1" oninput="calcLiminarDates()">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Data Prevista Fim</label>
+                                    <input type="date" id="liminarEndDate" class="form-control" disabled style="background:#f1f5f9; font-weight:bold; color:var(--primary);">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nota Fiscal (NF/Processo)</label>
+                                <input type="text" id="saleInvoice" class="form-control" placeholder="Nº NF ou Nº Processo">
+                            </div>
+                        </div>
+
+                        <div class="total-preview">
+                            <span>Valor Líquido Total</span>
+                            <strong id="previewTotal">R$ 0,00</strong>
+                            <div id="previewDiscount" class="total-details"></div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-top:15px;">
+                            <button type="submit" id="btnSave" class="btn btn-success" style="flex:1;">
+                                <i class="fas fa-check"></i> Registrar
+                            </button>
+                            <button type="button" id="btnCancel" class="btn btn-warning" style="display:none; flex:1;" onclick="resetForm()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="list-area">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-list"></i> Histórico de Vendas e Liminares</div>
+                    
+                    <div class="filters-toolbar">
+                        <div class="filter-item">
+                            <label><i class="fas fa-calendar-alt"></i> Período Rápido</label>
+                            <div class="date-filters">
+                                <button type="button" class="btn-sm-filter" onclick="setDateFilter('day')">Hoje</button>
+                                <button type="button" class="btn-sm-filter" onclick="setDateFilter('week')">Semana</button>
+                                <button type="button" class="btn-sm-filter" onclick="setDateFilter('month')">Mês</button>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-item">
+                            <label>Tipo</label>
+                            <select id="fTipoRegistro" class="form-control" onchange="render()">
+                                <option value="">Todos</option>
+                                <option value="particular">Particular</option>
+                                <option value="liminar">Liminar</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-item filter-item-wide">
+                            <label>Paciente</label>
+                            <input type="text" id="fPatient" class="form-control" placeholder="Buscar por nome..." onkeyup="render()">
+                        </div>
+
+                        <div class="filter-item">
+                            <label>Data Início</label>
+                            <input type="date" id="fStart" class="form-control" onchange="render()">
+                        </div>
+                        <div class="filter-item">
+                            <label>Data Fim</label>
+                            <input type="date" id="fEnd" class="form-control" onchange="render()">
+                        </div>
+                        <div class="filter-item">
+                            <label>Médico</label>
+                            <select id="fDoctor" class="form-control" onchange="render()">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Procedimento</label>
+                            <select id="fProcedure" class="form-control" onchange="render()">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Recebedor</label>
+                            <select id="fRecebedor" class="form-control" onchange="render()">
+                                <option value="">Todos</option>
+                                <option value="Clinica">Clínica</option>
+                                <option value="Medico">Médico</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-actions">
+                            <button class="btn btn-secondary" style="background:#64748b; border:none;" onclick="clearFilters()" title="Limpar Filtros"><i class="fas fa-eraser"></i> Limpar</button>
+                            <button class="btn btn-info" style="background:#0284c7; border:none;" onclick="exportExcel()" title="Exportar Excel"><i class="fas fa-file-excel"></i> Excel</button>
+                            <button class="btn btn-danger" onclick="exportPDF()" title="Gerar Relatório"><i class="fas fa-file-pdf"></i> Gerar PDF</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Paciente</th>
+                                    <th>Procedimento</th>
+                                    <th>Tipo/Modelo</th>
+                                    <th>Recebedor</th>
+                                    <th>Financeiro/Ciclos</th>
+                                    <th>NF/Proc.</th>
+                                    <th>Responsável</th> 
+                                    <th style="text-align:center; min-width: 130px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesList">
+                                <tr><td colspan="9" style="text-align:center; padding:20px;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="receiptModal" class="modal-overlay hidden-field">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder-open" style="color:#0ea5e9;"></i> Documentos Anexados</h3>
+                <button class="btn-icon" style="background:#ef4444;" onclick="closeReceiptModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                
+                <div id="uploadBox" style="text-align:center; padding: 25px; border: 2px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; transition: 0.3s;">
+                    <i class="fas fa-cloud-upload-alt fa-3x" style="color:#94a3b8; margin-bottom:15px;"></i>
+                    <p style="font-size:13px; color:#475569; margin:0 0 15px 0;">Nenhum comprovante localizado para este registro.</p>
+                    <label class="btn btn-info" style="cursor:pointer; display:inline-block; padding:8px 20px; color: white;">
+                        <i class="fas fa-paperclip"></i> Escolher Arquivo (Max 5MB)
+                        <input type="file" id="receiptFile" accept="image/*,application/pdf" style="display:none;" onchange="previewReceipt(event)">
+                    </label>
+                </div>
+
+                <div id="receiptCardArea" class="doc-card" style="display:none;">
+                    <div class="doc-card-left">
+                        <div id="docCardIconBox" class="doc-icon-box"><i id="docCardIcon" class="fas fa-file-invoice"></i></div>
+                        <div class="doc-info">
+                            <h4>Comprovante de Pagamento</h4>
+                            <span id="docCardType">Carregando...</span>
+                        </div>
+                    </div>
+                    <div class="doc-actions">
+                        <button class="btn-doc" onclick="toggleReceiptView()"><i class="fas fa-eye"></i> Ver</button>
+                        <button class="btn-doc primary" onclick="downloadReceipt()"><i class="fas fa-download"></i> Baixar</button>
+                        <button class="btn-doc danger" onclick="removeReceipt()"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+
+                <div id="actualPreviewArea" class="actual-preview-area"></div>
+            </div>
+            
+            <div class="modal-footer" id="modalFooterSave" style="margin-top:20px; display:none;">
+                <button class="btn btn-success" onclick="saveReceipt()" style="width:100%; font-size: 14px; padding: 10px;"><i class="fas fa-save"></i> Salvar Alterações no Banco</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+
+        // --- FUNÇÃO PARA PEGAR O NOME DO USUÁRIO LOGADO (100% BLINDADA) ---
+        function getLoggedUser() {
+            try {
+                // 1. Tenta achar objetos JSON criados no momento do Login pelo global.js
+                const keysJSON = ['user', 'usuario', 'userData', 'user_info', 'loggedUser'];
+                for (let k of keysJSON) {
+                    let item = localStorage.getItem(k);
+                    if (item) {
+                        try {
+                            let parsed = JSON.parse(item);
+                            if (parsed.nome) return parsed.nome;
+                            if (parsed.name) return parsed.name;
+                            if (parsed.email) return parsed.email.split('@')[0]; 
+                        } catch(err) {}
+                    }
+                }
+                
+                // 2. Tenta achar nomes salvos como texto direto no Cache
+                const keysText = ['userName', 'user_name', 'nome_usuario', 'usuario_nome'];
+                for (let k of keysText) {
+                    let item = localStorage.getItem(k);
+                    if (item) return item;
+                }
+
+                // 3. Fallback: Puxa direto do HTML da barra superior
+                const userElement = document.querySelector('.user-name, .header-user, #userName');
+                if (userElement && userElement.innerText) return userElement.innerText.trim();
+
+                return 'Sistema';
+            } catch(e) {
+                return 'Sistema';
+            }
+        }
+
+        let sales = {};
+        let doctors = {};
+        let procedures = {};
+        let disc = 0;
+        let saleType = 'particular'; 
+        const LOGO_URL = "https://i.imgur.com/m9NWY03.png";
+
+        let currentReceiptId = null;
+        let currentReceiptBase64 = null;
+        let hasUnsavedReceiptChanges = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('sales', 'Particulares e Liminares');
+            
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            document.getElementById('saleDate').value = `${year}-${month}-${day}`;
+            
+            loadData();
+            document.getElementById('saleForm').addEventListener('submit', saveSale);
+        });
+
+        function parseCurrency(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return parseFloat(val.toFixed(2));
+            
+            let s = String(val).replace(/[^\d.,-]/g, '');
+            if (s.includes(',') && s.includes('.')) {
+                let lastDot = s.lastIndexOf('.');
+                let lastComma = s.lastIndexOf(',');
+                if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.');
+                else s = s.replace(/,/g, '');
+            } else if (s.includes(',')) {
+                s = s.replace(',', '.');
+            } else if (s.includes('.')) {
+                let parts = s.split('.');
+                if (parts[parts.length - 1].length === 3) s = s.replace(/\./g, '');
+            }
+            
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : parseFloat(num.toFixed(2));
+        }
+
+        function filterSelectsByType() {
+            const docSel = document.getElementById('saleDoctorName');
+            const procSel = document.getElementById('saleProcedureName');
+            
+            docSel.innerHTML = '<option value="">Selecione...</option>';
+            procSel.innerHTML = '<option value="">Selecione...</option>';
+
+            Object.values(doctors).sort((a,b) => (a.nome || "").localeCompare(b.nome || "")).forEach(d => {
+                if (saleType === 'liminar' && d.liminar !== 'sim') return; 
+                docSel.innerHTML += `<option value="${d.nome}">${d.nome}</option>`;
+            });
+
+            Object.values(procedures).sort((a,b) => (a.nome || "").localeCompare(b.nome || "")).forEach(p => {
+                if(p.tipo === 'Orcamento') return;
+                if (saleType === 'particular' && p.tipo === 'Liminar') return;
+                if (saleType === 'liminar' && p.tipo === 'Particular') return;
+                
+                const cMat = parseCurrency(p.custo_material);
+                const cMed = parseCurrency(p.custo_medicamento);
+                const cProc = parseCurrency(p.custo_procedimento);
+                const cDesc = parseCurrency(p.desconto);
+                const cost = (cMat + cMed + cProc) - cDesc;
+                
+                procSel.innerHTML += `<option value="${p.nome}" data-cost="${cost}">${p.nome}</option>`;
+            });
+        }
+
+        function setSaleType(type) {
+            saleType = type;
+            document.getElementById('btnTypeParticular').className = 'type-btn';
+            document.getElementById('btnTypeLiminar').className = 'type-btn';
+            
+            if (type === 'particular') {
+                document.getElementById('btnTypeParticular').classList.add('active-particular');
+                document.getElementById('blockParticular').classList.remove('hidden-field');
+                document.getElementById('blockLiminar').classList.add('hidden-field');
+            } else {
+                document.getElementById('btnTypeLiminar').classList.add('active-liminar');
+                document.getElementById('blockLiminar').classList.remove('hidden-field');
+                document.getElementById('blockParticular').classList.add('hidden-field');
+            }
+            
+            filterSelectsByType(); 
+            updateCostFromSelect(); 
+            calc();
+            calcLiminarDates();
+        }
+
+        function calcLiminarDates() {
+            if (saleType !== 'liminar') return;
+            const startStr = document.getElementById('saleDate').value;
+            const cycles = parseInt(document.getElementById('liminarCycles').value) || 1;
+            const interval = parseInt(document.getElementById('liminarInterval').value) || 0;
+            
+            if(!startStr) return;
+            const d = new Date(startStr + 'T12:00:00'); 
+            d.setDate(d.getDate() + ((cycles - 1) * interval));
+            
+            document.getElementById('liminarEndDate').value = d.toISOString().split('T')[0];
+            updateCostFromSelect(); 
+        }
+
+        function toggleMultiPay() {
+            const chk = document.getElementById('chkMultiPay');
+            const divMethod2 = document.getElementById('divPaymentMethod2');
+            const divVal2 = document.getElementById('divAmountPaid2');
+            const lblVal1 = document.getElementById('lblAmountPaid1');
+
+            if (chk.checked) {
+                divMethod2.classList.remove('hidden-field');
+                divVal2.classList.remove('hidden-field');
+                lblVal1.innerText = "Valor Pagamento 1 (R$)";
+            } else {
+                divMethod2.classList.add('hidden-field');
+                divVal2.classList.add('hidden-field');
+                lblVal1.innerText = "Valor Entrada (R$)";
+                document.getElementById('saleAmountPaid2').value = 0;
+            }
+        }
+
+        async function loadData() {
+            try {
+                const [dRes, sRes, pRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS })
+                ]);
+                doctors = normalizeData(await dRes.json());
+                sales = normalizeData(await sRes.json());
+                procedures = normalizeData(await pRes.json());
+                
+                populateFilterSelects();
+                filterSelectsByType();
+                render();
+            } catch(e) { console.error("Erro no loadData:", e); }
+        }
+
+        function populateFilterSelects() {
+            const fDocSel = document.getElementById('fDoctor');
+            fDocSel.innerHTML = '<option value="">Todos</option>';
+            Object.values(doctors).sort((a,b) => (a.nome || "").localeCompare(b.nome || "")).forEach(d => {
+                fDocSel.innerHTML += `<option value="${d.nome}">${d.nome}</option>`;
+            });
+
+            const fProcSel = document.getElementById('fProcedure');
+            fProcSel.innerHTML = '<option value="">Todos</option>';
+            Object.values(procedures).sort((a,b) => (a.nome || "").localeCompare(b.nome || "")).forEach(p => {
+                if(p.tipo === 'Orcamento') return;
+                fProcSel.innerHTML += `<option value="${p.nome}">${p.nome}</option>`;
+            });
+        }
+
+        function updateCostFromSelect() {
+            const select = document.getElementById('saleProcedureName');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if(!selectedOption || !selectedOption.value) {
+                document.getElementById('saleProcedureCost').value = "0.00";
+                calc();
+                return;
+            }
+
+            const unitCost = parseFloat(selectedOption.getAttribute('data-cost')) || 0;
+            
+            let apps = 1;
+            if(saleType === 'particular') apps = parseInt(document.getElementById('saleAppsDone').value) || 1;
+            else if(saleType === 'liminar') apps = parseInt(document.getElementById('liminarCycles').value) || 1;
+            
+            const total = unitCost * apps;
+            document.getElementById('saleProcedureCost').value = total.toFixed(2);
+            
+            calc();
+            recalcInitial();
+        }
+
+        function recalcInitial() {
+            if (saleType !== 'particular') return;
+            const total = parseFloat(document.getElementById('saleProcedureCost').value) || 0;
+            const installmentStr = document.getElementById('saleInstallments').value;
+            const numParcelas = parseInt(installmentStr.replace('x','')) || 1;
+            
+            if (installmentStr === '1x') {
+                document.getElementById('saleAmountPaid').value = total.toFixed(2);
+            } else {
+                const valParcela = total / numParcelas;
+                document.getElementById('saleAmountPaid').value = valParcela.toFixed(2);
+            }
+        }
+
+        function setDisc(val, el) {
+            disc = parseFloat(val);
+            document.querySelectorAll('.discount-chip').forEach(c => c.classList.remove('selected'));
+            if(el) el.classList.add('selected');
+            else {
+                const target = document.querySelector(`.discount-chip[data-val="${val}"]`);
+                if(target) target.classList.add('selected');
+            }
+            if(disc === 3.3 || disc === 1.2) document.getElementById('salePaymentType').value = 'Cartao';
+            calc();
+        }
+
+        function calc() {
+            const cost = parseFloat(document.getElementById('saleProcedureCost').value) || 0;
+            let discountAmount = 0;
+            
+            if (saleType === 'particular') {
+                discountAmount = cost * (disc / 100);
+            }
+
+            const total = cost - discountAmount;
+            document.getElementById('previewTotal').textContent = total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            
+            if(disc > 0 && saleType === 'particular') {
+                document.getElementById('previewDiscount').textContent = `Imposto: ${disc}% (-R$ ${discountAmount.toFixed(2)})`;
+            } else {
+                document.getElementById('previewDiscount').textContent = '';
+            }
+        }
+
+        async function saveSale(e) {
+            e.preventDefault();
+            const id = document.getElementById('editingId').value;
+            const total = parseFloat(document.getElementById('saleProcedureCost').value) || 0;
+            
+            let obj = {
+                paciente: document.getElementById('salePatientName').value,
+                medico: document.getElementById('saleDoctorName').value,
+                procedimento: document.getElementById('saleProcedureName').value,
+                data: document.getElementById('saleDate').value,
+                nota_fiscal: document.getElementById('saleInvoice').value,
+                origem: 'manual', 
+                tipo_registro: saleType,
+                historico_parcelas: id && sales[id] ? (sales[id].historico_parcelas || {}) : {},
+                // --- REGISTRO DO USUÁRIO QUE SALVOU A VENDA ---
+                criado_por: id && sales[id] && sales[id].criado_por ? sales[id].criado_por : getLoggedUser()
+            };
+
+            if(id && sales[id] && sales[id].comprovante) {
+                obj.comprovante = sales[id].comprovante;
+            }
+
+            if (saleType === 'particular') {
+                const val1 = parseFloat(document.getElementById('saleAmountPaid').value) || 0;
+                const isMulti = document.getElementById('chkMultiPay').checked;
+                const val2 = isMulti ? (parseFloat(document.getElementById('saleAmountPaid2').value) || 0) : 0;
+                const method2 = isMulti ? document.getElementById('salePaymentType2').value : null;
+
+                obj.forma_pagamento = document.getElementById('salePaymentType').value;
+                obj.forma_pagamento_2 = method2;
+                obj.valor_pago_secundario = val2;
+                obj.usa_dois_pagamentos = isMulti;
+                obj.parcelas = document.getElementById('saleInstallments').value;
+                obj.aplicacoes_realizadas = document.getElementById('saleAppsDone').value || 1;
+                obj.recebedor = document.getElementById('salePayee').value;
+                
+                const netTotal = total - (total * (disc / 100));
+                
+                if (!isMulti && obj.forma_pagamento === 'Cartao') {
+                    obj.valor_pago = total; 
+                    obj.valor_final = netTotal; 
+                    
+                    if (!id) {
+                        let numP = parseInt(obj.parcelas.replace('x','')) || 1;
+                        let hist = {};
+                        let valParc = total / numP; 
+                        let dTemp = new Date(obj.data + 'T12:00:00');
+                        
+                        for(let i=1; i<=numP; i++) {
+                            hist[i] = {
+                                valor: valParc,
+                                data: dTemp.toISOString().split('T')[0],
+                                metodo: 'Cartao',
+                                pago: true 
+                            };
+                            dTemp.setMonth(dTemp.getMonth() + 1); 
+                        }
+                        obj.historico_parcelas = hist;
+                    }
+                } else {
+                    const grossPaid = val1 + val2;
+                    obj.valor_pago = grossPaid; 
+                    obj.valor_final = netTotal; 
+                }
+
+                obj.desconto = total * (disc / 100); 
+                obj.desconto_percentual = disc;
+                obj.total_procedimento = total;
+
+            } else {
+                const ciclos = parseInt(document.getElementById('liminarCycles').value) || 1;
+                const intervalo = parseInt(document.getElementById('liminarInterval').value) || 21;
+                
+                obj.ciclos_total = ciclos;
+                obj.intervalo_dias = intervalo;
+                obj.data_fim_prevista = document.getElementById('liminarEndDate').value;
+                obj.forma_pagamento = 'Liminar';
+                obj.valor_final = total;
+                obj.total_procedimento = total;
+                obj.recebedor = 'Clinica'; 
+                
+                if (!id) {
+                    const startD = new Date(obj.data + 'T12:00:00');
+                    const valCiclo = total / ciclos;
+                    let hist = {};
+                    
+                    for(let i=1; i<=ciclos; i++) {
+                        hist[i] = {
+                            valor: valCiclo,
+                            data: startD.toISOString().split('T')[0],
+                            status: 'agendado'
+                        };
+                        startD.setDate(startD.getDate() + intervalo);
+                    }
+                    obj.historico_parcelas = hist;
+                    obj.valor_pago = 0; 
+                }
+            }
+            
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_BASE_URL}/vendas/${id}` : `${API_BASE_URL}/vendas`;
+            try {
+                await fetch(url, { 
+                    method: method, 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...API_HEADERS
+                    }, 
+                    body: JSON.stringify(obj) 
+                });
+                alert(id ? "Atualizado com sucesso!" : "Registrado com sucesso!");
+                resetForm();
+                loadData();
+            } catch(err) { alert("Erro: " + err.message); }
+        }
+
+        function editSale(id) {
+            const s = sales[id];
+            if(!s) return;
+            document.getElementById('editingId').value = id;
+            
+            const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
+            setSaleType(isLiminar ? 'liminar' : 'particular');
+
+            setTimeout(() => {
+                document.getElementById('salePatientName').value = s.paciente;
+                document.getElementById('saleDoctorName').value = s.medico;
+                document.getElementById('saleProcedureName').value = s.procedimento;
+                
+                const custoTotalEdicao = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
+                document.getElementById('saleProcedureCost').value = custoTotalEdicao.toFixed(2);
+                document.getElementById('saleDate').value = s.data;
+                document.getElementById('saleInvoice').value = s.nota_fiscal || '';
+                
+                if (!isLiminar) {
+                    document.getElementById('salePayee').value = s.recebedor || 'Clinica';
+                    document.getElementById('salePaymentType').value = s.forma_pagamento || 'Dinheiro';
+                    
+                    const isMulti = s.usa_dois_pagamentos === true;
+                    document.getElementById('chkMultiPay').checked = isMulti;
+                    toggleMultiPay(); 
+
+                    const vTotalPago = parseCurrency(s.valor_pago);
+                    const vPago2 = parseCurrency(s.valor_pago_secundario);
+                    const entrada = s.usa_dois_pagamentos ? (vTotalPago - vPago2) : vTotalPago;
+                    
+                    document.getElementById('saleAmountPaid').value = entrada.toFixed(2);
+
+                    if (isMulti) {
+                        document.getElementById('salePaymentType2').value = s.forma_pagamento_2 || 'Dinheiro';
+                        document.getElementById('saleAmountPaid2').value = vPago2.toFixed(2);
+                    } 
+
+                    document.getElementById('saleInstallments').value = s.parcelas || '1x';
+                    document.getElementById('saleAppsDone').value = s.aplicacoes_realizadas || 1;
+                    
+                    setDisc(s.desconto_percentual || 0);
+                } else {
+                    document.getElementById('liminarCycles').value = s.ciclos_total || 1;
+                    document.getElementById('liminarInterval').value = s.intervalo_dias || 21;
+                    document.getElementById('liminarEndDate').value = s.data_fim_prevista || s.data;
+                }
+                
+                document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Registro';
+                document.getElementById('btnSave').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
+                document.getElementById('btnCancel').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        }
+
+        function resetForm() {
+            document.getElementById('saleForm').reset();
+            document.getElementById('editingId').value = '';
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Novo Cadastro';
+            document.getElementById('btnSave').innerHTML = '<i class="fas fa-check"></i> Registrar';
+            document.getElementById('btnCancel').style.display = 'none';
+            document.getElementById('chkMultiPay').checked = false;
+            
+            const now = new Date();
+            const y = now.getFullYear(); const m = String(now.getMonth() + 1).padStart(2, '0'); const d = String(now.getDate()).padStart(2, '0');
+            document.getElementById('saleDate').value = `${y}-${m}-${d}`;
+            
+            toggleMultiPay();
+            setDisc(0);
+            setSaleType('particular');
+        }
+
+        function getFilteredData() {
+            const start = document.getElementById('fStart').value;
+            const end = document.getElementById('fEnd').value;
+            const doctor = document.getElementById('fDoctor').value;
+            const procedure = document.getElementById('fProcedure').value;
+            const patient = document.getElementById('fPatient').value.toLowerCase();
+            const tipoReg = document.getElementById('fTipoRegistro').value;
+            const recebedor = document.getElementById('fRecebedor').value;
+
+            return Object.entries(sales)
+                .filter(([,s]) => !s.origem || s.origem === 'manual' || s.origem === 'importacao_excel')
+                .filter(([,s]) => {
+                    if(start && s.data < start) return false;
+                    if(end && s.data > end) return false;
+                    if(doctor && s.medico !== doctor) return false;
+                    if(procedure && s.procedimento !== procedure) return false;
+                    if(patient && !(s.paciente || "").toLowerCase().includes(patient)) return false; 
+                    
+                    const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
+                    if (tipoReg === 'particular' && isLiminar) return false;
+                    if (tipoReg === 'liminar' && !isLiminar) return false;
+                    
+                    const recStr = s.recebedor || 'Clinica';
+                    if (recebedor && recStr !== recebedor) return false;
+
+                    return true;
+                })
+                .sort(([,a], [,b]) => {
+                    const dateA = a.data ? new Date(a.data + 'T12:00:00').getTime() : 0; 
+                    const dateB = b.data ? new Date(b.data + 'T12:00:00').getTime() : 0;
+                    return dateB - dateA;
+                });
+        }
+
+        function clearFilters() {
+            document.getElementById('fStart').value = ''; document.getElementById('fEnd').value = '';
+            document.getElementById('fDoctor').value = ''; document.getElementById('fProcedure').value = ''; 
+            document.getElementById('fPatient').value = ''; 
+            document.getElementById('fTipoRegistro').value = ''; 
+            document.getElementById('fRecebedor').value = ''; 
+            render();
+        }
+
+        function setDateFilter(type) {
+            const today = new Date();
+            const startInput = document.getElementById('fStart');
+            const endInput = document.getElementById('fEnd');
+            const toYMD = (d) => { const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; };
+
+            if (type === 'day') {
+                const s = toYMD(today); startInput.value = s; endInput.value = s;
+            } else if (type === 'week') {
+                const first = today.getDate() - today.getDay(); const last = first + 6; 
+                startInput.value = toYMD(new Date(today.setDate(first))); endInput.value = toYMD(new Date(today.setDate(last)));
+            } else if (type === 'month') {
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1); const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                startInput.value = toYMD(firstDay); endInput.value = toYMD(lastDay);
+            }
+            render();
+        }
+
+        function safeDateDisplay(dateString) {
+            if (!dateString) return '-';
+            const parts = dateString.split('-'); 
+            if (parts.length !== 3) return dateString;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        async function updateSaleInDB(id, saleObj) {
+            try {
+                await fetch(`${API_BASE_URL}/vendas/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...API_HEADERS
+                    },
+                    body: JSON.stringify(saleObj)
+                });
+                sales[id] = saleObj;
+                render();
+            } catch(e) {
+                alert("Erro ao atualizar: " + e.message);
+            }
+        }
+
+        function render() {
+            const tbody = document.getElementById('salesList');
+            tbody.innerHTML = '';
+            
+            const rows = getFilteredData();
+
+            if(rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px;">Nenhum registro encontrado.</td></tr>';
+                return;
+            }
+
+            rows.forEach(([id, s]) => {
+                const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
+                
+                const bruto = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
+                const liquido = parseCurrency(s.valor_final);
+                
+                let pago = parseCurrency(s.valor_pago);
+                if (pago > 0 && Math.abs(pago - liquido) < 0.05 && parseCurrency(s.desconto) > 0 && !isLiminar) {
+                    pago = bruto; 
+                }
+                
+                const saldo = bruto - pago;
+                
+                let statusBadge = '';
+                let financeiroHtml = '';
+                let tipoModeloHtml = '';
+
+                // === EXTRAI E FORMATA O NOME DO USUÁRIO AQUI ===
+                const usuarioName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
+
+                const corComprovante = s.comprovante ? '#10b981' : '#0ea5e9'; 
+                const btnComprovante = `<button class="btn-icon" style="background:${corComprovante};" onclick="manageReceipt('${id}')" title="Documentos"><i class="fas fa-paperclip"></i></button>`;
+
+                const recebedorDisplay = (s.recebedor || 'Clinica') === 'Medico' 
+                                        ? `<span class="st-rec" style="background:#fef3c7; color:#d97706;">Médico</span>` 
+                                        : `<span class="st-rec">Clínica</span>`;
+
+                if (isLiminar) {
+                    const historico = s.historico_parcelas || {};
+                    const totCiclos = s.ciclos_total || Object.keys(historico).length || 1;
+                    
+                    let presentes = 0;
+                    Object.values(historico).forEach(c => { if(c.status === 'presente') presentes++; });
+                    
+                    if(presentes === totCiclos) statusBadge = '<span class="status-badge st-pago">Concluído</span>';
+                    else statusBadge = '<span class="status-badge st-liminar">Liminar</span>';
+
+                    tipoModeloHtml = `Liminar<br><span style="font-size:10px; color:#666">${totCiclos} Ciclos</span>`;
+                    
+                    financeiroHtml = `
+                        <div style="font-size:11px; color:#666">Valor Total: ${liquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
+                        <div style="font-weight:bold; color:#3730a3; font-size:13px;">Consumido: ${presentes}/${totCiclos}</div>
+                    `;
+
+                } else {
+                    if(saldo <= 0.05) statusBadge = '<span class="status-badge st-pago">Pago</span>';
+                    else if(pago > 0) statusBadge = '<span class="status-badge st-parcial">Parcial</span>';
+                    else statusBadge = '<span class="status-badge st-pendente">Pendente</span>';
+
+                    let displayPgto = s.forma_pagamento || '-';
+                    if (s.usa_dois_pagamentos && s.forma_pagamento_2) displayPgto += ` + ${s.forma_pagamento_2}`;
+                    const parcelasStr = s.parcelas || '1x';
+                    
+                    tipoModeloHtml = `Particular<br><span style="font-size:10px; color:#666">${displayPgto} (${parcelasStr})</span>`;
+                    
+                    financeiroHtml = `
+                        <div style="font-size:10px; color:#666; margin-bottom:2px;">Bruto: ${bruto.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} | Líq: ${liquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
+                        <div style="font-weight:bold; color:${saldo > 0.05 ? '#c53030' : '#166534'}; font-size:13px;">Pago: ${pago.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
+                    `;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${safeDateDisplay(s.data)}</td>
+                    <td><div style="font-weight:600">${s.paciente || ''}</div></td>
+                    <td>${s.procedimento || '-'}</td>
+                    <td>${tipoModeloHtml}</td>
+                    <td>${recebedorDisplay}</td>
+                    <td>${financeiroHtml}</td>
+                    <td>${s.nota_fiscal || '-'}</td>
+                    <td>
+                        <span style="font-size:10px; color:#64748b; background:#f1f5f9; padding:4px 6px; border-radius:4px; white-space:nowrap;">
+                            <i class="fas fa-user"></i> ${usuarioName}
+                        </span>
+                    </td>
+                    <td style="display:flex; gap:5px; justify-content:center;">
+                        <button class="btn-icon" style="background:#64748b;" onclick="toggleDetails('${id}')" title="Detalhes"><i class="fas fa-chevron-down"></i></button>
+                        ${btnComprovante}
+                        <button class="btn-icon" style="background:#3182ce;" onclick="editSale('${id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon btn-danger" onclick="deleteSale('${id}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                const trDetails = document.createElement('tr');
+                trDetails.id = `details-${id}`;
+                trDetails.className = 'details-row';
+                
+                if (isLiminar) {
+                    const history = s.historico_parcelas || {};
+                    const totCiclos = s.ciclos_total || Object.keys(history).length || 1;
+                    let htmlCiclos = '';
+
+                    for(let i=1; i<=totCiclos; i++) {
+                        let ciclo = history[i] || { valor: liquido/totCiclos, data: s.data, status: 'agendado' };
+                        let displayDate = ciclo.data || '';
+                        let displayVal = parseCurrency(ciclo.valor).toFixed(2);
+                        
+                        let badge = ''; let actions = '';
+                        let inputState = 'disabled'; 
+
+                        if (ciclo.status === 'presente') {
+                            badge = '<span class="status-badge st-pago">Presente</span>';
+                        } else {
+                            if (ciclo.status === 'faltou') badge = '<span class="status-badge st-pendente">Faltou</span>';
+                            else badge = '<span class="status-badge" style="background:#e2e8f0; color:#475569;">Agendado</span>';
+                            
+                            actions = `
+                                <button class="btn-pay-parcel" onclick="markPresent('${id}', ${i})"><i class="fas fa-check"></i> Presente</button>
+                                <button class="btn-remarcar" onclick="enableReschedule('${id}', ${i}, this)"><i class="fas fa-calendar-times"></i> Remarcar Falta</button>
+                            `;
+                        }
+
+                        htmlCiclos += `
+                            <div class="parcela-item">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <strong style="width:50px; color:#3730a3;">Ciclo ${i}</strong>
+                                    <input type="date" id="lim-dat-${id}-${i}" class="inp-date" value="${displayDate}" ${inputState} title="Data do Ciclo">
+                                    <input type="number" id="lim-val-${id}-${i}" class="inp-parcela" value="${displayVal}" disabled title="Valor Rateado">
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    ${badge}
+                                    ${actions}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    trDetails.innerHTML = `
+                        <td colspan="9" style="padding:0;">
+                            <div class="cascade-container" style="border-left-color: #3730a3;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <h5 style="margin:0; color:#3730a3;">Controle de Ciclos da Liminar</h5>
+                                    <span style="font-size:11px; color:#666;">Data final projetada: ${safeDateDisplay(s.data_fim_prevista)}</span>
+                                </div>
+                                ${htmlCiclos}
+                            </div>
+                        </td>
+                    `;
+
+                } else {
+                    const numParcelas = parseInt((s.parcelas || '1x').replace('x','')) || 1;
+                    let customPlan = s.parcelas_customizadas || {};
+                    let hasCustom = Object.keys(customPlan).length > 0;
+                    let parcelaBase = bruto / numParcelas;
+
+                    let entryDetails = '';
+                    if (s.usa_dois_pagamentos) {
+                        const v2 = parseCurrency(s.valor_pago_secundario);
+                        const v1 = pago - v2;
+                        entryDetails = `
+                            <div style="background:#eff6ff; padding:10px; border-radius:6px; margin-bottom:15px; border:1px solid #dbeafe;">
+                                <h6 style="margin:0 0 5px 0; color:#1e3a8a; font-size:12px; font-weight:bold; text-transform:uppercase;">Detalhamento da Entrada</h6>
+                                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:#475569;">
+                                    <div><i class="fas fa-check-circle" style="color:#10b981; margin-right:5px;"></i> <strong>${s.forma_pagamento}:</strong> ${v1.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</div>
+                                    <div><i class="fas fa-check-circle" style="color:#10b981; margin-right:5px;"></i> <strong>${s.forma_pagamento_2}:</strong> ${v2.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    let htmlParcelas = '';
+                    let saldoParaDistribuir = pago;
+                    const history = s.historico_parcelas || {};
+
+                    for(let i=1; i <= numParcelas; i++) {
+                        let valParcela = hasCustom && customPlan[i] ? parseFloat(customPlan[i]) : parcelaBase;
+                        let status = ''; let badgeClass = ''; let actionBtn = ''; let inputDisabled = '';
+                        let displayVal = valParcela.toFixed(2);
+                        let displayDate = new Date().toISOString().split('T')[0];
+                        
+                        let displayMethod = s.forma_pagamento || 'Dinheiro';
+
+                        if (history[i] && history[i].pago) {
+                            status = 'PAGO'; badgeClass = 'st-pago'; inputDisabled = 'disabled';
+                            displayVal = parseCurrency(history[i].valor).toFixed(2);
+                            displayDate = history[i].data; displayMethod = history[i].metodo;
+                            saldoParaDistribuir -= parseCurrency(history[i].valor);
+                        } 
+                        else if (saldoParaDistribuir >= valParcela - 0.05) { 
+                            status = 'PAGO (Entrada)'; badgeClass = 'st-pago'; inputDisabled = 'disabled';
+                            saldoParaDistribuir -= valParcela;
+                        } else if (saldoParaDistribuir > 0) {
+                            status = `PARCIAL`; badgeClass = 'st-parcial';
+                            const restante = valParcela - saldoParaDistribuir;
+                            actionBtn = `<button class="btn-pay-parcel" onclick="payParcelFromInput('${id}', ${i}, true, ${restante})"><i class="fas fa-check"></i> Pagar Resto</button>`;
+                            saldoParaDistribuir = 0;
+                        } else {
+                            status = 'PENDENTE'; badgeClass = 'st-pendente';
+                            actionBtn = `
+                                <button class="btn-pay-parcel" onclick="payParcelFromInput('${id}', ${i}, false, 0)"><i class="fas fa-dollar-sign"></i> Pagar</button>
+                                <button class="btn-stop-treatment" onclick="stopTreatment('${id}')" title="Encerrar"><i class="fas fa-ban"></i></button>
+                            `;
+                        }
+
+                        const selDinheiro = displayMethod === 'Dinheiro' ? 'selected' : '';
+                        const selPIX = displayMethod === 'PIX' ? 'selected' : '';
+                        const selCartao = displayMethod === 'Cartao' ? 'selected' : '';
+
+                        htmlParcelas += `
+                            <div class="parcela-item">
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    <strong style="width:20px;">${i}ª</strong>
+                                    <input type="number" id="inp-val-${id}-${i}" class="inp-parcela" value="${displayVal}" step="0.01" ${inputDisabled}>
+                                    <input type="date" id="inp-dat-${id}-${i}" class="inp-date" value="${displayDate}" ${inputDisabled}>
+                                    <select id="inp-met-${id}-${i}" class="inp-method" ${inputDisabled}>
+                                        <option value="Dinheiro" ${selDinheiro}>Dinheiro</option><option value="PIX" ${selPIX}>PIX</option><option value="Cartao" ${selCartao}>Cartão</option>
+                                    </select>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="status-badge ${badgeClass}">${status}</span>
+                                    ${actionBtn}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    trDetails.innerHTML = `
+                        <td colspan="9" style="padding:0;">
+                            <div class="cascade-container">
+                                ${entryDetails}
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <h5 style="margin:0; color:#334155;">Planejamento de Parcelas (Valores Brutos)</h5>
+                                    <button class="btn" style="background:#475569; color:white; padding:4px 10px; font-size:11px; border-radius:4px;" onclick="saveInstallmentPlan('${id}', ${numParcelas})">
+                                        <i class="fas fa-save"></i> Salvar Valores Base
+                                    </button>
+                                </div>
+                                ${htmlParcelas}
+                                <div style="margin-top:10px; font-size:12px; color:#64748b; text-align:right;">
+                                    <strong>Saldo Devedor Total:</strong> ${saldo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                }
+                tbody.appendChild(trDetails);
+            });
+        }
+
+        function toggleDetails(id) {
+            const row = document.getElementById(`details-${id}`);
+            if(row) row.classList.toggle('active');
+        }
+
+        function manageReceipt(id) {
+            currentReceiptId = id;
+            const s = sales[id];
+            currentReceiptBase64 = s.comprovante || null;
+            hasUnsavedReceiptChanges = false;
+            
+            document.getElementById('receiptFile').value = '';
+            renderReceiptUI();
+            document.getElementById('receiptModal').classList.remove('hidden-field');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden-field');
+            currentReceiptId = null;
+            currentReceiptBase64 = null;
+        }
+
+        function renderReceiptUI() {
+            const uploadBox = document.getElementById('uploadBox');
+            const cardArea = document.getElementById('receiptCardArea');
+            const previewArea = document.getElementById('actualPreviewArea');
+            const btnSave = document.getElementById('modalFooterSave');
+            
+            previewArea.style.display = 'none';
+            previewArea.innerHTML = '';
+
+            if(!currentReceiptBase64) {
+                uploadBox.style.display = 'block';
+                cardArea.style.display = 'none';
+            } else {
+                uploadBox.style.display = 'none';
+                cardArea.style.display = 'flex';
+                const isPdf = currentReceiptBase64.startsWith('data:application/pdf');
+                document.getElementById('docCardIcon').className = isPdf ? 'fas fa-file-pdf' : 'fas fa-file-image';
+                document.getElementById('docCardIconBox').style.background = isPdf ? '#fee2e2' : '#e0f2fe';
+                document.getElementById('docCardIconBox').style.color = isPdf ? '#dc2626' : '#0284c7';
+                document.getElementById('docCardType').innerText = isPdf ? 'Documento PDF' : 'Imagem (Foto/Print)';
+            }
+            btnSave.style.display = hasUnsavedReceiptChanges ? 'block' : 'none';
+        }
+
+        function previewReceipt(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            if(file.size > 5 * 1024 * 1024) {
+                alert("O arquivo é muito grande. Por favor, insira um comprovante de até 5MB.");
+                event.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentReceiptBase64 = e.target.result;
+                hasUnsavedReceiptChanges = true;
+                renderReceiptUI();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function toggleReceiptView() {
+            const area = document.getElementById('actualPreviewArea');
+            if(area.style.display === 'block') {
+                area.style.display = 'none';
+                area.innerHTML = '';
+            } else {
+                area.style.display = 'block';
+                if(currentReceiptBase64.startsWith('data:application/pdf')) {
+                    area.innerHTML = `<embed src="${currentReceiptBase64}" width="100%" height="400px" type="application/pdf">`;
+                } else {
+                    area.innerHTML = `<img src="${currentReceiptBase64}" style="max-width:100%; max-height:400px; border-radius:4px; margin: 0 auto; display: block;">`;
+                }
+            }
+        }
+
+        function downloadReceipt() {
+            if(!currentReceiptBase64) return;
+            const a = document.createElement('a');
+            a.href = currentReceiptBase64;
+            let ext = 'png';
+            if(currentReceiptBase64.startsWith('data:application/pdf')) ext = 'pdf';
+            else if(currentReceiptBase64.includes('image/jpeg')) ext = 'jpg';
+            a.download = `Comprovante_Registro_${currentReceiptId}.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function removeReceipt() {
+            if(!confirm("Remover este comprovante da memória?\n(A exclusão definitiva só ocorrerá após clicar em 'Salvar Alterações')")) return;
+            currentReceiptBase64 = null;
+            hasUnsavedReceiptChanges = true;
+            document.getElementById('receiptFile').value = '';
+            renderReceiptUI();
+        }
+
+        async function saveReceipt() {
+            if(!currentReceiptId) return;
+            const s = sales[currentReceiptId];
+            s.comprovante = currentReceiptBase64;
+            await updateSaleInDB(currentReceiptId, s);
+            closeReceiptModal();
+            alert('Documentos do registro atualizados com sucesso!');
+        }
+
+        async function markPresent(id, index) {
+            if(!confirm("Confirmar que a paciente esteve presente neste ciclo?")) return;
+            const sale = sales[id];
+            
+            sale.historico_parcelas[index].status = 'presente';
+            sale.historico_parcelas[index].data = document.getElementById(`lim-dat-${id}-${index}`).value;
+            
+            const valorCiclo = parseCurrency(sale.historico_parcelas[index].valor);
+            sale.valor_pago = parseCurrency(sale.valor_pago) + valorCiclo;
+            
+            await updateSaleInDB(id, sale);
+        }
+
+        window.enableReschedule = function(id, index, btn) {
+            const dateInput = document.getElementById(`lim-dat-${id}-${index}`);
+            dateInput.disabled = false;
+            dateInput.focus();
+            
+            btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Data';
+            btn.style.background = '#10b981';
+            
+            btn.onclick = function() { confirmRescheduleCycle(id, index); };
+        };
+
+        async function confirmRescheduleCycle(id, index) {
+            const sale = sales[id];
+            const history = sale.historico_parcelas;
+            
+            const inputDate = document.getElementById(`lim-dat-${id}-${index}`);
+            const newDateStr = inputDate.value;
+            const oldDateStr = history[index].data;
+            
+            if(!newDateStr) return alert("Por favor, informe uma data válida no campo do ciclo.");
+            if(newDateStr === oldDateStr) return alert("A data não foi alterada. Mude a data na caixinha antes de confirmar.");
+
+            if(!confirm(`Ao remarcar este ciclo para ${safeDateDisplay(newDateStr)}, todas as datas dos próximos ciclos pendentes serão empurradas para frente na mesma proporção.\n\nConfirma a remarcação?`)) return;
+
+            const oldD = new Date(oldDateStr + 'T12:00:00');
+            const newD = new Date(newDateStr + 'T12:00:00');
+            const diffTime = newD - oldD;
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            history[index].status = 'faltou';
+            history[index].data = newDateStr;
+
+            for(let i = index + 1; i <= sale.ciclos_total; i++) {
+                if(history[i] && history[i].status !== 'presente') {
+                    let nextD = new Date(history[i].data + 'T12:00:00');
+                    nextD.setDate(nextD.getDate() + diffDays);
+                    history[i].data = nextD.toISOString().split('T')[0];
+                }
+            }
+            
+            sale.historico_parcelas = history;
+            const lastCycle = history[sale.ciclos_total];
+            if(lastCycle) sale.data_fim_prevista = lastCycle.data;
+
+            await updateSaleInDB(id, sale);
+        }
+
+        async function payParcelFromInput(id, index, isRestante, restanteVal) {
+            const valInput = document.getElementById(`inp-val-${id}-${index}`);
+            const dateInput = document.getElementById(`inp-dat-${id}-${index}`);
+            const methodInput = document.getElementById(`inp-met-${id}-${index}`);
+
+            let payAmount = isRestante ? restanteVal : (parseFloat(valInput.value) || 0);
+            const payDate = dateInput.value;
+            const payMethod = methodInput.value; 
+
+            if(payAmount <= 0) return alert("Valor inválido");
+            if(!confirm(`Confirmar pagamento de R$ ${payAmount.toFixed(2)} via ${payMethod}?`)) return;
+
+            let taxRate = 0;
+            if (payMethod === 'Cartao') taxRate = 0.033; 
+            const impostoParcela = payAmount * taxRate;
+
+            const sale = sales[id];
+            const currentPaid = parseCurrency(sale.valor_pago);
+            const currentDesc = parseCurrency(sale.desconto);
+            
+            const totalBruto = parseCurrency(sale.total_procedimento) || parseCurrency(sale.valor_final);
+            const newPaid = currentPaid + payAmount;
+            const newDesc = currentDesc + impostoParcela;
+            const newFinal = totalBruto - newDesc; 
+
+            let currentHistory = sale.historico_parcelas || {};
+            currentHistory[index] = { valor: payAmount, data: payDate, metodo: payMethod, pago: true };
+
+            const updatedSale = { ...sale, valor_pago: newPaid, desconto: newDesc, valor_final: newFinal, historico_parcelas: currentHistory };
+            await updateSaleInDB(id, updatedSale);
+        }
+
+        async function stopTreatment(id) {
+            if(!confirm("Encerrar tratamento e considerar pago?")) return;
+            const sale = sales[id];
+            const paid = parseCurrency(sale.valor_pago);
+            
+            const updatedSale = { ...sale, valor_final: paid - parseCurrency(sale.desconto), total_procedimento: paid, parcelas: 'Encerrado' };
+            await updateSaleInDB(id, updatedSale);
+        }
+
+        async function saveInstallmentPlan(id, numParcelas) {
+            let customPlan = {};
+            for(let i=1; i<=numParcelas; i++) {
+                const el = document.getElementById(`inp-val-${id}-${i}`);
+                if(el && !el.disabled) { customPlan[i] = parseFloat(el.value) || 0; }
+            }
+            const sale = sales[id];
+            const updatedSale = { ...sale, parcelas_customizadas: customPlan };
+            await updateSaleInDB(id, updatedSale);
+            alert("Planejamento salvo!");
+        }
+
+        async function deleteSale(id) {
+            if(!confirm("Excluir este registro?")) return;
+            await fetch(`${API_BASE_URL}/vendas/${id}`, { 
+                method: 'DELETE',
+                headers: API_HEADERS
+            });
+            loadData();
+        }
+
+        async function getBase64ImageFromURL(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image(); img.setAttribute("crossOrigin", "anonymous");
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.width; canvas.height = img.height;
+                    const ctx = canvas.getContext("2d"); ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL("image/png"));
+                };
+                img.onerror = error => reject(error); img.src = url;
+            });
+        }
+
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4'); 
+            const rows = getFilteredData().map(i => i[1]);
+            if (rows.length === 0) { alert("Sem dados no filtro atual para exportar."); return; }
+
+            const tableColumn = ["Data", "Paciente", "Médico", "Procedimento", "Receb.", "Pgto/Ciclos", "Taxa", "Total Líquido", "V. Pago Bruto", "NF", "Usuário"];
+            const tableRows = [];
+            
+            let sumTotalLiquido = 0; 
+            let sumPagoBruto = 0;
+            let sumEcoCenter = 0;
+            let sumRepasse = 0;
+            let sumTaxas = 0;
+
+            rows.forEach(s => {
+                const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
+                const recStr = s.recebedor || 'Clinica';
+                
+                const bruto = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
+                const liquido = parseCurrency(s.valor_final);
+                
+                let pago = parseCurrency(s.valor_pago);
+                if (pago > 0 && Math.abs(pago - liquido) < 0.05 && parseCurrency(s.desconto) > 0 && !isLiminar) {
+                    pago = bruto; 
+                }
+
+                sumTotalLiquido += liquido; 
+                sumPagoBruto += pago;
+
+                if (!isLiminar) {
+                    const procName = (s.procedimento || '').toLowerCase();
+                    if (procName.includes('consulta')) sumRepasse += liquido;
+                    else sumEcoCenter += liquido;
+                    if (recStr === 'Clinica') sumTaxas += parseCurrency(s.desconto);
+                }
+
+                let pgto = '';
+                let taxaStr = '-';
+
+                if(isLiminar) {
+                    pgto = `Liminar (${s.ciclos_total || 1}x)`;
+                } else {
+                    pgto = s.forma_pagamento || '-';
+                    if (s.usa_dois_pagamentos && s.forma_pagamento_2) pgto += ` + ${s.forma_pagamento_2}`;
+                    pgto += ` (${s.parcelas || '1x'})`;
+
+                    if (s.desconto_percentual > 0) {
+                        if (s.desconto_percentual == 1.2) taxaStr = 'Déb. 1.2%';
+                        else if (s.desconto_percentual == 3.3) taxaStr = 'Créd. 3.3%';
+                        else taxaStr = `${s.desconto_percentual}%`;
+                    }
+                }
+                
+                const userName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
+
+                tableRows.push([
+                    safeDateDisplay(s.data), 
+                    s.paciente || '', 
+                    s.medico || '', 
+                    s.procedimento || '-', 
+                    recStr === 'Clinica' ? 'Clínica' : 'Médico',
+                    pgto,
+                    taxaStr,
+                    liquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}),
+                    pago.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}),
+                    s.nota_fiscal || '-',
+                    userName
+                ]);
+            });
+
+            doc.setFillColor(0, 133, 91); 
+            doc.rect(0, 0, 297, 35, 'F');
+            doc.setFillColor(16, 185, 129); 
+            doc.rect(0, 35, 297, 2, 'F');
+
+            try { 
+                const logoData = await getBase64ImageFromURL(LOGO_URL); 
+                doc.addImage(logoData, 'PNG', 10, 6, 23, 23); 
+            } catch (err) { console.log("Logo ignorada"); }
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(20);
+            doc.text("RELATÓRIO FINANCEIRO", 40, 18); 
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(209, 250, 229);
+            doc.text("Fechamento de Particulares e Liminares Judiciais", 40, 24);
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(9);
+            doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 287, 18, { align: "right" });
+            const startF = document.getElementById('fStart').value ? safeDateDisplay(document.getElementById('fStart').value) : '--';
+            const endF = document.getElementById('fEnd').value ? safeDateDisplay(document.getElementById('fEnd').value) : '--';
+            doc.text(`Período Filtrado: ${startF} até ${endF}`, 287, 24, { align: "right" });
+
+            doc.autoTable({ 
+                head: [tableColumn], 
+                body: tableRows, 
+                foot: [[
+                    { content: 'VALOR TOTAL', colSpan: 7, styles: { halign: 'left', paddingLeft: 3 } },
+                    { content: sumTotalLiquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), styles: { halign: 'center' } },
+                    { content: sumPagoBruto.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), styles: { halign: 'center' } },
+                    "",
+                    ""
+                ]],
+                startY: 45, 
+                theme: 'grid', 
+                margin: { left: 10, right: 10, bottom: 20 }, 
+                rowPageBreak: 'avoid', 
+                headStyles: { 
+                    fillColor: [0, 133, 91], 
+                    textColor: 255, 
+                    fontStyle: 'bold',
+                    fontSize: 7.5,
+                    halign: 'center',
+                    valign: 'middle',
+                    lineColor: [0, 100, 70],
+                    lineWidth: 0.1
+                }, 
+                bodyStyles: {
+                    fontSize: 7.5, 
+                    textColor: [51, 65, 85],
+                    halign: 'center',
+                    valign: 'middle',
+                    cellPadding: 1.5, 
+                    lineColor: [200, 200, 200], 
+                    lineWidth: 0.1
+                },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                footStyles: {
+                    fillColor: [241, 245, 249],
+                    textColor: [15, 23, 42],
+                    fontStyle: 'bold',
+                    fontSize: 8,
+                    lineColor: [0, 133, 91],
+                    lineWidth: 0.3,
+                    halign: 'center'
+                },
+                showFoot: 'lastPage',
+                columnStyles: {
+                    0: { cellWidth: 16 }, 
+                    1: { cellWidth: 36 }, 
+                    2: { cellWidth: 24 },
+                    3: { cellWidth: 32 }, 
+                    4: { cellWidth: 15 }, 
+                    5: { cellWidth: 30 }, 
+                    6: { cellWidth: 16 }, 
+                    7: { cellWidth: 28, fontStyle: 'bold', textColor: [0, 133, 91] }, 
+                    8: { cellWidth: 28 }, 
+                    9: { cellWidth: 14 },
+                    10: { cellWidth: 18 } 
+                } 
+            });
+
+            const finalY = doc.lastAutoTable.finalY + 8;
+            
+            if (finalY > 165) doc.addPage();
+            const startCardY = finalY > 165 ? 15 : finalY;
+
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(10, startCardY, 120, 32, 3, 3, 'FD'); 
+
+            doc.setFillColor(240, 253, 244); 
+            doc.roundedRect(10.15, startCardY + 0.15, 119.7, 8, 3, 3, 'F');
+            
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 133, 91);
+            doc.text("RESUMO CONTÁBIL (VALORES LÍQUIDOS)", 15, startCardY + 5.5);
+
+            doc.setFontSize(8);
+            doc.setTextColor(71, 85, 105);
+            
+            doc.setFont("helvetica", "bold");
+            doc.text("ECO Center (Infusões):", 15, startCardY + 14);
+            doc.setFont("helvetica", "normal");
+            doc.text(sumEcoCenter.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 14, { align: "right" });
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Repasse Médico (Consultas):", 15, startCardY + 21);
+            doc.setFont("helvetica", "normal");
+            doc.text(sumRepasse.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 21, { align: "right" });
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Taxas de Maquininha (Clínica):", 15, startCardY + 28);
+            doc.setFont("helvetica", "normal");
+            doc.text(sumTaxas.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 28, { align: "right" });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.5);
+                doc.line(10, 195, 287, 195); 
+
+                doc.setFontSize(7);
+                doc.setTextColor(148, 163, 184);
+                doc.setFont("helvetica", "normal");
+                doc.text(`ECO Sistema - Gestão Inteligente`, 10, 202);
+                doc.text(`Página ${i} de ${pageCount}`, 287, 202, { align: "right" });
+            }
+
+            doc.save(`Relatorio_Financeiro_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+</script>
+</body>
+</html>

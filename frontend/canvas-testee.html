@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Artes - ECO Sistema</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Allura&family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&family=Lato:wght@300;400;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+    <script src="global.js"></script>
+
+    <style>
+        body { margin: 0; background-color: #f0f2f5; font-family: 'Montserrat', sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        .container { height: 100vh; display: flex; flex-direction: column; }
+        #global-header, #global-nav { flex-shrink: 0; }
+
+        .editor-workspace { display: flex; flex: 1; overflow: hidden; min-height: 0; background: #e9ebee; position: relative; }
+        .editor-sidebar { width: 300px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; z-index: 10; }
+        .editor-panel { width: 320px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; z-index: 10; }
+        .editor-main { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+
+        /* TOOLBAR */
+        .toolbar { height: 50px; background: white; border-bottom: 1px solid #ddd; display: flex; align-items: center; padding: 0 15px; gap: 8px; z-index: 20; }
+        .tool-group { display: flex; align-items: center; gap: 4px; padding-right: 10px; border-right: 1px solid #eee; margin-right: 4px; }
+        .tool-btn { background: transparent; border: none; border-radius: 4px; height: 32px; min-width: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #333; font-size: 14px; }
+        .tool-btn:hover { background-color: #f0f0f0; }
+        .tool-btn.active { background-color: #e0e0e0; color: #000; font-weight: bold; border: 1px solid #ccc; }
+        .tool-input { width: 50px; height: 28px; border: 1px solid #ddd; border-radius: 4px; text-align: center; }
+        .color-indicator { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; }
+        #colorPicker { display: none; }
+
+        /* ARQUIVO BTN */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-btn { background: #00855B; color: white; padding: 0 15px; font-weight: 600; border-radius: 6px; height: 34px; display: flex; align-items: center; gap: 5px; border:none; cursor: pointer; }
+        
+        .view-switch { display: flex; align-items: center; background: #f0f0f0; border-radius: 20px; padding: 2px; border: 1px solid #ddd; margin-right: 15px; }
+        .view-btn { padding: 4px 12px; border-radius: 18px; border: none; background: transparent; cursor: pointer; font-size: 11px; font-weight: 600; color: #666; transition: 0.2s; }
+        .view-btn.active { background: #00855B; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .canvas-scroll-area { flex: 1; overflow: auto; padding: 40px; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 30px; }
+        .page-container { background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.15); position: relative; transform-origin: center top; }
+        .page-header { position: absolute; top: -30px; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; color: #666; }
+        .btn-remove-page { background: #e53e3e; color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 10px; }
+
+        .zoom-controls { position: absolute; bottom: 20px; right: 20px; background: white; padding: 5px 10px; border-radius: 30px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 50; }
+        .zoom-val { font-size: 13px; font-weight: 600; width: 45px; text-align: center; }
+        .add-page-btn { padding: 12px 25px; background: white; border: 1px dashed #999; border-radius: 8px; cursor: pointer; color: #555; font-weight: 600; margin-bottom: 50px; }
+        .add-page-btn:hover { background: #fff; border-color: var(--primary); color: var(--primary); }
+
+        .panel-header { padding: 15px; font-weight: 700; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .panel-body { padding: 15px; overflow-y: auto; flex: 1; }
+        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .template-card { background: #eee; border-radius: 6px; cursor: pointer; height: 100px; position: relative; border: 2px solid transparent; }
+        .template-card:hover { border-color: #00855B; }
+        .template-preview { width: 100%; height: 100%; background-size: cover; background-position: center; border-radius: 4px; }
+        .template-info { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.8); font-size: 10px; padding: 2px; text-align: center; }
+        .btn-delete-tpl { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+
+        .prop-group { margin-bottom: 15px; }
+        .prop-label { display: block; font-size: 11px; font-weight: 700; color: #888; margin-bottom: 5px; }
+        .prop-textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit; }
+        .magic-btn-group { display: flex; gap: 5px; margin-top: 5px; }
+        .magic-btn { flex: 1; background: #f0f2f5; color: #333; border: 1px solid #ddd; font-size: 12px; padding: 8px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; }
+        .magic-btn.active { background: #00855B; color: white; border-color: #00855B; }
+
+        .hidden { display: none !important; }
+        #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        /* MODAL MODERNO */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 9999; display: none; justify-content: center; align-items: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-card { background: white; width: 450px; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-header { font-size: 18px; font-weight: 700; color: #333; margin-bottom: 20px; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .modal-close { cursor: pointer; font-size: 22px; color: #999; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .modal-option { background: #f8f9fa; border: 1px solid #eee; padding: 20px; border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; color: #555; }
+        .modal-option:hover { border-color: #00855B; background: #f0fcf9; color: #00855B; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .modal-option i { font-size: 28px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    
+    <div id="loading" class="hidden">
+        <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #00855B; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 15px; font-weight: 600; color: #333;" id="loadingText">Carregando...</p>
+    </div>
+
+    <div id="fileModal" class="modal-overlay" onclick="closeFileModal(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span>Menu Arquivo</span>
+                <span class="modal-close" onclick="closeFileModal(event, true)">&times;</span>
+            </div>
+            <div class="modal-grid">
+                <div class="modal-option" onclick="manualSaveUser()">
+                    <i class="fas fa-save" style="color:#00855B"></i>
+                    <span>Salvar Projeto</span>
+                </div>
+                <div class="modal-option" onclick="resetCanvas()">
+                    <i class="fas fa-file" style="color:#3182CE"></i>
+                    <span>Novo (Limpar)</span>
+                </div>
+                <div class="modal-option" onclick="downloadPNG()">
+                    <i class="fas fa-image" style="color:#D69E2E"></i>
+                    <span>Baixar PNG (HD)</span>
+                </div>
+                <div class="modal-option" onclick="downloadPDF()">
+                    <i class="fas fa-file-pdf" style="color:#E53E3E"></i>
+                    <span>Baixar PDF (HD)</span>
+                </div>
+                <div id="modalSaveTemplate" class="modal-option hidden" onclick="handleSaveClick()">
+                    <i class="fas fa-cloud-upload-alt" style="color:#805AD5"></i>
+                    <span>Salvar Modelo (Admin)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="editor-workspace">
+            <div class="editor-sidebar">
+                <div class="panel-header">
+                    <span>Modelos</span>
+                    <button class="tool-btn" onclick="document.getElementById('imgInput').click()" title="Upload Imagem"><i class="fas fa-upload"></i></button>
+                    <input type="file" id="imgInput" accept="image/*" style="display: none;">
+                </div>
+                <div class="panel-body">
+                    <div class="template-grid" id="templateList"></div>
+                </div>
+            </div>
+
+            <div class="editor-main">
+                <div class="toolbar">
+                    <button class="dropdown-btn" onclick="openFileModal()"><i class="fas fa-bars"></i> Arquivo</button>
+                    <div style="width:1px; height:20px; background:#eee; margin:0 10px;"></div>
+
+                    <div id="adminControls" class="hidden" style="display:flex; align-items:center; border-right:1px solid #eee; padding-right:10px; margin-right:10px;">
+                        <div class="view-switch">
+                            <button class="view-btn active" onclick="toggleViewMode('admin')"><i class="fas fa-tools"></i> Admin</button>
+                            <button class="view-btn" onclick="toggleViewMode('user')"><i class="fas fa-eye"></i> Usuário</button>
+                        </div>
+                    </div>
+
+                    <div id="formattingTools" style="display:flex; align-items:center;">
+                        <div class="tool-group">
+                            <select id="fontFamily" class="tool-btn" style="width: 130px;">
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Lato">Lato</option>
+                                <option value="Raleway">Raleway</option>
+                                <option value="Great Vibes">Great Vibes</option>
+                                <option value="Dancing Script">Dancing Script</option>
+                                <option value="Allura">Allura</option>
+                                <option value="Pacifico">Pacifico</option>
+                                <option value="Playfair Display">Playfair Display</option>
+                            </select>
+                            <button class="tool-btn" onclick="document.getElementById('fontInput').click()" title="Importar Fonte"><i class="fas fa-plus"></i></button>
+                            <input type="file" id="fontInput" accept=".ttf,.otf,.woff" style="display:none">
+                        </div>
+
+                        <div class="tool-group">
+                            <button class="tool-btn" onclick="changeFontSize(-1)"><i class="fas fa-minus"></i></button>
+                            <input type="number" id="fontSize" class="tool-input" value="24">
+                            <button class="tool-btn" onclick="changeFontSize(1)"><i class="fas fa-plus"></i></button>
+                        </div>
+
+                        <div class="tool-group">
+                            <button class="tool-btn" onclick="document.getElementById('colorPicker').click()">
+                                <div id="colorPreview" class="color-indicator" style="background-color: #000;"></div>
+                            </button>
+                            <input type="color" id="colorPicker" onchange="changeColor(this.value)">
+                        </div>
+
+                        <div class="tool-group">
+                            <button class="tool-btn" id="btnBold" onclick="toggleStyle('bold')"><i class="fas fa-bold"></i></button>
+                            <button class="tool-btn" id="btnItalic" onclick="toggleStyle('italic')"><i class="fas fa-italic"></i></button>
+                            <button class="tool-btn" id="btnUnderline" onclick="toggleStyle('underline')"><i class="fas fa-underline"></i></button>
+                        </div>
+
+                        <div class="tool-group">
+                            <button class="tool-btn" onclick="cycleAlign()"><i class="fas fa-align-left" id="alignIcon"></i></button>
+                            <button class="tool-btn" onclick="cycleList()"><i class="fas fa-list-ul" id="listIcon"></i></button>
+                        </div>
+
+                        <div class="tool-group">
+                            <button class="tool-btn" onclick="addText()">+ Texto</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="canvas-scroll-area" id="workspace"></div>
+                
+                <div style="text-align:center;">
+                    <button class="add-page-btn" onclick="addNewPage()">+ Adicionar Página</button>
+                </div>
+
+                <div class="zoom-controls">
+                    <button class="tool-btn" onclick="setZoom(-0.1)"><i class="fas fa-minus"></i></button>
+                    <span class="zoom-val" id="zoomLabel">100%</span>
+                    <button class="tool-btn" onclick="setZoom(0.1)"><i class="fas fa-plus"></i></button>
+                    <button class="tool-btn" onclick="autoFitZoom()"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+
+            <div class="editor-panel">
+                <div class="panel-header"><i class="fas fa-sliders-h"></i> Propriedades</div>
+                <div class="panel-body" id="propertiesContent">
+                    <p style="text-align: center; color: #999; margin-top: 40px; font-size:13px;">Selecione um elemento.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO FABRIC
+        fabric.Object.prototype.set({
+            transparentCorners: false,
+            cornerColor: '#ffffff',
+            cornerStrokeColor: '#00855B',
+            borderColor: '#00855B',
+            cornerSize: 12,
+            padding: 5,
+            cornerStyle: 'circle',
+            borderDashArray: [3, 3]
+        });
+
+        // HACK PARA TEXTBOX (AJUSTE LATERAL)
+        fabric.Textbox.prototype.controls.mr.actionHandler = fabric.controlsUtils.changeWidth;
+        fabric.Textbox.prototype.controls.ml.actionHandler = fabric.controlsUtils.changeWidth;
+
+        const state = {
+            role: 'user', mode: 'user', zoom: 1, bgImage: null, currentTemplateId: null, 
+            canvasW: 559, canvasH: 794, currentGender: 'm', customFonts: []
+        };
+        let pages = [];
+        let activeCanvasIndex = 0;
+
+        const els = {
+            props: document.getElementById('propertiesContent'),
+            modalSaveTemplate: document.getElementById('modalSaveTemplate'),
+            loading: document.getElementById('loading'),
+            templateList: document.getElementById('templateList'),
+            adminControls: document.getElementById('adminControls'),
+            formattingTools: document.getElementById('formattingTools')
+        };
+
+        // Salvar campos extras no JSON do Fabric
+        fabric.Object.prototype.toObject = (function (toObject) {
+            return function (propertiesToInclude) {
+                return toObject.call(this, (propertiesToInclude || []).concat(['id', 'editable', 'textM', 'textF']));
+            };
+        })(fabric.Object.prototype.toObject);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initGlobal('canvas', 'Editor de Artes'); 
+            const user = JSON.parse(localStorage.getItem('ecoUser'));
+            if(user) { checkAdminPermissions(user.email); loadLastUserState(user.uid); }
+            else { addNewPage(); toggleViewMode('user'); }
+            loadGlobalFonts(); loadTemplates();
+        });
+
+        // --- SISTEMA DE PÁGINAS ---
+        function addNewPage(jsonData = null) {
+            const workspace = document.getElementById('workspace');
+            const pageIndex = pages.length;
+            
+            const div = document.createElement('div');
+            div.className = 'page-container';
+            div.innerHTML = `
+                <div class="page-header">
+                    <span>Página ${pageIndex + 1}</span>
+                    <button class="btn-remove-page" onclick="removePage(${pageIndex})"><i class="fas fa-trash"></i></button>
+                </div>
+                <canvas id="canvas-${pageIndex}"></canvas>
+            `;
+            workspace.appendChild(div);
+
+            const canvas = new fabric.Canvas(`canvas-${pageIndex}`, {
+                width: state.canvasW, height: state.canvasH,
+                backgroundColor: '#fff', preserveObjectStacking: true
+            });
+
+            if (state.bgImage) applyBackgroundToCanvas(canvas, state.bgImage);
+
+            if (jsonData) {
+                canvas.loadFromJSON(jsonData, () => {
+                    canvas.renderAll();
+                    updateCanvasZoom(canvas);
+                    applyLocksToAll();
+                });
+            } else {
+                updateCanvasZoom(canvas);
+            }
+
+            canvas.on('mouse:down', (e) => { 
+                activeCanvasIndex = pageIndex; 
+                if(!e.target) {
+                    canvas.discardActiveObject();
+                    canvas.renderAll();
+                    updatePropertiesPanel();
+                }
+                updateToolbarState(); 
+            });
+
+            canvas.on('object:scaling', function(e) {
+                var obj = e.target;
+                if(obj.type === 'textbox') {
+                    if(obj.scaleX !== 1) { 
+                        obj.set({ fontSize: obj.fontSize * obj.scaleX, scaleX: 1, scaleY: 1 });
+                    }
+                }
+            });
+
+            canvas.on('selection:created', () => { updateToolbarState(); updatePropertiesPanel(); });
+            canvas.on('selection:updated', () => { updateToolbarState(); updatePropertiesPanel(); });
+            canvas.on('selection:cleared', () => { updatePropertiesPanel(); });
+            canvas.on('object:modified', autoSaveUserState);
+            canvas.on('text:changed', autoSaveUserState);
+
+            pages.push({ canvas, container: div });
+            activeCanvasIndex = pageIndex;
+            updateRemoveButtons();
+        }
+
+        function removePage(index) {
+            if (pages.length <= 1) return alert("Mínimo uma página.");
+            if (confirm('Remover página?')) {
+                pages[index].canvas.dispose();
+                pages[index].container.remove();
+                pages.splice(index, 1);
+                pages.forEach((p, i) => {
+                    p.container.querySelector('.page-header span').innerText = `Página ${i + 1}`;
+                    p.container.querySelector('.btn-remove-page').setAttribute('onclick', `removePage(${i})`);
+                    p.canvas.__eventListeners['mouse:down'] = [];
+                    p.canvas.on('mouse:down', (e) => { 
+                        activeCanvasIndex = i; 
+                        if(!e.target) { p.canvas.discardActiveObject(); p.canvas.renderAll(); updatePropertiesPanel(); }
+                        updateToolbarState(); 
+                    });
+                });
+                activeCanvasIndex = Math.max(0, index - 1);
+                autoSaveUserState();
+                updateRemoveButtons();
+            }
+        }
+
+        function updateRemoveButtons() {
+            document.querySelectorAll('.btn-remove-page').forEach(btn => btn.style.display = pages.length > 1 ? 'inline-block' : 'none');
+        }
+
+        function getActiveCanvas() {
+            if (pages.length === 0) return null;
+            if (activeCanvasIndex >= pages.length) activeCanvasIndex = pages.length - 1;
+            return pages[activeCanvasIndex].canvas;
+        }
+
+        function getActiveObject() {
+            const cvs = getActiveCanvas();
+            return cvs ? cvs.getActiveObject() : null;
+        }
+
+        // --- ZOOM E FUNDO ---
+        function autoFitZoom() {
+            const containerH = document.getElementById('workspace').offsetHeight - 100;
+            if(containerH > 0 && state.canvasH > 0) {
+                state.zoom = Math.min((containerH / state.canvasH), 1.2);
+                updateZoomLabel();
+                applyZoomToAll();
+            }
+        }
+        function setZoom(delta) { state.zoom = Math.max(0.1, Math.min(3, state.zoom + delta)); updateZoomLabel(); applyZoomToAll(); }
+        function updateZoomLabel() { document.getElementById('zoomLabel').innerText = Math.round(state.zoom * 100) + '%'; }
+        function applyZoomToAll() { pages.forEach(p => updateCanvasZoom(p.canvas)); }
+        function updateCanvasZoom(canvas) {
+            canvas.setDimensions({ width: state.canvasW * state.zoom, height: state.canvasH * state.zoom });
+            canvas.setZoom(state.zoom);
+            canvas.renderAll();
+        }
+        function applyBackgroundToCanvas(canvas, src) {
+            fabric.Image.fromURL(src, (img) => {
+                if(!img) return;
+                const scale = Math.max(state.canvasW / img.width, state.canvasH / img.height);
+                img.set({ originX: 'left', originY: 'top', scaleX: scale, scaleY: scale });
+                canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+            }, { crossOrigin: 'anonymous' });
+        }
+
+        // --- FERRAMENTAS ---
+        function addText() {
+            const cvs = getActiveCanvas() || (pages.length > 0 ? pages[pages.length-1].canvas : null);
+            if(!cvs) return alert("Crie uma página.");
+            
+            const text = new fabric.Textbox('Novo Texto', {
+                left: state.canvasW / 2, top: state.canvasH / 2,
+                originX: 'center', originY: 'center', width: 300,
+                fontFamily: 'Montserrat', fontSize: 40, fill: '#000000', 
+                editable: true, objectCaching: false, splitByGrapheme: false
+            });
+            
+            text.textM = "Novo Texto"; text.textF = "Novo Texto";
+            cvs.add(text); cvs.setActiveObject(text); cvs.renderAll();
+            updatePropertiesPanel();
+            updateToolbarState();
+        }
+
+        function updateToolbarState() {
+            const obj = getActiveObject();
+            if(!obj) return;
+            
+            document.getElementById('fontSize').value = Math.round(obj.fontSize);
+            document.getElementById('fontFamily').value = obj.fontFamily || 'Arial';
+            document.getElementById('colorPreview').style.backgroundColor = obj.fill;
+            
+            document.getElementById('btnBold').classList.toggle('active', obj.fontWeight==='bold');
+            document.getElementById('btnItalic').classList.toggle('active', obj.fontStyle==='italic');
+            document.getElementById('btnUnderline').classList.toggle('active', obj.underline);
+        }
+
+        function changeFontSize(delta) {
+            const obj = getActiveObject();
+            const inp = document.getElementById('fontSize');
+            let val = parseInt(inp.value) + delta; if(val<1) val=1; 
+            if(obj) { obj.set('fontSize', val); getActiveCanvas().renderAll(); inp.value = val; }
+        }
+        document.getElementById('fontSize').onchange = (e) => {
+            const obj = getActiveObject();
+            if(obj) { obj.set('fontSize', parseInt(e.target.value)); getActiveCanvas().renderAll(); }
+        }
+
+        // --- CORREÇÃO: FORMATAR PARCIALMENTE OU TOTALMENTE ---
+        function toggleStyle(style) {
+            const obj = getActiveObject(); if(!obj) return;
+            const cvs = getActiveCanvas();
+            const isSelection = obj.selectionStart !== obj.selectionEnd;
+
+            // Se houver seleção, aplica no estilo local. Se não, aplica no objeto todo e limpa estilos locais conflitantes.
+            if (style === 'bold') {
+                if (isSelection) {
+                    let current = obj.getSelectionStyles()[0]?.fontWeight;
+                    let val = (current === 'bold') ? 'normal' : 'bold';
+                    obj.setSelectionStyles({ fontWeight: val });
+                } else {
+                    let val = (obj.fontWeight === 'bold') ? 'normal' : 'bold';
+                    obj.set('fontWeight', val);
+                    // Remove formatação individual para prevalecer a global
+                    if (obj.styles) {
+                        for (let line in obj.styles) {
+                            for (let char in obj.styles[line]) {
+                                delete obj.styles[line][char].fontWeight;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (style === 'italic') {
+                if (isSelection) {
+                    let current = obj.getSelectionStyles()[0]?.fontStyle;
+                    let val = (current === 'italic') ? 'normal' : 'italic';
+                    obj.setSelectionStyles({ fontStyle: val });
+                } else {
+                    let val = (obj.fontStyle === 'italic') ? 'normal' : 'italic';
+                    obj.set('fontStyle', val);
+                    if (obj.styles) {
+                        for (let line in obj.styles) {
+                            for (let char in obj.styles[line]) {
+                                delete obj.styles[line][char].fontStyle;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (style === 'underline') {
+                if (isSelection) {
+                    let current = obj.getSelectionStyles()[0]?.underline;
+                    obj.setSelectionStyles({ underline: !current });
+                } else {
+                    obj.set('underline', !obj.underline);
+                    if (obj.styles) {
+                        for (let line in obj.styles) {
+                            for (let char in obj.styles[line]) {
+                                delete obj.styles[line][char].underline;
+                            }
+                        }
+                    }
+                }
+            }
+
+            obj.dirty = true;
+            cvs.renderAll();
+            updateToolbarState();
+        }
+
+        // --- MODO ADMIN / USER ---
+        function toggleViewMode(mode) {
+            state.mode = mode;
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            els.formattingTools.style.visibility = (mode === 'user') ? 'hidden' : 'visible';
+            updatePropertiesPanel();
+            applyLocksToAll();
+        }
+
+        function applyLocksToAll() {
+            pages.forEach(p => {
+                p.canvas.getObjects().forEach(obj => {
+                    const isLocked = (state.mode === 'user' && !obj.editable);
+                    // TRAVAMENTO COMPLETO
+                    obj.set({
+                        lockMovementX: isLocked, lockMovementY: isLocked, 
+                        lockScalingX: isLocked, lockScalingY: isLocked, lockRotation: isLocked,
+                        hasControls: !isLocked, hasBorders: !isLocked,  
+                        hoverCursor: isLocked ? 'text' : 'move',
+                        editable: true 
+                    });
+                });
+                p.canvas.requestRenderAll();
+            });
+        }
+
+        // --- LISTA INTELIGENTE ---
+        function cycleList() {
+            const obj = getActiveObject(); if(!obj || obj.type !== 'textbox') return;
+            
+            const lines = obj.text.split('\n');
+            // Identifica linhas afetadas pela seleção
+            const start = obj.selectionStart;
+            const end = obj.selectionEnd;
+            
+            let charC = 0, startLine = -1, endLine = -1;
+            for(let i=0; i<lines.length; i++) {
+                const len = lines[i].length + 1;
+                if(startLine === -1 && charC + len > start) startLine = i;
+                if(charC + len >= end) { endLine = i; break; }
+                charC += len;
+            }
+            if(endLine === -1) endLine = lines.length - 1;
+
+            let first = lines[startLine];
+            let mode = 'none';
+            if(first.startsWith('• ')) mode = 'bullet';
+            else if(/^\d+\.\s/.test(first)) mode = 'number';
+
+            let next = (mode === 'bullet') ? 'number' : (mode === 'number') ? 'none' : 'bullet';
+            
+            for(let i=startLine; i<=endLine; i++) {
+                let clean = lines[i].replace(/^•\s/, '').replace(/^\d+\.\s/, '');
+                if(next === 'bullet') lines[i] = `• ${clean}`;
+                else if(next === 'number') lines[i] = `${i - startLine + 1}. ${clean}`;
+                else lines[i] = clean;
+            }
+
+            obj.set('text', lines.join('\n'));
+            getActiveCanvas().renderAll();
+        }
+
+        // --- PROPRIEDADES ---
+        function updatePropertiesPanel() {
+            const obj = getActiveObject();
+            const panel = els.props;
+            panel.innerHTML = '';
+
+            if (!obj) {
+                panel.innerHTML = `<p style="text-align:center;color:#999;margin-top:40px;">Selecione um elemento.</p>`;
+                return;
+            }
+
+            if (state.mode === 'admin') {
+                panel.innerHTML += `
+                    <div class="prop-group" style="display:flex; gap:5px; margin-bottom:20px;">
+                        <button class="magic-btn" onclick="moveObjectToPage(-1)" title="Mover pág. anterior"><i class="fas fa-arrow-up"></i> Mover Pág</button>
+                        <button class="magic-btn" onclick="moveObjectToPage(1)" title="Mover próx. pág."><i class="fas fa-arrow-down"></i> Mover Pág</button>
+                    </div>
+                `;
+            }
+
+            if (obj.type === 'textbox' || obj.type === 'i-text') {
+                if (state.mode === 'admin') {
+                    panel.innerHTML += `
+                        <div class="prop-group"><label class="prop-label" style="color:blue">M</label><textarea id="pm" class="prop-textarea">${obj.textM||obj.text}</textarea></div>
+                        <div class="prop-group"><label class="prop-label" style="color:pink">F</label><textarea id="pf" class="prop-textarea">${obj.textF||obj.text}</textarea></div>
+                        <div class="prop-group"><label><input type="checkbox" id="ped" ${obj.editable?'checked':''}> Usuário pode editar?</label></div>
+                        <button class="btn-delete-tpl" style="position:static; width:100%; margin-top:10px; background:#d32f2f;" onclick="deleteActiveObject()">Excluir</button>
+                    `;
+                    setTimeout(() => {
+                        document.getElementById('pm').oninput = e => { obj.set('textM', e.target.value); if(state.currentGender=='m') { obj.set('text',e.target.value); getActiveCanvas().renderAll(); }};
+                        document.getElementById('pf').oninput = e => { obj.set('textF', e.target.value); if(state.currentGender=='f') { obj.set('text',e.target.value); getActiveCanvas().renderAll(); }};
+                        document.getElementById('ped').onchange = e => { obj.set('editable', e.target.checked); applyLocksToAll(); };
+                    },0);
+                } else {
+                    panel.innerHTML += `
+                        <div class="prop-group">
+                            <label class="prop-label">Gênero</label>
+                            <div class="magic-btn-group">
+                                <button class="magic-btn ${state.currentGender=='m'?'active':''}" onclick="switchGender('m')">Masculino</button>
+                                <button class="magic-btn ${state.currentGender=='f'?'active':''}" onclick="switchGender('f')">Feminino</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (obj.editable) {
+                        panel.innerHTML += `
+                            <div class="prop-group">
+                                <label class="prop-label">Editar Texto</label>
+                                <textarea id="userTextEdit" class="prop-textarea">${obj.text}</textarea>
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            document.getElementById('userTextEdit').oninput = (e) => {
+                                obj.set('text', e.target.value);
+                                getActiveCanvas().renderAll();
+                            }
+                        }, 0);
+                    } else {
+                        panel.innerHTML += `<p style="font-size:12px; color:#888; margin-top:10px;">Este texto é fixo.</p>`;
+                    }
+                }
+            }
+        }
+
+        // --- SISTEMA ---
+        function openFileModal() { document.getElementById('fileModal').classList.add('open'); }
+        function closeFileModal(e, f) { if(f || e.target.id === 'fileModal' || e.target.classList.contains('modal-close')) document.getElementById('fileModal').classList.remove('open'); }
+
+        function deleteActiveObject() {
+            const cvs = getActiveCanvas(); const obj = cvs.getActiveObject();
+            if(obj) { cvs.remove(obj); cvs.discardActiveObject(); cvs.renderAll(); updatePropertiesPanel(); }
+        }
+        function moveObjectToPage(dir) {
+            const obj = getActiveObject(); if(!obj) return;
+            const targetIndex = activeCanvasIndex + dir;
+            if(targetIndex >= 0 && targetIndex < pages.length) {
+                obj.clone(cloned => {
+                    pages[activeCanvasIndex].canvas.remove(obj);
+                    pages[activeCanvasIndex].canvas.discardActiveObject();
+                    pages[targetIndex].canvas.add(cloned);
+                    pages[targetIndex].canvas.setActiveObject(cloned);
+                    pages[targetIndex].canvas.renderAll();
+                    pages[activeCanvasIndex].canvas.renderAll();
+                    activeCanvasIndex = targetIndex;
+                    pages[targetIndex].container.scrollIntoView({behavior:'smooth'});
+                });
+            } else alert("Limite de páginas.");
+        }
+        function switchGender(g) {
+            state.currentGender = g;
+            const obj = getActiveObject();
+            if(obj) {
+                obj.set('text', g==='m' ? (obj.textM||obj.text) : (obj.textF||obj.text));
+                getActiveCanvas().renderAll();
+                updatePropertiesPanel();
+            }
+        }
+        function cycleAlign() {
+            const obj=getActiveObject(); if(!obj)return;
+            const m={'left':'center','center':'right','right':'justify','justify':'left'};
+            const next = m[obj.textAlign] || 'left';
+            obj.set('textAlign', next);
+            getActiveCanvas().renderAll();
+        }
+        function changeColor(h) { const o=getActiveObject(); if(o) { if(o.selectionStart!==o.selectionEnd) o.setSelectionStyles({fill:h}); else o.set('fill',h); getActiveCanvas().renderAll(); } }
+        document.getElementById('fontFamily').onchange = e => { const o=getActiveObject(); if(o) { o.set('fontFamily',e.target.value); getActiveCanvas().renderAll(); } };
+        document.getElementById('imgInput').onchange = e => {
+            const f=e.target.files[0]; if(!f)return;
+            const r=new FileReader(); r.onload=ev=>{
+                const i=new Image(); i.src=ev.target.result;
+                i.onload=()=>{ state.canvasW=i.naturalWidth; state.canvasH=i.naturalHeight; state.bgImage=ev.target.result;
+                if(pages.length==0) addNewPage(); else pages.forEach(p=>{ p.canvas.setWidth(state.canvasW*state.zoom); p.canvas.setHeight(state.canvasH*state.zoom); applyBackgroundToCanvas(p.canvas, state.bgImage); });
+                autoFitZoom(); }
+            }; r.readAsDataURL(f);
+        };
+        document.getElementById('fontInput').onchange = e => {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = evt => {
+                const name = file.name.split('.')[0].replace(/[^a-zA-Z]/g,'');
+                const font = new FontFace(name, `url(${evt.target.result})`);
+                font.load().then(f => {
+                    document.fonts.add(f); state.customFonts.push(name);
+                    const opt = document.createElement('option'); opt.value = name; opt.innerText = name;
+                    document.getElementById('fontFamily').appendChild(opt);
+                    firebase.database().ref('fonts').push({ name: name, source: evt.target.result });
+                    alert("Fonte importada!");
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // --- CORREÇÃO SALVAR MODELO ---
+        function handleSaveClick() {
+            closeFileModal(null, true);
+            if (state.role !== 'admin') return;
+            
+            // Serializa com propriedades extras para garantir que textoM/F e editable sejam salvos
+            const pagesData = pages.map(p => p.canvas.toJSON(['id', 'editable', 'textM', 'textF']));
+            
+            const payload = { 
+                bgImage: state.bgImage || '', 
+                pages: pagesData, 
+                canvasW: state.canvasW, 
+                canvasH: state.canvasH 
+            };
+
+            if (state.currentTemplateId) {
+                firebase.database().ref(`templates/${state.currentTemplateId}`).update(payload)
+                    .then(() => { alert("Modelo Atualizado!"); loadTemplates(); })
+                    .catch(e => alert("Erro ao atualizar: " + e.message));
+            } else {
+                const name = prompt("Nome do Modelo:"); 
+                if(name) { 
+                    payload.name = name; 
+                    firebase.database().ref('templates').push(payload)
+                        .then(r => { 
+                            state.currentTemplateId = r.key; 
+                            alert("Modelo Criado!"); 
+                            loadTemplates(); 
+                        })
+                        .catch(e => alert("Erro ao criar: " + e.message));
+                }
+            }
+        }
+
+        // --- LOADERS/RESTO ---
+        function loadTemplateData(key, data) {
+            state.currentTemplateId = key; state.bgImage = data.bgImage; state.canvasW = data.canvasW || 559; state.canvasH = data.canvasH || 794;
+            document.getElementById('workspace').innerHTML = '';
+            pages.forEach(p => p.canvas.dispose()); pages = [];
+            if(data.pages) data.pages.forEach(p => addNewPage(p)); else addNewPage();
+            setTimeout(autoFitZoom, 300);
+        }
+        function manualSaveUser() { closeFileModal(null, true); autoSaveUserState(); alert("Salvo!"); }
+        function autoSaveUserState() {
+            const user = JSON.parse(localStorage.getItem('ecoUser')); if(!user) return;
+            const pagesData = pages.map(p => p.canvas.toJSON());
+            firebase.database().ref(`usuarios/${user.uid}/lastCanvas`).set({
+                pages: pagesData, bgImage: state.bgImage, canvasW: state.canvasW, canvasH: state.canvasH, templateId: state.currentTemplateId
+            });
+        }
+        function loadLastUserState(uid) {
+            firebase.database().ref(`usuarios/${uid}/lastCanvas`).once('value').then(s=>{
+                const d=s.val(); if(d) { state.bgImage=d.bgImage; state.canvasW=d.canvasW; state.canvasH=d.canvasH; state.currentTemplateId=d.templateId; document.getElementById('workspace').innerHTML=''; pages=[]; if(d.pages) d.pages.forEach(p=>addNewPage(p)); else addNewPage(); setTimeout(autoFitZoom,300); } else addNewPage();
+            });
+        }
+        async function loadTemplates() {
+            const s=await firebase.database().ref('templates').once('value'); const d=s.val();
+            const l=els.templateList; l.innerHTML=''; if(!d)return;
+            Object.entries(d).forEach(([k,v])=>{
+                const div=document.createElement('div'); div.className='template-card';
+                let del = state.role==='admin' ? `<button class="btn-delete-tpl" onclick="deleteTemplate('${k}',event)">X</button>` : '';
+                div.innerHTML=`${del}<div class="template-preview" style="background-image:url(${v.bgImage})"></div><div class="template-info">${v.name}</div>`;
+                div.onclick=()=>loadTemplateData(k,v); l.appendChild(div);
+            });
+        }
+        function deleteTemplate(k,e){ e.stopPropagation(); if(confirm('Excluir?')) firebase.database().ref(`templates/${k}`).remove().then(loadTemplates); }
+        async function loadGlobalFonts() {
+            const s=await firebase.database().ref('fonts').once('value'); const d=s.val(); if(!d)return;
+            const sel = document.getElementById('fontFamily');
+            Object.values(d).forEach(async f=>{ if(!state.customFonts.includes(f.name)) {
+                try { const ft=new FontFace(f.name, `url(${f.source})`); await ft.load(); document.fonts.add(ft); state.customFonts.push(f.name); 
+                const o=document.createElement('option'); o.value=f.name; o.innerText=f.name; sel.appendChild(o); } catch(e){}
+            }});
+        }
+        async function checkAdminPermissions(email) {
+            try { const s=await firebase.database().ref(`usuarios/${email.replace(/\./g,',')}/permissoes`).once('value');
+            if(s.val()?.admin) { state.role='admin'; els.modalSaveTemplate.classList.remove('hidden'); els.adminControls.classList.remove('hidden'); toggleViewMode('admin'); } else toggleViewMode('user'); } catch(e){}
+        }
+        function resetCanvas() {
+            closeFileModal(null, true);
+            state.currentTemplateId = null; state.bgImage = null;
+            document.getElementById('workspace').innerHTML = ''; pages = [];
+            addNewPage(); autoFitZoom();
+        }
+        function downloadPNG() { 
+            closeFileModal(null,true); 
+            const c=getActiveCanvas(); if(!c)return alert('Selecione página'); 
+            c.discardActiveObject(); 
+            fabric.Object.prototype.objectCaching = false; c.renderAll();
+            const a=document.createElement('a'); a.download='arte.png'; a.href=c.toDataURL({format:'png',multiplier:4, enableRetinaScaling:true}); a.click();
+            fabric.Object.prototype.objectCaching = true;
+        }
+        function downloadPDF() { 
+            closeFileModal(null,true); 
+            const doc = new window.jspdf.jsPDF({unit:'px', format:[state.canvasW, state.canvasH], orientation: state.canvasW > state.canvasH ? 'l' : 'p'}); 
+            fabric.Object.prototype.objectCaching = false;
+            pages.forEach((p,i)=>{ 
+                if(i>0)doc.addPage([state.canvasW,state.canvasH]); 
+                p.canvas.discardActiveObject(); p.canvas.renderAll(); 
+                doc.addImage(p.canvas.toDataURL({format:'png',multiplier:3}),'PNG',0,0,state.canvasW,state.canvasH); 
+            }); 
+            fabric.Object.prototype.objectCaching = true;
+            doc.save('documento.pdf'); 
+        }
+    </script>
+</body>
+</html>

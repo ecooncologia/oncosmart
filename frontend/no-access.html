@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Acesso Restrito - ECO Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+        <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, #00855B 0%, #20343D 100%); height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: white; width: 100%; max-width: 480px; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.5s ease-out; }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .icon-box { width: 80px; height: 80px; background: #FFF5F5; color: #C53030; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 25px; }
+        h1 { color: #20343D; margin-bottom: 10px; font-size: 24px; font-weight: 700; }
+        p { color: #718096; line-height: 1.6; margin-bottom: 25px; font-size: 15px; }
+        .user-email { background: #EDF2F7; padding: 4px 10px; border-radius: 4px; font-weight: 700; color: #2D3748; font-size: 14px; }
+        .actions { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #EDF2F7; padding-top: 25px; }
+        .btn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; border: none; width: 100%; font-size: 14px; }
+        .btn-check { background-color: #00855B; color: white; } .btn-check:hover { background-color: #006b49; }
+        .btn-logout { background-color: #F7FAFC; color: #4A5568; border: 1px solid #E2E8F0; } .btn-logout:hover { background-color: #EDF2F7; color: #2D3748; }
+        .loading { display: none; margin-bottom: 15px; color: #00855B; font-weight: 600; font-size: 13px; }
+        .fa-spinner { margin-right: 5px; animation: spin 1s infinite linear; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-box"><i class="fas fa-lock"></i></div>
+        <h1>Acesso Pendente</h1>
+        <p>Olá, <span id="userDisplay" class="user-email">...</span>.<br>Seu usuário ainda <strong>não possui permissões ativas</strong>.</p>
+        <p style="font-size: 14px;">Solicite a liberação ao Administrador do sistema.<br>Assim que liberado, clique abaixo ou atualize a página.</p>
+        <div id="loadingStatus" class="loading"><i class="fas fa-spinner"></i> Verificando permissões...</div>
+        <div class="actions">
+            <button onclick="checkPermissions()" class="btn btn-check"><i class="fas fa-sync-alt"></i> Verificar Acesso Novamente</button>
+            <button onclick="logout()" class="btn btn-logout"><i class="fas fa-sign-out-alt"></i> Sair da Conta</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.ecooncologia.com.br:3000';
+
+        // Mapeamento idêntico ao global.js para saber para onde mandar
+        const APP_PAGES = [
+            { id: 'dashboard', file: 'dashboard.html', perm: 'dashboard' },
+            { id: 'helpdesk', file: 'helpdesk.html', perm: 'helpdesk' }, 
+            { id: 'helpdesk_admin', file: 'helpdesk-admin.html', perm: 'helpdesk_admin' },
+            { id: 'indicadores_enf', file: 'indicadores-enfermagem.html', perm: 'indicadores_enf' },
+            { id: 'enfermagem', file: 'enfermagem.html', perm: 'enfermagem' },
+            { id: 'transporte', file: 'transporte.html', perm: 'transporte' },
+            { id: 'budget', file: 'budget.html', perm: 'orcamentos' },
+            { id: 'budgets', file: 'budgets.html', perm: 'orcamentos' },
+            { id: 'sales', file: 'sales.html', perm: 'consultas' },
+            { id: 'procedures', file: 'procedures.html', perm: 'procedimentos' },
+            { id: 'doctors', file: 'doctors.html', perm: 'medicos' },
+            { id: 'shifts', file: 'shifts.html', perm: 'plantao' },
+            { id: 'repass', file: 'medical-repass.html', perm: 'repasse' },
+            { id: 'stenci', file: 'stenci.html', perm: 'stenci' },
+            { id: 'selos', file: 'selos.html', perm: 'selos' },
+            { id: 'canvas', file: 'canvas.html', perm: 'canvas_special' }, 
+            { id: 'admin', file: 'admin.html', perm: 'admin' }
+        ];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const userJson = localStorage.getItem('ecoUser');
+            if(userJson) {
+                const user = JSON.parse(userJson);
+                document.getElementById('userDisplay').textContent = user.email;
+                checkPermissions();
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        async function checkPermissions() {
+            const userJson = localStorage.getItem('ecoUser');
+            if (!userJson) return;
+            const user = JSON.parse(userJson);
+
+            const loading = document.getElementById('loadingStatus');
+            loading.style.display = 'block';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/usuarios`);
+                if (res.ok) {
+                    const allUsers = await res.json();
+                    const emailKey = user.email.replace(/\./g, ',');
+                    let found = allUsers[emailKey] || Object.values(allUsers).find(u => u.email === user.email);
+
+                    if (found) {
+                        const perms = (typeof found.permissoes === 'string') ? JSON.parse(found.permissoes) : (found.permissoes || {});
+                        
+                        user.permissoes = perms;
+                        localStorage.setItem('ecoUser', JSON.stringify(user));
+
+                        // PROCURA A PRIMEIRA PÁGINA PERMITIDA
+                        const firstValidPage = APP_PAGES.find(p => {
+                            if (p.id === 'helpdesk') return true; // Helpdesk é sempre liberado
+                            if (p.id === 'admin' && perms.admin) return true;
+                            if (perms[p.perm] === true) return true;
+                            return false;
+                        });
+
+                        if (firstValidPage) {
+                            window.location.href = firstValidPage.file;
+                            return;
+                        }
+                    }
+                }
+                loading.style.display = 'none';
+            } catch (e) {
+                console.error("Erro ao verificar:", e);
+                loading.style.display = 'none';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('ecoUser'); localStorage.removeItem('ecoUserPhoto');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

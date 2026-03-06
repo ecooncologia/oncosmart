@@ -1,0 +1,18 @@
+{
+  "name": "ONCO SMART",
+  "short_name": "ONCO SMART",
+  "start_url": "/smart/",
+  "scope": "/smart/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#00855B",
+  "description": "Sistema de Gestão ECO Oncologia",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "704x704",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

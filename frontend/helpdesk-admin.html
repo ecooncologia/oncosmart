@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Atendimento Helpdesk - ONCO SMART</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        .header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; margin-bottom: 25px; padding-bottom: 15px; }
+        
+        .global-switch { display: flex; align-items: center; gap: 10px; }
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .btn-new-ticket { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-new-ticket:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        /* CASCATA STYLE */
+        .group-header td { font-size: 14px; padding: 12px 15px; border-bottom: 2px solid #e2e8f0; background: #f8fafc; cursor: pointer; transition: 0.2s; }
+        .group-header:hover td { background: #f1f5f9; }
+        .group-header i { margin-right: 10px; color: var(--primary); font-size: 12px; width: 15px; text-align: center; }
+        .grp-row { transition: opacity 0.3s; }
+        .grp-row.collapsed { display: none; }
+
+        .queue-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .queue-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #cbd5e0; background: white; font-size: 13px; font-weight: 600; color: #4a5568; cursor: pointer; transition: 0.2s; }
+        .queue-btn:hover { background: #f7fafc; }
+        .queue-btn.active { background: var(--secondary); color: white; border-color: var(--secondary); }
+        .count-badge { background: rgba(0,0,0,0.15); padding: 1px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px; }
+        
+        .user-cell { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #E2E8F0; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #718096; font-size: 14px; }
+        .u-name { font-weight: 700; font-size: 13px; color: var(--text-dark); line-height: 1.2; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .bg-pendente { background: #FEF3C7; color: #D97706; }
+        .bg-em_andamento { background: #DBEAFE; color: #1E40AF; }
+        .bg-finalizado { background: #D1FAE5; color: #065F46; }
+        .bg-standby { background: #F3F4F6; color: #4B5563; }
+        
+        .reopened-tag { background: #FEE2E2; color: #DC2626; border: 1px solid #FCA5A5; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-top: 4px; display: inline-block; }
+        .ticket-id { font-family: monospace; font-weight: bold; color: var(--primary); font-size: 14px; }
+        
+        /* SIDE PANEL */
+        .side-panel { position: fixed; top: 0; right: -650px; width: 550px; height: 100vh; background: white; box-shadow: -5px 0 25px rgba(0,0,0,0.15); z-index: 1100; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+        .side-panel.open { right: 0; }
+        .panel-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1050; }
+        .sla-timer { font-family: 'Courier New', monospace; font-weight: bold; color: var(--primary); background: #f0fdf4; padding: 2px 6px; border-radius: 4px; border: 1px solid #bbf7d0; font-size: 12px; }
+        
+        .interaction-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .file-upload-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .custom-file-upload { border: 1px solid #cbd5e0; display: inline-block; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 12px; background: white; color: #4a5568; transition: 0.2s; }
+        .custom-file-upload:hover { background: #edf2f7; }
+        #panelDesc img { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); position: relative; }
+        .modal-box h3 { margin-top: 0; color: var(--secondary); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; outline: none; }
+        .form-control:focus { border-color: var(--primary); }
+        .dynamic-field { margin-bottom: 15px; }
+        .btn-close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="header-actions">
+            <div>
+                <h2 style="margin:0; font-size:18px; color:var(--secondary);"><i class="fas fa-tasks"></i> Fila de Atendimento</h2>
+            </div>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div class="global-switch" title="Ative para ver os chamados de TODAS as filas da clínica">
+                    <span style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;">Visão Global</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleGlobalView" onchange="forceReload()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button class="btn-new-ticket" onclick="openNewTicketModal()">
+                    <i class="fas fa-plus"></i> Novo Chamado
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <div class="queue-tabs">
+                <button class="queue-btn active" onclick="setQueue('pendente')">Pendentes <span class="count-badge" id="badgePend">0</span></button>
+                <button class="queue-btn" onclick="setQueue('standby')">Standby <span class="count-badge" id="badgeStd">0</span></button>
+                <button class="queue-btn" onclick="setQueue('finalizado')">Concluídos <span class="count-badge" id="badgeFin">0</span></button>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table id="adminTable">
+                        <thead>
+                            <tr>
+                                <th>Nº</th>
+                                <th>Abertura</th>
+                                <th>Solicitante</th>
+                                <th>Setor</th>
+                                <th>Fila / Assunto</th>
+                                <th>Status</th>
+                                <th>Avaliação</th>
+                                <th>SLA Real</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="8" style="text-align:center; padding:30px;">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-overlay" id="panelOverlay" onclick="closeSidePanel()"></div>
+    <div class="side-panel" id="sidePanel">
+        <div style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="color:var(--primary); margin:0;">Chamado <span id="panelIdTitle"></span></h3>
+            <button onclick="closeSidePanel()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        
+        <div style="padding:20px; overflow-y:auto; flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:15px; border-radius:10px; margin-bottom:20px;">
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <div id="panelAvatarContainer" class="user-avatar" style="width:50px; height:50px; font-size:18px;"></div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div id="panelUser" style="font-weight:bold; font-size:16px;"></div>
+                            <i class="fas fa-edit" style="cursor:pointer; color:#94a3b8; font-size:14px;" onclick="openChangeRequesterModal()" title="Alterar Solicitante"></i>
+                        </div>
+                        <div id="panelEmail" style="font-size:12px; color:#718096;"></div>
+                        <div id="panelSector" style="font-size:11px; font-weight:bold; color:var(--primary); text-transform:uppercase;"></div>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11px; color:#64748b; font-weight:bold; text-transform:uppercase;">Responsável</div>
+                    <div id="panelOwner" style="font-size:14px; font-weight:800; color:#0f172a;">-</div>
+                </div>
+            </div>
+
+            <div id="actionButtonsGroup" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                <button id="btnAssumir" class="btn btn-success" onclick="assumirChamado()"><i class="fas fa-hand-paper"></i> Assumir</button>
+                <button id="btnTransfer" class="btn btn-secondary" style="background:#64748b; border:none;" onclick="openTransferModal()"><i class="fas fa-exchange-alt"></i> Transferir</button>
+                <button id="btnStandby" class="btn btn-warning" onclick="updateTicketSLA('standby')" style="display:none;"><i class="fas fa-pause"></i> Pausar</button>
+                <button id="btnRetomar" class="btn btn-info" onclick="updateTicketSLA('em_andamento')" style="display:none;"><i class="fas fa-play"></i> Retomar</button>
+            </div>
+
+            <div style="text-align:center; margin-bottom:20px; font-size:12px; color:#666;">
+                Status: <strong id="panelStatus"></strong> | Tempo Real: <span id="panelTimer" class="sla-timer">00:00:00</span>
+                <div id="panelReopenedAlert" style="display:none; color:#DC2626; font-weight:bold; margin-top:5px;"><i class="fas fa-exclamation-triangle"></i> ATENÇÃO: CHAMADO REABERTO</div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label style="font-size:11px; font-weight:bold; color:#a0aec0;">FILA / ROTA</label>
+                <div id="panelItem" style="font-size:14px; font-weight:700;"></div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label style="font-size:11px; font-weight:bold; color:#a0aec0;">HISTÓRICO / DESCRIÇÃO</label>
+                <div id="panelDesc" style="background:white; border:1px solid #e2e8f0; padding:12px; border-radius:8px; font-size:13px; white-space:pre-wrap; max-height:250px; overflow-y:auto;"></div>
+            </div>
+
+            <div class="interaction-box" style="border-color: #3b82f6; background: #eff6ff;">
+                <label style="font-size:11px; font-weight:bold; color:#1d4ed8; display:block; margin-bottom:10px;"><i class="fas fa-tasks"></i> PLANO DE AÇÃO / TAREFAS</label>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="width: 100%; background-color: #cbd5e1; border-radius: 4px; height: 8px; overflow: hidden;">
+                        <div id="adminChecklistProgress" style="height: 100%; border-radius: 4px; transition: width 0.4s ease; width: 0%; background-color: #3b82f6;"></div>
+                    </div>
+                    <div id="adminChecklistText" style="font-size: 10px; color: #475569; font-weight: bold; text-align: right; margin-top: 3px;">0% (0/0)</div>
+                </div>
+
+                <div id="adminChecklistContainer" style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px;">
+                    </div>
+
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="newChecklistInput" class="form-control" style="margin-bottom:0; padding:8px 10px; font-size:12px;" placeholder="Adicionar nova tarefa...">
+                    <button class="btn btn-info" onclick="addChecklistItem()" style="padding:8px 12px; border-radius:6px; border:none; background:#3b82f6;"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+
+            <div class="interaction-box">
+                <label style="font-size:11px; font-weight:bold; color:#2563EB; display:block; margin-bottom:5px;"><i class="fas fa-reply"></i> NOVA RESPOSTA</label>
+                <textarea id="adminResponse" class="form-control" rows="3" placeholder="Escreva uma mensagem..."></textarea>
+                <div class="file-upload-wrapper">
+                    <label for="adminFile" class="custom-file-upload"><i class="fas fa-paperclip"></i> Anexar Documento / Imagem</label>
+                    <input type="file" id="adminFile" style="display:none;" onchange="document.getElementById('fileNameDisplay').innerText = this.files[0] ? this.files[0].name : ''">
+                    <span id="fileNameDisplay" style="font-size:11px; color:#666; margin-left:10px;"></span>
+                </div>
+                <button class="btn btn-info" onclick="sendAdminResponse()" style="width:100%; margin-top:10px; background:#3B82F6; border:none;" id="btnSendResp">Enviar Resposta</button>
+            </div>
+
+            <div style="border-top:1px solid #edf2f7; padding-top:20px; display:none;" id="boxFinalizar">
+                <label style="font-size:11px; font-weight:bold; color:#065F46;">FINALIZAR CHAMADO</label>
+                <textarea id="solutionTxt" class="form-control" rows="2" placeholder="Descreva a solução final..."></textarea>
+                <button class="btn btn-success" onclick="finishTicket()" style="width:100%; margin-top:10px;"><i class="fas fa-check"></i> Concluir e Finalizar</button>
+            </div>
+
+            <div style="margin-top:30px; text-align:center;">
+                <button onclick="delTicket()" style="background:none; border:none; color:#E53E3E; font-size:12px; cursor:pointer; text-decoration:underline;">Excluir Chamado</button>
+            </div>
+            <input type="hidden" id="selectedKey">
+        </div>
+    </div>
+
+    <div id="modalNewTicketAdmin" class="panel-overlay" style="z-index: 1200; align-items:center; justify-content:center;">
+        <div class="modal-box" style="width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <button class="btn-close-modal" onclick="closeModal('modalNewTicketAdmin')">&times;</button>
+            <h3><i class="fas fa-headset"></i> Abrir Chamado Interno</h3>
+            <label style="font-weight:bold; font-size:12px;">1. Solicitante</label><select id="newAdminRequester" class="form-control"></select>
+            <label style="font-weight:bold; font-size:12px;">2. Setor</label><select id="newAdminSector" class="form-control"></select>
+            <label style="font-weight:bold; font-size:12px; margin-top:10px; display:block;">3. Categoria / Fila</label><div id="admin-dynamic-categories" style="background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"></div>
+            <label style="font-weight:bold; font-size:12px;">4. Prioridade</label><select id="newAdminSLA" class="form-control"><option value="Baixa">Baixa</option><option value="Media" selected>Média</option><option value="Alta">Alta</option></select>
+            <label style="font-weight:bold; font-size:12px;">5. Descrição</label><textarea id="newAdminDesc" class="form-control" rows="4"></textarea>
+            <button class="btn btn-success" style="width:100%; font-weight:bold; padding:12px;" onclick="saveAdminTicket()"><i class="fas fa-paper-plane"></i> Criar Chamado</button>
+        </div>
+    </div>
+    
+    <div id="modalTransfer" class="panel-overlay" style="z-index: 1200; align-items:center; justify-content:center;"><div class="modal-box"><button class="btn-close-modal" onclick="closeModal('modalTransfer')">&times;</button><h3><i class="fas fa-exchange-alt"></i> Transferir Chamado</h3><select id="transferSelectTech" class="form-control"></select><button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="confirmTransfer()">Confirmar</button></div></div>
+    <div id="modalChangeRequester" class="panel-overlay" style="z-index: 1200; align-items:center; justify-content:center;"><div class="modal-box"><button class="btn-close-modal" onclick="closeModal('modalChangeRequester')">&times;</button><h3><i class="fas fa-user-edit"></i> Alterar Solicitante</h3><select id="changeRequesterSelect" class="form-control"></select><button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="confirmChangeRequester()">Salvar</button></div></div>
+
+    <script>
+        let allTickets = []; 
+        let filteredTickets = []; 
+        let usersMap = {}; 
+        let currentQueue = 'pendente'; 
+        let currentPanelTicket = null; 
+        let currentUserData = null;
+        let myQueues = []; 
+        let systemSectors = [];
+        let adminLoadedCategories = []; 
+        let adminActiveCategoryPath = [];
+        let collapsedGroups = new Set(); 
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('helpdesk_admin', 'Atendimento Helpdesk');
+            
+            const rawUser = localStorage.getItem('ecoUser');
+            if(rawUser) currentUserData = JSON.parse(rawUser);
+
+            await loadAllData();
+            setInterval(loadAllData, 5000);
+            setInterval(updatePanelTimer, 1000);
+        });
+
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+
+        function formatarId(id) {
+            if (!id) return '-';
+            return '#' + String(id).padStart(4, '0');
+        }
+
+        async function loadAllData() {
+            try {
+                // BLINDADO
+                const resConfig = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
+                const confData = await resConfig.json();
+                const hdConf = confData.helpdesk_config || {};
+                
+                systemSectors = hdConf.setores || [];
+                adminLoadedCategories = hdConf.categorias || [];
+
+                const techFilas = hdConf.filas || {};
+                if(currentUserData && currentUserData.email) {
+                    myQueues = techFilas[currentUserData.email.toLowerCase()] || [];
+                }
+
+                // BLINDADO
+                const [resUsers, resTickets] = await Promise.all([
+                    fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS })
+                ]);
+
+                const usersData = normalizeData(await resUsers.json());
+                usersMap = {};
+                
+                Object.values(usersData).forEach(u => {
+                    let p = u.permissoes;
+                    if(typeof p === 'string') { try { p = JSON.parse(p); } catch(e){ p = {}; } }
+                    u.permissoes = p || {};
+                    if(u.email) usersMap[u.email.toLowerCase()] = u;
+                });
+
+                const rawTickets = await resTickets.json();
+                
+                let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ key: key, ...val }));
+                arrayRaw = arrayRaw.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+                arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
+                
+                allTickets = arrayRaw;
+
+                processFiltersAndRender();
+                
+                // Mantém o painel aberto e atualizado
+                const openKey = document.getElementById('selectedKey').value;
+                if(openKey) {
+                    const t = allTickets.find(x => x.key === openKey);
+                    if(t) {
+                        currentPanelTicket = t;
+                        document.getElementById('panelDesc').innerHTML = t.desc ? String(t.desc).replace(/\n/g, '<br>') : '';
+                        document.getElementById('panelStatus').innerText = t.status ? String(t.status).toUpperCase() : '-';
+                        document.getElementById('panelOwner').innerText = t.atendente_nome || 'Aguardando';
+                        
+                        if(t.is_reopened) document.getElementById('panelReopenedAlert').style.display = 'block';
+                        else document.getElementById('panelReopenedAlert').style.display = 'none';
+                        
+                        updateActionButtons();
+                        renderAdminChecklist();
+                    }
+                }
+            } catch (e) { 
+                console.error("Erro polling API:", e); 
+            }
+        }
+
+        function processFiltersAndRender() {
+            const isGlobal = document.getElementById('toggleGlobalView').checked;
+            
+            filteredTickets = allTickets.filter(t => {
+                const catStr = String(t.categoria || '');
+                const catPrincipal = catStr.split(' > ')[0];
+                const myEmail = currentUserData ? currentUserData.email : null;
+                
+                if (!isGlobal) {
+                    return myQueues.includes(catPrincipal) || t.atendente_email === myEmail;
+                }
+                return true; 
+            });
+
+            renderTable(); 
+        }
+
+        function forceReload() { 
+            processFiltersAndRender(); 
+        }
+
+        function calculateElapsedTime(t) {
+            if(t.status === 'finalizado') return t.elapsedTime || 0;
+            if(t.status === 'standby') return t.elapsedTime || 0;
+            if(t.status === 'em_andamento' && t.lastResumeTime) {
+                return (t.elapsedTime || 0) + (Date.now() - t.lastResumeTime);
+            } else {
+                const start = t.date ? new Date(t.date).getTime() : Date.now();
+                return Date.now() - start;
+            }
+        }
+
+        function formatMs(ms) {
+            if(!ms || isNaN(ms) || ms < 0) return "00:00:00";
+            const s = Math.floor((ms / 1000) % 60);
+            const m = Math.floor((ms / (1000 * 60)) % 60);
+            const h = Math.floor(ms / (1000 * 60 * 60));
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+
+        function setQueue(q) {
+            currentQueue = q;
+            document.querySelectorAll('.queue-btn').forEach(b => b.classList.remove('active'));
+            const map = {'pendente':0, 'standby':1, 'finalizado':2};
+            if(document.querySelectorAll('.queue-btn')[map[q]]) {
+                document.querySelectorAll('.queue-btn')[map[q]].classList.add('active');
+            }
+            renderTable();
+        }
+
+        function toggleGroup(safeTechId) {
+            const rows = document.querySelectorAll('.grp-' + safeTechId);
+            const icon = document.getElementById('icon-grp-' + safeTechId);
+            let isHidden = false;
+            
+            rows.forEach(r => {
+                if(r.classList.contains('collapsed')) {
+                    r.classList.remove('collapsed');
+                    isHidden = false;
+                } else {
+                    r.classList.add('collapsed');
+                    isHidden = true;
+                }
+            });
+
+            if(isHidden) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+                collapsedGroups.add(safeTechId); 
+            } else {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+                collapsedGroups.delete(safeTechId); 
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#adminTable tbody');
+            
+            try {
+                let cPend=0, cStd=0, cFin=0;
+
+                const list = filteredTickets.filter(t => {
+                    const st = t.status || 'pendente';
+                    if(st === 'pendente' || st === 'em_andamento') cPend++;
+                    else if(st === 'standby') cStd++;
+                    else if(st === 'finalizado') cFin++;
+
+                    if(currentQueue === 'pendente') return (st === 'pendente' || st === 'em_andamento');
+                    if(currentQueue === 'standby') return st === 'standby';
+                    if(currentQueue === 'finalizado') return st === 'finalizado';
+                    return false;
+                });
+
+                const pPend = document.getElementById('badgePend');
+                const pStd = document.getElementById('badgeStd');
+                const pFin = document.getElementById('badgeFin');
+                if(pPend) pPend.innerText = cPend;
+                if(pStd) pStd.innerText = cStd;
+                if(pFin) pFin.innerText = cFin;
+
+                if(list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#999;">Sua fila está vazia.</td></tr>';
+                    return;
+                }
+
+                const groups = {};
+                list.forEach(t => {
+                    const tech = t.atendente_nome ? t.atendente_nome.split(' ')[0] : 'Aguardando';
+                    if(!groups[tech]) groups[tech] = [];
+                    groups[tech].push(t);
+                });
+
+                let html = '';
+
+                const sortedTechs = Object.keys(groups).sort((a,b) => {
+                    if (a === 'Aguardando') return -1;
+                    if (b === 'Aguardando') return 1;
+                    return a.localeCompare(b);
+                });
+
+                sortedTechs.forEach(tech => {
+                    const techTickets = groups[tech];
+                    const safeTechId = tech.replace(/\s/g, ''); 
+                    
+                    const headerText = tech === 'Aguardando' ? '⏳ Aguardando Atribuição' : '👨‍💻 Atendente: ' + tech;
+                    const isCollapsed = collapsedGroups.has(safeTechId);
+                    const iconClass = isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down';
+
+                    html += `
+                        <tr class="group-header" onclick="toggleGroup('${safeTechId}')">
+                            <td colspan="8" style="font-weight:bold; color:var(--secondary);">
+                                <i class="fas ${iconClass}" id="icon-grp-${safeTechId}"></i>
+                                ${headerText}
+                                <span class="count-badge">${techTickets.length}</span>
+                            </td>
+                        </tr>
+                    `;
+
+                    techTickets.sort((a,b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()).forEach(t => {
+                        const uData = usersMap[(t.uid||"").toLowerCase()] || {};
+                        const userName = (uData.nome && uData.nome.trim() !== 'Usuario') ? uData.nome : (t.user || "Usuário");
+                        
+                        const firstLetter = userName.charAt(0).toUpperCase();
+                        const avatar = uData.foto ? `<img src="${uData.foto}" class="user-avatar">` : `<div class="user-avatar">${firstLetter}</div>`;
+                        
+                        const slaTime = calculateElapsedTime(t);
+                        const dataAbertura = t.date ? new Date(t.date).toLocaleString().slice(0,16) : '-';
+                        const statusName = t.status || 'pendente';
+                        const reabertoHtml = t.is_reopened ? `<br><span class="reopened-tag">REABERTO</span>` : '';
+                        const rowClass = isCollapsed ? 'collapsed' : '';
+
+                        html += `
+                            <tr class="grp-row grp-${safeTechId} ${rowClass}" onclick="openPanel('${t.key}')" style="cursor:pointer; background:#fff;">
+                                <td class="ticket-id">${formatarId(t.visual_id)}</td>
+                                <td>${dataAbertura}</td>
+                                <td><div class="user-cell">${avatar} <div><div class="u-name">${userName}</div></div></div></td>
+                                <td>${t.setor || '-'}</td>
+                                <td style="font-size:12px; color:#4a5568;">
+                                    <div style="font-weight:bold;">${t.categoria || 'Geral'}</div>
+                                    <div style="font-size:10px;">${t.assunto || ''}</div>
+                                    ${reabertoHtml}
+                                </td>
+                                <td><span class="badge bg-${statusName}">${statusName}</span></td>
+                                <td style="text-align:center">${t.rate ? '★ '+t.rate : '-'}</td>
+                                <td style="font-family:monospace; font-weight:bold; color:var(--primary);">${formatMs(slaTime)}</td>
+                            </tr>
+                        `;
+                    });
+                });
+
+                tbody.innerHTML = html;
+
+            } catch (err) {
+                console.error("Erro ao desenhar tabela:", err);
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#E53E3E;">Erro ao renderizar. Atualize a página.</td></tr>';
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DO CHECKLIST
+        // ==========================================
+        
+        function renderAdminChecklist() {
+            const container = document.getElementById('adminChecklistContainer');
+            const progress = document.getElementById('adminChecklistProgress');
+            const progressText = document.getElementById('adminChecklistText');
+            
+            if (!currentPanelTicket || !currentPanelTicket.checklist) {
+                currentPanelTicket.checklist = [];
+            }
+            
+            const list = currentPanelTicket.checklist;
+            const total = list.length;
+            const feitas = list.filter(c => c.feita).length;
+            const pct = total === 0 ? 0 : Math.round((feitas / total) * 100);
+            
+            progress.style.width = pct + '%';
+            progress.style.backgroundColor = pct === 100 ? '#10b981' : '#3b82f6';
+            progressText.innerText = `${pct}% (${feitas}/${total})`;
+
+            if(total === 0) {
+                container.innerHTML = `<span style="font-size:11px; color:#94a3b8; font-style:italic;">Nenhuma tarefa adicionada ainda.</span>`;
+                return;
+            }
+
+            container.innerHTML = list.map((item, index) => `
+                <div style="display:flex; align-items:center; justify-content:space-between; background:white; padding:6px 10px; border:1px solid #e2e8f0; border-radius:6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; flex:1;">
+                        <input type="checkbox" ${item.feita ? 'checked' : ''} onchange="toggleChecklistItem(${index})" style="width:16px; height:16px; cursor:pointer;">
+                        <span style="font-size:12px; ${item.feita ? 'text-decoration:line-through; color:#94a3b8;' : 'color:#1e293b;'}">${item.tarefa}</span>
+                    </label>
+                    <button style="background:none; border:none; color:#ef4444; cursor:pointer;" onclick="removeChecklistItem(${index})" title="Remover"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        async function saveChecklistToDb() {
+            if(!currentPanelTicket) return;
+            const k = document.getElementById('selectedKey').value;
+            
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...API_HEADERS
+                },
+                body: JSON.stringify(currentPanelTicket)
+            });
+        }
+
+        async function addChecklistItem() {
+            const input = document.getElementById('newChecklistInput');
+            const val = input.value.trim();
+            if(!val) return;
+            
+            if(!currentPanelTicket.checklist) currentPanelTicket.checklist = [];
+            currentPanelTicket.checklist.push({ tarefa: val, feita: false });
+            
+            input.value = '';
+            renderAdminChecklist();
+            await saveChecklistToDb();
+        }
+
+        async function toggleChecklistItem(index) {
+            currentPanelTicket.checklist[index].feita = !currentPanelTicket.checklist[index].feita;
+            renderAdminChecklist();
+            await saveChecklistToDb();
+        }
+
+        async function removeChecklistItem(index) {
+            if(!confirm("Tem certeza que deseja remover esta tarefa?")) return;
+            currentPanelTicket.checklist.splice(index, 1);
+            renderAdminChecklist();
+            await saveChecklistToDb();
+        }
+
+        // ==========================================
+        // FIM DA LÓGICA DO CHECKLIST
+        // ==========================================
+
+        function openPanel(key) {
+            const t = allTickets.find(x => x.key === key);
+            if(!t) return;
+            currentPanelTicket = t;
+
+            document.getElementById('selectedKey').value = key;
+            document.getElementById('solutionTxt').value = t.solution || '';
+            document.getElementById('panelDesc').innerHTML = t.desc ? String(t.desc).replace(/\n/g, '<br>') : 'Sem descrição.';
+            document.getElementById('panelItem').innerText = t.categoria || 'N/A';
+            document.getElementById('panelStatus').innerText = t.status ? String(t.status).toUpperCase() : 'PENDENTE';
+            document.getElementById('panelOwner').innerText = t.atendente_nome || 'Livre (Aguardando)';
+            document.getElementById('panelIdTitle').innerText = formatarId(t.visual_id);
+            
+            if(t.is_reopened) document.getElementById('panelReopenedAlert').style.display = 'block';
+            else document.getElementById('panelReopenedAlert').style.display = 'none';
+            
+            document.getElementById('adminResponse').value = '';
+            document.getElementById('adminFile').value = '';
+            document.getElementById('fileNameDisplay').innerText = '';
+
+            const uData = usersMap[(t.uid||"").toLowerCase()] || {};
+            const userName = (uData.nome && uData.nome.trim() !== 'Usuario') ? uData.nome : (t.user || "Usuário");
+
+            document.getElementById('panelUser').innerText = userName;
+            document.getElementById('panelEmail').innerText = t.uid || '-';
+            document.getElementById('panelSector').innerText = t.setor || '-';
+
+            const avDiv = document.getElementById('panelAvatarContainer');
+            if(uData.foto) {
+                avDiv.innerHTML = `<img src="${uData.foto}" class="user-avatar" style="width:100%; height:100%;">`;
+            } else {
+                avDiv.innerHTML = userName.charAt(0).toUpperCase();
+            }
+
+            updateActionButtons();
+            
+            renderAdminChecklist();
+
+            document.getElementById('sidePanel').classList.add('open');
+            document.getElementById('panelOverlay').style.display = 'block';
+            updatePanelTimer();
+        }
+
+        function updateActionButtons() {
+            const btnAssumir = document.getElementById('btnAssumir');
+            const btnTransfer = document.getElementById('btnTransfer');
+            const btnStandby = document.getElementById('btnStandby');
+            const btnRetomar = document.getElementById('btnRetomar');
+            const boxFinalizar = document.getElementById('boxFinalizar');
+
+            btnAssumir.style.display = 'none';
+            btnTransfer.style.display = 'block'; 
+            btnStandby.style.display = 'none';
+            btnRetomar.style.display = 'none';
+            boxFinalizar.style.display = 'none'; 
+
+            if (currentPanelTicket.status === 'finalizado') return;
+
+            if (!currentPanelTicket.atendente_email || currentPanelTicket.status === 'pendente') {
+                btnAssumir.style.display = 'block';
+            } else if (currentPanelTicket.status === 'em_andamento') {
+                btnStandby.style.display = 'block';
+                boxFinalizar.style.display = 'block'; 
+            } else if (currentPanelTicket.status === 'standby') {
+                btnRetomar.style.display = 'block';
+            }
+        }
+
+        function processFile(file, callback) {
+            if (!file) return callback(null);
+            if (file.size > 5 * 1024 * 1024) { 
+                alert("O arquivo é muito grande. O tamanho máximo permitido é 5MB."); 
+                return callback(null); 
+            }
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => callback({ name: file.name, type: file.type, base64: reader.result });
+            reader.onerror = () => callback(null);
+        }
+
+        async function assumirChamado() {
+            const k = document.getElementById('selectedKey').value;
+            const now = Date.now();
+            
+            let updatedTicket = { 
+                ...currentPanelTicket, 
+                status: 'em_andamento',
+                atendente_nome: currentUserData ? currentUserData.nome : 'Analista TI',
+                atendente_email: currentUserData ? currentUserData.email : 'ti@ecooncologia.com.br',
+                lastResumeTime: now 
+            };
+
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, {
+                method: 'PUT', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...API_HEADERS
+                },
+                body: JSON.stringify(updatedTicket)
+            });
+            
+            loadAllData();
+        }
+
+        function openTransferModal() {
+            const sel = document.getElementById('transferSelectTech');
+            sel.innerHTML = '<option value="">Selecione um técnico...</option>';
+            
+            Object.values(usersMap).forEach(u => {
+                if(u.permissoes && u.permissoes.helpdesk_admin) {
+                    sel.innerHTML += `<option value="${u.email}">${u.nome}</option>`;
+                }
+            });
+            
+            document.getElementById('modalTransfer').style.display = 'flex';
+        }
+
+        async function confirmTransfer() {
+            const sel = document.getElementById('transferSelectTech');
+            const newEmail = sel.value;
+            if(!newEmail) return alert("Selecione um técnico para transferir.");
+            
+            const newTech = usersMap[newEmail.toLowerCase()];
+            const k = document.getElementById('selectedKey').value;
+            const nowStr = new Date().toLocaleString('pt-BR').slice(0,16);
+            
+            const nota = `\n<hr><div style="margin-top:10px; color:#64748b; font-size:11px; font-style:italic;"><i class="fas fa-exchange-alt"></i> Chamado transferido para <b>${newTech.nome}</b> em ${nowStr}</div>`;
+            const oldDesc = currentPanelTicket.desc || "";
+
+            let updatedTicket = { 
+                ...currentPanelTicket, 
+                atendente_nome: newTech.nome,
+                atendente_email: newTech.email,
+                desc: oldDesc + nota
+            };
+
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, {
+                method: 'PUT', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...API_HEADERS
+                },
+                body: JSON.stringify(updatedTicket)
+            });
+            
+            closeModal('modalTransfer');
+            loadAllData();
+        }
+
+        function openChangeRequesterModal() {
+            const sel = document.getElementById('changeRequesterSelect');
+            sel.innerHTML = '<option value="">Selecione o usuário correto...</option>';
+            
+            Object.values(usersMap).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(u => {
+                sel.innerHTML += `<option value="${u.email}">${u.nome} (${u.email})</option>`;
+            });
+            
+            document.getElementById('modalChangeRequester').style.display = 'flex';
+        }
+
+        async function confirmChangeRequester() {
+            const sel = document.getElementById('changeRequesterSelect');
+            const newEmail = sel.value;
+            if(!newEmail) return alert("Selecione o usuário.");
+            
+            const newUser = usersMap[newEmail.toLowerCase()];
+            const k = document.getElementById('selectedKey').value;
+            const nowStr = new Date().toLocaleString('pt-BR').slice(0,16);
+            
+            const nota = `\n<hr><div style="margin-top:10px; color:#64748b; font-size:11px; font-style:italic;"><i class="fas fa-user-edit"></i> Solicitante alterado para <b>${newUser.nome}</b> em ${nowStr}</div>`;
+            const oldDesc = currentPanelTicket.desc || "";
+
+            let updatedTicket = { 
+                ...currentPanelTicket, 
+                uid: newUser.email,
+                user: newUser.nome,
+                setor: newUser.setor || currentPanelTicket.setor, 
+                desc: oldDesc + nota
+            };
+
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, {
+                method: 'PUT', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...API_HEADERS
+                },
+                body: JSON.stringify(updatedTicket)
+            });
+            
+            closeModal('modalChangeRequester');
+            loadAllData();
+        }
+
+        function openNewTicketModal() {
+            const selReq = document.getElementById('newAdminRequester');
+            selReq.innerHTML = '<option value="">Selecione o usuário...</option>';
+            Object.values(usersMap).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(u => {
+                selReq.innerHTML += `<option value="${u.email}">${u.nome} (${u.email})</option>`;
+            });
+
+            selReq.onchange = function() {
+                const u = usersMap[this.value.toLowerCase()];
+                if(u && u.setor) document.getElementById('newAdminSector').value = u.setor;
+            };
+
+            const selSec = document.getElementById('newAdminSector');
+            selSec.innerHTML = '<option value="">Selecione o Setor...</option>';
+            systemSectors.forEach(s => selSec.innerHTML += `<option value="${s}">${s}</option>`);
+
+            document.getElementById('newAdminDesc').value = '';
+            adminActiveCategoryPath = [];
+            adminRenderCategorySelects();
+            
+            document.getElementById('modalNewTicketAdmin').style.display = 'flex';
+        }
+
+        function adminRenderCategorySelects() {
+            const container = document.getElementById('admin-dynamic-categories');
+            container.innerHTML = ''; 
+
+            let currentLevelNodes = adminLoadedCategories;
+            let level = 0;
+
+            while (currentLevelNodes && currentLevelNodes.length > 0) {
+                const selectGroup = document.createElement('div');
+                selectGroup.className = 'dynamic-field';
+                selectGroup.style.marginBottom = '8px';
+                
+                const select = document.createElement('select');
+                select.className = 'form-control';
+                select.style.marginBottom = '0';
+                select.dataset.level = level; 
+                select.innerHTML = '<option value="">Selecione...</option>';
+                
+                currentLevelNodes.forEach(node => {
+                    const nome = (typeof node === 'object') ? node.nome : node;
+                    const opt = document.createElement('option');
+                    opt.value = nome;
+                    opt.innerText = nome;
+                    if (adminActiveCategoryPath[level] === nome) opt.selected = true;
+                    select.appendChild(opt);
+                });
+
+                select.onchange = (e) => adminHandleCategoryChange(e.target.dataset.level, e.target.value);
+                selectGroup.appendChild(select);
+                container.appendChild(selectGroup);
+
+                if (adminActiveCategoryPath[level]) {
+                    const selectedNode = currentLevelNodes.find(n => {
+                        const nName = (typeof n === 'object') ? n.nome : n;
+                        return nName === adminActiveCategoryPath[level];
+                    });
+                    
+                    if (selectedNode && selectedNode.subs && selectedNode.subs.length > 0) {
+                        currentLevelNodes = selectedNode.subs; 
+                        level++;
+                    } else { break; }
+                } else { break; }
+            }
+        }
+
+        function adminHandleCategoryChange(levelStr, value) {
+            const level = parseInt(levelStr, 10);
+            adminActiveCategoryPath = adminActiveCategoryPath.slice(0, level);
+            if (value) adminActiveCategoryPath.push(value);
+            adminRenderCategorySelects();
+        }
+
+        async function saveAdminTicket() {
+            const email = document.getElementById('newAdminRequester').value;
+            const setor = document.getElementById('newAdminSector').value;
+            const sla = document.getElementById('newAdminSLA').value;
+            const desc = document.getElementById('newAdminDesc').value;
+
+            if(!email || !setor || adminActiveCategoryPath.length === 0 || !desc) {
+                return alert("Preencha Solicitante, Setor, Categoria e Descrição.");
+            }
+
+            const reqUser = usersMap[email.toLowerCase()];
+            const categoriaFinal = adminActiveCategoryPath.join(' > ');
+            const assuntoFinal = adminActiveCategoryPath[adminActiveCategoryPath.length - 1];
+
+            const ticket = {
+                uid: reqUser.email,
+                user: reqUser.nome,
+                setor: setor, 
+                categoria: categoriaFinal, 
+                assunto: assuntoFinal, 
+                sla: sla, 
+                desc: desc,
+                status: 'pendente',
+                is_reopened: false,
+                date: Date.now(),
+                id_firebase: `tk_${Date.now()}`
+            };
+
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados`, {
+                method: 'POST', 
+                headers: {
+                    'Content-Type':'application/json',
+                    ...API_HEADERS
+                }, 
+                body: JSON.stringify(ticket)
+            });
+            
+            alert("Chamado aberto com sucesso!");
+            closeModal('modalNewTicketAdmin');
+            loadAllData();
+        }
+
+        function closeSidePanel() {
+            document.getElementById('sidePanel').classList.remove('open');
+            document.getElementById('panelOverlay').style.display = 'none';
+            currentPanelTicket = null;
+        }
+
+        function closeModal(id) { 
+            document.getElementById(id).style.display = 'none'; 
+        }
+
+        async function updateTicketSLA(newStatus) {
+            const k = document.getElementById('selectedKey').value;
+            if(!currentPanelTicket) return;
+            const now = Date.now();
+            
+            let updatedTicket = { ...currentPanelTicket, status: newStatus };
+
+            if (newStatus === 'em_andamento') {
+                updatedTicket.lastResumeTime = now;
+            } else if (newStatus === 'standby') {
+                const sessionTime = currentPanelTicket.lastResumeTime ? (now - currentPanelTicket.lastResumeTime) : 0;
+                updatedTicket.elapsedTime = (currentPanelTicket.elapsedTime || 0) + sessionTime;
+                updatedTicket.lastResumeTime = null;
+            }
+            
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, {
+                method: 'PUT', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...API_HEADERS
+                },
+                body: JSON.stringify(updatedTicket)
+            });
+            loadAllData();
+        }
+
+        async function finishTicket() {
+            const k = document.getElementById('selectedKey').value;
+            const sol = document.getElementById('solutionTxt').value;
+            
+            if(!sol) return alert("Descreva a solução.");
+            
+            // VERIFICAÇÃO DE CHECKLIST PENDENTE
+            if (currentPanelTicket && currentPanelTicket.checklist) {
+                const pendentes = currentPanelTicket.checklist.filter(c => !c.feita).length;
+                if (pendentes > 0) {
+                    if(!confirm(`Atenção: Existem ${pendentes} tarefas pendentes no Plano de Ação deste chamado.\n\nDeseja ignorar as tarefas e finalizar mesmo assim?`)) {
+                        return;
+                    }
+                }
+            }
+            
+            const now = Date.now();
+            const finalTime = calculateElapsedTime(currentPanelTicket);
+
+            let updatedTicket = { 
+                ...currentPanelTicket, 
+                status: 'finalizado', 
+                solution: sol, 
+                closedAt: now,
+                elapsedTime: finalTime,
+                lastResumeTime: null,
+                is_reopened: false
+            };
+
+            if(!updatedTicket.atendente_nome && currentUserData) {
+                updatedTicket.atendente_nome = currentUserData.nome;
+                updatedTicket.atendente_email = currentUserData.email;
+            }
+
+            // BLINDADO
+            await fetch(`${API_BASE_URL}/chamados/${k}`, {
+                method: 'PUT', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...API_HEADERS
+                },
+                body: JSON.stringify(updatedTicket)
+            });
+            
+            closeSidePanel();
+            loadAllData();
+        }
+
+        async function delTicket() {
+            if(confirm("Excluir definitivamente este chamado?")) {
+                const k = document.getElementById('selectedKey').value;
+                // BLINDADO
+                await fetch(`${API_BASE_URL}/chamados/${k}`, { 
+                    method: 'DELETE',
+                    headers: API_HEADERS
+                });
+                closeSidePanel();
+                loadAllData();
+            }
+        }
+
+        function updatePanelTimer() {
+            if(!currentPanelTicket) return;
+            document.getElementById('panelTimer').innerText = formatMs(calculateElapsedTime(currentPanelTicket));
+        }
+
+        async function sendAdminResponse() {
+            const k = document.getElementById('selectedKey').value;
+            const txt = document.getElementById('adminResponse').value;
+            const fileInput = document.getElementById('adminFile');
+            
+            if(!txt && fileInput.files.length === 0) return alert("Escreva uma mensagem ou anexe um documento.");
+            
+            const btn = document.getElementById('btnSendResp');
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+
+            const nowStr = new Date().toLocaleString('pt-BR').slice(0,16);
+            const atendenteNome = currentUserData ? currentUserData.nome.split(' ')[0] : 'Suporte';
+            let baseEntry = `\n<hr><div style="margin-top:10px; color:#2563EB;"><strong>[${atendenteNome} ${nowStr}]:</strong> ${txt}</div>`;
+
+            const saveToDb = async (anexoHtml) => {
+                if(!currentPanelTicket) return;
+                
+                let updatedTicket = { 
+                    ...currentPanelTicket, 
+                    desc: (currentPanelTicket.desc || "") + baseEntry + anexoHtml 
+                };
+
+                // BLINDADO
+                await fetch(`${API_BASE_URL}/chamados/${k}`, {
+                    method: 'PUT', 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...API_HEADERS
+                    },
+                    body: JSON.stringify(updatedTicket)
+                });
+                
+                btn.disabled = false;
+                btn.innerText = "Enviar Resposta";
+                document.getElementById('adminResponse').value = '';
+                document.getElementById('adminFile').value = '';
+                document.getElementById('fileNameDisplay').innerText = '';
+                loadAllData();
+            };
+
+            if(fileInput.files.length > 0) {
+                processFile(fileInput.files[0], (fData) => {
+                    if(!fData) return saveToDb("");
+                    
+                    let anexoHtml = '';
+                    if (fData.type.startsWith('image/')) {
+                        anexoHtml = `<div style="margin-top:5px;"><img src="${fData.base64}" style="max-width:300px; border-radius:5px; border:1px solid #ccc;"></div>`;
+                    } else {
+                        anexoHtml = `<div style="margin-top:5px;"><a href="${fData.base64}" download="${fData.name}" style="display:inline-block; padding:8px 12px; background:#e2e8f0; color:#1e293b; border-radius:6px; text-decoration:none; font-size:12px; font-weight:bold;"><i class="fas fa-paperclip"></i> Baixar Anexo: ${fData.name}</a></div>`;
+                    }
+                    saveToDb(anexoHtml);
+                });
+            } else { 
+                saveToDb(""); 
+            }
+        }
+    </script>
+</body>
+</html>

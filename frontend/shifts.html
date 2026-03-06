@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Escala de Plantão - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0px; overflow-x: auto; }
+        .tab-btn { background: #F9FAFB; border: 1px solid #e2e8f0; border-bottom: none; padding: 12px 24px; font-size: 14px; font-weight: 700; color: var(--text-light); cursor: pointer; border-radius: 12px 12px 0 0; transition: 0.2s; white-space: nowrap; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-btn:hover:not(.active) { background: #e2e8f0; }
+
+        .calendar-controls { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: var(--card-shadow); flex-wrap: wrap; gap: 20px; }
+        .selector-group { display: flex; align-items: center; gap: 10px; }
+        .selector-group label { font-size: 13px; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
+        
+        .custom-select { padding: 10px 35px 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #F9FAFB; font-size: 14px; font-weight: 600; color: var(--secondary); cursor: pointer; outline: none; appearance: none; min-width: 120px; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2320343D%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 10px top 50%; background-size: 10px auto; }
+        .custom-select:hover { border-color: var(--primary); background-color: white; }
+
+        .legend { display: flex; gap: 15px; font-size: 12px; font-weight: 600; flex-wrap: wrap; align-items: center; flex: 1; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 14px; height: 14px; border-radius: 3px; }
+        .dot-m { background: #FDE68A; border: 1px solid #92400E; } 
+        .dot-t { background: #E9D5FF; border: 1px solid #6B21A8; }
+        .dot-mt { background: #FBCFE8; border: 1px solid #9D174D; } 
+        .dot-s { background: #BFDBFE; border: 1px solid #0369A1; } 
+        .dot-h { background: #FEE2E2; border: 1px solid #FECACA; } 
+
+        .action-buttons { display: flex; gap: 10px; }
+        .btn-print { background: var(--secondary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
+        .btn-print:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-copy { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
+        .btn-copy:hover { background: #0369a1; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+        .sheet-container { background: white; border-radius: 16px; box-shadow: var(--card-shadow); overflow: hidden; padding-bottom: 10px; }
+        .table-responsive { overflow-x: auto; max-width: 100%; }
+        
+        .scale-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; }
+        .scale-table th, .scale-table td { border: 1px solid #eee; text-align: center; height: 40px; font-size: 11px; padding: 0; box-sizing: border-box; }
+
+        .scale-table .doctor-col, .scale-table .doctor-name { position: sticky; left: 0; z-index: 20; width: 220px; min-width: 220px; max-width: 220px; text-align: left; padding-left: 15px; }
+        .scale-table th.doctor-col { background: var(--primary); color: white; z-index: 30; }
+        .scale-table td.doctor-name { background: white; font-weight: 600; color: var(--secondary); border-right: 2px solid #eee; z-index: 20; }
+
+        .scale-table th:not(.doctor-col):not(.th-total), .scale-table td:not(.doctor-name):not(.total-col) { width: 38px; min-width: 38px; max-width: 38px; }
+        .scale-table th { background: var(--primary); color: white; position: sticky; top: 0; z-index: 10; }
+        
+        /* Coluna Total */
+        .scale-table th.th-total { width: 60px; min-width: 60px; max-width: 60px; }
+        .scale-table tbody td.total-col { background: #F3F4F6; font-weight: 800; color: var(--secondary); width: 60px; min-width: 60px; }
+
+        .day-header { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .day-num { font-size: 14px; font-weight: bold; }
+        .day-week { font-size: 9px; text-transform: uppercase; opacity: 0.8; }
+
+        .scale-table tbody td { font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.1s; user-select: none; }
+        .scale-table tbody td:hover:not(.doctor-name):not(.total-col) { filter: brightness(0.95); box-shadow: inset 0 0 4px rgba(0,0,0,0.15); }
+
+        .weekend-col { background-color: #F1F5F9; } 
+        .holiday-col { background-color: #FEF2F2 !important; border-color: #FECACA !important; } 
+        .holiday-col .day-num { color: #DC2626; } 
+
+        .incomplete-day { background-color: #E0F2FE !important; border: 1px solid #7DD3FC !important; }
+
+        .cell-m { background-color: #FDE68A !important; color: #92400E; }
+        .cell-t { background-color: #E9D5FF !important; color: #6B21A8; }
+        .cell-mt { background-color: #FBCFE8 !important; color: #9D174D; }
+        .cell-s { background-color: #BFDBFE !important; color: #0369A1; }
+
+        #save-status { margin-left: auto; font-size: 12px; color: #666; font-style: italic; margin-right: 20px; }
+
+        .obs-container { background: white; padding: 15px 25px; border-radius: 16px; margin-top: 20px; box-shadow: var(--card-shadow); }
+        .obs-textarea { width: 100%; height: 80px; margin-top: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 13px; outline: none; resize: vertical; color: #333; }
+        .obs-textarea:focus { border-color: var(--primary); }
+
+        /* Modal Copiar Escala */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(3px); }
+        .modal-content { background: white; padding: 25px; border-radius: 16px; width: 320px; max-width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-content h3 { margin-top: 0; color: var(--primary); font-size: 18px; margin-bottom: 20px; text-align: center; }
+        .modal-content label { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .modal-content select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 14px; outline: none; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-cancel { background: #f1f5f9; color: #475569; }
+        .btn-cancel:hover { background: #e2e8f0; }
+        .btn-confirm { background: #0284c7; color: white; }
+        .btn-confirm:hover { background: #0369a1; }
+
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .calendar-controls { flex-direction: column; gap: 15px; align-items: flex-start; }
+            .action-buttons { width: 100%; justify-content: space-between; }
+            .legend { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="tabs-container">
+            <button class="tab-btn" data-tab="eco" onclick="switchTab('eco', this)">Eco Oncologia</button>
+            <button class="tab-btn" data-tab="vita_quimio" onclick="switchTab('vita_quimio', this)">Vita - Sala Quimio</button>
+            <button class="tab-btn" data-tab="vita_sobreaviso" onclick="switchTab('vita_sobreaviso', this)">Vita - Sobreaviso</button>
+            <button class="tab-btn" data-tab="cirurgioes" onclick="switchTab('cirurgioes', this)">Cirurgiões</button>
+        </div>
+
+        <div class="calendar-controls">
+            <div class="selector-group">
+                <label>Período:</label>
+                <select id="selMonth" class="custom-select" onchange="renderCalendar()">
+                    <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option>
+                    <option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option>
+                    <option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option>
+                    <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                </select>
+                <select id="selYear" class="custom-select" onchange="renderCalendar()"></select>
+            </div>
+
+            <div class="selector-group">
+                <label>Médico:</label>
+                <select id="filterDoctor" class="custom-select" onchange="renderCalendar()">
+                    <option value="">Todos os Médicos</option>
+                </select>
+            </div>
+            
+            <span id="save-status"></span>
+
+            <div class="legend">
+                <div class="legend-item"><div class="dot dot-m"></div> M (Manhã)</div>
+                <div class="legend-item"><div class="dot dot-t"></div> T (Tarde)</div>
+                <div class="legend-item"><div class="dot dot-mt"></div> M/T (Dia Todo)</div>
+                <div class="legend-item"><div class="dot dot-s"></div> S (Sobreaviso)</div>
+                <div class="legend-item"><div class="dot dot-h"></div> Feriado</div>
+                <div style="font-size: 10px; color: #999; margin-left: 10px; font-style: italic;"><i class="fas fa-mouse-pointer"></i> Clique c/ botão direito para apagar</div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn-copy" onclick="openCopyModal()"><i class="fas fa-copy"></i> Duplicar</button>
+                <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir Escala</button>
+            </div>
+        </div>
+
+        <div class="sheet-container">
+            <div class="table-responsive">
+                <table class="scale-table" id="scaleTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="obs-container">
+            <label style="font-size: 13px; font-weight: 700; color: var(--text-light); text-transform: uppercase;"><i class="fas fa-edit"></i> Observações Gerais desta Escala</label>
+            <textarea id="generalObsText" class="obs-textarea" placeholder="Ex: Dr. Fulano cobrirá folga dia 10..." onchange="saveGeneralObs()"></textarea>
+        </div>
+    </div>
+
+    <div id="copyModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3><i class="fas fa-copy"></i> Duplicar Escala</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px; text-align: center;">Selecione para qual mês deseja copiar a escala que está na tela.</p>
+            
+            <label>Mês de Destino:</label>
+            <select id="copyMonth">
+                <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option>
+                <option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option>
+                <option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option>
+                <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+
+            <label>Ano de Destino:</label>
+            <select id="copyYear"></select>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeCopyModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="confirmCopyScale()"><i class="fas fa-check"></i> Copiar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let doctors = {};
+        let monthlyData = {};
+        let currentYear, currentMonth;
+        let scaleExists = false;
+        
+        let currentTab = localStorage.getItem('activeShiftTab') || 'eco'; 
+        let currentDbId = null; 
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            initGlobal('shifts', 'Escala de Plantão');
+            
+            populateYearSelect();
+            const now = new Date();
+            currentYear = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            
+            document.getElementById('selMonth').value = mm;
+            document.getElementById('selYear').value = currentYear;
+            
+            const copyYearSelect = document.getElementById('copyYear');
+            for (let i = -1; i <= 4; i++) {
+                copyYearSelect.appendChild(new Option(currentYear + i, currentYear + i));
+            }
+            let nextM = now.getMonth() + 2; 
+            let nextY = currentYear;
+            if (nextM > 12) { nextM = 1; nextY++; }
+            document.getElementById('copyMonth').value = String(nextM).padStart(2, '0');
+            document.getElementById('copyYear').value = nextY;
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === currentTab) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            await initScale();
+        });
+
+        function switchTab(tabId, element) {
+            currentTab = tabId;
+            localStorage.setItem('activeShiftTab', tabId); 
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            updateDoctorDropdown();
+            renderCalendar();
+        }
+
+        function populateYearSelect() {
+            const yearSelect = document.getElementById('selYear');
+            const currentY = new Date().getFullYear();
+            for (let i = -1; i <= 4; i++) {
+                const opt = document.createElement('option');
+                opt.value = currentY + i;
+                opt.textContent = currentY + i;
+                yearSelect.appendChild(opt);
+            }
+        }
+
+        function updateDoctorDropdown() {
+            const filterSelect = document.getElementById('filterDoctor');
+            const currentVal = filterSelect.value;
+            filterSelect.innerHTML = '<option value="">Todos os Médicos</option>';
+            
+            Object.entries(doctors)
+                .filter(([, d]) => {
+                    if (d.plantao !== 'sim') return false;
+                    if (currentTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
+                    if (currentTab.startsWith('vita') && d.vita === 'sim') return true;
+                    if (currentTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
+                    return false;
+                })
+                .sort(([,a], [,b]) => (a.nome||'').localeCompare(b.nome||''))
+                .forEach(([id, doc]) => {
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = doc.nome;
+                    filterSelect.appendChild(opt);
+                });
+                
+            if (Array.from(filterSelect.options).some(o => o.value === currentVal)) {
+                filterSelect.value = currentVal;
+            } else {
+                filterSelect.value = "";
+            }
+        }
+
+        function getHolidays(year) {
+            const holidays = { [`${year}-01-01`]: "Ano Novo", [`${year}-04-21`]: "Tiradentes", [`${year}-05-01`]: "Trabalho", [`${year}-09-07`]: "Independência", [`${year}-10-12`]: "N. Sra.", [`${year}-11-02`]: "Finados", [`${year}-11-15`]: "Proclamação", [`${year}-12-25`]: "Natal" };
+            const a=year%19, b=Math.floor(year/100), c=year%100, d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30, i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, m=Math.floor((a+11*h+22*l)/451), month=Math.floor((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
+            const easter = new Date(year, month-1, day);
+            const add = (d, inc) => { const r=new Date(d); r.setDate(r.getDate()+inc); return r.toISOString().split('T')[0]; };
+            holidays[add(easter, -47)] = "Carnaval"; holidays[add(easter, -2)] = "Sexta Santa"; holidays[add(easter, 60)] = "Corpus Christi";
+            return holidays;
+        }
+
+        async function initScale() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/medicos?t=${Date.now()}`, { headers: API_HEADERS });
+                const rawDocs = await res.json();
+                doctors = normalizeData(rawDocs);
+                
+                updateDoctorDropdown();
+                renderCalendar();
+            } catch(e) {}
+        }
+
+        async function renderCalendar() {
+            const year = document.getElementById('selYear').value;
+            const month = document.getElementById('selMonth').value;
+            const filterDoc = document.getElementById('filterDoctor').value;
+            
+            const basePickerVal = `${year}-${month}`;
+            const pickerVal = currentTab === 'eco' ? basePickerVal : `${basePickerVal}-${currentTab}`;
+            
+            const endpoint = currentTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentTab}`;
+            
+            [currentYear, currentMonth] = [parseInt(year), parseInt(month)];
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}${endpoint}?t=${Date.now()}`, { headers: API_HEADERS });
+                const allScales = normalizeData(await res.json());
+                
+                let foundId = Object.keys(allScales).find(k => allScales[k].id_firebase === pickerVal || allScales[k].id === pickerVal || k === pickerVal);
+                
+                if (foundId) {
+                    monthlyData = allScales[foundId];
+                    scaleExists = true;
+                    currentDbId = monthlyData.id || foundId;
+                } else {
+                    monthlyData = {};
+                    scaleExists = false;
+                    currentDbId = pickerVal;
+                }
+            } catch(e) { 
+                monthlyData = {}; 
+                scaleExists = false;
+                currentDbId = pickerVal;
+            }
+
+            try {
+                const confRes = await fetch(`${API_BASE_URL}/system_configs?t=${Date.now()}`, { headers: API_HEADERS });
+                const configs = await confRes.json();
+                const obsKey = 'obs_escala_' + currentDbId;
+                document.getElementById('generalObsText').value = configs[obsKey] ? configs[obsKey].texto : '';
+            } catch(e) {
+                document.getElementById('generalObsText').value = '';
+            }
+
+            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+            const table = document.getElementById('scaleTable');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+            const holidays = getHolidays(currentYear);
+            
+            let headerHTML = '<tr><th class="doctor-col">Nome do Médico</th>';
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dateObj = new Date(currentYear, currentMonth - 1, i);
+                const dateStr = dateObj.toISOString().split('T')[0];
+                const dayWeek = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+                const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+                const holidayName = holidays[dateStr];
+                const isHoliday = !!holidayName;
+
+                let classList = '';
+                let titleAttr = '';
+                if (isHoliday) { classList = 'holiday-col'; titleAttr = `title="${holidayName}"`; } 
+                else if (isWeekend) { classList = 'weekend-col'; }
+                
+                headerHTML += `<th class="${classList}" id="th-day-${i}" ${titleAttr}><div class="day-header"><span class="day-week">${dayWeek}</span><span class="day-num">${i}</span></div></th>`;
+            }
+            // INCLUSÃO DA COLUNA TOTAL NO CABEÇALHO
+            headerHTML += '<th class="th-total">Total</th></tr>'; 
+            thead.innerHTML = headerHTML;
+
+            let bodyHTML = '';
+            const plantonistas = Object.entries(doctors)
+                .filter(([, d]) => {
+                    if (d.plantao !== 'sim') return false;
+                    if (currentTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
+                    if (currentTab.startsWith('vita') && d.vita === 'sim') return true;
+                    if (currentTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
+                    return false;
+                })
+                .filter(([id, d]) => filterDoc === "" || id === filterDoc)
+                .sort(([,a], [,b]) => (a.nome||'').localeCompare(b.nome||''));
+
+            plantonistas.forEach(([docId, doc]) => {
+                let rowTotal = 0; // Inicia a contagem
+                let rowCells = `<td class="doctor-name">${doc.nome}</td>`;
+
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const dateObj = new Date(currentYear, currentMonth - 1, i);
+                    const dateStr = dateObj.toISOString().split('T')[0];
+                    const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+                    const isHoliday = !!holidays[dateStr];
+                    
+                    const val = (monthlyData[docId] && monthlyData[docId][i]) ? monthlyData[docId][i] : '';
+                    
+                    let cellClass = '';
+                    if (val === 'M') cellClass = 'cell-m';
+                    else if (val === 'T') cellClass = 'cell-t';
+                    else if (val === 'M/T') cellClass = 'cell-mt';
+                    else if (val === 'S') cellClass = 'cell-s';
+                    
+                    let bgClass = '';
+                    if (isHoliday) bgClass = 'holiday-col';
+                    else if (isWeekend) bgClass = 'weekend-col';
+
+                    // Lógica de Soma (M/T = 2, os outros = 1)
+                    if (val === 'M/T') rowTotal += 2;
+                    else if (val) rowTotal++;
+
+                    rowCells += `<td class="${bgClass} ${cellClass}" onclick="toggleShift('${docId}', ${i}, this)" oncontextmenu="clearShift(event, '${docId}', ${i}, this)">${val}</td>`;
+                }
+                
+                // INCLUSÃO DA CÉLULA DE TOTAL NA LINHA
+                rowCells += `<td class="total-col" id="total-${docId}">${rowTotal}</td>`;
+                bodyHTML += `<tr>${rowCells}</tr>`;
+            });
+
+            tbody.innerHTML = bodyHTML;
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                checkColumnCompleteness(i);
+            }
+        }
+
+        async function saveGeneralObs() {
+            const val = document.getElementById('generalObsText').value;
+            const obsKey = 'obs_escala_' + currentDbId;
+            const status = document.getElementById('save-status');
+            status.innerText = "Salvando observação...";
+
+            try {
+                await fetch(`${API_BASE_URL}/system_configs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify({ id_firebase: obsKey, texto: val })
+                });
+                status.innerText = "Salvo ✓";
+                setTimeout(() => status.innerText = "", 2000);
+            } catch(e) {
+                status.innerText = "Erro!";
+                status.style.color = "red";
+            }
+        }
+
+        async function clearShift(e, docId, day, cell) {
+            e.preventDefault(); 
+            
+            cell.innerText = '';
+            cell.classList.remove('cell-m', 'cell-t', 'cell-mt', 'cell-s');
+            
+            if (!monthlyData[docId]) monthlyData[docId] = {};
+            monthlyData[docId][day] = '';
+
+            checkColumnCompleteness(day);
+            updateTotalRow(docId); // Atualiza o Total na hora
+            await saveMonthData();
+        }
+
+        async function toggleShift(docId, day, cell) {
+            const states = ['', 'M', 'T', 'M/T', 'S']; 
+            const currentState = cell.innerText;
+            const nextState = states[(states.indexOf(currentState) + 1) % states.length];
+
+            cell.innerText = nextState;
+            cell.classList.remove('cell-m', 'cell-t', 'cell-mt', 'cell-s');
+            
+            if (nextState === 'M') cell.classList.add('cell-m');
+            else if (nextState === 'T') cell.classList.add('cell-t');
+            else if (nextState === 'M/T') cell.classList.add('cell-mt');
+            else if (nextState === 'S') cell.classList.add('cell-s');
+
+            if (!monthlyData[docId]) monthlyData[docId] = {};
+            monthlyData[docId][day] = nextState;
+
+            checkColumnCompleteness(day);
+            updateTotalRow(docId); // Atualiza o Total na hora
+            await saveMonthData();
+        }
+
+        // FUNÇÃO QUE RECALCULA A SOMA QUANDO VOCÊ CLICA
+        function updateTotalRow(docId) {
+            const totalCell = document.getElementById(`total-${docId}`);
+            if (!totalCell) return;
+            const row = totalCell.parentElement;
+            
+            // Pega todos os quadradinhos de dias (ignora o Nome [0] e o Total [último])
+            const cells = Array.from(row.children).slice(1, -1); 
+            
+            let count = 0;
+            cells.forEach(c => {
+                const txt = c.innerText.trim();
+                if (txt === 'M/T') count += 2;
+                else if (txt !== '') count++;
+            });
+            totalCell.innerText = count;
+        }
+
+        function checkColumnCompleteness(day) {
+            const table = document.getElementById('scaleTable');
+            if (!table) return;
+            const tbody = table.querySelector('tbody');
+            const trs = tbody.querySelectorAll('tr');
+            
+            let hasM = false, hasT = false, hasMT = false;
+
+            trs.forEach(tr => {
+                const td = tr.children[day]; 
+                if (td) {
+                    if (td.classList.contains('cell-m')) hasM = true;
+                    if (td.classList.contains('cell-t')) hasT = true;
+                    if (td.classList.contains('cell-mt')) hasMT = true;
+                }
+            });
+
+            const isMissingPart = !hasMT && ((hasM && !hasT) || (!hasM && hasT));
+            
+            trs.forEach(tr => {
+                const td = tr.children[day];
+                if (td) {
+                    if (isMissingPart && td.innerText === '') {
+                        td.classList.add('incomplete-day');
+                    } else {
+                        td.classList.remove('incomplete-day');
+                    }
+                }
+            });
+            
+            const th = document.getElementById(`th-day-${day}`);
+            if (th) {
+                if (isMissingPart) th.classList.add('incomplete-day');
+                else th.classList.remove('incomplete-day');
+            }
+        }
+
+        async function saveMonthData() {
+            const status = document.getElementById('save-status');
+            status.innerText = "Salvando...";
+            
+            const endpoint = currentTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentTab}`;
+
+            try {
+                const method = scaleExists ? 'PUT' : 'POST';
+                const url = scaleExists 
+                    ? `${API_BASE_URL}${endpoint}/${currentDbId}` 
+                    : `${API_BASE_URL}${endpoint}`;
+                
+                const payload = { ...monthlyData };
+                if (!scaleExists) { 
+                    payload.id_firebase = currentDbId; 
+                    payload.id = currentDbId; 
+                }
+
+                await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify(payload)
+                });
+
+                scaleExists = true; 
+                status.innerText = "Salvo ✓";
+                setTimeout(() => status.innerText = "", 2000);
+
+            } catch(e) {
+                console.error(e);
+                status.innerText = "Erro ao salvar!";
+                status.style.color = "red";
+            }
+        }
+
+        function openCopyModal() {
+            if (!monthlyData || Object.keys(monthlyData).length === 0 || !scaleExists) {
+                alert("A escala deste mês está vazia. Não há nada para copiar.");
+                return;
+            }
+            document.getElementById('copyModal').style.display = 'flex';
+        }
+
+        function closeCopyModal() {
+            document.getElementById('copyModal').style.display = 'none';
+        }
+
+        async function confirmCopyScale() {
+            const tMonth = document.getElementById('copyMonth').value;
+            const tYear = document.getElementById('copyYear').value;
+            const currentM = document.getElementById('selMonth').value;
+            const currentY = document.getElementById('selYear').value;
+            
+            if (tMonth === currentM && tYear === currentY) {
+                alert('Selecione um mês e ano diferentes do atual para colar a escala.');
+                return;
+            }
+
+            const targetDays = new Date(parseInt(tYear), parseInt(tMonth), 0).getDate();
+            const baseTargetId = `${tYear}-${tMonth}`;
+            const targetId = currentTab === 'eco' ? baseTargetId : `${baseTargetId}-${currentTab}`;
+            
+            let newScale = JSON.parse(JSON.stringify(monthlyData));
+            
+            for (let docId in newScale) {
+                if (docId === 'id' || docId === 'id_firebase' || docId === 'obs') continue;
+                for (let d in newScale[docId]) {
+                    if (!isNaN(d) && parseInt(d) > targetDays) {
+                        delete newScale[docId][d]; 
+                    }
+                }
+            }
+            
+            newScale.id_firebase = targetId;
+            newScale.id = targetId;
+
+            const endpoint = currentTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentTab}`;
+            const status = document.getElementById('save-status');
+            status.innerText = "Copiando escala...";
+
+            try {
+                await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify(newScale)
+                });
+                
+                const oldObsValue = document.getElementById('generalObsText').value;
+                if (oldObsValue) {
+                    const newObsKey = 'obs_escala_' + targetId;
+                    await fetch(`${API_BASE_URL}/system_configs`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                        body: JSON.stringify({ id_firebase: newObsKey, texto: oldObsValue })
+                    });
+                }
+
+                alert('Escala duplicada com sucesso!');
+                closeCopyModal();
+                
+                document.getElementById('selMonth').value = tMonth;
+                document.getElementById('selYear').value = tYear;
+                renderCalendar();
+                
+            } catch(e) {
+                alert('Erro ao copiar a escala.');
+            }
+        }
+
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+
+        function generatePDF() {
+            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+            const holidays = getHolidays(currentYear);
+            const filterDoc = document.getElementById('filterDoctor').value;
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            const periodStr = `${monthNames[currentMonth-1]} de ${currentYear}`;
+            const obsValue = document.getElementById('generalObsText').value; 
+            
+            let LOGO_URL = "https://imgur.com/nWWyEBG.png";
+            let pdfTitle = "Escala de Plantão - Eco Oncologia";
+            
+            if (currentTab === 'vita_quimio') {
+                LOGO_URL = "https://i.imgur.com/m9NWY03.png"; 
+                pdfTitle = "Escala de Plantão - Hospital Vita (Quimio)";
+            } else if (currentTab === 'vita_sobreaviso') {
+                LOGO_URL = "https://i.imgur.com/m9NWY03.png"; 
+                pdfTitle = "Escala de Plantão - Hospital Vita (Sobreaviso)";
+            } else if (currentTab === 'cirurgioes') {
+                LOGO_URL = "https://imgur.com/maJNHKc.png"; 
+                pdfTitle = "Escala de Plantão - Cirurgiões";
+            }
+
+            let theadHTML = '<tr><th style="text-align:left; width:150px;">MÉDICO</th>';
+            for (let i = 1; i <= daysInMonth; i++) {
+                const d = new Date(currentYear, currentMonth-1, i);
+                const dStr = d.toISOString().split('T')[0];
+                const dayWeek = d.toLocaleDateString('pt-BR', {weekday:'short'}).replace('.','');
+                const isWk = (d.getDay()===0 || d.getDay()===6);
+                const isHol = !!holidays[dStr];
+                
+                let bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF');
+                let color = isHol ? '#DC2626' : '#333';
+                theadHTML += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${dayWeek}<br>${i}</th>`;
+            }
+            // ADICIONA A COLUNA TOTAL NO PDF
+            theadHTML += '<th style="border:1px solid #ccc; width:40px; background:#00855B !important; color:white !important;">TOT</th></tr>';
+
+            let tbodyHTML = '';
+            let tabelaContatosHTML = '';
+
+            const plantonistas = Object.entries(doctors)
+                .filter(([,d]) => {
+                    if (d.plantao !== 'sim') return false;
+                    if (currentTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
+                    if (currentTab.startsWith('vita') && d.vita === 'sim') return true;
+                    if (currentTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
+                    return false;
+                })
+                .filter(([id, d]) => filterDoc === "" || id === filterDoc)
+                .sort(([,a], [,b]) => (a.nome||'').localeCompare(b.nome||''));
+
+            plantonistas.forEach(([docId, doc]) => {
+                let rowTotal = 0; // Total para o PDF
+                let rowHTML = `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>`;
+                
+                const fone = doc.telefone || '-';
+                tabelaContatosHTML += `<tr><td style="border:1px solid #ccc; padding:4px; text-align:left; font-size:10px; font-weight:bold;">${doc.nome}</td><td style="border:1px solid #ccc; padding:4px; text-align:center; font-size:10px;">${fone}</td></tr>`;
+
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const d = new Date(currentYear, currentMonth-1, i);
+                    const isHol = !!holidays[d.toISOString().split('T')[0]];
+                    const isWk = (d.getDay()===0 || d.getDay()===6);
+                    
+                    const val = (monthlyData[docId] && monthlyData[docId][i]) ? monthlyData[docId][i] : '';
+                    
+                    let bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF');
+                    let txtColor = '#000';
+                    let bdColor = '#ccc';
+                    
+                    if (val === 'M') { bg = '#FDE68A'; txtColor = '#92400E'; bdColor = '#92400E'; }
+                    else if (val === 'T') { bg = '#E9D5FF'; txtColor = '#6B21A8'; bdColor = '#6B21A8'; }
+                    else if (val === 'M/T') { bg = '#FBCFE8'; txtColor = '#9D174D'; bdColor = '#9D174D'; }
+                    else if (val === 'S') { bg = '#BFDBFE'; txtColor = '#0369A1'; bdColor = '#0369A1'; }
+
+                    if (val === 'M/T') rowTotal += 2;
+                    else if (val) rowTotal++;
+
+                    rowHTML += `<td style="background:${bg} !important; color:${txtColor} !important; border:1px solid ${val ? bdColor : '#ccc'} !important; font-weight:bold; text-align:center; -webkit-print-color-adjust: exact;">${val}</td>`;
+                }
+                
+                // IMPRIME O TOTAL DO MÉDICO NO PDF
+                rowHTML += `<td style="background:#f0f0f0 !important; font-weight:bold; text-align:center; border:1px solid #ccc !important; -webkit-print-color-adjust: exact;">${rowTotal}</td></tr>`;
+                tbodyHTML += rowHTML;
+            });
+
+            let subtitle = 'Visão Geral';
+            let signName = '';
+            let signCRM = '';
+            let signRole = '';
+
+            if (filterDoc === "") {
+                signName = 'Dr. Maikol Kurahashi';
+                signCRM = 'CRM/PR 22050';
+                signRole = 'Diretor Técnico';
+            } else if (plantonistas.length === 1) {
+                const targetDoc = plantonistas[0][1];
+                subtitle = `Escala Individual: ${targetDoc.nome}`;
+                signName = targetDoc.nome;
+                signCRM = targetDoc.crm || targetDoc.crm_numero ? 'CRM ' + (targetDoc.crm || targetDoc.crm_numero) : 'CRM não cadastrado';
+                signRole = targetDoc.funcao || targetDoc.especialidade || 'Médico Plantonista';
+            }
+
+            const html = `
+                <html>
+                <head>
+                    <title>${pdfTitle} - ${periodStr}</title>
+                    <style>
+                        @page { size: landscape; margin: 10mm; }
+                        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; }
+                        .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; }
+                        .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } 
+                        .header-text { margin-left: 20px; }
+                        .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; }
+                        .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; }
+                        table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
+                        th, td { border: 1px solid #ccc; padding: 4px 2px; text-align: center; height: 25px; overflow:hidden; }
+                        th { background: #00855B !important; color: white !important; font-size: 9px; }
+                        
+                        .bottom-section { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; page-break-inside: avoid; }
+                        .contatos-table { width: 45%; border-collapse: collapse; }
+                        .contatos-table th { background: #00855B !important; color: white !important; font-size: 11px; padding: 6px; text-align: center; }
+                        .signature-block { width: 40%; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header-row">
+                        <img src="${LOGO_URL}" alt="Logo">
+                        <div class="header-text">
+                            <h1>${pdfTitle}</h1>
+                            <p>Mês de Referência: ${periodStr} | ${subtitle}</p>
+                        </div>
+                    </div>
+                    
+                    <table><thead>${theadHTML}</thead><tbody>${tbodyHTML}</tbody></table>
+                    
+                    <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 11px; font-weight: bold; align-items: center;">
+                        <span>Legenda:</span>
+                        <span style="display:inline-flex; align-items:center; gap:4px;"><div style="width:12px; height:12px; background:#FDE68A; border:1px solid #92400E;"></div> M (Manhã)</span>
+                        <span style="display:inline-flex; align-items:center; gap:4px;"><div style="width:12px; height:12px; background:#E9D5FF; border:1px solid #6B21A8;"></div> T (Tarde)</span>
+                        <span style="display:inline-flex; align-items:center; gap:4px;"><div style="width:12px; height:12px; background:#FBCFE8; border:1px solid #9D174D;"></div> M/T (Dia Todo)</span>
+                        <span style="display:inline-flex; align-items:center; gap:4px;"><div style="width:12px; height:12px; background:#BFDBFE; border:1px solid #0369A1;"></div> S (Sobreaviso)</span>
+                    </div>
+
+                    ${obsValue ? `<div style="margin-top: 20px; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 12px; page-break-inside: avoid;"><strong>Observações da Escala:</strong><br>${obsValue.replace(/\n/g, '<br>')}</div>` : ''}
+                    
+                    <div class="bottom-section">
+                        <table class="contatos-table">
+                            <thead>
+                                <tr><th colspan="2">Lista de Contatos da Escala</th></tr>
+                                <tr><th style="background:#f0f0f0 !important; color:#333 !important;">Médico</th><th style="background:#f0f0f0 !important; color:#333 !important;">Telefone</th></tr>
+                            </thead>
+                            <tbody>${tabelaContatosHTML}</tbody>
+                        </table>
+
+                        <div class="signature-block">
+                            <div style="border-bottom: 1px solid #000; margin-bottom: 10px; width: 100%;"></div>
+                            <div style="font-weight: bold; font-size: 14px;">${signName}</div>
+                            <div style="font-size: 12px; color: #555;">${signCRM}</div>
+                            <div style="font-size: 12px; color: #555;">${signRole}</div>
+                        </div>
+                    </div>
+
+                    <script>window.onload = function() { window.print(); }<\/script>
+                </body>
+                </html>
+            `;
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+        }
+    </script>
+</body>
+</html>

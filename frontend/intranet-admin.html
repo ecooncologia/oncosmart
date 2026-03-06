@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Intranet - Eco Oncologia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background: #f0f2f5; padding: 20px; color: #20343D; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #00855B; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+        h2 { font-size: 1.2rem; margin-top: 40px; margin-bottom: 15px; color: #20343D; display: flex; align-items: center; gap: 10px; border-top: 1px dashed #eee; padding-top: 20px; }
+        
+        .form-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        input, textarea, select { padding: 12px; border: 1px solid #ddd; border-radius: 6px; flex: 1; outline: none; font-family: 'Montserrat'; }
+        textarea { width: 100%; min-height: 120px; resize: vertical; margin-top: 5px; }
+        input:focus, textarea:focus, select:focus { border-color: #00855B; }
+        
+        .btn-add { padding: 10px 25px; background: #00855B; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-add:hover { background: #006a49; }
+        .btn-add.editing { background: #F2CB05; color: #20343D; } 
+        
+        .list { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; background: white; }
+        .item:hover { background: #f0fcf9; }
+        .item-info { display: flex; flex-direction: column; }
+        .item-title { font-weight: 700; font-size: 14px; }
+        .item-sub { font-size: 12px; color: #666; }
+        .item-img-preview { height: 40px; border-radius: 4px; margin-right: 10px; vertical-align: middle; }
+        
+        .actions { display: flex; gap: 5px; align-items: center; }
+        .btn-icon { padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; border: none; color: white; transition: 0.2s; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; }
+        .btn-edit { background: #20343D; }
+        .btn-delete { background: #E53E3E; }
+        .btn-qr { background: #26a69a; }
+        .btn-qr:hover { background: #1f8a80; transform: scale(1.05); }
+        .btn-cancel { background: #999; margin-left: 10px; display: none; }
+        .banner-check { width: 20px; height: 20px; margin-right: 15px; accent-color: #00855B; cursor: pointer; }
+        .toolbar { display: flex; gap: 5px; margin-bottom: 5px; width: 100%; }
+        .tool-btn { background: #ddd; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: serif; font-size: 14px; }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+        .dash-card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .dash-title { font-size: 14px; font-weight: 700; color: #20343D; margin-bottom: 15px; text-transform: uppercase; border-left: 4px solid #F2CB05; padding-left: 10px; }
+        
+        .stat-item { margin-bottom: 12px; }
+        .stat-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        .progress-bg { background: #eee; height: 8px; border-radius: 4px; overflow: hidden; }
+        .progress-bar { background: #00855B; height: 100%; border-radius: 4px; width: 0%; transition: width 1s; }
+        
+        .user-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .user-table th { text-align: left; background: #f9f9f9; padding: 8px; color: #666; font-weight: 600; border-bottom: 2px solid #eee; }
+        .user-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .user-table tr:hover { background: #f0fcf9; }
+        .fav-app-tag { background: #e0f2f1; color: #00855B; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Painel Administrativo & Analytics</h1>
+
+        <div class="dashboard-grid">
+            <div class="dash-card">
+                <div class="dash-title">Apps Mais Acessados</div>
+                <div id="appsRankingList">Carregando dados...</div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-title">Engajamento de Usuários</div>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table class="user-table">
+                        <thead><tr><th>Usuário</th><th style="text-align:center">Total</th><th>Mais usa:</th></tr></thead>
+                        <tbody id="userRankingList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <h2><i class="fas fa-quote-right"></i> Mensagem da Gerência / Valores</h2>
+        <div class="form-group">
+            <div style="width:100%; display:flex; gap:10px;">
+                <input type="text" id="msgName" placeholder="Nome (ex: Giovana Krueger)">
+                <input type="text" id="msgRole" placeholder="Cargo (ex: Gerente Geral)">
+            </div>
+            <input type="text" id="msgPhoto" placeholder="URL da Foto da Pessoa (Imgur/LinkedIn)" style="width:100%">
+            <div style="width:100%">
+                <div class="toolbar">
+                    <button class="tool-btn" onclick="formatText('b')" title="Negrito">B</button>
+                    <button class="tool-btn" onclick="formatText('i')" title="Itálico" style="font-style:italic">I</button>
+                </div>
+                <textarea id="msgText" placeholder="Texto da mensagem..."></textarea>
+            </div>
+            <button class="btn-add" style="width:100%" onclick="saveMessage()">Salvar Mensagem</button>
+        </div>
+
+        <h2><i class="fas fa-images"></i> Banners</h2>
+        <div class="form-group">
+            <input type="hidden" id="banId">
+            <input type="text" id="banUrl" placeholder="URL da Imagem">
+            <input type="text" id="banAlt" placeholder="Descrição">
+            <div style="display:flex; flex-direction:column; min-width: 140px;">
+                <label style="font-size:10px; font-weight:bold; color:#00855B;">Agendar:</label>
+                <input type="date" id="banDate" title="Se preenchido, só aparece a partir desta data">
+            </div>
+            <button class="btn-add" id="btnBan" onclick="saveBanner()">Adicionar</button>
+            <button class="btn-add btn-cancel" id="btnCancelBan" onclick="resetForm('ban')">Cancelar</button>
+        </div>
+        <button class="btn-add" style="background:#20343D; width:100%; margin-bottom:10px;" onclick="saveActiveBanners()">Salvar Seleção Ativa</button>
+        <div class="list" id="bannerList"></div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:40px; margin-bottom:15px; border-top:1px dashed #eee; padding-top:20px;">
+            <h2 style="margin:0; border:none; padding:0;"><i class="fas fa-link"></i> Gerenciador de Links e Botões</h2>
+            <button onclick="importDefaults()" style="background:#666; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-size:11px;">
+                <i class="fas fa-sync-alt"></i> Resetar e Importar Padrões
+            </button>
+        </div>
+
+        <div class="form-group">
+            <input type="hidden" id="linkId">
+            <div style="display:flex; gap:10px; width:100%;">
+                <select id="linkCategory" style="max-width:200px;">
+                    <option value="apps">Apps (Topo)</option>
+                    <option value="sidebar">Menu Lateral (Colorido)</option>
+                    <option value="quick">Acesso Rápido (Direita)</option>
+                </select>
+                <input type="text" id="linkName" placeholder="Nome do Botão">
+            </div>
+            
+            <input type="text" id="linkUrl" placeholder="URL ou Link da Imagem (Para Modal)" style="width:100%">
+            
+            <div style="display:flex; gap:10px; width:100%;">
+                <input type="text" id="linkIcon" placeholder="Classe Ícone (fas fa-globe) ou URL Imagem">
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <label style="font-size:10px; font-weight:bold;">Cor:</label>
+                    <input type="color" id="linkColor" value="#00855B" style="height:45px; width:50px; padding:0; flex:none;">
+                </div>
+            </div>
+
+            <button class="btn-add" id="btnLink" style="width:100%" onclick="saveLink()">Salvar Link</button>
+            <button class="btn-add btn-cancel" id="btnCancelLink" onclick="resetLink()" style="width:100%">Cancelar</button>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dash-card">
+                <div class="dash-title">Apps Topo</div>
+                <div class="list" id="listApps" style="height:200px;"></div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-title">Menu Lateral</div>
+                <div class="list" id="listSidebar" style="height:200px;"></div>
+            </div>
+        </div>
+        <div class="dash-card" style="margin-bottom:20px;">
+            <div class="dash-title">Acesso Rápido</div>
+            <div class="list" id="listQuick" style="height:200px;"></div>
+        </div>
+
+        <h2><i class="fas fa-phone"></i> Ramais</h2>
+        <div class="form-group">
+            <input type="hidden" id="ramId">
+            <input type="text" id="rName" placeholder="Nome">
+            <input type="text" id="rSector" placeholder="Setor">
+            <input type="text" id="rNum" placeholder="Ramal" style="max-width: 100px;">
+            <button class="btn-add" id="btnRam" onclick="saveRamal()">Adicionar</button>
+            <button class="btn-add btn-cancel" id="btnCancelRam" onclick="resetForm('ram')">Cancelar</button>
+        </div>
+        <div class="list" id="ramalList"></div>
+
+        <h2><i class="fas fa-birthday-cake"></i> Aniversariantes</h2>
+        <div class="form-group">
+            <input type="hidden" id="birId">
+            <input type="text" id="bName" placeholder="Nome">
+            <input type="text" id="bSector" placeholder="Setor">
+            <input type="number" id="bDay" placeholder="Dia" style="max-width:60px">
+            <input type="number" id="bMonth" placeholder="Mês" style="max-width:60px">
+            <div style="width:100%; display:flex; gap:10px; margin-top:10px;">
+                <input type="email" id="bEmail" placeholder="Email">
+                <input type="text" id="bPhoto" placeholder="Foto URL (Ex: LinkedIn/Imgur)">
+            </div>
+            <button class="btn-add" id="btnBir" style="width:100%; margin-top:10px;" onclick="saveBirthday()">Adicionar</button>
+            <button class="btn-add btn-cancel" style="width:100%; margin-top:5px;" id="btnCancelBir" onclick="resetForm('bir')">Cancelar</button>
+        </div>
+        <div class="list" id="birthdayList"></div>
+
+        <h2><i class="fas fa-trophy"></i> Ranking de Avaliações (Google)</h2>
+        <div class="form-group">
+            <input type="hidden" id="rankId">
+            <div style="display:flex; gap:10px; width:100%;">
+                <input type="text" id="rkName" placeholder="Nome do Funcionário">
+                <input type="email" id="rkEmail" placeholder="Email Corporativo (Microsoft 365)">
+            </div>
+            <div style="display:flex; gap:10px; width:100%; margin-top:10px;">
+                <input type="number" id="rkPoints" placeholder="Pontos Iniciais" style="max-width: 150px;">
+                <input type="text" id="rkQrId" placeholder="ID único (Ex: func123)">
+                <input type="text" id="rkPhoto" placeholder="Foto URL Externa (Opcional)">
+            </div>
+            <button class="btn-add" id="btnRank" style="width:100%; margin-top:10px;" onclick="saveRanking()">Adicionar ao Ranking</button>
+            <button class="btn-add btn-cancel" style="width:100%; margin-top:5px;" id="btnCancelRank" onclick="resetForm('rank')">Cancelar</button>
+        </div>
+        <div class="list" id="rankingAdminList"></div>
+        </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCkZQweHWGsfEu8OjHBACCxv_dbYcFAyv4", authDomain: "gerar-orcamento-bd4d1.firebaseapp.com", databaseURL: "https://gerar-orcamento-bd4d1-default-rtdb.firebaseio.com", projectId: "gerar-orcamento-bd4d1", appId: "1:779065759341:web:451d068c476580c542d164" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // IMPORTAR PADRÕES
+        function importDefaults() {
+            if(!confirm("ATENÇÃO: Isso APAGARÁ todos os links/botões atuais (incluindo duplicatas) e restaurará o padrão original. Deseja continuar?")) return;
+            db.ref('intranet/links').remove().then(() => {
+                const defaults = {
+                    apps: [
+                        { name: 'TASY', icon: 'https://imgur.com/IxhoZx9.png', url: 'http://192.168.1.132/Tasy/' },
+                        { name: 'DOCS', icon: 'https://imgur.com/FxPoUgt.png', url: 'https://ecooncologia.sharepoint.com/' },
+                        { name: 'CHAMADOS', icon: 'https://imgur.com/F6cI9cY.png', url: 'https://ecomedicalcenter.milldesk.com/login/' },
+                        { name: 'NEXUS', icon: 'https://imgur.com/Pzv55sa.png', url: 'https://nexus.cionc.com.br/' },
+                        { name: 'PARCEIROS', icon: 'https://imgur.com/7tOBhbt.png', url: 'https://gerenciamentodeparceiros.suporteaopaciente.com.br/' },
+                        { name: 'JANSSEN', icon: 'https://imgur.com/LDclSpZ.png', url: 'https://autorizador-janssen-prd.azurewebsites.net/' },
+                        { name: 'UNIMED', icon: 'https://imgur.com/QIAptFW.png', url: 'https://www.unimedcuritiba.com.br/login/' },
+                        { name: 'PONTO', icon: 'https://imgur.com/ONlx2DO.png', url: 'https://centraldofuncionario.com.br/' }
+                    ],
+                    sidebar: [
+                        { name: 'A Eco Oncologia', url: 'https://ecooncologia.com.br/', color: '#26a69a', icon: 'fas fa-globe' },
+                        { name: 'Unidades', url: 'https://ecooncologia.com.br/equipe-assistencial/', color: '#002333', icon: 'fas fa-building' },
+                        { name: 'Smart', url: 'https://ecooncologia.com.br/smart/', color: '#03bafc', icon: 'fas fa-calculator' },
+                        { name: 'Power BI', url: 'https://app.powerbi.com/', color: '#F2CB05', icon: 'fas fa-chart-pie' },
+                        { name: 'Documentos', url: 'https://ecooncologia.sharepoint.com/sites/HomeEcoOncologia/Documentos%20Compartilhados/', color: '#e91e63', icon: 'fas fa-folder-open' },
+                        { name: 'Ajuda TI', url: 'https://teams.microsoft.com/', color: '#9c27b0', icon: 'fas fa-headset' }
+                    ],
+                    quick: [
+                        { name: 'Setores por Andar', url: 'https://imgur.com/vm1r5Ak.png', icon: 'fas fa-building' },
+                        { name: 'Imunoterápicos', url: 'https://imgur.com/CYKMRxZ.png', icon: 'fas fa-syringe' },
+                        { name: 'Termo de Imagem', url: 'https://ecooncologia.sharepoint.com/:b:/s/HomeEcoOncologia/EXZAeOayXHdNmdBV4AK0YaABD_uXv8a-KeBfKsVeOWgtYA?e=HUBkkL.pdf', icon: 'fas fa-file-download' }
+                    ]
+                };
+                defaults.apps.forEach(app => db.ref('intranet/links/apps').push(app));
+                defaults.sidebar.forEach(item => db.ref('intranet/links/sidebar').push(item));
+                defaults.quick.forEach(item => db.ref('intranet/links/quick').push(item));
+                alert("Limpeza concluída!");
+            });
+        }
+
+        // ANALYTICS
+        db.ref('analytics/clicks').on('value', snap => {
+            const data = snap.val() || {};
+            const clicks = Object.values(data);
+            const appCounts = {};
+            const userStats = {};
+            clicks.forEach(c => {
+                appCounts[c.appName] = (appCounts[c.appName] || 0) + 1;
+                const uName = c.user || 'Anônimo';
+                if(!userStats[uName]) userStats[uName] = { total: 0, apps: {} };
+                userStats[uName].total++;
+                userStats[uName].apps[c.appName] = (userStats[uName].apps[c.appName] || 0) + 1;
+            });
+            const sortedApps = Object.entries(appCounts).sort((a,b) => b[1] - a[1]);
+            const maxClicks = sortedApps[0] ? sortedApps[0][1] : 1;
+            document.getElementById('appsRankingList').innerHTML = sortedApps.map(([name, count]) => {
+                const percent = (count / maxClicks) * 100;
+                return `<div class="stat-item"><div class="stat-header"><span>${name}</span><span>${count} clicks</span></div><div class="progress-bg"><div class="progress-bar" style="width:${percent}%"></div></div></div>`;
+            }).join('') || '<div style="color:#999; font-size:12px;">Nenhum dado ainda.</div>';
+            const sortedUsers = Object.entries(userStats).sort((a,b) => b[1].total - a[1].total).slice(0, 50);
+            document.getElementById('userRankingList').innerHTML = sortedUsers.map(([name, stats]) => {
+                const favApp = Object.entries(stats.apps).sort((a,b) => b[1] - a[1])[0][0];
+                return `<tr><td>${name}</td><td style="text-align:center; font-weight:bold;">${stats.total}</td><td><span class="fav-app-tag">${favApp}</span></td></tr>`;
+            }).join('') || '<tr><td colspan="3" style="text-align:center;color:#999">Vazio</td></tr>';
+        });
+
+        // TEXTO MENSAGEM
+        function formatText(tag) {
+            const ta = document.getElementById('msgText');
+            const s = ta.selectionStart, e = ta.selectionEnd;
+            if (s === e) return;
+            ta.value = ta.value.substring(0,s) + `<${tag}>${ta.value.substring(s,e)}</${tag}>` + ta.value.substring(e);
+        }
+
+        db.ref('intranet/message').on('value', s => {
+            const d = s.val();
+            if(d) {
+                document.getElementById('msgName').value = d.name || '';
+                document.getElementById('msgRole').value = d.role || '';
+                document.getElementById('msgText').value = d.text || '';
+                document.getElementById('msgPhoto').value = d.photo || '';
+            }
+        });
+
+        // LISTENERS
+        db.ref('intranet/banners').on('value', s => renderList('bannerList', s.val(), 'ban'));
+        db.ref('intranet/ramais').on('value', s => renderList('ramalList', s.val(), 'ram'));
+        db.ref('intranet/aniversariantes').on('value', s => renderList('birthdayList', s.val(), 'bir'));
+        db.ref('intranet/ranking').on('value', s => renderList('rankingAdminList', s.val(), 'rank'));
+        db.ref('intranet/links/apps').on('value', s => renderLinkList('listApps', s.val(), 'apps'));
+        db.ref('intranet/links/sidebar').on('value', s => renderLinkList('listSidebar', s.val(), 'sidebar'));
+        db.ref('intranet/links/quick').on('value', s => renderLinkList('listQuick', s.val(), 'quick'));
+
+        function renderList(id, data, type) {
+            const div = document.getElementById(id);
+            div.innerHTML = '';
+            if(!data) return;
+            let entries = Object.entries(data);
+            
+            if(type === 'bir') entries.sort((a,b) => parseInt(a[1].m) - parseInt(b[1].m) || parseInt(a[1].d) - parseInt(b[1].d));
+            if(type === 'rank') entries.sort((a,b) => (b[1].pontos || 0) - (a[1].pontos || 0));
+
+            div.innerHTML = entries.map(([k,v]) => {
+                let content = '';
+                let params = `'${k}'`;
+                let qrButton = '';
+
+                if(type === 'ban') {
+                    const dateDisplay = v.scheduledDate ? `<br><span style="font-size:10px; color:#00855B; font-weight:bold;">Agendado: ${v.scheduledDate.split('-').reverse().join('/')}</span>` : '';
+                    content = `<div style="display:flex;align-items:center"><input type="checkbox" class="banner-check" value="${k}" ${v.active?'checked':''}><img src="${v.url}" class="item-img-preview"><div><span>${v.alt}</span>${dateDisplay}</div></div>`;
+                    params += `, '${v.url}', '${v.alt}', '${v.scheduledDate||''}'`;
+                }
+                else if(type === 'ram') {
+                    content = `<div class="item-info"><span class="item-title">${v.n}</span><span class="item-sub">${v.s} - ${v.r}</span></div>`;
+                    params += `, '${v.n}', '${v.s}', '${v.r}'`;
+                }
+                else if(type === 'bir') {
+                    const imgTag = v.photo ? `<img src="${v.photo}" class="item-img-preview" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">` : '';
+                    content = `<div style="display:flex; align-items:center;">${imgTag}<div class="item-info"><span class="item-title">${v.n}</span><span class="item-sub">${v.d}/${v.m} - ${v.s}</span></div></div>`;
+                    params += `, '${v.n}', '${v.d}', '${v.m}', '${v.s}', '${v.e||''}', '${v.photo||''}'`;
+                }
+                else if(type === 'rank') {
+                    // LÓGICA DO QR CODE AQUI
+                    const funcIdQr = v.qrId || k;
+                    const qrUrl = `http://ranking.ecooncologia.com.br:3001/avaliar?func_id=${funcIdQr}`;
+                    const qrImageSrc = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrUrl)}`;
+                    
+                    qrButton = `
+                        <a href="${qrImageSrc}" target="_blank" class="btn-icon btn-qr" title="Gerar QR Code">
+                            <i class="fas fa-qrcode"></i>
+                        </a>
+                    `;
+
+                    const imgTag = v.photo ? `<img src="${v.photo}" class="item-img-preview" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">` : '';
+
+                    content = `<div style="display:flex; align-items:center;">${imgTag}<div class="item-info"><span class="item-title">${v.nome} <span style="color:#00855B;">(${v.pontos || 0} pts)</span></span><span class="item-sub">${v.email || 'Sem email'} | QR ID: ${funcIdQr}</span></div></div>`;
+                    params += `, '${v.nome}', '${v.email || ''}', '${v.pontos || 0}', '${v.qrId || ''}', '${v.photo || ''}'`;
+                }
+                
+                const pathName = type==='ban'?'banners':type==='ram'?'ramais':type==='bir'?'aniversariantes':'ranking';
+                return `
+                    <div class="item">
+                        ${content}
+                        <div class="actions">
+                            ${qrButton}
+                            <button class="btn-icon btn-edit" onclick="editItem('${type}', ${params})"><i class="fas fa-pen"></i></button>
+                            <button class="btn-icon btn-delete" onclick="delItem('${pathName}', '${k}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderLinkList(elId, data, category) {
+            const div = document.getElementById(elId);
+            div.innerHTML = '';
+            if(!data) return;
+            div.innerHTML = Object.entries(data).map(([k,v]) => {
+                const iconDisplay = v.icon.includes('http') ? `<img src="${v.icon}" style="width:15px">` : `<i class="${v.icon}"></i>`;
+                return `
+                    <div class="item">
+                        <div class="item-info">
+                            <span class="item-title" style="display:flex;align-items:center;gap:5px;">${iconDisplay} ${v.name}</span>
+                            <span class="item-sub" style="font-size:9px; color:#999;">${v.url}</span>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-icon btn-edit" onclick="editLink('${category}', '${k}', '${v.name}', '${v.url}', '${v.icon}', '${v.color}')"><i class="fas fa-pen"></i></button>
+                            <button class="btn-icon btn-delete" onclick="if(confirm('Excluir?')) db.ref('intranet/links/${category}/${k}').remove()"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function saveMessage() {
+            db.ref('intranet/message').set({
+                name: document.getElementById('msgName').value,
+                role: document.getElementById('msgRole').value,
+                text: document.getElementById('msgText').value,
+                photo: document.getElementById('msgPhoto').value 
+            });
+            alert("Mensagem salva!");
+        }
+
+        function saveBanner() { saveGeneric('ban', 'banners', { url: 'banUrl', alt: 'banAlt', scheduledDate: 'banDate', active: true }); }
+        function saveRamal() { saveGeneric('ram', 'ramais', { n: 'rName', s: 'rSector', r: 'rNum' }); }
+        function saveBirthday() { saveGeneric('bir', 'aniversariantes', { n: 'bName', d: 'bDay', m: 'bMonth', s: 'bSector', e: 'bEmail', photo: 'bPhoto' }); }
+
+        function saveRanking() {
+            const id = document.getElementById('rankId').value;
+            const data = {
+                nome: document.getElementById('rkName').value,
+                email: document.getElementById('rkEmail').value,
+                pontos: parseInt(document.getElementById('rkPoints').value) || 0,
+                qrId: document.getElementById('rkQrId').value,
+                photo: document.getElementById('rkPhoto').value
+            };
+            if(!data.nome) return alert("Preencha o nome do funcionário!");
+
+            if(id) db.ref(`intranet/ranking/${id}`).update(data);
+            else db.ref('intranet/ranking').push(data);
+            
+            resetForm('rank');
+        }
+
+        function saveGeneric(prefix, path, map) {
+            const id = document.getElementById(prefix + 'Id').value;
+            const data = {};
+            for(let key in map) {
+                if(key === 'active' && id) continue; 
+                const val = key === 'active' ? true : document.getElementById(map[key]).value;
+                data[key] = val;
+            }
+            if(!data[Object.keys(data)[0]]) return alert("Preencha os campos obrigatórios");
+
+            if(id) {
+                if(path === 'banners') {
+                    db.ref(`intranet/${path}/${id}`).once('value').then(s => { data.active = s.val().active; db.ref(`intranet/${path}/${id}`).update(data); });
+                } else db.ref(`intranet/${path}/${id}`).update(data);
+            } else db.ref(`intranet/${path}`).push(data);
+            resetForm(prefix);
+        }
+
+        function saveLink() {
+            const id = document.getElementById('linkId').value;
+            const category = document.getElementById('linkCategory').value;
+            const data = {
+                name: document.getElementById('linkName').value,
+                url: document.getElementById('linkUrl').value,
+                icon: document.getElementById('linkIcon').value,
+                color: document.getElementById('linkColor').value
+            };
+            if(!data.name || !data.url) return alert("Preencha Nome e URL");
+
+            const path = `intranet/links/${category}`;
+            if(id) db.ref(`${path}/${id}`).update(data);
+            else db.ref(path).push(data);
+            resetLink();
+        }
+
+        function saveActiveBanners() {
+            const updates = {};
+            document.querySelectorAll('.banner-check').forEach(chk => updates[`intranet/banners/${chk.value}/active`] = chk.checked);
+            db.ref().update(updates).then(() => alert("Banners ativos atualizados!"));
+        }
+
+        window.editItem = function(type, id, ...args) {
+            document.getElementById(type + 'Id').value = id;
+            if(type === 'ban') {
+                document.getElementById('banUrl').value = args[0];
+                document.getElementById('banAlt').value = args[1];
+                document.getElementById('banDate').value = args[2] || '';
+            } else if(type === 'ram') {
+                ['rName', 'rSector', 'rNum'].forEach((fid, i) => document.getElementById(fid).value = args[i]);
+            } else if(type === 'bir') {
+                ['bName', 'bDay', 'bMonth', 'bSector', 'bEmail', 'bPhoto'].forEach((fid, i) => document.getElementById(fid).value = args[i]);
+            } else if(type === 'rank') {
+                ['rkName', 'rkEmail', 'rkPoints', 'rkQrId', 'rkPhoto'].forEach((fid, i) => document.getElementById(fid).value = args[i]);
+            }
+            const btn = document.getElementById('btn' + type.charAt(0).toUpperCase() + type.slice(1));
+            const cancel = document.getElementById('btnCancel' + type.charAt(0).toUpperCase() + type.slice(1));
+            btn.innerText = "Salvar Alteração";
+            btn.classList.add('editing');
+            cancel.style.display = 'inline-block';
+        };
+
+        window.editLink = function(cat, id, name, url, icon, color) {
+            document.getElementById('linkId').value = id;
+            document.getElementById('linkCategory').value = cat;
+            document.getElementById('linkName').value = name;
+            document.getElementById('linkUrl').value = url;
+            document.getElementById('linkIcon').value = icon;
+            document.getElementById('linkColor').value = color;
+            const btn = document.getElementById('btnLink');
+            btn.innerText = "Salvar Edição";
+            btn.classList.add('editing');
+            document.getElementById('btnCancelLink').style.display = 'inline-block';
+        }
+
+        window.resetForm = function(type) {
+            document.getElementById(type + 'Id').value = '';
+            const fields = type === 'ban' ? ['banUrl', 'banAlt', 'banDate'] 
+                         : type === 'ram' ? ['rName', 'rSector', 'rNum'] 
+                         : type === 'bir' ? ['bName', 'bDay', 'bMonth', 'bSector', 'bEmail', 'bPhoto']
+                         : type === 'rank' ? ['rkName', 'rkEmail', 'rkPoints', 'rkQrId', 'rkPhoto'] : [];
+            fields.forEach(fid => document.getElementById(fid).value = '');
+            const btn = document.getElementById('btn' + type.charAt(0).toUpperCase() + type.slice(1));
+            const cancel = document.getElementById('btnCancel' + type.charAt(0).toUpperCase() + type.slice(1));
+            btn.innerText = type === 'rank' ? "Adicionar ao Ranking" : "Adicionar";
+            btn.classList.remove('editing');
+            cancel.style.display = 'none';
+        }
+
+        window.resetLink = function() {
+            document.getElementById('linkId').value = '';
+            document.getElementById('linkName').value = '';
+            document.getElementById('linkUrl').value = '';
+            document.getElementById('linkIcon').value = '';
+            const btn = document.getElementById('btnLink');
+            btn.innerText = "Salvar Link";
+            btn.classList.remove('editing');
+            document.getElementById('btnCancelLink').style.display = 'none';
+        }
+
+        window.delItem = function(path, key) { if(confirm("Excluir?")) db.ref(`intranet/${path}/${key}`).remove(); };
+    </script>
+</body>
+</html>

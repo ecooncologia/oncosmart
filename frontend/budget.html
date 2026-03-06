@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Novo Orçamento - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+    
+    <style>
+        /* Estilos específicos */
+        .budget-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; } .form-group { flex: 1; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 6px; text-transform: uppercase; }
+        
+        .procedure-card { background: #F8FAFC; border: 1px dashed #CBD5E0; padding: 15px; border-radius: 12px; margin-bottom: 15px; position: relative; }
+        .procedure-card h4 { font-size: 13px; color: var(--text-light); margin-bottom: 10px; font-weight: 600; }
+        
+        .btn-add { width: 100%; padding: 12px; border: 2px dashed var(--primary); background: #f0fdf4; color: var(--primary); font-weight: 700; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .btn-add:hover { background: #dcfce7; }
+        .btn-remove { position: absolute; top: 10px; right: 10px; color: var(--danger); background: none; border: none; cursor: pointer; }
+        
+        .summary-card { position: sticky; top: 20px; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: var(--text-dark); }
+        .summary-row.total { border-top: 2px solid #EDF2F7; padding-top: 15px; margin-top: 15px; font-size: 18px; font-weight: 800; color: var(--primary); }
+        .info-box { background: #EDF2F7; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 13px; color: #4A5568; }
+        
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .action-buttons .btn { flex: 1; justify-content: center; } 
+
+        .alert { padding: 15px; border-radius: 10px; margin-top: 15px; font-size: 14px; display: none; font-weight: 600; text-align: center; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        @media (max-width: 1024px) { .budget-grid { grid-template-columns: 1fr; } .summary-card { position: static; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <form id="budgetForm">
+            <div class="budget-grid">
+                
+                <div class="main-form">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-user-injured"></i> Dados Principais</div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Nome do Paciente *</label><input type="text" id="patientName" class="form-control" placeholder="Nome completo" required></div>
+                            <div class="form-group"><label>Médico Responsável *</label><input type="text" id="budgetDoctorName" class="form-control" placeholder="Nome do médico" required></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Responsável pelo Orçamento *</label><input type="text" id="responsibleName" class="form-control" placeholder="Seu nome" required></div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header"><span><i class="fas fa-syringe"></i> Procedimentos</span></div>
+                        
+                        <div class="procedure-card">
+                            <h4>Procedimento 1 (Obrigatório)</h4>
+                            <select id="selectedProcedure1" class="form-control" required onchange="updateBudgetSummary()"><option value="">Selecione um procedimento...</option></select>
+                        </div>
+                        
+                        <div id="procedureGroup2" class="procedure-card" style="display:none;">
+                            <button type="button" class="btn-remove" onclick="removeProcedure(2)"><i class="fas fa-trash"></i></button>
+                            <h4>Procedimento 2</h4>
+                            <select id="selectedProcedure2" class="form-control" onchange="updateBudgetSummary()"><option value="">Selecione um procedimento...</option></select>
+                        </div>
+                        
+                        <div id="procedureGroup3" class="procedure-card" style="display:none;">
+                            <button type="button" class="btn-remove" onclick="removeProcedure(3)"><i class="fas fa-trash"></i></button>
+                            <h4>Procedimento 3</h4>
+                            <select id="selectedProcedure3" class="form-control" onchange="updateBudgetSummary()"><option value="">Selecione um procedimento...</option></select>
+                        </div>
+                        
+                        <button type="button" id="addProcedureBtn" class="btn-add" onclick="addProcedure()"><i class="fas fa-plus-circle"></i> Adicionar Outro Procedimento</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-form">
+                    <div class="card summary-card">
+                        <div class="card-header"><i class="fas fa-receipt"></i> Resumo Financeiro</div>
+                        
+                        <div class="summary-row"><span>Material:</span><span id="summaryMaterial">R$ 0,00</span></div>
+                        <div class="summary-row"><span>Medicamento:</span><span id="summaryMedication">R$ 0,00</span></div>
+                        <div class="summary-row"><span>Procedimento:</span><span id="summaryProcedure">R$ 0,00</span></div>
+                        <div class="summary-row" style="color: var(--danger);"><span>Desconto:</span><span id="summaryDiscount">R$ 0,00</span></div>
+                        <div class="summary-row total"><span>VALOR FINAL</span><span id="summaryTotal">R$ 0,00</span></div>
+                        
+                        <div class="info-box">
+                            <h5>Formas de Pagamento</h5>
+                            <p><strong>Dinheiro/PIX:</strong> <span id="paymentCash">R$ 0,00</span></p>
+                            <p><strong>Débito:</strong> <span id="paymentDebit">R$ 0,00</span></p>
+                            <p><strong>Crédito (1x):</strong> <span id="paymentCredit">R$ 0,00</span></p>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+                            <button type="button" id="pdfBtn" class="btn btn-info" onclick="generatePDF()" disabled><i class="fas fa-file-pdf"></i> PDF</button>
+                        </div>
+                        
+                        <div id="budgetAlert" class="alert"></div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initGlobal('budget', 'Novo Orçamento');
+            loadProcedures();
+            document.getElementById('budgetForm').addEventListener('submit', saveAndPrepare);
+            
+            const u = JSON.parse(localStorage.getItem('ecoUser'));
+            if(u && u.name) document.getElementById('responsibleName').value = u.name;
+        });
+
+        let procedures = {}, currentBudget = null, activeProcedures = 1;
+
+        async function loadProcedures() {
+            try {
+                // BLINDADO
+                const response = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
+                const rawData = await response.json();
+                procedures = normalizeData(rawData);
+
+                const optionsHTML = '<option value="">Selecione um procedimento...</option>' + 
+                    Object.entries(procedures).map(([id, proc]) => `<option value="${id}">${proc.nome}</option>`).join('');
+                for (let i = 1; i <= 3; i++) document.getElementById(`selectedProcedure${i}`).innerHTML = optionsHTML;
+            } catch (error) { console.error(error); }
+        }
+
+        function addProcedure() {
+            if (activeProcedures < 3) {
+                activeProcedures++;
+                document.getElementById(`procedureGroup${activeProcedures}`).style.display = 'block';
+                if (activeProcedures >= 3) document.getElementById('addProcedureBtn').style.display = 'none';
+            }
+        }
+
+        function removeProcedure(num) {
+            document.getElementById(`selectedProcedure${num}`).value = '';
+            document.getElementById(`procedureGroup${num}`).style.display = 'none';
+            activeProcedures--;
+            document.getElementById('addProcedureBtn').style.display = 'block';
+            updateBudgetSummary();
+        }
+
+        function updateBudgetSummary() {
+            let totalMat = 0, totalMed = 0, totalProc = 0, totalDisc = 0;
+            for (let i = 1; i <= 3; i++) {
+                const id = document.getElementById(`selectedProcedure${i}`).value;
+                if (id && procedures[id]) {
+                    const p = procedures[id];
+                    const safeFloat = (val) => {
+                        let v = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.') || 0);
+                        return isNaN(v) ? 0 : v;
+                    };
+                    
+                    totalMat += safeFloat(p.custo_material);
+                    totalMed += safeFloat(p.custo_medicamento);
+                    totalProc += safeFloat(p.custo_procedimento || p.preco);
+                    totalDisc += safeFloat(p.desconto);
+                }
+            }
+            
+            // CORREÇÃO: Limita as casas decimais e arredonda para Moeda
+            const total = Number((totalMat + totalMed + totalProc - totalDisc).toFixed(2));
+            const fmt = (v) => Number(v).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+
+            document.getElementById('summaryMaterial').textContent = fmt(totalMat);
+            document.getElementById('summaryMedication').textContent = fmt(totalMed);
+            document.getElementById('summaryProcedure').textContent = fmt(totalProc);
+            document.getElementById('summaryDiscount').textContent = fmt(totalDisc);
+            document.getElementById('summaryTotal').textContent = fmt(total);
+            document.getElementById('paymentCash').textContent = fmt(total);
+            document.getElementById('paymentDebit').textContent = fmt(total);
+            document.getElementById('paymentCredit').textContent = fmt(total);
+        }
+
+        async function saveAndPrepare(e) {
+            e.preventDefault();
+            const selectedIds = [];
+            const procNames = [];
+            for(let i=1; i<=3; i++) {
+                const val = document.getElementById(`selectedProcedure${i}`).value;
+                if(val) { selectedIds.push(val); procNames.push(procedures[val].nome); }
+            }
+            if(selectedIds.length === 0) return showAlert('Selecione ao menos um procedimento.', 'error');
+
+            let totalMat = 0, totalMed = 0, totalProc = 0, totalDisc = 0;
+            selectedIds.forEach(id => {
+                const p = procedures[id];
+                const safeFloat = (val) => {
+                    let v = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.') || 0);
+                    return isNaN(v) ? 0 : v;
+                };
+                totalMat += safeFloat(p.custo_material); 
+                totalMed += safeFloat(p.custo_medicamento); 
+                totalProc += safeFloat(p.custo_procedimento || p.preco); 
+                totalDisc += safeFloat(p.desconto);
+            });
+            
+            // CORREÇÃO: Arredonda exatamente para o banco de dados
+            const finalValorCalculado = Number((totalMat + totalMed + totalProc - totalDisc).toFixed(2));
+            const newId = 'orcamento_' + Date.now();
+
+            currentBudget = {
+                id_firebase: newId,
+                paciente_nome: document.getElementById('patientName').value,
+                medico_nome: document.getElementById('budgetDoctorName').value,
+                responsavel: document.getElementById('responsibleName').value,
+                procedimentos: procNames,
+                
+                // Forçando gravação com apenas 2 decimais
+                total_material: Number(totalMat.toFixed(2)), 
+                total_medicamento: Number(totalMed.toFixed(2)), 
+                total_procedimento: Number(totalProc.toFixed(2)), 
+                desconto: Number(totalDisc.toFixed(2)),
+                valor_final: finalValorCalculado, 
+                
+                data_criacao: new Date().toISOString(),
+                status: 'pendente',
+                
+                // Dados antigos pra não quebrar PDF
+                paciente: document.getElementById('patientName').value,
+                medico: document.getElementById('budgetDoctorName').value,
+                total: finalValorCalculado,
+                data: new Date().toISOString()
+            };
+
+            try {
+                // BLINDADO
+                const response = await fetch(`${API_BASE_URL}/orcamentos`, { 
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...API_HEADERS
+                    },
+                    body: JSON.stringify(currentBudget) 
+                });
+                
+                if (response.ok) {
+                    showAlert('Orçamento salvo com sucesso!', 'success');
+                    document.getElementById('pdfBtn').disabled = false;
+                } else {
+                    throw new Error('Erro na resposta do servidor.');
+                }
+            } catch (err) { 
+                console.error("Erro ao salvar:", err);
+                showAlert('Erro ao salvar: ' + err.message, 'error'); 
+            }
+        }
+
+        function showAlert(msg, type) {
+            const el = document.getElementById('budgetAlert');
+            el.textContent = msg;
+            el.className = `alert alert-${type}`;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 4000);
+        }
+
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+
+        function generatePDF() {
+            if(!currentBudget) return;
+            const win = window.open('', '_blank');
+            const fmt = (v) => Number(v).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            const HOST_URL = "https://ecooncologia.com.br/smart/"; 
+
+            const html = `
+                <html>
+                <head>
+                    <title>Orçamento - ${currentBudget.paciente_nome}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 30px; background: white; color: #333; }
+                        @page { margin: 0; size: A4; }
+                        .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; }
+                        .header-row img { height: 70px; }
+                        .header-text { margin-left: 20px; }
+                        .header-text h1 { margin: 0; color: #00855B; font-size: 24px; text-transform: uppercase; }
+                        .header-text p { margin: 3px 0 0; font-size: 13px; color: #666; }
+                        .intro-box { background: #F3F4F6; padding: 15px; border-radius: 8px; border: 1px solid #E5E7EB; font-size: 13px; margin-bottom: 20px; text-align: justify; line-height: 1.5; color: #1F2937; }
+                        .gallery-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+                        .gallery-item { text-align: center; }
+                        .gallery-item img { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #eee; }
+                        .gallery-item img.touca-img { width: 100px; height: 100px; object-fit: contain; background: #fff; border: none !important; }
+                        .gallery-label { font-size: 10px; font-weight: bold; text-transform: uppercase; margin-top: 5px; color: #333; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                        .info-box { background: #f8f9fa; padding: 12px; border-left: 4px solid #00855B; border-radius: 4px; }
+                        .label { font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; }
+                        .value { font-size: 15px; margin-top: 3px; font-weight: 500; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th { background: #00855B; color: white; padding: 8px; text-align: left; font-size: 12px; }
+                        td { padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+                        .total-row { background: #e8f5e8; font-weight: bold; font-size: 16px; color: #00855B; }
+                        .footer-row { display: flex; justify-content: space-between; background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #00855B; font-size: 13px; }
+                        .bank-title { color: #00855B; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header-row"><img src="${HOST_URL}logo.png" alt="Logo"><div class="header-text"><h1>Orçamento Médico</h1><p>Data de Emissão: ${new Date().toLocaleDateString()}</p></div></div>
+                    <div class="intro-box">Nosso Centro de Infusão conta com um ambiente humanizado e seguro, nossa estrutura conta com salas climatizadas, com televisão e acesso a internet, kit lanche e uma linda vista para a Serra do Mar, para tornar sua aplicação o mais agradável possível.</div>
+                    <div class="gallery-grid">
+                        <div class="gallery-item"><img src="${HOST_URL}recepcao_interna.jpg"><div class="gallery-label">Recepção Interna</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}leito_poltrona.jpg"><div class="gallery-label">Sala de Infusão - Poltrona</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}enfermagem.jpg"><div class="gallery-label">Posto de Enfermagem</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}leito_cama.jpg"><div class="gallery-label">Sala de Infusão - Cama</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}touca_capilar.jpg" class="touca-img"><div class="gallery-label">Paxman - Touca Capilar</div></div>
+                        <div class="gallery-item"><img src="${HOST_URL}recepcao_externa.jpg"><div class="gallery-label">Recepção - Consultórios</div></div>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-box"><div class="label">Paciente</div><div class="value">${currentBudget.paciente_nome}</div></div>
+                        <div class="info-box"><div class="label">Médico Solicitante</div><div class="value">${currentBudget.medico_nome}</div></div>
+                        <div class="info-box"><div class="label">Procedimentos</div><div class="value">${currentBudget.procedimentos.join(', ')}</div></div>
+                        <div class="info-box"><div class="label">Responsável ECO</div><div class="value">${currentBudget.responsavel}</div></div>
+                    </div>
+                    <table>
+                        <thead><tr><th>DESCRIÇÃO</th><th style="text-align:right">VALOR</th></tr></thead>
+                        <tbody>
+                            <tr><td>Materiais</td><td align="right">${fmt(currentBudget.total_material)}</td></tr>
+                            <tr><td>Medicamentos</td><td align="right">${fmt(currentBudget.total_medicamento)}</td></tr>
+                            <tr><td>Honorários</td><td align="right">${fmt(currentBudget.total_procedimento)}</td></tr>
+                            ${(currentBudget.desconto > 0) ? `<tr><td>Desconto</td><td align="right" style="color:red">-${fmt(currentBudget.desconto)}</td></tr>` : ''}
+                            <tr class="total-row"><td>VALOR TOTAL</td><td align="right">${fmt(currentBudget.valor_final)}</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="footer-row">
+                        <div><div class="bank-title">DADOS BANCÁRIOS</div>PIX: 54.385.647/0001-08<br>Bradesco (237) | Ag: 2880 | CC: 1458-3</div>
+                        <div style="text-align:right"><div class="bank-title">FORMAS DE PAGAMENTO</div>Dinheiro, PIX, Débito ou Crédito (1x).<br><em>Validade: 10 dias.</em></div>
+                    </div>
+                    <script>window.onload = function() { window.print(); }<\/script>
+                </body>
+                </html>
+            `;
+            win.document.write(html);
+            win.document.close();
+        }
+    </script>
+</body>
+</html>
