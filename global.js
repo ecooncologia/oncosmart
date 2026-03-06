@@ -1,3 +1,14 @@
+let API_BASE_URL = "https://api.ecooncologia.com.br:3000";
+
+if (window.location.href.includes('/teste/')) {
+    API_BASE_URL = "https://api.ecooncologia.com.br:4000";
+}
+
+const API_HEADERS = {
+    'Content-Type': 'application/json',
+    'x-api-key': 'EcoOnco_Smart_Seguranca_2026!@'
+};
+
 // --- CONFIGURAÇÃO DA API E SEGURANÇA ---
 // --- CONFIGURAÇÃO DA API INTELIGENTE ---
 let API_BASE_URL = 'https://api.ecooncologia.com.br:3000'; // Padrão: Produção
