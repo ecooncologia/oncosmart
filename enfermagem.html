@@ -68,7 +68,7 @@
 
         .action-area { display: flex; flex-direction: column; gap: 10px; }
         
-        /* Botões */
+        /* Botões Originais */
         .btn-call { width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; color: white; }
         
         .btn-default { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); } 
@@ -291,7 +291,7 @@
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-hourglass-half"></i> Aguardando Recepção...</button>`;
                 }
 
-                // Html dos botões secundários para o paciente enviar para triagem
+                // Html dos botões secundários
                 let specialistBtns = `
                     <div style="display: flex; gap: 10px; margin-top: 5px;">
                         <button class="btn-call btn-psico" style="font-size: 0.85rem; padding: 10px;" onclick="solicitarEspecialista('psicologo', '${p.key}')">
@@ -328,7 +328,8 @@
 
                         <div class="action-area">
                             ${btnHtml}
-                            ${!isExt ? specialistBtns : ''} ${(!status || status === 'pending') ? `<button class="btn" style="width:100%; background:#fff; border:1px solid #e2e8f0; color:#718096; margin-top:5px; padding:8px; border-radius:6px; cursor:pointer;" onclick="deleteItem('${p.key}')">Cancelar / Remover</button>` : ''}
+                            ${!isExt ? specialistBtns : ''} 
+                            ${(!status || status === 'pending') ? `<button class="btn" style="width:100%; background:#fff; border:1px solid #e2e8f0; color:#718096; margin-top:5px; padding:8px; border-radius:6px; cursor:pointer;" onclick="deleteItem('${p.key}')">Cancelar / Remover</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -337,13 +338,9 @@
         }
 
         async function callTransport(key, name, origin) {
-            // BLINDADO
             await fetch(`${API_BASE_URL}/patientCalls`, {
                 method: 'POST', 
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...API_HEADERS
-                },
+                headers: { 'Content-Type': 'application/json', ...API_HEADERS },
                 body: JSON.stringify({
                     patientId: key,
                     patientName: name,
@@ -356,7 +353,6 @@
         }
 
         async function updateStatus(callId, newStatus) {
-            // BLINDADO
             const res = await fetch(`${API_BASE_URL}/patientCalls`, { headers: API_HEADERS });
             const all = await res.json();
             const current = all[callId];
@@ -364,10 +360,7 @@
                 current.status = newStatus;
                 await fetch(`${API_BASE_URL}/patientCalls/${callId}`, { 
                     method:'PUT', 
-                    headers: {
-                        'Content-Type':'application/json',
-                        ...API_HEADERS
-                    }, 
+                    headers: { 'Content-Type':'application/json', ...API_HEADERS }, 
                     body:JSON.stringify(current) 
                 });
                 loadData();
@@ -375,47 +368,92 @@
         }
 
         // =========================================================================
-        // PARTE 1 - FUNÇÃO DE PREPARAÇÃO DA MENSAGEM DO ESPECIALISTA
+        // ENVIO INVISÍVEL PARA O BACKEND (WHATSAPP SILENCIOSO)
         // =========================================================================
         async function solicitarEspecialista(tipo, patientKey) {
-            try {
-                // 1. Busca os dados da avaliação original do paciente
-                const res = await fetch(`${API_BASE_URL}/painAssessments/${patientKey}`, { headers: API_HEADERS });
-                const paciente = await res.json();
+            const btn = event.currentTarget;
+            const textoOriginal = btn.innerHTML;
+            const classeOriginal = btn.className;
 
-                if (!paciente) {
-                    alert("Erro ao recuperar os dados do paciente.");
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+                btn.disabled = true;
+
+                // 1. Busca os dados do paciente
+                const resPac = await fetch(`${API_BASE_URL}/painAssessments/${patientKey}`, { headers: API_HEADERS });
+                const paciente = await resPac.json();
+
+                if (!paciente) throw new Error("Paciente não encontrado");
+
+                const profissoes = { 'psicologo': 'Psicólogo(a)', 'nutricionista': 'Nutricionista' };
+
+                // 2. Busca o profissional cadastrado
+                const resMedicos = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                const rawMedicos = await resMedicos.json();
+                const listaMedicos = Object.values(normalizeData(rawMedicos));
+
+                const especialistas = listaMedicos.filter(m => m.categoria === tipo && m.telefone && m.telefone.length >= 10);
+
+                if (especialistas.length === 0) {
+                    alert(`⚠️ Nenhum ${profissoes[tipo]} com telefone válido foi encontrado.`);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
                     return;
                 }
 
-                const profissoes = {
-                    'psicologo': 'Psicólogo(a)',
-                    'nutricionista': 'Nutricionista'
-                };
+                const profissional = especialistas[0];
 
-                // 2. Monta o corpo da mensagem com as informações dele
+                // 3. Prepara o número (+55)
+                let foneDestino = profissional.telefone.replace(/\D/g, '');
+                if (foneDestino.length === 10 || foneDestino.length === 11) {
+                    foneDestino = '55' + foneDestino;
+                }
+
+                // 4. Monta a mensagem
                 const msg = `🚨 *Solicitação de Avaliação - ${profissoes[tipo]}*\n\n` +
                             `*Paciente:* ${paciente.name}\n` +
                             `*Nível de Dor:* ${paciente.painLevel}\n` +
                             `*Emoção:* ${emotions[paciente.emotion] || paciente.emotion}\n` +
                             `*Necessidade:* ${needs[paciente.careNeed] || 'Geral'}\n` +
-                            `*Obs:* ${paciente.additionalInfo || 'Nenhuma'}`;
+                            `*Obs:* ${paciente.additionalInfo || 'Nenhuma'}\n\n` +
+                            `_Mensagem automática do ONCO SMART_`;
 
-                // 3. Apenas um demonstrativo visual por enquanto
-                alert(`Em breve isso enviará a mensagem para o número salvo no painel de Médicos.\n\nSimulação da mensagem gerada:\n\n${msg}`);
+                // 5. MANDA PARA O SEU BACKEND DE FORMA INVISÍVEL
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviando Zap...';
+                
+                const response = await fetch(`${API_BASE_URL}/notificar-whatsapp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify({
+                        numero: foneDestino,
+                        mensagem: msg
+                    })
+                });
 
-                // NA PRÓXIMA ETAPA: Substituiremos este alert() por um fetch na tabela de médicos
-                // e o disparo do link da API do WhatsApp web!
+                if (response.ok) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Enviado!';
+                    btn.style.background = '#10B981'; // Fica verde confirmando
+                } else {
+                    throw new Error("Erro no backend ao enviar WhatsApp");
+                }
 
             } catch (e) {
                 console.error(e);
-                alert("Erro ao processar a solicitação para o especialista.");
+                btn.innerHTML = '<i class="fas fa-times"></i> Falha no envio';
+                btn.style.background = '#EF4444'; // Fica vermelho se der erro
+            } finally {
+                // Volta o botão ao normal depois de 3 segundos
+                setTimeout(() => { 
+                    btn.innerHTML = textoOriginal; 
+                    btn.className = classeOriginal;
+                    btn.style.background = '';
+                    btn.disabled = false; 
+                }, 3000);
             }
         }
 
         async function deleteItem(key) {
             if(confirm("Deseja remover este paciente da fila?")) {
-                // BLINDADO
                 await fetch(`${API_BASE_URL}/painAssessments/${key}`, { 
                     method: 'DELETE',
                     headers: API_HEADERS 
