@@ -146,7 +146,7 @@
                 updateSoundBtn();
             }
             
-            // WEB WORKER PARA POLLING (Background Safe)
+            // WEB WORKER PARA POLLING
             const workerBlob = new Blob([`
                 setInterval(() => { postMessage("tick"); }, 3000);
             `], { type: "application/javascript" });
@@ -176,7 +176,6 @@
 
         async function loadData() {
             try {
-                // BLINDADO
                 const [resCalls, resPain] = await Promise.all([
                     fetch(`${API_BASE_URL}/patientCalls?_t=${Date.now()}`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/painAssessments?_t=${Date.now()}`, { headers: API_HEADERS })
@@ -207,7 +206,7 @@
 
                 renderPatients(assessments);
 
-                // --- SOM POR ID ---
+                // Lógica do Som
                 let currentAlertIds = new Set();
                 assessments.forEach(p => {
                     const status = activeCalls[p.key]?.status;
@@ -291,7 +290,7 @@
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-hourglass-half"></i> Aguardando Recepção...</button>`;
                 }
 
-                // Html dos botões secundários
+                // Html dos botões secundários (Invisível Externo)
                 let specialistBtns = `
                     <div style="display: flex; gap: 10px; margin-top: 5px;">
                         <button class="btn-call btn-psico" style="font-size: 0.85rem; padding: 10px;" onclick="solicitarEspecialista('psicologo', '${p.key}')">
@@ -368,7 +367,7 @@
         }
 
         // =========================================================================
-        // ENVIO INVISÍVEL PARA O BACKEND (WHATSAPP SILENCIOSO)
+        // INTEGRAÇÃO INVISÍVEL COM O ROBÔ DO WHATSAPP VIA API (A PONTE)
         // =========================================================================
         async function solicitarEspecialista(tipo, patientKey) {
             const btn = event.currentTarget;
@@ -376,10 +375,11 @@
             const classeOriginal = btn.className;
 
             try {
+                // Efeito visual de carregamento para o enfermeiro saber que clicou
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
                 btn.disabled = true;
 
-                // 1. Busca os dados do paciente
+                // 1. Busca os dados do paciente avaliado
                 const resPac = await fetch(`${API_BASE_URL}/painAssessments/${patientKey}`, { headers: API_HEADERS });
                 const paciente = await resPac.json();
 
@@ -387,7 +387,7 @@
 
                 const profissoes = { 'psicologo': 'Psicólogo(a)', 'nutricionista': 'Nutricionista' };
 
-                // 2. Busca o profissional cadastrado
+                // 2. Busca o profissional correto e o telefone dele no cadastro
                 const resMedicos = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 const rawMedicos = await resMedicos.json();
                 const listaMedicos = Object.values(normalizeData(rawMedicos));
@@ -395,31 +395,32 @@
                 const especialistas = listaMedicos.filter(m => m.categoria === tipo && m.telefone && m.telefone.length >= 10);
 
                 if (especialistas.length === 0) {
-                    alert(`⚠️ Nenhum ${profissoes[tipo]} com telefone válido foi encontrado.`);
+                    alert(`⚠️ Nenhum ${profissoes[tipo]} com telefone válido foi encontrado no sistema.`);
                     btn.innerHTML = textoOriginal;
                     btn.disabled = false;
                     return;
                 }
 
+                // Pega o primeiro que encontrar daquela categoria
                 const profissional = especialistas[0];
 
-                // 3. Prepara o número (+55)
+                // 3. Prepara o número adicionando o DDI do Brasil se não tiver
                 let foneDestino = profissional.telefone.replace(/\D/g, '');
                 if (foneDestino.length === 10 || foneDestino.length === 11) {
                     foneDestino = '55' + foneDestino;
                 }
 
-                // 4. Monta a mensagem
-                const msg = `🚨 *Solicitação de Avaliação - ${profissoes[tipo]}*\n\n` +
+                // 4. Monta a mensagem que será enviada
+                const msg = `🚨 *Solicitação de Triagem - ${profissoes[tipo]}*\n\n` +
                             `*Paciente:* ${paciente.name}\n` +
                             `*Nível de Dor:* ${paciente.painLevel}\n` +
                             `*Emoção:* ${emotions[paciente.emotion] || paciente.emotion}\n` +
                             `*Necessidade:* ${needs[paciente.careNeed] || 'Geral'}\n` +
                             `*Obs:* ${paciente.additionalInfo || 'Nenhuma'}\n\n` +
-                            `_Mensagem automática do ONCO SMART_`;
+                            `_Notificação enviada pelo sistema ONCO SMART_`;
 
-                // 5. MANDA PARA O SEU BACKEND DE FORMA INVISÍVEL
-                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviando Zap...';
+                // 5. MANDA PARA A SUA API (E ELA MANDA PRO ROBÔ INTERNAMENTE)
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Disparando Zap...';
                 
                 const response = await fetch(`${API_BASE_URL}/notificar-whatsapp`, {
                     method: 'POST',
@@ -431,18 +432,20 @@
                 });
 
                 if (response.ok) {
+                    // Retorno de Sucesso Visual
                     btn.innerHTML = '<i class="fas fa-check"></i> Enviado!';
-                    btn.style.background = '#10B981'; // Fica verde confirmando
+                    btn.style.background = '#10B981'; 
                 } else {
-                    throw new Error("Erro no backend ao enviar WhatsApp");
+                    throw new Error("O servidor falhou em se comunicar com o Robô");
                 }
 
             } catch (e) {
                 console.error(e);
+                // Retorno de Erro Visual
                 btn.innerHTML = '<i class="fas fa-times"></i> Falha no envio';
-                btn.style.background = '#EF4444'; // Fica vermelho se der erro
+                btn.style.background = '#EF4444'; 
             } finally {
-                // Volta o botão ao normal depois de 3 segundos
+                // Devolve o botão ao formato original após 3 segundos
                 setTimeout(() => { 
                     btn.innerHTML = textoOriginal; 
                     btn.className = classeOriginal;
