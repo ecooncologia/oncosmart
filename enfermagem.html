@@ -76,6 +76,12 @@
         .btn-return { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
         .btn-disabled { background: #CBD5E0; color: #718096; cursor: not-allowed; box-shadow: none; }
 
+        /* Novos Botões (Psico e Nutri) */
+        .btn-psico { background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%); box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3); }
+        .btn-psico:hover { background: linear-gradient(135deg, #9333EA 0%, #6B21A8 100%); }
+        .btn-nutri { background: linear-gradient(135deg, #10B981 0%, #059669 100%); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+        .btn-nutri:hover { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+
         @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(14, 165, 233, 0); } 100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); } }
 
         .obs-alert { background: #FFFAF0; border: 1px solid #FEEBC8; color: #C05621; padding: 10px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 5px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
@@ -273,7 +279,6 @@
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-walking"></i> Aguardando chegada...</button>`;
                 }
                 else if (status === 'transporting') {
-                    // Interno: Apenas avisa que está vindo
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-ambulance"></i> Paciente em transporte...</button>`;
                 }
                 else if (status === 'on_sofa') {
@@ -285,6 +290,18 @@
                 else if (status === 'returning') {
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-hourglass-half"></i> Aguardando Recepção...</button>`;
                 }
+
+                // Html dos botões secundários para o paciente enviar para triagem
+                let specialistBtns = `
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button class="btn-call btn-psico" style="font-size: 0.85rem; padding: 10px;" onclick="solicitarEspecialista('psicologo', '${p.key}')">
+                            <i class="fas fa-brain"></i> Psicólogo
+                        </button>
+                        <button class="btn-call btn-nutri" style="font-size: 0.85rem; padding: 10px;" onclick="solicitarEspecialista('nutricionista', '${p.key}')">
+                            <i class="fas fa-apple-alt"></i> Nutricionista
+                        </button>
+                    </div>
+                `;
 
                 const html = `
                     <div class="${cardClass}">
@@ -311,7 +328,7 @@
 
                         <div class="action-area">
                             ${btnHtml}
-                            ${(!status || status === 'pending') ? `<button class="btn" style="width:100%; background:#fff; border:1px solid #e2e8f0; color:#718096; margin-top:5px; padding:8px; border-radius:6px; cursor:pointer;" onclick="deleteItem('${p.key}')">Cancelar / Remover</button>` : ''}
+                            ${!isExt ? specialistBtns : ''} ${(!status || status === 'pending') ? `<button class="btn" style="width:100%; background:#fff; border:1px solid #e2e8f0; color:#718096; margin-top:5px; padding:8px; border-radius:6px; cursor:pointer;" onclick="deleteItem('${p.key}')">Cancelar / Remover</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -354,6 +371,45 @@
                     body:JSON.stringify(current) 
                 });
                 loadData();
+            }
+        }
+
+        // =========================================================================
+        // PARTE 1 - FUNÇÃO DE PREPARAÇÃO DA MENSAGEM DO ESPECIALISTA
+        // =========================================================================
+        async function solicitarEspecialista(tipo, patientKey) {
+            try {
+                // 1. Busca os dados da avaliação original do paciente
+                const res = await fetch(`${API_BASE_URL}/painAssessments/${patientKey}`, { headers: API_HEADERS });
+                const paciente = await res.json();
+
+                if (!paciente) {
+                    alert("Erro ao recuperar os dados do paciente.");
+                    return;
+                }
+
+                const profissoes = {
+                    'psicologo': 'Psicólogo(a)',
+                    'nutricionista': 'Nutricionista'
+                };
+
+                // 2. Monta o corpo da mensagem com as informações dele
+                const msg = `🚨 *Solicitação de Avaliação - ${profissoes[tipo]}*\n\n` +
+                            `*Paciente:* ${paciente.name}\n` +
+                            `*Nível de Dor:* ${paciente.painLevel}\n` +
+                            `*Emoção:* ${emotions[paciente.emotion] || paciente.emotion}\n` +
+                            `*Necessidade:* ${needs[paciente.careNeed] || 'Geral'}\n` +
+                            `*Obs:* ${paciente.additionalInfo || 'Nenhuma'}`;
+
+                // 3. Apenas um demonstrativo visual por enquanto
+                alert(`Em breve isso enviará a mensagem para o número salvo no painel de Médicos.\n\nSimulação da mensagem gerada:\n\n${msg}`);
+
+                // NA PRÓXIMA ETAPA: Substituiremos este alert() por um fetch na tabela de médicos
+                // e o disparo do link da API do WhatsApp web!
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao processar a solicitação para o especialista.");
             }
         }
 
