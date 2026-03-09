@@ -123,19 +123,69 @@
             { bg: '#ccfbf1', text: '#115e59', border: '#99f6e4', line: '#14b8a6' }, // 5: Ciano
             { bg: '#fee2e2', text: '#991b1b', border: '#fecaca', line: '#ef4444' }, // 6: Vermelho
             { bg: '#fef9c3', text: '#854d0e', border: '#fef08a', line: '#eab308' }, // 7: Amarelo
-            { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe', line: '#6366f1' }, // 8: Indigo (Felipe)
+            { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe', line: '#6366f1' }, // 8: Indigo 
             { bg: '#fae8ff', text: '#86198f', border: '#f5d0fe', line: '#d946ef' }  // 9: Fuchsia
         ];
 
+        // Novo Algoritmo de Cores: Mais preciso, evita que nomes diferentes caiam na mesma cor
         function getPalette(name) {
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) {
-                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            let hash = 5381;
+            const str = String(name).trim().toUpperCase();
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) + str.charCodeAt(i); 
             }
             return colorPalettes[Math.abs(hash) % colorPalettes.length];
         }
 
-        // FUNÇÃO DE LIMPEZA UNIVERSAL (Garante que o lixo de testes antigos suma)
+        // ==========================================
+        // INTEGRAÇÃO DE AUTENTICAÇÃO (SISTEMA E MSAL)
+        // ==========================================
+        function getUsuarioLogado() {
+            // 1. Busca comum no cache do sistema
+            const chavesPossiveis = ['user', 'userData', 'usuarioLogado', 'usuario', 'currentUser', 'eco_user'];
+            for (let chave of chavesPossiveis) {
+                try {
+                    const str = localStorage.getItem(chave);
+                    if (str) {
+                        const obj = JSON.parse(str);
+                        const nomeStr = obj.nome || obj.name || obj.displayName;
+                        if (nomeStr) return { nome: nomeStr, telefone: obj.telefone || obj.phone || 'S/N' };
+                    }
+                } catch(e) {}
+            }
+            
+            // 2. Busca avançada profunda para pegar contas da Microsoft (MSAL)
+            try {
+                // Checa sessionStorage (onde a MSAL costuma guardar o active account)
+                for(let i=0; i < sessionStorage.length; i++){
+                    let key = sessionStorage.key(i);
+                    if(key.includes('login.microsoftonline.com') || key.includes('msal')){
+                        const str = sessionStorage.getItem(key);
+                        if(str.includes('"name":') || str.includes('"displayName":') || str.includes('"username":')){
+                            const obj = JSON.parse(str);
+                            const nomeStr = obj.name || obj.displayName || obj.username;
+                            if(nomeStr) return { nome: nomeStr.split('@')[0], telefone: 'S/N' };
+                        }
+                    }
+                }
+                // Checa localStorage 
+                for(let i=0; i < localStorage.length; i++){
+                    let key = localStorage.key(i);
+                    if(key.includes('login.microsoftonline.com') || key.includes('msal')){
+                        const str = localStorage.getItem(key);
+                        if(str.includes('"name":') || str.includes('"displayName":') || str.includes('"username":')){
+                            const obj = JSON.parse(str);
+                            const nomeStr = obj.name || obj.displayName || obj.username;
+                            if(nomeStr) return { nome: nomeStr.split('@')[0], telefone: 'S/N' };
+                        }
+                    }
+                }
+            } catch(e) {}
+
+            return null;
+        }
+
+        // FUNÇÃO DE LIMPEZA UNIVERSAL
         function cleanLegacy(text) {
             if (!text) return '';
             let t = text;
@@ -143,8 +193,8 @@
             return t.replace(/🎙️ Registro Automático.*?\n/g, '')
                     .replace(/\\n/g, '\n')
                     .replace(/\\"/g, '"')
-                    .replace(/\[EDIT:.*?\]/g, '') // Limpa formato antigo
-                    .replace(/\[\[[^:]+:\s*([\s\S]*?)\]\]/g, '$1') // Limpa os brackets do teste anterior
+                    .replace(/\[EDIT:.*?\]/g, '') 
+                    .replace(/\[\[[^:]+:\s*([\s\S]*?)\]\]/g, '$1') 
                     .trim();
         }
 
@@ -152,20 +202,6 @@
             await initGlobal('atas', 'Mural de ATAs');
             loadAtas();
         });
-
-        function getUsuarioLogado() {
-            const chavesPossiveis = ['user', 'userData', 'usuarioLogado', 'usuario', 'currentUser', 'eco_user'];
-            for (let chave of chavesPossiveis) {
-                try {
-                    const str = localStorage.getItem(chave);
-                    if (str) {
-                        const obj = JSON.parse(str);
-                        if (obj.nome || obj.name || obj.email) return obj;
-                    }
-                } catch(e) {}
-            }
-            return null;
-        }
 
         async function loadAtas() {
             try {
@@ -298,7 +334,7 @@
         }
 
         // =========================================================================
-        // LÓGICA DE EDIÇÃO: MOTOR DE MESCLAGEM INVISÍVEL (Sem Brackets!)
+        // LÓGICA DE EDIÇÃO: MOTOR DE MESCLAGEM INVISÍVEL
         // =========================================================================
         function toggleEditMode(eventId) {
             const event = eventsWithAtas.find(e => e.id_firebase === eventId);
@@ -312,7 +348,6 @@
                     if (Array.isArray(parsed)) rawText = parsed.map(item => item.text || item.raw_text).join('\n\n');
                 } catch(e) {}
 
-                // Removemos APENAS as tags de formatação visual para a caixa de edição ficar 100% limpa.
                 let textoLimpoParaEdicao = cleanLegacy(rawText).replace(/<\/?u[^>]*>/g, '');
 
                 body.innerHTML = `
@@ -336,20 +371,19 @@
             const novoTexto = textarea.value.trim();
             const btnEditar = document.getElementById('btnEditarAta');
 
+            // PUXANDO O NOME SEM PERGUNTAR
             const usuario = getUsuarioLogado();
-            let nomeUsuario = usuario ? (usuario.nome || usuario.name) : null;
+            let nomeUsuario = usuario ? usuario.nome : null;
             
             if (!nomeUsuario) {
-                nomeUsuario = prompt("Por favor, digite seu Nome para registrar quem editou a ATA:");
-                if (!nomeUsuario) return;
+                alert("⚠️ Autenticação Necessária!\nNão conseguimos identificar o seu usuário ativo. Por favor, atualize a página ou faça login novamente no ONCO SMART para editar.");
+                return;
             }
 
             btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mesclando edições...';
             btnEditar.disabled = true;
 
-            // Pega o texto antigo COM as tags HTML preservadas internamente
             let textoAntigoHtml = cleanLegacy(event.ata || '');
-            // Pega o texto antigo LIMPO para servir de base na comparação
             let textoAntigoLimpo = textoAntigoHtml.replace(/<\/?u[^>]*>/g, '');
             
             let textoMesclado = '';
@@ -357,7 +391,6 @@
             if (typeof Diff !== 'undefined') {
                 const diffArray = Diff.diffWords(textoAntigoLimpo, novoTexto);
                 
-                // O Motor: Ele anda pelas diferenças e encaixa as tags antigas de volta nos lugares certos!
                 let htmlCursor = 0;
                 for (let i = 0; i < diffArray.length; i++) {
                     let part = diffArray[i];
@@ -445,7 +478,7 @@
         }
 
         // =========================================================================
-        // A MÁGICA VISUAL: AGRUPA OS MÚLTIPLOS AUTORES NA DIREITA
+        // A MÁGICA VISUAL: AGRUPA OS MÚLTIPLOS AUTORES NA DIREITA COM CORES CERTAS
         // =========================================================================
         function formatarAtaVisualmente(texto) {
             if (!texto) return '<div style="text-align:center; color:#94a3b8; padding: 30px;">Resumo ainda não processado.</div>';
@@ -467,25 +500,21 @@
                 let escapedLine = escapeHTML(l);
                 let autoresNaLinha = new Set();
 
-                // Vasculha a linha para descobrir todo mundo que editou aquele parágrafo
                 let regexAuthor = /&lt;u data-author=&quot;([^&]+)&quot;&gt;/g;
                 let match;
                 while ((match = regexAuthor.exec(escapedLine)) !== null) {
                     autoresNaLinha.add(match[1]);
                 }
 
-                // Pinta o sublinhado e as palavras com a cor específica de cada um
                 escapedLine = escapedLine.replace(/&lt;u data-author=&quot;([^&]+)&quot;&gt;/g, (m, author) => {
                     const pal = getPalette(author);
                     return `<u style="text-decoration-color: ${pal.line}; color: ${pal.text}; background: ${pal.bg}40; padding: 0 2px; border-radius: 4px;" title="Editado por ${author}">`;
                 });
                 escapedLine = escapedLine.replace(/&lt;\/u&gt;/g, '</u>');
 
-                // Formatação Normal (Negrito e Relógios)
                 escapedLine = escapedLine.replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--secondary); font-size: 16px;">$1</strong>')
                                          .replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, '<span style="background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> $1</span>');
 
-                // Constrói os selos da direita de forma agrupada
                 let badgesHtml = '';
                 autoresNaLinha.forEach(author => {
                     const pal = getPalette(author);
@@ -493,7 +522,6 @@
                 });
                 let badgesContainer = badgesHtml ? `<div style="display:flex; gap:5px; flex-shrink: 0;">${badgesHtml}</div>` : '';
 
-                // Encaixa o texto na esquerda e os selos na direita com Flexbox
                 if (l.includes('**') || l.startsWith('- ') || l.startsWith('* ') || l.startsWith('• ')) {
                     let limpo = escapedLine.replace(/^[-*•]\s/, ''); 
                     html += `
@@ -527,13 +555,14 @@
         }
 
         async function marcarAtaLida(eventId) {
+            // PUXANDO O NOME SEM PERGUNTAR
             const usuarioLogado = getUsuarioLogado();
-            let nomeUsuario = usuarioLogado ? (usuarioLogado.nome || usuarioLogado.name) : null;
-            let phoneUsuario = usuarioLogado ? (usuarioLogado.telefone || usuarioLogado.phone) : 'S/N';
+            let nomeUsuario = usuarioLogado ? usuarioLogado.nome : null;
+            let phoneUsuario = usuarioLogado ? usuarioLogado.telefone : 'S/N';
 
             if (!nomeUsuario) {
-                nomeUsuario = prompt("Por favor, digite seu Nome Completo para confirmar a leitura:");
-                if (!nomeUsuario || nomeUsuario.trim() === '') return; 
+                alert("⚠️ Autenticação Necessária!\nNão conseguimos identificar o seu usuário. Por favor, faça login novamente no ONCO SMART para registrar sua leitura.");
+                return; 
             }
 
             const btn = document.getElementById('btnConfirmarLeitura');
