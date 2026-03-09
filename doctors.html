@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Médicos - ECO Sistema</title>
+    <title>Profissionais - ECO Sistema</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
     <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
@@ -21,6 +21,13 @@
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; } 
         .form-group { flex: 1; }
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-bottom: 3px; }
+        
+        /* Badges de Especialidade */
+        .badge.cat-medico { background: #E0F2FE; color: #0284C7; }
+        .badge.cat-psicologo { background: #F3E8FF; color: #7E22CE; }
+        .badge.cat-nutricionista { background: #D1FAE5; color: #059669; }
+
+        /* Badges de Filtros */
         .badge.sim { background: #DEF7EC; color: #03543F; } 
         .badge.nao { background: #F3F4F6; color: #6B7280; }
         .badge.liminar { background: #e0e7ff; color: #3730a3; }
@@ -45,29 +52,39 @@
         <div class="content-grid">
             <div class="form-area">
                 <div class="card">
-                    <div class="card-header"><span id="formTitle"><i class="fas fa-user-md"></i> Novo Médico</span></div>
+                    <div class="card-header"><span id="formTitle"><i class="fas fa-user-md"></i> Novo Profissional</span></div>
                     <form id="doctorForm">
                         <input type="hidden" id="editingDoctorId">
                         
-                        <div class="form-group" style="margin-bottom:15px;">
-                            <label>Nome Completo</label>
-                            <input type="text" id="doctorName" class="form-control" required>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label>Nome Completo</label>
+                                <input type="text" id="doctorName" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Categoria</label>
+                                <select id="doctorCategory" class="form-control" style="font-weight: bold; color: var(--secondary);">
+                                    <option value="medico">Médico(a)</option>
+                                    <option value="psicologo">Psicólogo(a)</option>
+                                    <option value="nutricionista">Nutricionista</option>
+                                </select>
+                            </div>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Especialidade</label>
-                                <input type="text" id="doctorSpecialty" class="form-control" required>
+                                <label id="labelSpecialty">Especialidade</label>
+                                <input type="text" id="doctorSpecialty" class="form-control" placeholder="Ex: Oncologista, Clínica...">
                             </div>
                             <div class="form-group">
-                                <label>CRM</label>
-                                <input type="text" id="doctorCRM" class="form-control" required>
+                                <label id="labelDoc">Registro (CRM/CRP/CRN)</label>
+                                <input type="text" id="doctorCRM" class="form-control">
                             </div>
                         </div>
                         
                         <div class="form-group" style="margin-bottom:15px;">
-                            <label>Telefone</label>
-                            <input type="text" id="doctorPhone" class="form-control">
+                            <label>Telefone (WhatsApp para receber Triagem)</label>
+                            <input type="text" id="doctorPhone" class="form-control" placeholder="(00) 00000-0000" required>
                         </div>
                         
                         <div class="options-row">
@@ -138,15 +155,15 @@
 
             <div class="list-area">
                 <div class="card">
-                    <div class="card-header"><i class="fas fa-list-ul"></i> Médicos Cadastrados</div>
+                    <div class="card-header"><i class="fas fa-list-ul"></i> Profissionais Cadastrados</div>
                     <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Nome</th>
-                                    <th>CRM</th>
+                                    <th>Nome / Categoria</th>
+                                    <th>Registro</th>
+                                    <th>WhatsApp</th>
                                     <th>Atendimentos & Locais</th>
-                                    <th>Repasse</th>
                                     <th style="text-align:center">Ações</th>
                                 </tr>
                             </thead>
@@ -163,19 +180,39 @@
     <script>
         let doctors = {};
         
+        // Listener para mudar os nomes das labels baseado na categoria escolhida
+        document.getElementById('doctorCategory').addEventListener('change', function() {
+            const val = this.value;
+            if(val === 'medico') {
+                document.getElementById('labelSpecialty').innerText = "Especialidade";
+                document.getElementById('labelDoc').innerText = "CRM";
+            } else if (val === 'psicologo') {
+                document.getElementById('labelSpecialty').innerText = "Abordagem (Opcional)";
+                document.getElementById('labelDoc').innerText = "CRP";
+            } else if (val === 'nutricionista') {
+                document.getElementById('labelSpecialty').innerText = "Foco (Opcional)";
+                document.getElementById('labelDoc').innerText = "CRN";
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => { 
-            initGlobal('doctors', 'Médicos'); 
+            initGlobal('doctors', 'Profissionais'); 
             loadDoctors(); 
             document.getElementById('doctorForm').addEventListener('submit', saveDoctor);
         });
 
         async function saveDoctor(e) {
             e.preventDefault();
+
+            // Formatação do telefone para garantir que vá pro zap limpo
+            let foneRaw = document.getElementById('doctorPhone').value.replace(/\D/g, '');
+
             const data = {
                 nome: document.getElementById('doctorName').value,
+                categoria: document.getElementById('doctorCategory').value,
                 especialidade: document.getElementById('doctorSpecialty').value,
-                crm: document.getElementById('doctorCRM').value,
-                telefone: document.getElementById('doctorPhone').value,
+                crm: document.getElementById('doctorCRM').value, // Reaproveita o campo pra CRP/CRN
+                telefone: foneRaw,
                 plantao: document.getElementById('doctorShift').value,
                 consulta: document.getElementById('doctorConsulta').value,
                 liminar: document.getElementById('doctorLiminar').value,
@@ -195,7 +232,7 @@
                         body: JSON.stringify(data)
                     });
                 } else {
-                    data.id_firebase = 'medico_' + Date.now();
+                    data.id_firebase = 'profissional_' + Date.now();
                     await fetch(`${API_BASE_URL}/medicos`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', ...API_HEADERS },
@@ -230,7 +267,7 @@
             list.innerHTML = '';
             
             if(!doctors || Object.keys(doctors).length === 0) {
-                return list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum médico cadastrado.</td></tr>';
+                return list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum profissional cadastrado.</td></tr>';
             }
             
             const sorted = Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''));
@@ -249,12 +286,33 @@
                 let atendimentos = [p, c, l, eco, v, cir].filter(x => x).join(' ');
                 if (!atendimentos) atendimentos = '<span class="badge nao">NENHUM</span>';
 
+                // Tratamento de Categoria para visual e retrocompatibilidade
+                let catBadge = '';
+                let cat = d.categoria || 'medico'; // Garante que os antigos sejam médicos
+                
+                if(cat === 'psicologo') {
+                    catBadge = '<span class="badge cat-psicologo"><i class="fas fa-brain"></i> Psicólogo</span>';
+                } else if(cat === 'nutricionista') {
+                    catBadge = '<span class="badge cat-nutricionista"><i class="fas fa-apple-alt"></i> Nutricionista</span>';
+                } else {
+                    catBadge = '<span class="badge cat-medico"><i class="fas fa-user-md"></i> Médico</span>';
+                }
+
+                // Mascara o celular na tela (formata se tiver 11 digitos)
+                let foneTela = d.telefone || 'S/N';
+                if(foneTela.length === 11) {
+                    foneTela = `(${foneTela.substring(0,2)}) ${foneTela.substring(2,7)}-${foneTela.substring(7,11)}`;
+                }
+
                 list.innerHTML += `
                     <tr>
-                        <td style="font-weight:600">${d.nome}<br><small style="color:#666">${d.especialidade}</small></td>
-                        <td>${d.crm}</td>
-                        <td>${atendimentos}</td>
-                        <td>${r}</td>
+                        <td style="font-weight:600">
+                            ${d.nome}<br>
+                            ${catBadge} <small style="color:#666">${d.especialidade || ''}</small>
+                        </td>
+                        <td style="font-size:0.9rem;">${d.crm || '-'}</td>
+                        <td style="font-size:0.9rem; font-weight:600; color:var(--primary);"><i class="fab fa-whatsapp"></i> ${foneTela}</td>
+                        <td>${atendimentos}<br><div style="margin-top:4px;">Repasse: ${r}</div></td>
                         <td class="actions-cell">
                             <button class="btn-icon" style="background:var(--info)" onclick="edit('${id}')"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon" style="background:var(--danger)" onclick="del('${id}')"><i class="fas fa-trash"></i></button>
@@ -266,10 +324,16 @@
         function edit(id) {
             const d = doctors[id]; if(!d) return;
             document.getElementById('doctorName').value = d.nome;
-            document.getElementById('doctorSpecialty').value = d.especialidade;
-            document.getElementById('doctorCRM').value = d.crm;
+            
+            // Força o gatilho visual de categoria
+            const catSelect = document.getElementById('doctorCategory');
+            catSelect.value = d.categoria || 'medico';
+            catSelect.dispatchEvent(new Event('change'));
+
+            document.getElementById('doctorSpecialty').value = d.especialidade || '';
+            document.getElementById('doctorCRM').value = d.crm || '';
             document.getElementById('doctorPhone').value = d.telefone||'';
-            document.getElementById('doctorShift').value = d.plantao;
+            document.getElementById('doctorShift').value = d.plantao || 'nao';
             document.getElementById('doctorConsulta').value = d.consulta||'sim';
             document.getElementById('doctorLiminar').value = d.liminar||'nao';
             document.getElementById('doctorRepasse').value = d.repasse || 'nao';
@@ -279,21 +343,22 @@
             document.getElementById('doctorCirurgiao').value = d.cirurgiao || 'nao'; 
 
             document.getElementById('editingDoctorId').value = id;
-            document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editando Médico';
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editando Profissional';
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
             document.getElementById('cancelBtn').style.display = 'block';
         }
 
         function resetForm() {
             document.getElementById('doctorForm').reset();
+            document.getElementById('doctorCategory').dispatchEvent(new Event('change'));
             document.getElementById('editingDoctorId').value = '';
-            document.getElementById('formTitle').innerHTML = '<i class="fas fa-user-md"></i> Novo Médico';
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-user-md"></i> Novo Profissional';
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Salvar';
             document.getElementById('cancelBtn').style.display = 'none';
         }
 
         async function del(id) { 
-            if(confirm('Tem certeza que deseja excluir este médico?')) { 
+            if(confirm('Tem certeza que deseja excluir este profissional?')) { 
                 try {
                     await fetch(`${API_BASE_URL}/medicos/${id}`, { method:'DELETE', headers: API_HEADERS }); 
                     loadDoctors(); 
