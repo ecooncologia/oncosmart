@@ -46,8 +46,8 @@
         .btn-secondary { background-color: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-secondary:hover { background-color: #475569; }
         
-        /* Estilo elegante para o texto sublinhado */
-        u { text-decoration-color: var(--primary); text-decoration-thickness: 2px; text-underline-offset: 3px; font-weight: 500; }
+        /* Estilo base para sublinhado */
+        u { text-decoration-thickness: 2.5px; text-underline-offset: 3px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -111,24 +111,124 @@
         let eventsWithAtas = [];
         let isEditing = false; 
 
+        // ==========================================
+        // PALETA DE CORES EXPANDIDA (10 Cores Únicas)
+        // ==========================================
+        const colorPalettes = [
+            { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe', line: '#3b82f6' }, // 0: Azul
+            { bg: '#dcfce7', text: '#166534', border: '#bbf7d0', line: '#22c55e' }, // 1: Verde
+            { bg: '#f3e8ff', text: '#6b21a8', border: '#e9d5ff', line: '#a855f7' }, // 2: Roxo
+            { bg: '#ffedd5', text: '#9a3412', border: '#fed7aa', line: '#f97316' }, // 3: Laranja
+            { bg: '#fce7f3', text: '#9d174d', border: '#fbcfe8', line: '#ec4899' }, // 4: Rosa
+            { bg: '#ccfbf1', text: '#115e59', border: '#99f6e4', line: '#14b8a6' }, // 5: Ciano
+            { bg: '#fee2e2', text: '#991b1b', border: '#fecaca', line: '#ef4444' }, // 6: Vermelho
+            { bg: '#fef9c3', text: '#854d0e', border: '#fef08a', line: '#eab308' }, // 7: Amarelo
+            { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe', line: '#6366f1' }, // 8: Indigo 
+            { bg: '#fae8ff', text: '#86198f', border: '#f5d0fe', line: '#d946ef' }  // 9: Fuchsia
+        ];
+
+        function getPalette(name) {
+            let hash = 5381;
+            const str = String(name).trim().toUpperCase();
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) + str.charCodeAt(i); 
+            }
+            return colorPalettes[Math.abs(hash) % colorPalettes.length];
+        }
+
+        // ==========================================
+        // BUSCADOR AVANÇADO DE CREDENCIAIS (Descriptografa MSAL e Lê a Tela)
+        // ==========================================
+        function getUsuarioLogado() {
+            let foundName = null;
+
+            // Função que converte o Token Base64 da Microsoft
+            const parseJWT = (token) => {
+                try {
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                    return JSON.parse(jsonPayload);
+                } catch (e) { return null; }
+            };
+
+            // Função que escaneia os objetos salvos
+            const checkData = (data) => {
+                if (!data) return null;
+                if (typeof data === 'string') {
+                    if (data.startsWith('eyJ')) {
+                        const payload = parseJWT(data);
+                        if (payload && payload.name) return payload.name;
+                    }
+                    try { data = JSON.parse(data); } catch (e) { return null; }
+                }
+                if (typeof data === 'object') {
+                    if (data.name) return data.name;
+                    if (data.displayName) return data.displayName;
+                    if (data.username) return data.username.split('@')[0];
+                    if (data.idTokenClaims && data.idTokenClaims.name) return data.idTokenClaims.name;
+                    if (data.account && data.account.name) return data.account.name;
+                }
+                return null;
+            };
+
+            // TENTATIVA 1: Vasculhar o banco de dados do navegador (Session e Local)
+            const storages = [sessionStorage, localStorage];
+            for (let s of storages) {
+                for (let i = 0; i < s.length; i++) {
+                    try {
+                        const val = s.getItem(s.key(i));
+                        const name = checkData(val);
+                        if (name && name.length > 2 && !name.includes('{')) {
+                            foundName = name; break;
+                        }
+                    } catch(e) {}
+                }
+                if (foundName) break;
+            }
+
+            // TENTATIVA 2: Plano B infalível (Lê visualmente o nome do Header gerado pelo global.js)
+            if (!foundName) {
+                try {
+                    const headerHtml = document.getElementById('global-header')?.innerText || '';
+                    const linhas = headerHtml.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    for(let i=0; i<linhas.length; i++){
+                        if(linhas[i].toLowerCase().includes('boa') || linhas[i].toLowerCase().includes('bom ')){
+                            if(linhas[i+1]) foundName = linhas[i+1];
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            // Limpa o formato
+            if (foundName) {
+                foundName = foundName.replace(/"/g, '').trim();
+                if (foundName.includes('@')) foundName = foundName.split('@')[0].split('.').join(' ');
+                return { nome: foundName, telefone: 'S/N' };
+            }
+
+            return null;
+        }
+
+        // ==========================================
+        // FUNÇÃO DE LIMPEZA UNIVERSAL 
+        // ==========================================
+        function cleanLegacy(text) {
+            if (!text) return '';
+            let t = text;
+            if (t.startsWith('"') && t.endsWith('"')) t = t.substring(1, t.length - 1);
+            return t.replace(/🎙️ Registro Automático.*?\n/g, '')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\"/g, '"')
+                    .replace(/\[EDIT:.*?\]/g, '') 
+                    .replace(/\[\[[^:]+:\s*([\s\S]*?)\]\]/g, '$1') 
+                    .trim();
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             await initGlobal('atas', 'Mural de ATAs');
             loadAtas();
         });
-
-        function getUsuarioLogado() {
-            const chavesPossiveis = ['user', 'userData', 'usuarioLogado', 'usuario', 'currentUser', 'eco_user'];
-            for (let chave of chavesPossiveis) {
-                try {
-                    const str = localStorage.getItem(chave);
-                    if (str) {
-                        const obj = JSON.parse(str);
-                        if (obj.nome || obj.name || obj.email) return obj;
-                    }
-                } catch(e) {}
-            }
-            return null;
-        }
 
         async function loadAtas() {
             try {
@@ -157,7 +257,7 @@
                 card.className = 'ata-card';
                 card.onclick = () => openModal(event.id_firebase);
 
-                let previewText = event.ata.replace(/🎙️.*?\n/g, '').replace(/\[(.*?)\]/g, '').trim();
+                let previewText = cleanLegacy(event.ata).replace(/<[^>]*>/g, '').trim();
                 try {
                     const parsed = JSON.parse(previewText);
                     if (Array.isArray(parsed)) previewText = parsed.map(i => i.text || "").join(" ");
@@ -214,7 +314,7 @@
                 statusLido.style.display = 'flex';
             } else {
                 const usuario = getUsuarioLogado();
-                let nomeUsuario = usuario ? (usuario.nome || usuario.name) : null;
+                let nomeUsuario = usuario ? usuario.nome : null;
 
                 if (nomeUsuario) {
                     try {
@@ -261,7 +361,7 @@
         }
 
         // =========================================================================
-        // LÓGICA DE EDIÇÃO (COM LIMPEZA DA MARCAÇÃO DE AUTOR)
+        // LÓGICA DE EDIÇÃO: MOTOR DE MESCLAGEM INVISÍVEL
         // =========================================================================
         function toggleEditMode(eventId) {
             const event = eventsWithAtas.find(e => e.id_firebase === eventId);
@@ -270,25 +370,16 @@
 
             if (!isEditing) {
                 let rawText = event.ata || '';
-                
                 try {
                     const parsed = JSON.parse(rawText);
-                    if (Array.isArray(parsed)) {
-                        rawText = parsed.map(item => item.text || item.raw_text).join('\n\n');
-                    }
+                    if (Array.isArray(parsed)) rawText = parsed.map(item => item.text || item.raw_text).join('\n\n');
                 } catch(e) {}
 
-                // Remove o sublinhado e a etiqueta do editor para a caixa de edição ficar limpa
-                let textoLimpoParaEdicao = rawText.replace(/<u[^>]*>/g, '').replace(/<\/u>/g, '').replace(/\[EDIT:.*?\]/g, '');
-                
-                textoLimpoParaEdicao = textoLimpoParaEdicao.replace(/🎙️ Registro Automático.*?\n/g, '')
-                                 .replace(/\\n/g, '\n')
-                                 .replace(/\\"/g, '"')
-                                 .trim();
+                let textoLimpoParaEdicao = cleanLegacy(rawText).replace(/<\/?u[^>]*>/g, '');
 
                 body.innerHTML = `
                     <div style="margin-bottom: 12px; font-size: 13px; color: #1e293b; background: #e0f2fe; padding: 10px; border-radius: 8px; border: 1px dashed #38bdf8;">
-                        <i class="fas fa-magic" style="color: #0284c7;"></i> <b>Edição Inteligente:</b> Altere o texto abaixo livremente. O sistema sublinhará o que for novo e colocará seu nome ao lado!
+                        <i class="fas fa-magic" style="color: #0284c7;"></i> <b>Auditoria Inteligente:</b> Altere o texto livremente. O sistema vai rastrear a sua edição e preservar automaticamente o histórico das edições anteriores!
                     </div>
                     <textarea id="editAtaTextarea" class="edit-textarea">${escapeHTML(textoLimpoParaEdicao)}</textarea>
                 `;
@@ -307,39 +398,81 @@
             const novoTexto = textarea.value.trim();
             const btnEditar = document.getElementById('btnEditarAta');
 
+            // PUXANDO O NOME SEM PERGUNTAR (SILENCIOSAMENTE)
             const usuario = getUsuarioLogado();
-            let nomeUsuario = usuario ? (usuario.nome || usuario.name) : null;
+            let nomeUsuario = usuario ? usuario.nome : null;
             
             if (!nomeUsuario) {
-                nomeUsuario = prompt("Por favor, digite seu Nome para registrar quem editou a ATA:");
-                if (!nomeUsuario) return;
+                alert("⚠️ Autenticação Necessária!\nNão conseguimos identificar o seu usuário ativo. Por favor, atualize a página ou faça login novamente no ONCO SMART para editar.");
+                return;
             }
 
-            btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analisando alterações...';
+            btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mesclando edições...';
             btnEditar.disabled = true;
 
-            // Limpa o texto original (remove <u> e [EDIT:...]) para comparar com justiça
-            let textoAntigoLimpo = (event.ata || '').replace(/<u[^>]*>/g, '').replace(/<\/u>/g, '').replace(/\[EDIT:.*?\]/g, '');
-            let textoComAlteracoesMarcadas = '';
+            let textoAntigoHtml = cleanLegacy(event.ata || '');
+            let textoAntigoLimpo = textoAntigoHtml.replace(/<\/?u[^>]*>/g, '');
+            
+            let textoMesclado = '';
 
             if (typeof Diff !== 'undefined') {
-                const diff = Diff.diffWords(textoAntigoLimpo, novoTexto);
-                diff.forEach((part) => {
+                const diffArray = Diff.diffWords(textoAntigoLimpo, novoTexto);
+                
+                let htmlCursor = 0;
+                for (let i = 0; i < diffArray.length; i++) {
+                    let part = diffArray[i];
+
                     if (part.added) {
-                        // Se foi adicionado, sublinha e gruda o nome do autor da edição no final
-                        textoComAlteracoesMarcadas += `<u>${part.value}</u>[EDIT:${nomeUsuario}]`;
-                    } else if (!part.removed) {
-                        textoComAlteracoesMarcadas += part.value;
+                        textoMesclado += `<u data-author="${nomeUsuario}">${part.value}</u>`;
+                    } else if (part.removed) {
+                        let charsToSkip = part.value.length;
+                        while (charsToSkip > 0 && htmlCursor < textoAntigoHtml.length) {
+                            if (textoAntigoHtml[htmlCursor] === '<') {
+                                while (htmlCursor < textoAntigoHtml.length && textoAntigoHtml[htmlCursor] !== '>') htmlCursor++;
+                                htmlCursor++; 
+                            } else {
+                                charsToSkip--;
+                                htmlCursor++;
+                            }
+                        }
+                    } else {
+                        let charsToCopy = part.value.length;
+                        while (charsToCopy > 0 && htmlCursor < textoAntigoHtml.length) {
+                            if (textoAntigoHtml[htmlCursor] === '<') {
+                                while (htmlCursor < textoAntigoHtml.length && textoAntigoHtml[htmlCursor] !== '>') {
+                                    textoMesclado += textoAntigoHtml[htmlCursor];
+                                    htmlCursor++;
+                                }
+                                textoMesclado += '>';
+                                htmlCursor++;
+                            } else {
+                                textoMesclado += textoAntigoHtml[htmlCursor];
+                                charsToCopy--;
+                                htmlCursor++;
+                            }
+                        }
                     }
-                });
+                }
+                while (htmlCursor < textoAntigoHtml.length) {
+                    if (textoAntigoHtml[htmlCursor] === '<') {
+                        while (htmlCursor < textoAntigoHtml.length && textoAntigoHtml[htmlCursor] !== '>') {
+                            textoMesclado += textoAntigoHtml[htmlCursor];
+                            htmlCursor++;
+                        }
+                        textoMesclado += '>';
+                        htmlCursor++;
+                    } else {
+                        break;
+                    }
+                }
             } else {
-                textoComAlteracoesMarcadas = novoTexto;
+                textoMesclado = novoTexto;
             }
 
             const agora = new Date().toISOString();
             const payload = {
                 ...event,
-                ata: textoComAlteracoesMarcadas, 
+                ata: textoMesclado, 
                 lastEditedBy: nomeUsuario,
                 lastEditedAt: agora
             };
@@ -352,7 +485,7 @@
                 });
 
                 if (res.ok) {
-                    event.ata = textoComAlteracoesMarcadas;
+                    event.ata = textoMesclado;
                     event.lastEditedBy = nomeUsuario;
                     event.lastEditedAt = agora;
                     
@@ -372,22 +505,16 @@
         }
 
         // =========================================================================
-        // A MÁGICA VISUAL: TRANSFORMA [EDIT:NOME] NUM SELO BONITO
+        // A MÁGICA VISUAL
         // =========================================================================
         function formatarAtaVisualmente(texto) {
             if (!texto) return '<div style="text-align:center; color:#94a3b8; padding: 30px;">Resumo ainda não processado.</div>';
 
-            let cleanText = texto.trim();
-            if (cleanText.startsWith('"') && cleanText.endsWith('"')) {
-                cleanText = cleanText.substring(1, cleanText.length - 1).replace(/\\n/g, '\n').replace(/\\"/g, '"');
-            }
-            cleanText = cleanText.replace(/🎙️ Registro Automático(.*?)\n/g, ''); 
+            let cleanText = cleanLegacy(texto);
 
             try {
                 const parsed = JSON.parse(cleanText);
-                if (Array.isArray(parsed)) {
-                    cleanText = parsed.map(item => item.text || item.raw_text).join('\n\n');
-                }
+                if (Array.isArray(parsed)) cleanText = parsed.map(item => item.text || item.raw_text).join('\n\n');
             } catch(e) {}
 
             let html = '<div style="background: white; padding: 15px 5px; border-radius: 12px; font-family: \'Segoe UI\', system-ui, sans-serif; color: #334155; line-height: 1.7;">';
@@ -397,30 +524,55 @@
                 let l = linha.trim();
                 if (!l || l === 'undefined') return;
 
-                // Protege HTML, habilita tag <u> e converte a etiqueta [EDIT:Nome] num selo amarelo
-                let formattedLine = escapeHTML(l)
-                    .replace(/&lt;u&gt;/g, '<u>')
-                    .replace(/&lt;\/u&gt;/g, '</u>')
-                    .replace(/\[EDIT:(.*?)\]/g, '<span style="font-size: 11px; background: #fef08a; color: #854d0e; padding: 2px 6px; border-radius: 6px; margin: 0 5px; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; border: 1px solid #fde047;"><i class="fas fa-pencil-alt"></i> $1</span>')
-                    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--secondary); font-size: 16px;">$1</strong>')
-                    .replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, '<span style="background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> $1</span>');
+                let escapedLine = escapeHTML(l);
+                let autoresNaLinha = new Set();
+
+                let regexAuthor = /&lt;u data-author=&quot;([^&]+)&quot;&gt;/g;
+                let match;
+                while ((match = regexAuthor.exec(escapedLine)) !== null) {
+                    autoresNaLinha.add(match[1]);
+                }
+
+                escapedLine = escapedLine.replace(/&lt;u data-author=&quot;([^&]+)&quot;&gt;/g, (m, author) => {
+                    const pal = getPalette(author);
+                    return `<u style="text-decoration-color: ${pal.line}; color: ${pal.text}; background: ${pal.bg}40; padding: 0 2px; border-radius: 4px;" title="Editado por ${author}">`;
+                });
+                escapedLine = escapedLine.replace(/&lt;\/u&gt;/g, '</u>');
+
+                escapedLine = escapedLine.replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--secondary); font-size: 16px;">$1</strong>')
+                                         .replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, '<span style="background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> $1</span>');
+
+                let badgesHtml = '';
+                autoresNaLinha.forEach(author => {
+                    const pal = getPalette(author);
+                    badgesHtml += `<span style="font-size: 11px; background: ${pal.bg}; color: ${pal.text}; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; border: 1px solid ${pal.border}; box-shadow: 0 2px 4px rgba(0,0,0,0.05);"><i class="fas fa-pencil-alt"></i> ${author}</span>`;
+                });
+                let badgesContainer = badgesHtml ? `<div style="display:flex; gap:5px; flex-shrink: 0;">${badgesHtml}</div>` : '';
 
                 if (l.includes('**') || l.startsWith('- ') || l.startsWith('* ') || l.startsWith('• ')) {
-                    let limpo = formattedLine.replace(/^[-*•]\s/, ''); 
+                    let limpo = escapedLine.replace(/^[-*•]\s/, ''); 
                     html += `
-                        <div style="margin-top: 25px; margin-bottom: 12px; font-size: 16px; font-weight: 500; color: var(--secondary); border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-                            ${limpo}
+                        <div style="margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 16px; font-weight: 500; color: var(--secondary); margin-right: 15px;">${limpo}</div>
+                            ${badgesContainer}
                         </div>`;
                 } 
                 else if (l.length < 40 && !l.includes('.') && !l.includes(':')) {
-                    html += `<div style="margin-top: 30px; margin-bottom: 15px; font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">${formattedLine}</div>`;
+                    html += `
+                        <div style="margin-top: 30px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-right: 15px;">${escapedLine}</div>
+                            ${badgesContainer}
+                        </div>`;
                 } 
                 else {
-                    let limpo = formattedLine.replace(/^[o○\-\+]\s/, ''); 
+                    let limpo = escapedLine.replace(/^[o○\-\+]\s/, ''); 
                     html += `
-                        <div style="margin-left: 15px; margin-top: 8px; font-size: 15px; color: #475569; display: flex; align-items: flex-start; gap: 10px;">
-                            <span style="color: var(--primary); font-size: 14px; line-height: 1.6;">•</span> 
-                            <span style="flex: 1;">${limpo}</span>
+                        <div style="margin-left: 15px; margin-top: 8px; font-size: 15px; color: #475569; display: flex; align-items: flex-start; justify-content: space-between;">
+                            <div style="display: flex; gap: 10px; margin-right: 15px;">
+                                <span style="color: var(--primary); font-size: 14px; line-height: 1.6;">•</span> 
+                                <span>${limpo}</span>
+                            </div>
+                            ${badgesContainer}
                         </div>`;
                 }
             });
@@ -430,13 +582,14 @@
         }
 
         async function marcarAtaLida(eventId) {
+            // PUXANDO O NOME SEM PERGUNTAR
             const usuarioLogado = getUsuarioLogado();
-            let nomeUsuario = usuarioLogado ? (usuarioLogado.nome || usuarioLogado.name) : null;
-            let phoneUsuario = usuarioLogado ? (usuarioLogado.telefone || usuarioLogado.phone) : 'S/N';
+            let nomeUsuario = usuarioLogado ? usuarioLogado.nome : null;
+            let phoneUsuario = usuarioLogado ? usuarioLogado.telefone : 'S/N';
 
             if (!nomeUsuario) {
-                nomeUsuario = prompt("Por favor, digite seu Nome Completo para confirmar a leitura:");
-                if (!nomeUsuario || nomeUsuario.trim() === '') return; 
+                alert("⚠️ Autenticação Necessária!\nNão conseguimos identificar o seu usuário. Por favor, faça login novamente no ONCO SMART para registrar sua leitura.");
+                return; 
             }
 
             const btn = document.getElementById('btnConfirmarLeitura');
