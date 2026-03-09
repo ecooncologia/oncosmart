@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tabela TUSS - ECO Oncologia</title>
+    <title>Tabela TUSS - ONCO SMART</title>
     
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
     
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
     <script>
         const versaoApp = Date.now();
         document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
@@ -18,25 +20,15 @@
     </script>
     
     <style>
-        .search-container { margin-bottom: 20px; position: relative; }
-        .search-box { 
-            width: 100%; padding: 16px 20px 16px 50px; border-radius: 12px; 
-            border: 2px solid #E2E8F0; font-size: 16px; outline: none; 
-            transition: border-color 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        }
-        .search-box:focus { border-color: #00855B; }
-        .search-icon { position: absolute; left: 18px; top: 18px; color: #A0AEC0; font-size: 18px; }
-
-        .table-container { overflow-x: auto; background: white; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #E2E8F0; }
-        .tuss-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .tuss-table th { background-color: #00855B; color: white; padding: 15px; font-weight: 700; position: sticky; top: 0; }
-        .tuss-table td { padding: 12px 15px; border-bottom: 1px solid #E2E8F0; color: #2D3748; }
-        .tuss-table tr:hover { background-color: #F7FAFC; }
-        .tuss-table tr:last-child td { border-bottom: none; }
+        .card { padding: 20px; border-radius: 12px; background: white; box-shadow: var(--card-shadow); }
+        .badge-tuss { background: #E6FFFA; color: #047857; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; }
         
-        .badge-code { background: #E6FFFA; color: #047857; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; font-size: 14px; }
-        
-        #loadingMsg { text-align: center; padding: 40px; color: #718096; font-size: 1.1rem; }
+        /* Ajuste fino do DataTables para combinar com seu site */
+        .dataTables_wrapper .dataTables_filter input { border: 1px solid #E2E8F0; padding: 8px; border-radius: 8px; margin-bottom: 10px; width: 300px; }
+        .tuss-table { width: 100% !important; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; }
+        table.dataTable thead th { background: #00855B; color: white; border-bottom: none; padding: 15px; }
+        table.dataTable tbody td { padding: 12px 15px; border-bottom: 1px solid #F1F5F9; font-size: 14px; }
+        .dataTables_info, .dataTables_paginate { margin-top: 15px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -45,100 +37,76 @@
         <div id="global-nav"></div>
 
         <div class="card">
-            <div class="card-header" style="border-bottom: 1px solid #E2E8F0; padding-bottom: 15px; margin-bottom: 20px;">
-                <span><i class="fas fa-file-medical"></i> Consulta Tabela TUSS</span>
+            <div class="card-header" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+                <span><i class="fas fa-search"></i> Consulta Tabela TUSS</span>
             </div>
             
-            <div style="padding: 0 10px 10px 10px;">
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" id="searchInput" class="search-box" placeholder="Digite o Código TUSS ou a Descrição do procedimento..." onkeyup="filtrarTabela()">
-                </div>
-                
-                <div class="table-container">
-                    <table class="tuss-table" id="tabelaTuss" style="display: none;">
-                        <thead>
-                            <tr>
-                                <th style="width: 150px;">Código TUSS</th>
-                                <th>Descrição do Procedimento</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            </tbody>
-                    </table>
-                    <div id="loadingMsg">
-                        <i class="fas fa-spinner fa-spin"></i> Lendo arquivo TUSS...
-                    </div>
-                </div>
+            <div id="loading" style="text-align:center; padding: 50px;">
+                <i class="fas fa-spinner fa-spin fa-3x" style="color: #00855B;"></i>
+                <p style="margin-top: 15px; color: #666;">Carregando mais de 4.000 procedimentos...</p>
             </div>
+
+            <table id="tabelaFinal" class="tuss-table display" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Código TUSS</th>
+                        <th>Procedimento / Exame</th>
+                        <th>Tipo</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            initGlobal('tuss', 'Tabela TUSS'); // Ativa o menu selecionado
-            carregarArquivoTuss();
+            initGlobal('tuss', 'Tabela TUSS');
+            carregarTUSS();
         });
 
-        function carregarArquivoTuss() {
+        function carregarTUSS() {
             Papa.parse("tabela_tuss.csv", {
                 download: true,
-                delimiter: ",", // Força o reconhecimento da vírgula (ou mude para ";" se necessário)
-                encoding: "ISO-8859-1", // RESOLVE O PROBLEMA DOS ACENTOS (ç, á, é)
+                header: true, // AQUI ESTÁ O SEGREDO: Lê pelo nome da coluna!
+                encoding: "ISO-8859-1", // Resolve os acentos do Excel
                 skipEmptyLines: true,
                 complete: function(results) {
                     const dados = results.data;
-                    const tbody = document.getElementById('tableBody');
+                    const tbody = document.getElementById('corpoTabela');
                     
                     let html = '';
-                    // Começamos no 1 para pular o cabeçalho (NR_SEQUENCIA, DS_PROC_EXAME...)
-                    for (let i = 1; i < dados.length; i++) {
-                        const linha = dados[i];
-                        
-                        // Pegamos a Descrição na coluna 2 (índice 1)
-                        // Pegamos o Código TUSS na coluna 4 (índice 3)
-                        const descricao = linha[1] || '';
-                        const codigoTuss = linha[3] || '';
-                        
-                        // Só exibe se houver descrição ou código
-                        if (descricao.trim() !== '' || codigoTuss.trim() !== '') {
+                    dados.forEach(linha => {
+                        // Usamos o nome exato da coluna da sua planilha
+                        const codigo = linha.CD_PROCEDIMENTO_TUSS || linha.CD_PROCEDIMENTO || '---';
+                        const descricao = linha.DS_PROC_EXAME || linha.DS_PROCEDIMENTO_TUSS || '';
+                        const tipo = linha.DS_TIPO_UTIL || 'Geral';
+
+                        if (descricao) {
                             html += `
                                 <tr>
-                                    <td><span class="badge-code">${codigoTuss || '---'}</span></td>
+                                    <td><span class="badge-tuss">${codigo}</span></td>
                                     <td>${descricao}</td>
+                                    <td><small>${tipo}</small></td>
                                 </tr>
                             `;
                         }
-                    }
-                    
+                    });
+
                     tbody.innerHTML = html;
-                    document.getElementById('loadingMsg').style.display = 'none';
-                    document.getElementById('tabelaTuss').style.display = 'table';
-                },
-                error: function(err) {
-                    document.getElementById('loadingMsg').innerHTML = 'Erro ao ler o CSV.';
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('tabelaFinal').style.display = 'table';
+
+                    // Ativa a busca, ordenação e paginação automática
+                    $('#tabelaFinal').DataTable({
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
+                        },
+                        pageLength: 25,
+                        order: [[1, 'asc']] // Ordena por descrição ao abrir
+                    });
                 }
             });
-        }
-
-        // Função de busca instantânea super rápida
-        function filtrarTabela() {
-            const input = document.getElementById("searchInput").value.toLowerCase();
-            const trs = document.getElementById("tableBody").getElementsByTagName("tr");
-
-            for (let i = 0; i < trs.length; i++) {
-                const tdCodigo = trs[i].getElementsByTagName("td")[0];
-                const tdDesc = trs[i].getElementsByTagName("td")[1];
-                
-                if (tdCodigo && tdDesc) {
-                    const texto = (tdCodigo.textContent + " " + tdDesc.textContent).toLowerCase();
-                    if (texto.indexOf(input) > -1) {
-                        trs[i].style.display = "";
-                    } else {
-                        trs[i].style.display = "none";
-                    }
-                }       
-            }
         }
     </script>
 </body>
