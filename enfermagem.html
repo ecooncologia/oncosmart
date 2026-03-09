@@ -379,15 +379,18 @@
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
                 btn.disabled = true;
 
-                // 1. Busca os dados do paciente avaliado
-                const resPac = await fetch(`${API_BASE_URL}/painAssessments/${patientKey}`, { headers: API_HEADERS });
-                const paciente = await resPac.json();
+                // 1. Busca todos os pacientes e filtra o correto localmente
+                const resPac = await fetch(`${API_BASE_URL}/painAssessments`, { headers: API_HEADERS });
+                const todosPacientes = await resPac.json();
+                
+                // Pega os dados do paciente específico
+                const paciente = normalizeData(todosPacientes)[patientKey];
 
                 if (!paciente) throw new Error("Paciente não encontrado");
 
                 const profissoes = { 'psicologo': 'Psicólogo(a)', 'nutricionista': 'Nutricionista' };
 
-                // 2. Busca o profissional correto e o telefone dele no cadastro
+                // 2. Busca o profissional cadastrado
                 const resMedicos = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 const rawMedicos = await resMedicos.json();
                 const listaMedicos = Object.values(normalizeData(rawMedicos));
