@@ -81,26 +81,30 @@
         });
 
         function carregarArquivoTuss() {
-            // A biblioteca vai procurar o seu arquivo CSV na pasta do sistema
             Papa.parse("tabela_tuss.csv", {
                 download: true,
-                header: false, // Define se a primeira linha é o título
+                delimiter: ",", // Força o reconhecimento da vírgula (ou mude para ";" se necessário)
+                encoding: "ISO-8859-1", // RESOLVE O PROBLEMA DOS ACENTOS (ç, á, é)
                 skipEmptyLines: true,
                 complete: function(results) {
                     const dados = results.data;
                     const tbody = document.getElementById('tableBody');
                     
                     let html = '';
-                    // Loop pelas linhas do Excel (Começa no índice 1 para pular o cabeçalho)
+                    // Começamos no 1 para pular o cabeçalho (NR_SEQUENCIA, DS_PROC_EXAME...)
                     for (let i = 1; i < dados.length; i++) {
-                        const codigo = dados[i][0] || ''; 
-                        const descricao = dados[i][1] || '';
+                        const linha = dados[i];
                         
-                        // Só adiciona se tiver código
-                        if (codigo.trim() !== '') {
+                        // Pegamos a Descrição na coluna 2 (índice 1)
+                        // Pegamos o Código TUSS na coluna 4 (índice 3)
+                        const descricao = linha[1] || '';
+                        const codigoTuss = linha[3] || '';
+                        
+                        // Só exibe se houver descrição ou código
+                        if (descricao.trim() !== '' || codigoTuss.trim() !== '') {
                             html += `
                                 <tr>
-                                    <td><span class="badge-code">${codigo}</span></td>
+                                    <td><span class="badge-code">${codigoTuss || '---'}</span></td>
                                     <td>${descricao}</td>
                                 </tr>
                             `;
@@ -112,7 +116,7 @@
                     document.getElementById('tabelaTuss').style.display = 'table';
                 },
                 error: function(err) {
-                    document.getElementById('loadingMsg').innerHTML = '<span style="color: #E53E3E;"><i class="fas fa-exclamation-triangle"></i> Erro ao carregar o arquivo tabela_tuss.csv. Verifique se o nome está correto na pasta.</span>';
+                    document.getElementById('loadingMsg').innerHTML = 'Erro ao ler o CSV.';
                 }
             });
         }
