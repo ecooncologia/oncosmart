@@ -68,13 +68,19 @@
 
         .action-area { display: flex; flex-direction: column; gap: 10px; }
         
-        /* Botões */
+        /* Botões Originais */
         .btn-call { width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; color: white; }
         
         .btn-default { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); } 
         .btn-attend { background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%); box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3); animation: pulse-blue 2s infinite; }
         .btn-return { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
         .btn-disabled { background: #CBD5E0; color: #718096; cursor: not-allowed; box-shadow: none; }
+
+        /* Novos Botões (Psico e Nutri) */
+        .btn-psico { background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%); box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3); }
+        .btn-psico:hover { background: linear-gradient(135deg, #9333EA 0%, #6B21A8 100%); }
+        .btn-nutri { background: linear-gradient(135deg, #10B981 0%, #059669 100%); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+        .btn-nutri:hover { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
 
         @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(14, 165, 233, 0); } 100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); } }
 
@@ -140,7 +146,7 @@
                 updateSoundBtn();
             }
             
-            // WEB WORKER PARA POLLING (Background Safe)
+            // WEB WORKER PARA POLLING
             const workerBlob = new Blob([`
                 setInterval(() => { postMessage("tick"); }, 3000);
             `], { type: "application/javascript" });
@@ -170,7 +176,6 @@
 
         async function loadData() {
             try {
-                // BLINDADO
                 const [resCalls, resPain] = await Promise.all([
                     fetch(`${API_BASE_URL}/patientCalls?_t=${Date.now()}`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/painAssessments?_t=${Date.now()}`, { headers: API_HEADERS })
@@ -201,7 +206,7 @@
 
                 renderPatients(assessments);
 
-                // --- SOM POR ID ---
+                // Lógica do Som
                 let currentAlertIds = new Set();
                 assessments.forEach(p => {
                     const status = activeCalls[p.key]?.status;
@@ -273,7 +278,6 @@
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-walking"></i> Aguardando chegada...</button>`;
                 }
                 else if (status === 'transporting') {
-                    // Interno: Apenas avisa que está vindo
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-ambulance"></i> Paciente em transporte...</button>`;
                 }
                 else if (status === 'on_sofa') {
@@ -285,6 +289,18 @@
                 else if (status === 'returning') {
                     btnHtml = `<button class="btn-call btn-disabled" disabled><i class="fas fa-hourglass-half"></i> Aguardando Recepção...</button>`;
                 }
+
+                // Html dos botões secundários (Invisível Externo)
+                let specialistBtns = `
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button class="btn-call btn-psico" style="font-size: 0.85rem; padding: 10px;" onclick="solicitarEspecialista('psicologo', '${p.key}')">
+                            <i class="fas fa-brain"></i> Psicólogo
+                        </button>
+                        <button class="btn-call btn-nutri" style="font-size: 0.85rem; padding: 10px;" onclick="solicitarEspecialista('nutricionista', '${p.key}')">
+                            <i class="fas fa-apple-alt"></i> Nutricionista
+                        </button>
+                    </div>
+                `;
 
                 const html = `
                     <div class="${cardClass}">
@@ -311,6 +327,7 @@
 
                         <div class="action-area">
                             ${btnHtml}
+                            ${!isExt ? specialistBtns : ''} 
                             ${(!status || status === 'pending') ? `<button class="btn" style="width:100%; background:#fff; border:1px solid #e2e8f0; color:#718096; margin-top:5px; padding:8px; border-radius:6px; cursor:pointer;" onclick="deleteItem('${p.key}')">Cancelar / Remover</button>` : ''}
                         </div>
                     </div>
@@ -320,13 +337,9 @@
         }
 
         async function callTransport(key, name, origin) {
-            // BLINDADO
             await fetch(`${API_BASE_URL}/patientCalls`, {
                 method: 'POST', 
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...API_HEADERS
-                },
+                headers: { 'Content-Type': 'application/json', ...API_HEADERS },
                 body: JSON.stringify({
                     patientId: key,
                     patientName: name,
@@ -339,7 +352,6 @@
         }
 
         async function updateStatus(callId, newStatus) {
-            // BLINDADO
             const res = await fetch(`${API_BASE_URL}/patientCalls`, { headers: API_HEADERS });
             const all = await res.json();
             const current = all[callId];
@@ -347,19 +359,107 @@
                 current.status = newStatus;
                 await fetch(`${API_BASE_URL}/patientCalls/${callId}`, { 
                     method:'PUT', 
-                    headers: {
-                        'Content-Type':'application/json',
-                        ...API_HEADERS
-                    }, 
+                    headers: { 'Content-Type':'application/json', ...API_HEADERS }, 
                     body:JSON.stringify(current) 
                 });
                 loadData();
             }
         }
 
+        // =========================================================================
+        // INTEGRAÇÃO INVISÍVEL COM O ROBÔ DO WHATSAPP VIA API (A PONTE)
+        // =========================================================================
+        async function solicitarEspecialista(tipo, patientKey) {
+            const btn = event.currentTarget;
+            const textoOriginal = btn.innerHTML;
+            const classeOriginal = btn.className;
+
+            try {
+                // Efeito visual de carregamento para o enfermeiro saber que clicou
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+                btn.disabled = true;
+
+                // 1. Busca todos os pacientes e filtra o correto localmente
+                const resPac = await fetch(`${API_BASE_URL}/painAssessments`, { headers: API_HEADERS });
+                const todosPacientes = await resPac.json();
+                
+                // Pega os dados do paciente específico
+                const paciente = normalizeData(todosPacientes)[patientKey];
+
+                if (!paciente) throw new Error("Paciente não encontrado");
+
+                const profissoes = { 'psicologo': 'Psicólogo(a)', 'nutricionista': 'Nutricionista' };
+
+                // 2. Busca o profissional cadastrado
+                const resMedicos = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                const rawMedicos = await resMedicos.json();
+                const listaMedicos = Object.values(normalizeData(rawMedicos));
+
+                const especialistas = listaMedicos.filter(m => m.categoria === tipo && m.telefone && m.telefone.length >= 10);
+
+                if (especialistas.length === 0) {
+                    alert(`⚠️ Nenhum ${profissoes[tipo]} com telefone válido foi encontrado no sistema.`);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Pega o primeiro que encontrar daquela categoria
+                const profissional = especialistas[0];
+
+                // 3. Prepara o número adicionando o DDI do Brasil se não tiver
+                let foneDestino = profissional.telefone.replace(/\D/g, '');
+                if (foneDestino.length === 10 || foneDestino.length === 11) {
+                    foneDestino = '55' + foneDestino;
+                }
+
+                // 4. Monta a mensagem que será enviada
+                const msg = `🚨 *Solicitação de Triagem - ${profissoes[tipo]}*\n\n` +
+                            `*Paciente:* ${paciente.name}\n` +
+                            `*Nível de Dor:* ${paciente.painLevel}\n` +
+                            `*Emoção:* ${emotions[paciente.emotion] || paciente.emotion}\n` +
+                            `*Necessidade:* ${needs[paciente.careNeed] || 'Geral'}\n` +
+                            `*Obs:* ${paciente.additionalInfo || 'Nenhuma'}\n\n` +
+                            `_Notificação enviada pelo sistema ONCO SMART_`;
+
+                // 5. MANDA PARA A SUA API (E ELA MANDA PRO ROBÔ INTERNAMENTE)
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Disparando Zap...';
+                
+                const response = await fetch(`${API_BASE_URL}/notificar-whatsapp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify({
+                        numero: foneDestino,
+                        mensagem: msg
+                    })
+                });
+
+                if (response.ok) {
+                    // Retorno de Sucesso Visual
+                    btn.innerHTML = '<i class="fas fa-check"></i> Enviado!';
+                    btn.style.background = '#10B981'; 
+                } else {
+                    throw new Error("O servidor falhou em se comunicar com o Robô");
+                }
+
+            } catch (e) {
+                console.error(e);
+                // Retorno de Erro Visual
+                btn.innerHTML = '<i class="fas fa-times"></i> Falha no envio';
+                btn.style.background = '#EF4444'; 
+            } finally {
+                // Devolve o botão ao formato original após 3 segundos
+                setTimeout(() => { 
+                    btn.innerHTML = textoOriginal; 
+                    btn.className = classeOriginal;
+                    btn.style.background = '';
+                    btn.disabled = false; 
+                }, 3000);
+            }
+        }
+
         async function deleteItem(key) {
             if(confirm("Deseja remover este paciente da fila?")) {
-                // BLINDADO
                 await fetch(`${API_BASE_URL}/painAssessments/${key}`, { 
                     method: 'DELETE',
                     headers: API_HEADERS 
