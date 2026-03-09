@@ -69,7 +69,6 @@
             Papa.parse("tabela_tuss.csv", {
                 download: true,
                 header: true, // AQUI ESTÁ O SEGREDO: Lê pelo nome da coluna!
-                encoding: "ISO-8859-1", // Resolve os acentos do Excel
                 skipEmptyLines: true,
                 complete: function(results) {
                     const dados = results.data;
