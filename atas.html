@@ -46,8 +46,8 @@
         .btn-secondary { background-color: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-secondary:hover { background-color: #475569; }
         
-        /* Estilo elegante para o texto sublinhado */
-        u { text-decoration-thickness: 2px; text-underline-offset: 3px; font-weight: 500; }
+        /* Estilo base para sublinhado */
+        u { text-decoration-thickness: 2.5px; text-underline-offset: 3px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -112,15 +112,19 @@
         let isEditing = false; 
 
         // ==========================================
-        // PALETA DE CORES INTELIGENTE POR USUÁRIO
+        // PALETA DE CORES EXPANDIDA (10 Cores Únicas)
         // ==========================================
         const colorPalettes = [
-            { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe', line: '#3b82f6' }, // Azul
-            { bg: '#dcfce7', text: '#166534', border: '#bbf7d0', line: '#22c55e' }, // Verde
-            { bg: '#f3e8ff', text: '#6b21a8', border: '#e9d5ff', line: '#a855f7' }, // Roxo
-            { bg: '#ffedd5', text: '#9a3412', border: '#fed7aa', line: '#f97316' }, // Laranja
-            { bg: '#fce7f3', text: '#9d174d', border: '#fbcfe8', line: '#ec4899' }, // Rosa
-            { bg: '#ccfbf1', text: '#115e59', border: '#99f6e4', line: '#14b8a6' }  // Ciano
+            { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe', line: '#3b82f6' }, // 0: Azul
+            { bg: '#dcfce7', text: '#166534', border: '#bbf7d0', line: '#22c55e' }, // 1: Verde
+            { bg: '#f3e8ff', text: '#6b21a8', border: '#e9d5ff', line: '#a855f7' }, // 2: Roxo
+            { bg: '#ffedd5', text: '#9a3412', border: '#fed7aa', line: '#f97316' }, // 3: Laranja
+            { bg: '#fce7f3', text: '#9d174d', border: '#fbcfe8', line: '#ec4899' }, // 4: Rosa
+            { bg: '#ccfbf1', text: '#115e59', border: '#99f6e4', line: '#14b8a6' }, // 5: Ciano
+            { bg: '#fee2e2', text: '#991b1b', border: '#fecaca', line: '#ef4444' }, // 6: Vermelho
+            { bg: '#fef9c3', text: '#854d0e', border: '#fef08a', line: '#eab308' }, // 7: Amarelo
+            { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe', line: '#6366f1' }, // 8: Indigo (Felipe)
+            { bg: '#fae8ff', text: '#86198f', border: '#f5d0fe', line: '#d946ef' }  // 9: Fuchsia
         ];
 
         function getPalette(name) {
@@ -128,8 +132,20 @@
             for (let i = 0; i < name.length; i++) {
                 hash = name.charCodeAt(i) + ((hash << 5) - hash);
             }
-            hash = Math.abs(hash);
-            return colorPalettes[hash % colorPalettes.length];
+            return colorPalettes[Math.abs(hash) % colorPalettes.length];
+        }
+
+        // FUNÇÃO DE LIMPEZA UNIVERSAL (Garante que o lixo de testes antigos suma)
+        function cleanLegacy(text) {
+            if (!text) return '';
+            let t = text;
+            if (t.startsWith('"') && t.endsWith('"')) t = t.substring(1, t.length - 1);
+            return t.replace(/🎙️ Registro Automático.*?\n/g, '')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\"/g, '"')
+                    .replace(/\[EDIT:.*?\]/g, '') // Limpa formato antigo
+                    .replace(/\[\[[^:]+:\s*([\s\S]*?)\]\]/g, '$1') // Limpa os brackets do teste anterior
+                    .trim();
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -178,7 +194,7 @@
                 card.className = 'ata-card';
                 card.onclick = () => openModal(event.id_firebase);
 
-                let previewText = event.ata.replace(/🎙️.*?\n/g, '').replace(/\[(.*?)\]/g, '').trim();
+                let previewText = cleanLegacy(event.ata).replace(/<[^>]*>/g, '').trim();
                 try {
                     const parsed = JSON.parse(previewText);
                     if (Array.isArray(parsed)) previewText = parsed.map(i => i.text || "").join(" ");
@@ -282,7 +298,7 @@
         }
 
         // =========================================================================
-        // LÓGICA DE EDIÇÃO: PRESERVAÇÃO PERMANENTE DO ARCO-ÍRIS
+        // LÓGICA DE EDIÇÃO: MOTOR DE MESCLAGEM INVISÍVEL (Sem Brackets!)
         // =========================================================================
         function toggleEditMode(eventId) {
             const event = eventsWithAtas.find(e => e.id_firebase === eventId);
@@ -291,28 +307,17 @@
 
             if (!isEditing) {
                 let rawText = event.ata || '';
-                
                 try {
                     const parsed = JSON.parse(rawText);
-                    if (Array.isArray(parsed)) {
-                        rawText = parsed.map(item => item.text || item.raw_text).join('\n\n');
-                    }
+                    if (Array.isArray(parsed)) rawText = parsed.map(item => item.text || item.raw_text).join('\n\n');
                 } catch(e) {}
 
-                // Limpa tags antigas defeituosas se existirem e formata as boas para a caixa de edição
-                let textoLimpoParaEdicao = rawText.replace(/\[EDIT:.*?\]/g, ''); 
-                
-                // Transforma as edições antigas em um formato seguro [[Nome: texto]] para o usuário não quebrar o HTML
-                textoLimpoParaEdicao = textoLimpoParaEdicao.replace(/<u data-author="([^"]+)">([\s\S]*?)<\/u>/g, '[[$1: $2]]');
-                
-                textoLimpoParaEdicao = textoLimpoParaEdicao.replace(/🎙️ Registro Automático.*?\n/g, '')
-                                 .replace(/\\n/g, '\n')
-                                 .replace(/\\"/g, '"')
-                                 .trim();
+                // Removemos APENAS as tags de formatação visual para a caixa de edição ficar 100% limpa.
+                let textoLimpoParaEdicao = cleanLegacy(rawText).replace(/<\/?u[^>]*>/g, '');
 
                 body.innerHTML = `
                     <div style="margin-bottom: 12px; font-size: 13px; color: #1e293b; background: #e0f2fe; padding: 10px; border-radius: 8px; border: 1px dashed #38bdf8;">
-                        <i class="fas fa-magic" style="color: #0284c7;"></i> <b>Auditoria Ativa:</b> Edições anteriores estão protegidas no formato <b>[[Nome: texto]]</b>. Adicione ou altere o texto ao redor delas para manter o histórico!
+                        <i class="fas fa-magic" style="color: #0284c7;"></i> <b>Auditoria Inteligente:</b> Altere o texto livremente. O sistema vai rastrear a sua edição e preservar automaticamente o histórico das edições anteriores!
                     </div>
                     <textarea id="editAtaTextarea" class="edit-textarea">${escapeHTML(textoLimpoParaEdicao)}</textarea>
                 `;
@@ -339,34 +344,75 @@
                 if (!nomeUsuario) return;
             }
 
-            btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analisando alterações...';
+            btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mesclando edições...';
             btnEditar.disabled = true;
 
-            // Pega o texto seguro antigo para comparar
-            let textoAntigoProtegido = (event.ata || '').replace(/\[EDIT:.*?\]/g, '').replace(/<u data-author="([^"]+)">([\s\S]*?)<\/u>/g, '[[$1: $2]]');
-            let rawDiffText = '';
+            // Pega o texto antigo COM as tags HTML preservadas internamente
+            let textoAntigoHtml = cleanLegacy(event.ata || '');
+            // Pega o texto antigo LIMPO para servir de base na comparação
+            let textoAntigoLimpo = textoAntigoHtml.replace(/<\/?u[^>]*>/g, '');
+            
+            let textoMesclado = '';
 
-            // Compara o que o usuário mexeu ao redor das proteções
             if (typeof Diff !== 'undefined') {
-                const diff = Diff.diffWords(textoAntigoProtegido, novoTexto);
-                diff.forEach((part) => {
-                    if (part.added) {
-                        rawDiffText += `<u data-author="${nomeUsuario}">${part.value}</u>`;
-                    } else if (!part.removed) {
-                        rawDiffText += part.value;
-                    }
-                });
-            } else {
-                rawDiffText = novoTexto;
-            }
+                const diffArray = Diff.diffWords(textoAntigoLimpo, novoTexto);
+                
+                // O Motor: Ele anda pelas diferenças e encaixa as tags antigas de volta nos lugares certos!
+                let htmlCursor = 0;
+                for (let i = 0; i < diffArray.length; i++) {
+                    let part = diffArray[i];
 
-            // Restaura as proteções antigas de volta para HTML
-            let textoComAlteracoesMarcadas = rawDiffText.replace(/\[\[([^:]+):\s*([\s\S]*?)\]\]/g, '<u data-author="$1">$2</u>');
+                    if (part.added) {
+                        textoMesclado += `<u data-author="${nomeUsuario}">${part.value}</u>`;
+                    } else if (part.removed) {
+                        let charsToSkip = part.value.length;
+                        while (charsToSkip > 0 && htmlCursor < textoAntigoHtml.length) {
+                            if (textoAntigoHtml[htmlCursor] === '<') {
+                                while (htmlCursor < textoAntigoHtml.length && textoAntigoHtml[htmlCursor] !== '>') htmlCursor++;
+                                htmlCursor++; 
+                            } else {
+                                charsToSkip--;
+                                htmlCursor++;
+                            }
+                        }
+                    } else {
+                        let charsToCopy = part.value.length;
+                        while (charsToCopy > 0 && htmlCursor < textoAntigoHtml.length) {
+                            if (textoAntigoHtml[htmlCursor] === '<') {
+                                while (htmlCursor < textoAntigoHtml.length && textoAntigoHtml[htmlCursor] !== '>') {
+                                    textoMesclado += textoAntigoHtml[htmlCursor];
+                                    htmlCursor++;
+                                }
+                                textoMesclado += '>';
+                                htmlCursor++;
+                            } else {
+                                textoMesclado += textoAntigoHtml[htmlCursor];
+                                charsToCopy--;
+                                htmlCursor++;
+                            }
+                        }
+                    }
+                }
+                while (htmlCursor < textoAntigoHtml.length) {
+                    if (textoAntigoHtml[htmlCursor] === '<') {
+                        while (htmlCursor < textoAntigoHtml.length && textoAntigoHtml[htmlCursor] !== '>') {
+                            textoMesclado += textoAntigoHtml[htmlCursor];
+                            htmlCursor++;
+                        }
+                        textoMesclado += '>';
+                        htmlCursor++;
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                textoMesclado = novoTexto;
+            }
 
             const agora = new Date().toISOString();
             const payload = {
                 ...event,
-                ata: textoComAlteracoesMarcadas, 
+                ata: textoMesclado, 
                 lastEditedBy: nomeUsuario,
                 lastEditedAt: agora
             };
@@ -379,7 +425,7 @@
                 });
 
                 if (res.ok) {
-                    event.ata = textoComAlteracoesMarcadas;
+                    event.ata = textoMesclado;
                     event.lastEditedBy = nomeUsuario;
                     event.lastEditedAt = agora;
                     
@@ -399,23 +445,16 @@
         }
 
         // =========================================================================
-        // A MÁGICA VISUAL: CORES E AGRUPAMENTO DE TAGS À DIREITA
+        // A MÁGICA VISUAL: AGRUPA OS MÚLTIPLOS AUTORES NA DIREITA
         // =========================================================================
         function formatarAtaVisualmente(texto) {
             if (!texto) return '<div style="text-align:center; color:#94a3b8; padding: 30px;">Resumo ainda não processado.</div>';
 
-            let cleanText = texto.trim();
-            if (cleanText.startsWith('"') && cleanText.endsWith('"')) {
-                cleanText = cleanText.substring(1, cleanText.length - 1).replace(/\\n/g, '\n').replace(/\\"/g, '"');
-            }
-            cleanText = cleanText.replace(/🎙️ Registro Automático(.*?)\n/g, ''); 
-            cleanText = cleanText.replace(/\[EDIT:.*?\]/g, ''); // Limpa os selos antigos de texto
+            let cleanText = cleanLegacy(texto);
 
             try {
                 const parsed = JSON.parse(cleanText);
-                if (Array.isArray(parsed)) {
-                    cleanText = parsed.map(item => item.text || item.raw_text).join('\n\n');
-                }
+                if (Array.isArray(parsed)) cleanText = parsed.map(item => item.text || item.raw_text).join('\n\n');
             } catch(e) {}
 
             let html = '<div style="background: white; padding: 15px 5px; border-radius: 12px; font-family: \'Segoe UI\', system-ui, sans-serif; color: #334155; line-height: 1.7;">';
@@ -428,25 +467,25 @@
                 let escapedLine = escapeHTML(l);
                 let autoresNaLinha = new Set();
 
-                // 1. Vasculha a linha inteira para ver quem editou
+                // Vasculha a linha para descobrir todo mundo que editou aquele parágrafo
                 let regexAuthor = /&lt;u data-author=&quot;([^&]+)&quot;&gt;/g;
                 let match;
                 while ((match = regexAuthor.exec(escapedLine)) !== null) {
                     autoresNaLinha.add(match[1]);
                 }
 
-                // 2. Aplica as cores exatas para cada sublinhado
+                // Pinta o sublinhado e as palavras com a cor específica de cada um
                 escapedLine = escapedLine.replace(/&lt;u data-author=&quot;([^&]+)&quot;&gt;/g, (m, author) => {
                     const pal = getPalette(author);
-                    return `<u style="text-decoration-color: ${pal.line}; color: ${pal.text}; background: ${pal.bg}40;" title="Editado por ${author}">`;
+                    return `<u style="text-decoration-color: ${pal.line}; color: ${pal.text}; background: ${pal.bg}40; padding: 0 2px; border-radius: 4px;" title="Editado por ${author}">`;
                 });
                 escapedLine = escapedLine.replace(/&lt;\/u&gt;/g, '</u>');
 
-                // Negrito e Relógio normais
+                // Formatação Normal (Negrito e Relógios)
                 escapedLine = escapedLine.replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--secondary); font-size: 16px;">$1</strong>')
                                          .replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, '<span style="background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> $1</span>');
 
-                // 3. Monta um único grupo de selos organizados para jogar lá pra direita
+                // Constrói os selos da direita de forma agrupada
                 let badgesHtml = '';
                 autoresNaLinha.forEach(author => {
                     const pal = getPalette(author);
@@ -454,27 +493,30 @@
                 });
                 let badgesContainer = badgesHtml ? `<div style="display:flex; gap:5px; flex-shrink: 0;">${badgesHtml}</div>` : '';
 
-                // 4. Constrói a linha usando Flexbox para separar o texto na esquerda e os selos na direita
+                // Encaixa o texto na esquerda e os selos na direita com Flexbox
                 if (l.includes('**') || l.startsWith('- ') || l.startsWith('* ') || l.startsWith('• ')) {
                     let limpo = escapedLine.replace(/^[-*•]\s/, ''); 
                     html += `
                         <div style="margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-size: 16px; font-weight: 500; color: var(--secondary);">${limpo}</div>
+                            <div style="font-size: 16px; font-weight: 500; color: var(--secondary); margin-right: 15px;">${limpo}</div>
                             ${badgesContainer}
                         </div>`;
                 } 
                 else if (l.length < 40 && !l.includes('.') && !l.includes(':')) {
-                    html += `<div style="margin-top: 30px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                                <div style="font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">${escapedLine}</div>
-                                ${badgesContainer}
-                             </div>`;
+                    html += `
+                        <div style="margin-top: 30px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-right: 15px;">${escapedLine}</div>
+                            ${badgesContainer}
+                        </div>`;
                 } 
                 else {
                     let limpo = escapedLine.replace(/^[o○\-\+]\s/, ''); 
                     html += `
-                        <div style="margin-left: 15px; margin-top: 8px; font-size: 15px; color: #475569; display: flex; align-items: flex-start; gap: 10px;">
-                            <span style="color: var(--primary); font-size: 14px; line-height: 1.6;">•</span> 
-                            <span style="flex: 1;">${limpo}</span>
+                        <div style="margin-left: 15px; margin-top: 8px; font-size: 15px; color: #475569; display: flex; align-items: flex-start; justify-content: space-between;">
+                            <div style="display: flex; gap: 10px; margin-right: 15px;">
+                                <span style="color: var(--primary); font-size: 14px; line-height: 1.6;">•</span> 
+                                <span>${limpo}</span>
+                            </div>
                             ${badgesContainer}
                         </div>`;
                 }
