@@ -23,28 +23,29 @@
         .card { padding: 20px; border-radius: 12px; background: white; box-shadow: var(--card-shadow); }
         .badge-tuss { background: #E6FFFA; color: #047857; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; }
         
-        /* Ajuste fino do DataTables para combinar com seu site */
-        .dataTables_wrapper .dataTables_filter input { border: 1px solid #E2E8F0; padding: 8px; border-radius: 8px; margin-bottom: 10px; width: 300px; }
+        .dataTables_wrapper .dataTables_filter input { border: 1px solid #E2E8F0; padding: 8px; border-radius: 8px; margin-bottom: 10px; width: 300px; outline: none; }
+        .dataTables_wrapper .dataTables_filter input:focus { border-color: #00855B; }
         .tuss-table { width: 100% !important; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; }
         table.dataTable thead th { background: #00855B; color: white; border-bottom: none; padding: 15px; }
-        table.dataTable tbody td { padding: 12px 15px; border-bottom: 1px solid #F1F5F9; font-size: 14px; }
-        .dataTables_info, .dataTables_paginate { margin-top: 15px; font-size: 13px; }
-
+        table.dataTable tbody td { padding: 12px 15px; border-bottom: 1px solid #F1F5F9; font-size: 14px; vertical-align: middle; }
+        
         /* INVERTE A POSIÇÃO DA PESQUISA E DA QUANTIDADE */
-        .dataTables_wrapper .dataTables_filter {
-            float: left !important;
-            text-align: left !important;
-        }
-        .dataTables_wrapper .dataTables_length {
-            float: right !important;
-            text-align: right !important;
-            margin-top: 5px; 
-        }
-        /* Garante que a tabela fica corretamente alinhada abaixo dos controlos */
-        table.dataTable {
-            clear: both !important;
-            margin-top: 15px !important;
-        }
+        .dataTables_wrapper .dataTables_filter { float: left !important; text-align: left !important; }
+        .dataTables_wrapper .dataTables_length { float: right !important; text-align: right !important; margin-top: 5px; }
+        table.dataTable { clear: both !important; margin-top: 15px !important; }
+
+        /* Estilos dos Novos Botões */
+        .btn-novo { background: #00855B; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; float: right; transition: 0.2s; }
+        .btn-novo:hover { background: #006847; }
+        .btn-edit { background: #EDF2F7; color: #4A5568; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s; }
+        .btn-edit:hover { background: #E2E8F0; color: #00855B; }
+
+        /* Estilos do Modal (Janela de Edição) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-content label { font-size: 13px; font-weight: bold; color: #4A5568; margin-top: 15px; display: block; }
+        .modal-content input { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #E2E8F0; border-radius: 8px; box-sizing: border-box; outline: none; }
+        .modal-content input:focus { border-color: #00855B; }
     </style>
 </head>
 <body>
@@ -53,21 +54,23 @@
         <div id="global-nav"></div>
 
         <div class="card">
-            <div class="card-header" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
-                <span><i class="fas fa-search"></i> Consulta Tabela TUSS</span>
+            <div class="card-header" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; overflow: hidden;">
+                <span style="float: left; margin-top: 8px; font-weight: bold;"><i class="fas fa-file-medical"></i> Consulta Tabela TUSS</span>
+                <button class="btn-novo" onclick="abrirModal()"><i class="fas fa-plus"></i> Novo Procedimento</button>
             </div>
             
             <div id="loading" style="text-align:center; padding: 50px;">
                 <i class="fas fa-spinner fa-spin fa-3x" style="color: #00855B;"></i>
-                <p style="margin-top: 15px; color: #666;">A carregar mais de 4.000 procedimentos...</p>
+                <p style="margin-top: 15px; color: #666;">A carregar e sincronizar base de dados...</p>
             </div>
 
             <table id="tabelaFinal" class="tuss-table display" style="display: none;">
                 <thead>
                     <tr>
-                        <th>Código TUSS</th>
-                        <th>Procedimento / Exame</th>
-                        <th>Tipo</th>
+                        <th style="width: 15%;">Código TUSS</th>
+                        <th style="width: 55%;">Procedimento / Exame</th>
+                        <th style="width: 15%;">Tipo</th>
+                        <th style="width: 15%; text-align: center;">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="corpoTabela"></tbody>
@@ -75,53 +78,176 @@
         </div>
     </div>
 
+    <div id="modalTuss" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 id="modalTitle" style="margin-top: 0; color: #2D3748; border-bottom: 1px solid #eee; padding-bottom: 10px;">Novo Procedimento</h3>
+            
+            <label>Código TUSS</label>
+            <input type="text" id="tussCodigo" placeholder="Ex: 10101012">
+            
+            <label>Descrição do Procedimento</label>
+            <input type="text" id="tussDesc" placeholder="Ex: Consulta em consultório">
+            
+            <label>Tipo / Origem</label>
+            <input type="text" id="tussTipo" placeholder="Ex: Consulta, Exame, Cirurgia">
+            
+            <div style="margin-top: 25px; text-align: right;">
+                <button onclick="fecharModal()" style="background: #E2E8F0; color: #4A5568; padding: 10px 15px; border-radius: 8px; cursor: pointer; border: none; margin-right: 10px; font-weight: bold;">Cancelar</button>
+                <button onclick="salvarTuss()" id="btnSalvar" style="background: #00855B; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: bold;"><i class="fas fa-save"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let dbTussCustomizado = {}; // Guarda as edições feitas no MySQL
+
         document.addEventListener('DOMContentLoaded', () => {
             initGlobal('tuss', 'Tabela TUSS');
-            carregarTUSS();
+            carregarDadosHibridos();
         });
 
-        function carregarTUSS() {
+        // ESTRATÉGIA HÍBRIDA: Lê o DB + O CSV
+        async function carregarDadosHibridos() {
+            // 1. Puxa as customizações da API (MySQL)
+            try {
+                const res = await fetch(`${API_BASE_URL}/tuss`, { headers: API_HEADERS });
+                if (res.ok) {
+                    dbTussCustomizado = await res.json();
+                }
+            } catch (e) { console.warn("Aviso: Nenhum dado customizado encontrado no DB."); }
+
+            // 2. Lê a planilha base
             Papa.parse("tabela_tuss.csv", {
                 download: true,
-                header: true, // Lê diretamente pelos nomes das colunas
+                header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const dados = results.data;
+                    const dadosPlanilha = results.data;
                     const tbody = document.getElementById('corpoTabela');
-                    
                     let html = '';
-                    dados.forEach(linha => {
-                        // Mapeia os dados utilizando as colunas exatas do seu CSV
-                        const codigo = linha.CD_PROCEDIMENTO_TUSS || linha.CD_PROCEDIMENTO || '---';
-                        const descricao = linha.DS_PROC_EXAME || linha.DS_PROCEDIMENTO_TUSS || '';
-                        const tipo = linha.DS_TIPO_UTIL || 'Geral';
+                    let codigosProcessados = new Set(); // Para não duplicar
 
-                        if (descricao) {
-                            html += `
-                                <tr>
-                                    <td><span class="badge-tuss">${codigo}</span></td>
-                                    <td>${descricao}</td>
-                                    <td><small>${tipo}</small></td>
-                                </tr>
-                            `;
+                    // Junta a Planilha com o Banco de Dados
+                    dadosPlanilha.forEach(linha => {
+                        let codigo = (linha.CD_PROCEDIMENTO_TUSS || linha.CD_PROCEDIMENTO || '').trim();
+                        if (!codigo) return;
+
+                        codigosProcessados.add(codigo);
+
+                        // Se tiver edição no MySQL, o MySQL manda!
+                        let descricao = linha.DS_PROC_EXAME || linha.DS_PROCEDIMENTO_TUSS || '';
+                        let tipo = linha.DS_TIPO_UTIL || 'Geral';
+
+                        if (dbTussCustomizado[codigo]) {
+                            descricao = dbTussCustomizado[codigo].descricao || descricao;
+                            tipo = dbTussCustomizado[codigo].tipo || tipo;
                         }
+
+                        if (descricao) html += criarLinhaHtml(codigo, descricao, tipo);
                     });
+
+                    // Adiciona os Inseridos Novos (Que estão no BD mas não existem na planilha)
+                    for (let codDB in dbTussCustomizado) {
+                        if (!codigosProcessados.has(codDB)) {
+                            const item = dbTussCustomizado[codDB];
+                            html += criarLinhaHtml(codDB, item.descricao, item.tipo);
+                        }
+                    }
 
                     tbody.innerHTML = html;
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('tabelaFinal').style.display = 'table';
 
-                    // Inicializa o DataTables com a tradução e ordenação
+                    // Liga o motor de busca
                     $('#tabelaFinal').DataTable({
-                        language: {
-                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-PT.json'
-                        },
+                        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-PT.json' },
                         pageLength: 25,
-                        order: [[1, 'asc']] // Ordena alfabeticamente pela descrição ao abrir
+                        order: [[1, 'asc']]
                     });
                 }
             });
+        }
+
+        // Função para montar a linha da tabela com o botão Editar
+        function criarLinhaHtml(codigo, descricao, tipo) {
+            // Escapa aspas simples para não quebrar o clique do botão
+            const descSegura = descricao.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const tipoSeguro = tipo.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            
+            return `
+                <tr>
+                    <td><span class="badge-tuss">${codigo}</span></td>
+                    <td>${descricao}</td>
+                    <td><small>${tipo}</small></td>
+                    <td style="text-align: center;">
+                        <button class="btn-edit" onclick="abrirModal('${codigo}', '${descSegura}', '${tipoSeguro}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // ================= CONTROLE DO MODAL E SALVAMENTO ================= //
+
+        function abrirModal(codigo = '', descricao = '', tipo = '') {
+            document.getElementById('modalTitle').innerText = codigo ? 'Editar Procedimento' : 'Novo Procedimento';
+            
+            const inputCodigo = document.getElementById('tussCodigo');
+            inputCodigo.value = codigo;
+            inputCodigo.disabled = codigo !== ''; // Bloqueia edição do código se for atualização
+            
+            document.getElementById('tussDesc').value = descricao;
+            document.getElementById('tussTipo').value = tipo;
+            
+            document.getElementById('modalTuss').style.display = 'flex';
+        }
+
+        function fecharModal() {
+            document.getElementById('modalTuss').style.display = 'none';
+        }
+
+        async function salvarTuss() {
+            const codigo = document.getElementById('tussCodigo').value.trim();
+            const desc = document.getElementById('tussDesc').value.trim();
+            const tipo = document.getElementById('tussTipo').value.trim();
+            const btn = document.getElementById('btnSalvar');
+
+            if (!codigo || !desc) {
+                alert("Por favor, preencha o Código e a Descrição.");
+                return;
+            }
+
+            btn.innerText = "Salvando...";
+            btn.disabled = true;
+
+            // O payload usa as chaves exatas que a API genérica do ONCO SMART entende
+            const payload = {
+                id_firebase: codigo,
+                descricao: desc,
+                tipo: tipo
+            };
+
+            try {
+                // Manda para a rota genérica POST /:tabela que você já tem no server.js
+                const res = await fetch(`${API_BASE_URL}/tuss/${codigo}`, {
+                    method: 'POST',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    fecharModal();
+                    // Recarrega a página para puxar os dados atualizados
+                    window.location.reload(); 
+                } else {
+                    throw new Error("Erro do servidor");
+                }
+            } catch (e) {
+                alert("Erro ao salvar no banco de dados. Verifique a conexão.");
+                btn.innerText = "Salvar";
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
