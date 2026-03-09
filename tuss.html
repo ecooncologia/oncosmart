@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabela TUSS - ECO Oncologia</title>
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+    
+    <style>
+        .search-container { margin-bottom: 20px; position: relative; }
+        .search-box { 
+            width: 100%; padding: 16px 20px 16px 50px; border-radius: 12px; 
+            border: 2px solid #E2E8F0; font-size: 16px; outline: none; 
+            transition: border-color 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .search-box:focus { border-color: #00855B; }
+        .search-icon { position: absolute; left: 18px; top: 18px; color: #A0AEC0; font-size: 18px; }
+
+        .table-container { overflow-x: auto; background: white; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #E2E8F0; }
+        .tuss-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .tuss-table th { background-color: #00855B; color: white; padding: 15px; font-weight: 700; position: sticky; top: 0; }
+        .tuss-table td { padding: 12px 15px; border-bottom: 1px solid #E2E8F0; color: #2D3748; }
+        .tuss-table tr:hover { background-color: #F7FAFC; }
+        .tuss-table tr:last-child td { border-bottom: none; }
+        
+        .badge-code { background: #E6FFFA; color: #047857; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; font-size: 14px; }
+        
+        #loadingMsg { text-align: center; padding: 40px; color: #718096; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="card">
+            <div class="card-header" style="border-bottom: 1px solid #E2E8F0; padding-bottom: 15px; margin-bottom: 20px;">
+                <span><i class="fas fa-file-medical"></i> Consulta Tabela TUSS</span>
+            </div>
+            
+            <div style="padding: 0 10px 10px 10px;">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="searchInput" class="search-box" placeholder="Digite o Código TUSS ou a Descrição do procedimento..." onkeyup="filtrarTabela()">
+                </div>
+                
+                <div class="table-container">
+                    <table class="tuss-table" id="tabelaTuss" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">Código TUSS</th>
+                                <th>Descrição do Procedimento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            </tbody>
+                    </table>
+                    <div id="loadingMsg">
+                        <i class="fas fa-spinner fa-spin"></i> Lendo arquivo TUSS...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initGlobal('tuss', 'Tabela TUSS'); // Ativa o menu selecionado
+            carregarArquivoTuss();
+        });
+
+        function carregarArquivoTuss() {
+            // A biblioteca vai procurar o seu arquivo CSV na pasta do sistema
+            Papa.parse("tabela_tuss.csv", {
+                download: true,
+                header: false, // Define se a primeira linha é o título
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const dados = results.data;
+                    const tbody = document.getElementById('tableBody');
+                    
+                    let html = '';
+                    // Loop pelas linhas do Excel (Começa no índice 1 para pular o cabeçalho)
+                    for (let i = 1; i < dados.length; i++) {
+                        const codigo = dados[i][0] || ''; 
+                        const descricao = dados[i][1] || '';
+                        
+                        // Só adiciona se tiver código
+                        if (codigo.trim() !== '') {
+                            html += `
+                                <tr>
+                                    <td><span class="badge-code">${codigo}</span></td>
+                                    <td>${descricao}</td>
+                                </tr>
+                            `;
+                        }
+                    }
+                    
+                    tbody.innerHTML = html;
+                    document.getElementById('loadingMsg').style.display = 'none';
+                    document.getElementById('tabelaTuss').style.display = 'table';
+                },
+                error: function(err) {
+                    document.getElementById('loadingMsg').innerHTML = '<span style="color: #E53E3E;"><i class="fas fa-exclamation-triangle"></i> Erro ao carregar o arquivo tabela_tuss.csv. Verifique se o nome está correto na pasta.</span>';
+                }
+            });
+        }
+
+        // Função de busca instantânea super rápida
+        function filtrarTabela() {
+            const input = document.getElementById("searchInput").value.toLowerCase();
+            const trs = document.getElementById("tableBody").getElementsByTagName("tr");
+
+            for (let i = 0; i < trs.length; i++) {
+                const tdCodigo = trs[i].getElementsByTagName("td")[0];
+                const tdDesc = trs[i].getElementsByTagName("td")[1];
+                
+                if (tdCodigo && tdDesc) {
+                    const texto = (tdCodigo.textContent + " " + tdDesc.textContent).toLowerCase();
+                    if (texto.indexOf(input) > -1) {
+                        trs[i].style.display = "";
+                    } else {
+                        trs[i].style.display = "none";
+                    }
+                }       
+            }
+        }
+    </script>
+</body>
+</html>

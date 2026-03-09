@@ -28,6 +28,7 @@ const APP_PAGES = [
     { id: 'canvas', label: 'Canvas', file: 'canvas.html', perm: 'canvas_special' },
     { id: 'eventos', label: 'Eventos', file: 'eventos.html', perm: 'eventos' },
     { id: 'atas', label: 'Mural de ATAs', file: 'atas.html', perm: 'atas' },
+    { id: 'tuss', label: 'Tabela TUSS', file: 'tuss.html', perm: 'tuss' },
     { id: 'admin', label: 'Admin', file: 'admin.html', perm: 'admin' }
 ];
 
