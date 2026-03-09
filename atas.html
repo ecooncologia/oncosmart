@@ -127,7 +127,6 @@
             { bg: '#fae8ff', text: '#86198f', border: '#f5d0fe', line: '#d946ef' }  // 9: Fuchsia
         ];
 
-        // Novo Algoritmo de Cores: Mais preciso, evita que nomes diferentes caiam na mesma cor
         function getPalette(name) {
             let hash = 5381;
             const str = String(name).trim().toUpperCase();
@@ -138,54 +137,82 @@
         }
 
         // ==========================================
-        // INTEGRAÇÃO DE AUTENTICAÇÃO (SISTEMA E MSAL)
+        // BUSCADOR AVANÇADO DE CREDENCIAIS (Descriptografa MSAL e Lê a Tela)
         // ==========================================
         function getUsuarioLogado() {
-            // 1. Busca comum no cache do sistema
-            const chavesPossiveis = ['user', 'userData', 'usuarioLogado', 'usuario', 'currentUser', 'eco_user'];
-            for (let chave of chavesPossiveis) {
+            let foundName = null;
+
+            // Função que converte o Token Base64 da Microsoft
+            const parseJWT = (token) => {
                 try {
-                    const str = localStorage.getItem(chave);
-                    if (str) {
-                        const obj = JSON.parse(str);
-                        const nomeStr = obj.nome || obj.name || obj.displayName;
-                        if (nomeStr) return { nome: nomeStr, telefone: obj.telefone || obj.phone || 'S/N' };
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                    return JSON.parse(jsonPayload);
+                } catch (e) { return null; }
+            };
+
+            // Função que escaneia os objetos salvos
+            const checkData = (data) => {
+                if (!data) return null;
+                if (typeof data === 'string') {
+                    if (data.startsWith('eyJ')) {
+                        const payload = parseJWT(data);
+                        if (payload && payload.name) return payload.name;
+                    }
+                    try { data = JSON.parse(data); } catch (e) { return null; }
+                }
+                if (typeof data === 'object') {
+                    if (data.name) return data.name;
+                    if (data.displayName) return data.displayName;
+                    if (data.username) return data.username.split('@')[0];
+                    if (data.idTokenClaims && data.idTokenClaims.name) return data.idTokenClaims.name;
+                    if (data.account && data.account.name) return data.account.name;
+                }
+                return null;
+            };
+
+            // TENTATIVA 1: Vasculhar o banco de dados do navegador (Session e Local)
+            const storages = [sessionStorage, localStorage];
+            for (let s of storages) {
+                for (let i = 0; i < s.length; i++) {
+                    try {
+                        const val = s.getItem(s.key(i));
+                        const name = checkData(val);
+                        if (name && name.length > 2 && !name.includes('{')) {
+                            foundName = name; break;
+                        }
+                    } catch(e) {}
+                }
+                if (foundName) break;
+            }
+
+            // TENTATIVA 2: Plano B infalível (Lê visualmente o nome do Header gerado pelo global.js)
+            if (!foundName) {
+                try {
+                    const headerHtml = document.getElementById('global-header')?.innerText || '';
+                    const linhas = headerHtml.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    for(let i=0; i<linhas.length; i++){
+                        if(linhas[i].toLowerCase().includes('boa') || linhas[i].toLowerCase().includes('bom ')){
+                            if(linhas[i+1]) foundName = linhas[i+1];
+                        }
                     }
                 } catch(e) {}
             }
-            
-            // 2. Busca avançada profunda para pegar contas da Microsoft (MSAL)
-            try {
-                // Checa sessionStorage (onde a MSAL costuma guardar o active account)
-                for(let i=0; i < sessionStorage.length; i++){
-                    let key = sessionStorage.key(i);
-                    if(key.includes('login.microsoftonline.com') || key.includes('msal')){
-                        const str = sessionStorage.getItem(key);
-                        if(str.includes('"name":') || str.includes('"displayName":') || str.includes('"username":')){
-                            const obj = JSON.parse(str);
-                            const nomeStr = obj.name || obj.displayName || obj.username;
-                            if(nomeStr) return { nome: nomeStr.split('@')[0], telefone: 'S/N' };
-                        }
-                    }
-                }
-                // Checa localStorage 
-                for(let i=0; i < localStorage.length; i++){
-                    let key = localStorage.key(i);
-                    if(key.includes('login.microsoftonline.com') || key.includes('msal')){
-                        const str = localStorage.getItem(key);
-                        if(str.includes('"name":') || str.includes('"displayName":') || str.includes('"username":')){
-                            const obj = JSON.parse(str);
-                            const nomeStr = obj.name || obj.displayName || obj.username;
-                            if(nomeStr) return { nome: nomeStr.split('@')[0], telefone: 'S/N' };
-                        }
-                    }
-                }
-            } catch(e) {}
+
+            // Limpa o formato
+            if (foundName) {
+                foundName = foundName.replace(/"/g, '').trim();
+                if (foundName.includes('@')) foundName = foundName.split('@')[0].split('.').join(' ');
+                return { nome: foundName, telefone: 'S/N' };
+            }
 
             return null;
         }
 
-        // FUNÇÃO DE LIMPEZA UNIVERSAL
+        // ==========================================
+        // FUNÇÃO DE LIMPEZA UNIVERSAL 
+        // ==========================================
         function cleanLegacy(text) {
             if (!text) return '';
             let t = text;
@@ -287,7 +314,7 @@
                 statusLido.style.display = 'flex';
             } else {
                 const usuario = getUsuarioLogado();
-                let nomeUsuario = usuario ? (usuario.nome || usuario.name) : null;
+                let nomeUsuario = usuario ? usuario.nome : null;
 
                 if (nomeUsuario) {
                     try {
@@ -371,7 +398,7 @@
             const novoTexto = textarea.value.trim();
             const btnEditar = document.getElementById('btnEditarAta');
 
-            // PUXANDO O NOME SEM PERGUNTAR
+            // PUXANDO O NOME SEM PERGUNTAR (SILENCIOSAMENTE)
             const usuario = getUsuarioLogado();
             let nomeUsuario = usuario ? usuario.nome : null;
             
@@ -478,7 +505,7 @@
         }
 
         // =========================================================================
-        // A MÁGICA VISUAL: AGRUPA OS MÚLTIPLOS AUTORES NA DIREITA COM CORES CERTAS
+        // A MÁGICA VISUAL
         // =========================================================================
         function formatarAtaVisualmente(texto) {
             if (!texto) return '<div style="text-align:center; color:#94a3b8; padding: 30px;">Resumo ainda não processado.</div>';
