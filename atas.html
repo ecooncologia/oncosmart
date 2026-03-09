@@ -45,6 +45,9 @@
         .btn-success:hover { background-color: #16a34a; }
         .btn-secondary { background-color: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-secondary:hover { background-color: #475569; }
+        
+        /* Estilo elegante para o texto sublinhado */
+        u { text-decoration-thickness: 2px; text-underline-offset: 3px; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -279,7 +282,7 @@
         }
 
         // =========================================================================
-        // LÓGICA DE EDIÇÃO (MANTENDO A CAIXA LIMPA E FÁCIL DE USAR)
+        // LÓGICA DE EDIÇÃO: PRESERVAÇÃO PERMANENTE DO ARCO-ÍRIS
         // =========================================================================
         function toggleEditMode(eventId) {
             const event = eventsWithAtas.find(e => e.id_firebase === eventId);
@@ -296,8 +299,11 @@
                     }
                 } catch(e) {}
 
-                // Remove os códigos e etiquetas para o usuário ter um texto normal para digitar
-                let textoLimpoParaEdicao = rawText.replace(/<u[^>]*>/g, '').replace(/<\/u>/g, '').replace(/\[EDIT:.*?\]/g, '');
+                // Limpa tags antigas defeituosas se existirem e formata as boas para a caixa de edição
+                let textoLimpoParaEdicao = rawText.replace(/\[EDIT:.*?\]/g, ''); 
+                
+                // Transforma as edições antigas em um formato seguro [[Nome: texto]] para o usuário não quebrar o HTML
+                textoLimpoParaEdicao = textoLimpoParaEdicao.replace(/<u data-author="([^"]+)">([\s\S]*?)<\/u>/g, '[[$1: $2]]');
                 
                 textoLimpoParaEdicao = textoLimpoParaEdicao.replace(/🎙️ Registro Automático.*?\n/g, '')
                                  .replace(/\\n/g, '\n')
@@ -306,7 +312,7 @@
 
                 body.innerHTML = `
                     <div style="margin-bottom: 12px; font-size: 13px; color: #1e293b; background: #e0f2fe; padding: 10px; border-radius: 8px; border: 1px dashed #38bdf8;">
-                        <i class="fas fa-magic" style="color: #0284c7;"></i> <b>Edição Inteligente:</b> Altere o texto abaixo livremente. O sistema sublinhará o que for novo e colocará seu nome ao lado com uma cor única!
+                        <i class="fas fa-magic" style="color: #0284c7;"></i> <b>Auditoria Ativa:</b> Edições anteriores estão protegidas no formato <b>[[Nome: texto]]</b>. Adicione ou altere o texto ao redor delas para manter o histórico!
                     </div>
                     <textarea id="editAtaTextarea" class="edit-textarea">${escapeHTML(textoLimpoParaEdicao)}</textarea>
                 `;
@@ -336,12 +342,13 @@
             btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analisando alterações...';
             btnEditar.disabled = true;
 
-            let textoAntigoLimpo = (event.ata || '').replace(/<u[^>]*>/g, '').replace(/<\/u>/g, '').replace(/\[EDIT:.*?\]/g, '');
+            // Pega o texto seguro antigo para comparar
+            let textoAntigoProtegido = (event.ata || '').replace(/\[EDIT:.*?\]/g, '').replace(/<u data-author="([^"]+)">([\s\S]*?)<\/u>/g, '[[$1: $2]]');
             let rawDiffText = '';
 
-            // Agora o sublinhado guarda a informação secreta de QUEM editou, para podermos puxar a cor depois
+            // Compara o que o usuário mexeu ao redor das proteções
             if (typeof Diff !== 'undefined') {
-                const diff = Diff.diffWords(textoAntigoLimpo, novoTexto);
+                const diff = Diff.diffWords(textoAntigoProtegido, novoTexto);
                 diff.forEach((part) => {
                     if (part.added) {
                         rawDiffText += `<u data-author="${nomeUsuario}">${part.value}</u>`;
@@ -353,13 +360,8 @@
                 rawDiffText = novoTexto;
             }
 
-            let linhas = rawDiffText.split('\n');
-            let textoComAlteracoesMarcadas = linhas.map(linha => {
-                if (linha.includes(`<u data-author="${nomeUsuario}">`)) {
-                    return linha + ` [EDIT:${nomeUsuario}]`;
-                }
-                return linha;
-            }).join('\n');
+            // Restaura as proteções antigas de volta para HTML
+            let textoComAlteracoesMarcadas = rawDiffText.replace(/\[\[([^:]+):\s*([\s\S]*?)\]\]/g, '<u data-author="$1">$2</u>');
 
             const agora = new Date().toISOString();
             const payload = {
@@ -397,7 +399,7 @@
         }
 
         // =========================================================================
-        // A MÁGICA VISUAL: APLICA AS CORES DA PALETA NO TEXTO
+        // A MÁGICA VISUAL: CORES E AGRUPAMENTO DE TAGS À DIREITA
         // =========================================================================
         function formatarAtaVisualmente(texto) {
             if (!texto) return '<div style="text-align:center; color:#94a3b8; padding: 30px;">Resumo ainda não processado.</div>';
@@ -407,6 +409,7 @@
                 cleanText = cleanText.substring(1, cleanText.length - 1).replace(/\\n/g, '\n').replace(/\\"/g, '"');
             }
             cleanText = cleanText.replace(/🎙️ Registro Automático(.*?)\n/g, ''); 
+            cleanText = cleanText.replace(/\[EDIT:.*?\]/g, ''); // Limpa os selos antigos de texto
 
             try {
                 const parsed = JSON.parse(cleanText);
@@ -423,33 +426,48 @@
                 if (!l || l === 'undefined') return;
 
                 let escapedLine = escapeHTML(l);
+                let autoresNaLinha = new Set();
 
-                // Aplica a cor no sublinhado baseada no nome
-                escapedLine = escapedLine.replace(/&lt;u data-author=&quot;(.*?)&quot;&gt;/g, (match, authorName) => {
-                    const pal = getPalette(authorName);
-                    return `<u style="text-decoration-color: ${pal.line}; color: ${pal.text};">`;
+                // 1. Vasculha a linha inteira para ver quem editou
+                let regexAuthor = /&lt;u data-author=&quot;([^&]+)&quot;&gt;/g;
+                let match;
+                while ((match = regexAuthor.exec(escapedLine)) !== null) {
+                    autoresNaLinha.add(match[1]);
+                }
+
+                // 2. Aplica as cores exatas para cada sublinhado
+                escapedLine = escapedLine.replace(/&lt;u data-author=&quot;([^&]+)&quot;&gt;/g, (m, author) => {
+                    const pal = getPalette(author);
+                    return `<u style="text-decoration-color: ${pal.line}; color: ${pal.text}; background: ${pal.bg}40;" title="Editado por ${author}">`;
                 });
                 escapedLine = escapedLine.replace(/&lt;\/u&gt;/g, '</u>');
-
-                // Aplica as cores na tag da direita baseada no nome
-                escapedLine = escapedLine.replace(/\[EDIT:(.*?)\]/g, (match, authorName) => {
-                    const pal = getPalette(authorName);
-                    return `<span style="float: right; font-size: 11px; background: ${pal.bg}; color: ${pal.text}; padding: 2px 8px; border-radius: 6px; margin-left: 10px; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; border: 1px solid ${pal.border}; box-shadow: 0 2px 4px rgba(0,0,0,0.05);"><i class="fas fa-pencil-alt"></i> ${authorName}</span>`;
-                });
 
                 // Negrito e Relógio normais
                 escapedLine = escapedLine.replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--secondary); font-size: 16px;">$1</strong>')
                                          .replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, '<span style="background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> $1</span>');
 
+                // 3. Monta um único grupo de selos organizados para jogar lá pra direita
+                let badgesHtml = '';
+                autoresNaLinha.forEach(author => {
+                    const pal = getPalette(author);
+                    badgesHtml += `<span style="font-size: 11px; background: ${pal.bg}; color: ${pal.text}; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; border: 1px solid ${pal.border}; box-shadow: 0 2px 4px rgba(0,0,0,0.05);"><i class="fas fa-pencil-alt"></i> ${author}</span>`;
+                });
+                let badgesContainer = badgesHtml ? `<div style="display:flex; gap:5px; flex-shrink: 0;">${badgesHtml}</div>` : '';
+
+                // 4. Constrói a linha usando Flexbox para separar o texto na esquerda e os selos na direita
                 if (l.includes('**') || l.startsWith('- ') || l.startsWith('* ') || l.startsWith('• ')) {
                     let limpo = escapedLine.replace(/^[-*•]\s/, ''); 
                     html += `
-                        <div style="margin-top: 25px; margin-bottom: 12px; font-size: 16px; font-weight: 500; color: var(--secondary); border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-                            ${limpo}
+                        <div style="margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 16px; font-weight: 500; color: var(--secondary);">${limpo}</div>
+                            ${badgesContainer}
                         </div>`;
                 } 
                 else if (l.length < 40 && !l.includes('.') && !l.includes(':')) {
-                    html += `<div style="margin-top: 30px; margin-bottom: 15px; font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">${escapedLine}</div>`;
+                    html += `<div style="margin-top: 30px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">${escapedLine}</div>
+                                ${badgesContainer}
+                             </div>`;
                 } 
                 else {
                     let limpo = escapedLine.replace(/^[o○\-\+]\s/, ''); 
@@ -457,6 +475,7 @@
                         <div style="margin-left: 15px; margin-top: 8px; font-size: 15px; color: #475569; display: flex; align-items: flex-start; gap: 10px;">
                             <span style="color: var(--primary); font-size: 14px; line-height: 1.6;">•</span> 
                             <span style="flex: 1;">${limpo}</span>
+                            ${badgesContainer}
                         </div>`;
                 }
             });
