@@ -6,6 +6,7 @@
     <title>Mural de ATAs - ONCO SMART</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js"></script>
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
     
     <script>
@@ -21,10 +22,10 @@
         .ata-icon { font-size: 30px; color: var(--accent); margin-bottom: 15px; }
         .ata-title { font-size: 16px; font-weight: 700; color: var(--secondary); margin-bottom: 10px; line-height: 1.3; }
         .ata-date { font-size: 13px; color: var(--text-light); font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; }
-        .ata-excerpt { font-size: 13px; color: var(--text-light); flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.5; }
+        .ata-excerpt { font-size: 13px; color: var(--text-light); flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.5; }
         .read-more { margin-top: 15px; font-size: 13px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px; }
 
-        /* Modal Leitura Premium */
+        /* Modal Leitura */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 850px; height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -34,18 +35,9 @@
         .modal-body { padding: 30px; overflow-y: auto; flex: 1; background: #f4f7f6; }
         .modal-footer { padding: 15px 30px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 0 0 16px 16px; width: 100%; box-sizing: border-box; flex-wrap: wrap; gap: 10px;}
 
-        /* Design Timeline (Linha do Tempo) */
-        .timeline-container { position: relative; padding-left: 25px; border-left: 3px solid #cbd5e1; margin-left: 15px; margin-top: 10px; font-family: 'Segoe UI', system-ui, sans-serif; }
-        .timeline-block { margin-bottom: 30px; position: relative; }
-        .timeline-dot { position: absolute; left: -35px; top: 0; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; border: 3px solid #f4f7f6; box-shadow: 0 0 0 1px var(--primary); }
-        .timeline-header { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--primary); font-weight: 800; font-size: 14px; padding: 6px 15px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .timeline-content { color: #334155; font-size: 15px; line-height: 1.7; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-        .timeline-content ul { margin: 10px 0 0 0; padding-left: 20px; }
-        .timeline-content li { margin-bottom: 8px; }
-
-        /* Novos Estilos (Edição e Leitura) */
-        .edit-info { font-size: 12px; color: #64748b; margin-top: 8px; font-style: italic; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; display: inline-block; }
-        .edit-textarea { width: 100%; height: 400px; padding: 15px; border-radius: 8px; border: 2px solid var(--primary); font-family: inherit; font-size: 14px; resize: vertical; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        /* Estilos de Edição e Leitura */
+        .edit-info { font-size: 12px; color: #64748b; margin-top: 8px; font-style: italic; background: #e2e8f0; padding: 4px 10px; border-radius: 6px; display: inline-block; border-left: 3px solid var(--warning, #f59e0b); }
+        .edit-textarea { width: 100%; height: 400px; padding: 15px; border-radius: 8px; border: 2px solid var(--primary); font-family: 'Segoe UI', sans-serif; font-size: 15px; resize: vertical; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); line-height: 1.6; }
         .badge-lido { background-color: #dcfce7; color: #166534; padding: 10px 15px; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 8px; border: 1px solid #bbf7d0; }
         .btn-warning { background-color: #f59e0b; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-warning:hover { background-color: #d97706; }
@@ -53,6 +45,9 @@
         .btn-success:hover { background-color: #16a34a; }
         .btn-secondary { background-color: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-secondary:hover { background-color: #475569; }
+        
+        /* Estilo elegante para o texto sublinhado */
+        u { text-decoration-color: var(--primary); text-decoration-thickness: 2px; text-underline-offset: 3px; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -114,14 +109,13 @@
 
     <script>
         let eventsWithAtas = [];
-        let isEditing = false; // Controle de estado da edição
+        let isEditing = false; 
 
         document.addEventListener('DOMContentLoaded', async () => {
             await initGlobal('atas', 'Mural de ATAs');
             loadAtas();
         });
 
-        // Função auxiliar para pegar o usuário logado
         function getUsuarioLogado() {
             const chavesPossiveis = ['user', 'userData', 'usuarioLogado', 'usuario', 'currentUser', 'eco_user'];
             for (let chave of chavesPossiveis) {
@@ -183,14 +177,13 @@
         }
 
         async function openModal(eventId) {
-            isEditing = false; // Reseta estado
+            isEditing = false;
             const event = eventsWithAtas.find(e => e.id_firebase === eventId);
             if (!event) return;
 
             document.getElementById('modalEventName').textContent = event.name;
             document.getElementById('modalEventDate').innerHTML = `<i class="far fa-calendar-alt"></i> Documento referente ao evento do dia ${formatDate(event.date)}`;
             
-            // Exibir histórico de edição
             const editInfo = document.getElementById('modalEditInfo');
             if (event.lastEditedBy && event.lastEditedAt) {
                 const dataEdicao = new Date(event.lastEditedAt).toLocaleString('pt-BR');
@@ -202,62 +195,63 @@
 
             document.getElementById('modalAtaText').innerHTML = formatarAtaVisualmente(event.ata);
             
-            // Configura botões padrão
             const btnEditar = document.getElementById('btnEditarAta');
             btnEditar.innerHTML = '<i class="fas fa-edit"></i> Editar ATA';
             btnEditar.className = 'btn-warning';
             btnEditar.onclick = () => toggleEditMode(eventId);
 
-            // Verificação de Leitura
             const btnConfirmar = document.getElementById('btnConfirmarLeitura');
             const statusLido = document.getElementById('statusLidoAta');
             
             btnConfirmar.style.display = 'none';
             statusLido.style.display = 'none';
             
-            const usuario = getUsuarioLogado();
-            let nomeUsuario = usuario ? (usuario.nome || usuario.name) : null;
+            const leuLocalmente = localStorage.getItem('eco_ata_lida_' + eventId);
 
-            // Abre o modal primeiro para não travar a tela
             document.getElementById('ataModal').style.display = 'flex';
 
-            if (nomeUsuario) {
-                // Checa no banco se já leu
-                try {
-                    btnConfirmar.style.display = 'block';
-                    btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
-                    btnConfirmar.disabled = true;
+            if (leuLocalmente === 'true') {
+                statusLido.style.display = 'flex';
+            } else {
+                const usuario = getUsuarioLogado();
+                let nomeUsuario = usuario ? (usuario.nome || usuario.name) : null;
 
-                    const resParts = await fetch(`${API_BASE_URL}/participants`, { headers: API_HEADERS });
-                    const dataParts = await resParts.json();
-                    const todosParticipantes = dataParts ? Object.values(dataParts) : [];
-                    
-                    const leu = todosParticipantes.some(p => 
-                        p.eventId === eventId && 
-                        p.name.toLowerCase().trim() === nomeUsuario.toLowerCase().trim() && 
-                        p.readAta === true
-                    );
+                if (nomeUsuario) {
+                    try {
+                        btnConfirmar.style.display = 'block';
+                        btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+                        btnConfirmar.disabled = true;
 
-                    if (leu) {
-                        btnConfirmar.style.display = 'none';
-                        statusLido.style.display = 'flex';
-                    } else {
+                        const resParts = await fetch(`${API_BASE_URL}/participants`, { headers: API_HEADERS });
+                        const dataParts = await resParts.json();
+                        const todosParticipantes = dataParts ? Object.values(dataParts) : [];
+                        
+                        const leu = todosParticipantes.some(p => 
+                            p.eventId === eventId && 
+                            p.name.toLowerCase().trim() === nomeUsuario.toLowerCase().trim() && 
+                            p.readAta === true
+                        );
+
+                        if (leu) {
+                            localStorage.setItem('eco_ata_lida_' + eventId, 'true');
+                            btnConfirmar.style.display = 'none';
+                            statusLido.style.display = 'flex';
+                        } else {
+                            btnConfirmar.innerHTML = '<i class="fas fa-check-double"></i> Confirmo a Leitura';
+                            btnConfirmar.disabled = false;
+                            btnConfirmar.onclick = () => marcarAtaLida(eventId);
+                        }
+                    } catch(e) {
                         btnConfirmar.innerHTML = '<i class="fas fa-check-double"></i> Confirmo a Leitura';
                         btnConfirmar.disabled = false;
                         btnConfirmar.onclick = () => marcarAtaLida(eventId);
                     }
-                } catch(e) {
-                    // Em caso de erro na checagem, libera o botão por segurança
+                } else {
+                    btnConfirmar.style.display = 'block';
                     btnConfirmar.innerHTML = '<i class="fas fa-check-double"></i> Confirmo a Leitura';
                     btnConfirmar.disabled = false;
                     btnConfirmar.onclick = () => marcarAtaLida(eventId);
                 }
-            } else {
-                // Se não achou usuário na sessão, exibe botão para ele preencher o prompt
-                btnConfirmar.style.display = 'block';
-                btnConfirmar.innerHTML = '<i class="fas fa-check-double"></i> Confirmo a Leitura';
-                btnConfirmar.disabled = false;
-                btnConfirmar.onclick = () => marcarAtaLida(eventId);
             }
         }
 
@@ -267,7 +261,7 @@
         }
 
         // =========================================================================
-        // LÓGICA DE EDIÇÃO DA ATA
+        // LÓGICA DE EDIÇÃO INTELIGENTE (CAIXA LIMPA + SUBLINHADO AUTOMÁTICO)
         // =========================================================================
         function toggleEditMode(eventId) {
             const event = eventsWithAtas.find(e => e.id_firebase === eventId);
@@ -275,15 +269,34 @@
             const btnEditar = document.getElementById('btnEditarAta');
 
             if (!isEditing) {
-                // Ativar modo de edição
-                const rawText = event.ata || '';
-                body.innerHTML = `<textarea id="editAtaTextarea" class="edit-textarea">${escapeHTML(rawText)}</textarea>`;
+                let rawText = event.ata || '';
+                
+                try {
+                    const parsed = JSON.parse(rawText);
+                    if (Array.isArray(parsed)) {
+                        rawText = parsed.map(item => item.text || item.raw_text).join('\n\n');
+                    }
+                } catch(e) {}
+
+                // Removemos o HTML do sublinhado antigo para a caixa de edição ficar limpa pro usuário
+                let textoLimpoParaEdicao = rawText.replace(/<u[^>]*>/g, '').replace(/<\/u>/g, '');
+                
+                textoLimpoParaEdicao = textoLimpoParaEdicao.replace(/🎙️ Registro Automático.*?\n/g, '')
+                                 .replace(/\\n/g, '\n')
+                                 .replace(/\\"/g, '"')
+                                 .trim();
+
+                body.innerHTML = `
+                    <div style="margin-bottom: 12px; font-size: 13px; color: #1e293b; background: #e0f2fe; padding: 10px; border-radius: 8px; border: 1px dashed #38bdf8;">
+                        <i class="fas fa-magic" style="color: #0284c7;"></i> <b>Edição Inteligente:</b> Altere o texto abaixo livremente. O sistema irá rastrear e sublinhar suas alterações automaticamente ao salvar!
+                    </div>
+                    <textarea id="editAtaTextarea" class="edit-textarea">${escapeHTML(textoLimpoParaEdicao)}</textarea>
+                `;
                 
                 btnEditar.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
                 btnEditar.className = 'btn-success';
                 isEditing = true;
             } else {
-                // Salvar alterações
                 salvarEdicao(eventId);
             }
         }
@@ -302,13 +315,32 @@
                 if (!nomeUsuario) return;
             }
 
-            btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            btnEditar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analisando alterações...';
             btnEditar.disabled = true;
+
+            // MÁGICA DO SUBLINHADO AUTOMÁTICO
+            let textoAntigoLimpo = (event.ata || '').replace(/<u[^>]*>/g, '').replace(/<\/u>/g, '');
+            let textoComAlteracoesMarcadas = '';
+
+            // Se a biblioteca de diff carregou, usamos ela para achar o que mudou
+            if (typeof Diff !== 'undefined') {
+                const diff = Diff.diffWords(textoAntigoLimpo, novoTexto);
+                diff.forEach((part) => {
+                    if (part.added) {
+                        textoComAlteracoesMarcadas += `<u>${part.value}</u>`;
+                    } else if (!part.removed) {
+                        textoComAlteracoesMarcadas += part.value;
+                    }
+                });
+            } else {
+                // Caso a internet do usuário bloqueie a CDN, salva normalmente sem quebrar
+                textoComAlteracoesMarcadas = novoTexto;
+            }
 
             const agora = new Date().toISOString();
             const payload = {
                 ...event,
-                ata: novoTexto,
+                ata: textoComAlteracoesMarcadas, // Salva o texto já com as tags <u> embutidas
                 lastEditedBy: nomeUsuario,
                 lastEditedAt: agora
             };
@@ -321,15 +353,13 @@
                 });
 
                 if (res.ok) {
-                    // Atualiza cache local
-                    event.ata = novoTexto;
+                    event.ata = textoComAlteracoesMarcadas;
                     event.lastEditedBy = nomeUsuario;
                     event.lastEditedAt = agora;
                     
                     isEditing = false;
                     btnEditar.disabled = false;
                     
-                    // Recarrega o visual da modal para mostrar o texto formatado e o header de edição atualizado
                     openModal(eventId); 
                 } else {
                     throw new Error("Erro na API");
@@ -342,20 +372,15 @@
             }
         }
 
-        // =========================================================================
-        // DESIGN PREMIUM: LEITOR FIEL AO FIREFLIES (Com auto-bolinhas)
-        // =========================================================================
         function formatarAtaVisualmente(texto) {
             if (!texto) return '<div style="text-align:center; color:#94a3b8; padding: 30px;">Resumo ainda não processado.</div>';
 
-            // Limpeza inicial de sujeiras da API
             let cleanText = texto.trim();
             if (cleanText.startsWith('"') && cleanText.endsWith('"')) {
                 cleanText = cleanText.substring(1, cleanText.length - 1).replace(/\\n/g, '\n').replace(/\\"/g, '"');
             }
             cleanText = cleanText.replace(/🎙️ Registro Automático(.*?)\n/g, ''); 
 
-            // Tratamento para legados
             try {
                 const parsed = JSON.parse(cleanText);
                 if (Array.isArray(parsed)) {
@@ -370,26 +395,25 @@
                 let l = linha.trim();
                 if (!l || l === 'undefined') return;
 
-                // Transforma **texto** em Negrito e pinta o relógio (00:00) de azul claro
+                // Protege contra bugs de HTML e permite a tag <u> gerada pelo nosso robô de edição
                 let formattedLine = escapeHTML(l)
+                    .replace(/&lt;u&gt;/g, '<u>')
+                    .replace(/&lt;\/u&gt;/g, '</u>')
                     .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--secondary); font-size: 16px;">$1</strong>')
                     .replace(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g, '<span style="background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> $1</span>');
 
-                // 1. Identifica o Tópico Principal (Se tem Negrito ** ou se começa com emoji/traço)
                 if (l.includes('**') || l.startsWith('- ') || l.startsWith('* ') || l.startsWith('• ')) {
-                    let limpo = formattedLine.replace(/^[-*•]\s/, ''); // Remove traço se tiver
+                    let limpo = formattedLine.replace(/^[-*•]\s/, ''); 
                     html += `
                         <div style="margin-top: 25px; margin-bottom: 12px; font-size: 16px; font-weight: 500; color: var(--secondary); border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
                             ${limpo}
                         </div>`;
                 } 
-                // 2. Identifica Cabeçalhos Curtos soltos (Ex: "Notes", "Action Items")
                 else if (l.length < 40 && !l.includes('.') && !l.includes(':')) {
                     html += `<div style="margin-top: 30px; margin-bottom: 15px; font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">${formattedLine}</div>`;
                 } 
-                // 3. Todo o resto vira um Sub-tópico COM bolinha automaticamente!
                 else {
-                    let limpo = formattedLine.replace(/^[o○\-\+]\s/, ''); // Remove bolinha velha se vier da IA
+                    let limpo = formattedLine.replace(/^[o○\-\+]\s/, ''); 
                     html += `
                         <div style="margin-left: 15px; margin-top: 8px; font-size: 15px; color: #475569; display: flex; align-items: flex-start; gap: 10px;">
                             <span style="color: var(--primary); font-size: 14px; line-height: 1.6;">•</span> 
@@ -402,9 +426,6 @@
             return html;
         }
 
-        // =========================================================================
-        // REGISTRO DE LEITURA (Inteligente: Mescla com inscrições existentes)
-        // =========================================================================
         async function marcarAtaLida(eventId) {
             const usuarioLogado = getUsuarioLogado();
             let nomeUsuario = usuarioLogado ? (usuarioLogado.nome || usuarioLogado.name) : null;
@@ -422,7 +443,7 @@
             try {
                 const resParts = await fetch(`${API_BASE_URL}/participants`, { headers: API_HEADERS });
                 const dataParts = await resParts.json();
-                const todosParticipantes = Object.values(dataParts);
+                const todosParticipantes = dataParts ? Object.values(dataParts) : [];
                 
                 const participanteExistente = todosParticipantes.find(p => 
                     p.eventId === eventId && 
@@ -456,7 +477,8 @@
                     });
                 }
                 
-                // Sucesso: Esconde botão e mostra o selo verde
+                localStorage.setItem('eco_ata_lida_' + eventId, 'true');
+                
                 btn.style.display = 'none';
                 document.getElementById('statusLidoAta').style.display = 'flex';
 
