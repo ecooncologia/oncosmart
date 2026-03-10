@@ -706,7 +706,6 @@
                 origem: 'manual', 
                 tipo_registro: saleType,
                 historico_parcelas: id && sales[id] ? (sales[id].historico_parcelas || {}) : {},
-                // --- REGISTRO DO USUÁRIO QUE SALVOU A VENDA ---
                 criado_por: id && sales[id] && sales[id].criado_por ? sales[id].criado_por : getLoggedUser()
             };
 
@@ -992,7 +991,6 @@
                 let financeiroHtml = '';
                 let tipoModeloHtml = '';
 
-                // === EXTRAI E FORMATA O NOME DO USUÁRIO AQUI ===
                 const usuarioName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
 
                 const corComprovante = s.comprovante ? '#10b981' : '#0ea5e9'; 
@@ -1456,6 +1454,74 @@
                 img.onerror = error => reject(error); img.src = url;
             });
         }
+
+        // --- FUNÇÃO ADICIONADA: EXPORTAÇÃO PARA EXCEL ---
+        async function exportExcel() {
+            const rows = getFilteredData().map(i => i[1]);
+            if (rows.length === 0) { 
+                alert("Sem dados no filtro atual para exportar."); 
+                return; 
+            }
+
+            const excelData = [];
+            // Cabeçalho das colunas do Excel
+            excelData.push(["Data", "Paciente", "Médico", "Procedimento", "Recebedor", "Pgto/Ciclos", "Taxa", "Total Líquido (R$)", "Valor Pago Bruto (R$)", "NF", "Usuário"]);
+
+            rows.forEach(s => {
+                const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
+                const recStr = s.recebedor || 'Clinica';
+                
+                const bruto = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
+                const liquido = parseCurrency(s.valor_final);
+                
+                let pago = parseCurrency(s.valor_pago);
+                if (pago > 0 && Math.abs(pago - liquido) < 0.05 && parseCurrency(s.desconto) > 0 && !isLiminar) {
+                    pago = bruto; 
+                }
+
+                let pgto = '';
+                let taxaStr = '-';
+
+                if(isLiminar) {
+                    pgto = `Liminar (${s.ciclos_total || 1}x)`;
+                } else {
+                    pgto = s.forma_pagamento || '-';
+                    if (s.usa_dois_pagamentos && s.forma_pagamento_2) pgto += ` + ${s.forma_pagamento_2}`;
+                    pgto += ` (${s.parcelas || '1x'})`;
+
+                    if (s.desconto_percentual > 0) {
+                        if (s.desconto_percentual == 1.2) taxaStr = 'Déb. 1.2%';
+                        else if (s.desconto_percentual == 3.3) taxaStr = 'Créd. 3.3%';
+                        else taxaStr = `${s.desconto_percentual}%`;
+                    }
+                }
+                
+                const userName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
+
+                excelData.push([
+                    safeDateDisplay(s.data), 
+                    s.paciente || '', 
+                    s.medico || '', 
+                    s.procedimento || '-', 
+                    recStr === 'Clinica' ? 'Clínica' : 'Médico',
+                    pgto,
+                    taxaStr,
+                    liquido,
+                    pago,
+                    s.nota_fiscal || '-',
+                    userName
+                ]);
+            });
+
+            // Geração e Download do Arquivo usando o SheetJS
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Financeiro");
+
+            const dataAtual = new Date().toISOString().slice(0,10);
+            XLSX.writeFile(wb, `Relatorio_Financeiro_${dataAtual}.xlsx`);
+        }
+        // --- FIM DA FUNÇÃO EXCEL ---
 
         async function exportPDF() {
             const { jsPDF } = window.jspdf;
