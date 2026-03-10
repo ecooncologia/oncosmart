@@ -26,6 +26,7 @@ const APP_PAGES = [
     { id: 'stenci', label: 'Stenci', file: 'stenci.html', perm: 'stenci' },
     { id: 'selos', label: 'Selos', file: 'selos.html', perm: 'selos' },
     { id: 'canvas', label: 'Canvas', file: 'canvas.html', perm: 'canvas' },
+    { id: 'canvas-admin', label: 'Canvas', file: 'canvas-admin.html', perm: 'canvas-admin' },
     { id: 'eventos', label: 'Eventos', file: 'eventos.html', perm: 'eventos' },
     { id: 'atas', label: 'Mural de ATAs', file: 'atas.html', perm: 'atas' },
     { id: 'tuss', label: 'Tabela TUSS', file: 'tuss.html', perm: 'tuss' },
