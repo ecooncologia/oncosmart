@@ -218,30 +218,57 @@
             return '#' + String(id).padStart(4, '0');
         }
 
+        // ==========================================
+        // FUNÇÃO DE BUSCA (BLINDADA E CORRIGIDA)
+        // ==========================================
         async function loadAllData() {
             try {
-                // AQUI: ADICIONADO O CRÁCHÁ (API_HEADERS)
+                // Busca os usuários e os chamados passando o crachá (API_HEADERS)
                 const [resUsers, resTickets] = await Promise.all([
                     fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS })
+                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS }) 
                 ]);
 
-                const usersData = normalizeData(await resUsers.json());
+                // 1. Processa Usuários com Segurança
+                const textUsers = await resUsers.text();
+                let usersData = {};
+                if (resUsers.ok && !textUsers.startsWith('<')) {
+                    usersData = normalizeData(JSON.parse(textUsers));
+                }
+
                 usersMap = {};
                 Object.values(usersData).forEach(u => {
                     if(u.email) usersMap[u.email.toLowerCase()] = u;
                 });
 
-                const rawTickets = await resTickets.json();
+                // 2. Processa Chamados com Segurança (Ignora erros de HTML se a tabela estiver vazia)
+                const textTickets = await resTickets.text();
+                let rawTickets = {};
+                
+                if (resTickets.ok && !textTickets.startsWith('<')) {
+                    rawTickets = JSON.parse(textTickets);
+                } else {
+                    console.warn("⚠️ Nenhuma informação de chamados recebida (Tabela pode estar vazia).");
+                }
+
                 let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ key: key, ...val }));
-                arrayRaw = arrayRaw.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+                
+                // Ordenação segura (protege contra datas inválidas)
+                arrayRaw = arrayRaw.sort((a, b) => {
+                    const dateA = a.date ? new Date(a.date).getTime() : 0;
+                    const dateB = b.date ? new Date(b.date).getTime() : 0;
+                    return dateA - dateB;
+                });
+                
                 arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
                 
                 allTickets = arrayRaw;
+                console.log(`✅ Foram carregados ${allTickets.length} chamados!`);
+
                 updateFilterOptions();
                 renderDashboard();
             } catch (e) { 
-                console.error("Erro API:", e); 
+                console.error("Erro ao comunicar com a API do Dashboard:", e); 
             }
         }
 
@@ -329,7 +356,12 @@
             let totalRating = 0, ratedCount = 0;
 
             const finalDashList = allTickets.filter(t => {
-                const d = t.date ? new Date(t.date) : new Date(0);
+                let d = new Date(0);
+                if (t.date) {
+                    const parsedDate = new Date(t.date);
+                    if (!isNaN(parsedDate.getTime())) d = parsedDate;
+                }
+
                 if(d < start || d > end) return false;
                 if(sec && t.setor !== sec) return false;
                 
@@ -427,7 +459,11 @@
             secondChartInstance = buildChart('secondChart', 'chart2Title', conf.c2Data, conf.c2Type, secondChartInstance);
 
             const dashBody = document.querySelector('#dashTable tbody');
-            dashBody.innerHTML = finalDashList.sort((a,b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()).map(t => {
+            dashBody.innerHTML = finalDashList.sort((a,b) => {
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
+                return dateB - dateA; // Decrescente
+            }).map(t => {
                 const dataFormatada = t.date ? new Date(t.date).toLocaleDateString() : '-';
                 const statusName = t.status || 'pendente';
                 const atendente = t.atendente_nome ? `<span class="tech-owner">${t.atendente_nome.split(' ')[0]}</span>` : '<span style="color:#999; font-size:10px;">Aguardando</span>';
@@ -459,7 +495,12 @@
             const tech = document.getElementById('dashTech').value;
 
             const finalDashList = allTickets.filter(t => {
-                const d = t.date ? new Date(t.date) : new Date(0);
+                let d = new Date(0);
+                if (t.date) {
+                    const parsedDate = new Date(t.date);
+                    if (!isNaN(parsedDate.getTime())) d = parsedDate;
+                }
+
                 if(d < start || d > end) return false;
                 if(sec && t.setor !== sec) return false;
                 const catPrincipal = String(t.categoria || 'Geral').split(' > ')[0];
@@ -474,7 +515,11 @@
             let txt = "RELATÓRIO DE CHAMADOS - ONCO SMART\n";
             txt += `Gerado em: ${new Date().toLocaleString()}\n\n`;
 
-            finalDashList.sort((a,b) => b.date - a.date).forEach(t => {
+            finalDashList.sort((a,b) => {
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
+                return dateB - dateA;
+            }).forEach(t => {
                 txt += "--------------------------------------------------\n";
                 txt += `Nº CHAMADO: ${formatarId(t.visual_id)}\n`;
                 txt += `STATUS: ${String(t.status).toUpperCase()}\n`;
