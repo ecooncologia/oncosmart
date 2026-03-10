@@ -126,9 +126,11 @@
         <div id="sect-table" class="card">
             <div class="card-header"><i class="fas fa-list"></i> Últimos Registros Visíveis no Filtro</div>
             <div class="table-container">
-                <table id="dashTable">
-                    <thead><tr><th>Nº</th><th>Data</th><th>Solicitante</th><th>Item / Assunto</th><th>Atendente</th><th>Status</th><th>SLA Real</th></tr></thead>
-                    <tbody></tbody>
+                <table id="dashTable" style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 10px;">Nº</th><th>Data</th><th>Solicitante</th><th>Item / Assunto</th><th>Atendente</th><th>Status</th><th>SLA Real</th></tr></thead>
+                    <tbody>
+                        <tr><td colspan="7" style="text-align:center; padding:20px;">⏳ Buscando dados no servidor...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -199,7 +201,7 @@
             resetFilters(); 
             applyDashConfig();
             await loadAllData();
-            setInterval(loadAllData, 10000); // Atualiza dados a cada 10 seg
+            setInterval(loadAllData, 15000); // Atualiza dados a cada 15 seg
         });
 
         function normalizeData(apiData) {
@@ -218,36 +220,49 @@
             return '#' + String(id).padStart(4, '0');
         }
 
+        // ==========================================
+        // BUSCA IDÊNTICA AO HELPDESK-ADMIN.HTML
+        // ==========================================
         async function loadAllData() {
             try {
+                // AQUI FOI ADICIONADO O "CRACHÁ" E A ROTA CORRETA (/chamados)
                 const [resUsers, resTickets] = await Promise.all([
-                    fetch(`${API_BASE_URL}/usuarios`),
-                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`)
+                    fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
 
+                // Lendo usuários
                 const usersData = normalizeData(await resUsers.json());
                 usersMap = {};
                 Object.values(usersData).forEach(u => {
                     if(u.email) usersMap[u.email.toLowerCase()] = u;
                 });
 
+                // Lendo chamados exatamente como o Admin faz
                 const rawTickets = await resTickets.json();
+                
                 let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ key: key, ...val }));
+                
+                // Ordenação garantida pela data para gerar ID numérico
                 arrayRaw = arrayRaw.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
                 arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
                 
                 allTickets = arrayRaw;
+                console.log(`✅ Sucesso! O Dashboard puxou ${allTickets.length} chamados da tabela helpdesk_tickets.`);
+
                 updateFilterOptions();
                 renderDashboard();
             } catch (e) { 
-                console.error("Erro API:", e); 
+                console.error("Erro na comunicação com a API:", e); 
+                document.querySelector('#dashTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">❌ Erro ao conectar. Atualize a página.</td></tr>';
             }
         }
 
         function resetFilters() {
             const today = new Date();
             const start = new Date();
-            start.setDate(today.getDate() - 30);
+            // AUMENTADO PARA 365 DIAS (1 ANO) PARA NÃO ESCONDER CHAMADOS ANTIGOS
+            start.setDate(today.getDate() - 365); 
             document.getElementById('dashEnd').valueAsDate = today;
             document.getElementById('dashStart').valueAsDate = start;
             if(document.getElementById('dashSector')) document.getElementById('dashSector').value = '';
@@ -328,8 +343,20 @@
             let totalRating = 0, ratedCount = 0;
 
             const finalDashList = allTickets.filter(t => {
-                const d = t.date ? new Date(t.date) : new Date(0);
-                if(d < start || d > end) return false;
+                // Filtro flexível para as datas (compara só dia, ignora a hora exata na busca)
+                let d = new Date(0);
+                if (t.date) {
+                    const parsedDate = new Date(t.date);
+                    if (!isNaN(parsedDate.getTime())) {
+                        d = parsedDate;
+                    }
+                }
+                
+                d.setHours(0,0,0,0);
+                const sTemp = new Date(start); sTemp.setHours(0,0,0,0);
+                const eTemp = new Date(end); eTemp.setHours(23,59,59,999);
+
+                if(d.getTime() < sTemp.getTime() || d.getTime() > eTemp.getTime()) return false;
                 if(sec && t.setor !== sec) return false;
                 
                 const catStr = String(t.categoria || 'Geral');
@@ -426,7 +453,14 @@
             secondChartInstance = buildChart('secondChart', 'chart2Title', conf.c2Data, conf.c2Type, secondChartInstance);
 
             const dashBody = document.querySelector('#dashTable tbody');
-            dashBody.innerHTML = finalDashList.sort((a,b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()).map(t => {
+            
+            const listForTable = [...finalDashList].sort((a,b) => {
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
+                return dateB - dateA; // Recentes no topo
+            });
+
+            dashBody.innerHTML = listForTable.map(t => {
                 const dataFormatada = t.date ? new Date(t.date).toLocaleDateString() : '-';
                 const statusName = t.status || 'pendente';
                 const atendente = t.atendente_nome ? `<span class="tech-owner">${t.atendente_nome.split(' ')[0]}</span>` : '<span style="color:#999; font-size:10px;">Aguardando</span>';
@@ -435,8 +469,8 @@
                 const userName = (uData.nome && uData.nome.trim() !== 'Usuario') ? uData.nome : (t.user || "Usuário");
 
                 return `
-                <tr>
-                    <td class="ticket-id">${formatarId(t.visual_id)}</td>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td class="ticket-id" style="padding:10px;">${formatarId(t.visual_id)}</td>
                     <td>${dataFormatada}</td>
                     <td>${userName}</td>
                     <td><div style="font-size:11px; color:#888;">${t.categoria || ''}</div><div>${t.assunto || ''}</div></td>
@@ -445,7 +479,7 @@
                     <td style="font-family:monospace;">${formatMs(calculateElapsedTime(t))}</td>
                 </tr>
                 `;
-            }).join('') || '<tr><td colspan="7" style="text-align:center; padding:15px; color:#ccc;">Nenhum registro no filtro.</td></tr>';
+            }).join('') || '<tr><td colspan="7" style="text-align:center; padding:15px; color:#ccc;">Nenhum registro encontrado neste período.</td></tr>';
         }
 
         function exportTickets() {
@@ -458,8 +492,17 @@
             const tech = document.getElementById('dashTech').value;
 
             const finalDashList = allTickets.filter(t => {
-                const d = t.date ? new Date(t.date) : new Date(0);
-                if(d < start || d > end) return false;
+                let d = new Date(0);
+                if (t.date) {
+                    const parsedDate = new Date(t.date);
+                    if (!isNaN(parsedDate.getTime())) d = parsedDate;
+                }
+                
+                d.setHours(0,0,0,0);
+                const sTemp = new Date(start); sTemp.setHours(0,0,0,0);
+                const eTemp = new Date(end); eTemp.setHours(23,59,59,999);
+
+                if(d.getTime() < sTemp.getTime() || d.getTime() > eTemp.getTime()) return false;
                 if(sec && t.setor !== sec) return false;
                 const catPrincipal = String(t.categoria || 'Geral').split(' > ')[0];
                 if(cat && catPrincipal !== cat) return false;
@@ -468,12 +511,16 @@
                 return true;
             });
 
-            if(finalDashList.length === 0) return alert("Nenhum chamado para exportar.");
+            if(finalDashList.length === 0) return alert("Nenhum chamado para exportar no filtro atual.");
 
             let txt = "RELATÓRIO DE CHAMADOS - ONCO SMART\n";
             txt += `Gerado em: ${new Date().toLocaleString()}\n\n`;
 
-            finalDashList.sort((a,b) => b.date - a.date).forEach(t => {
+            finalDashList.sort((a,b) => {
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
+                return dateB - dateA;
+            }).forEach(t => {
                 txt += "--------------------------------------------------\n";
                 txt += `Nº CHAMADO: ${formatarId(t.visual_id)}\n`;
                 txt += `STATUS: ${String(t.status).toUpperCase()}\n`;
