@@ -37,8 +37,12 @@
         /* Estilos dos Novos Botões */
         .btn-novo { background: #00855B; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; float: right; transition: 0.2s; }
         .btn-novo:hover { background: #006847; }
+        
         .btn-edit { background: #EDF2F7; color: #4A5568; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s; }
         .btn-edit:hover { background: #E2E8F0; color: #00855B; }
+
+        .btn-delete { background: #FFF5F5; color: #E53E3E; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s; margin-left: 5px; }
+        .btn-delete:hover { background: #FED7D7; }
 
         /* Estilos do Modal (Janela de Edição) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
@@ -68,9 +72,9 @@
                 <thead>
                     <tr>
                         <th style="width: 15%;">Código TUSS</th>
-                        <th style="width: 55%;">Procedimento / Exame</th>
+                        <th style="width: 50%;">Procedimento / Exame</th>
                         <th style="width: 15%;">Tipo</th>
-                        <th style="width: 15%; text-align: center;">Ações</th>
+                        <th style="width: 20%; text-align: center;">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="corpoTabela"></tbody>
@@ -99,31 +103,23 @@
     </div>
 
     <script>
-        let dbTussCustomizado = {}; // Guarda as edições feitas no MySQL
+        let dbTussCustomizado = {}; 
 
         document.addEventListener('DOMContentLoaded', () => {
             initGlobal('tuss', 'Tabela TUSS');
             carregarDadosHibridos();
         });
 
-        // ESTRATÉGIA HÍBRIDA: Lê o DB + O CSV
         async function carregarDadosHibridos() {
-            // 1. Puxa as customizações da API com segurança máxima
             try {
                 const res = await fetch(`${API_BASE_URL}/tuss`, { headers: API_HEADERS });
-                const texto = await res.text(); // Lê como texto puro primeiro
+                const texto = await res.text(); 
                 
-                // Só tenta converter para JSON se a resposta não for uma página de erro HTML
                 if (res.ok && !texto.startsWith('<')) {
                     dbTussCustomizado = JSON.parse(texto);
-                } else {
-                    console.log("ℹ️ Banco TUSS ainda vazio ou não inicializado. Lendo apenas a planilha base...");
                 }
-            } catch (e) { 
-                console.log("ℹ️ Nenhuma edição no banco de dados ainda."); 
-            }
+            } catch (e) { console.log("Nenhuma edição no banco de dados ainda."); }
 
-            // 2. Lê a planilha base
             Papa.parse("tabela_tuss.csv", {
                 download: true,
                 header: true,
@@ -132,16 +128,20 @@
                     const dadosPlanilha = results.data;
                     const tbody = document.getElementById('corpoTabela');
                     let html = '';
-                    let codigosProcessados = new Set(); // Para não duplicar
+                    let codigosProcessados = new Set(); 
 
-                    // Junta a Planilha com o Banco de Dados
                     dadosPlanilha.forEach(linha => {
                         let codigo = (linha.CD_PROCEDIMENTO_TUSS || linha.CD_PROCEDIMENTO || '').trim();
                         if (!codigo) return;
 
+                        // Se o item foi excluído logicamente no BD, pulamos ele!
+                        if (dbTussCustomizado[codigo] && dbTussCustomizado[codigo].excluido === true) {
+                            codigosProcessados.add(codigo);
+                            return; 
+                        }
+
                         codigosProcessados.add(codigo);
 
-                        // Se tiver edição no MySQL, o MySQL manda!
                         let descricao = linha.DS_PROC_EXAME || linha.DS_PROCEDIMENTO_TUSS || '';
                         let tipo = linha.DS_TIPO_UTIL || 'Geral';
 
@@ -153,11 +153,13 @@
                         if (descricao) html += criarLinhaHtml(codigo, descricao, tipo);
                     });
 
-                    // Adiciona os Inseridos Novos (Que estão no BD mas não existem na planilha)
+                    // Adiciona os Inseridos Novos (Que estão no BD mas não na planilha e não foram excluídos)
                     for (let codDB in dbTussCustomizado) {
                         if (!codigosProcessados.has(codDB)) {
                             const item = dbTussCustomizado[codDB];
-                            html += criarLinhaHtml(codDB, item.descricao, item.tipo);
+                            if (item.excluido !== true) {
+                                html += criarLinhaHtml(codDB, item.descricao, item.tipo);
+                            }
                         }
                     }
 
@@ -165,7 +167,6 @@
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('tabelaFinal').style.display = 'table';
 
-                    // Liga o motor de busca
                     $('#tabelaFinal').DataTable({
                         language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-PT.json' },
                         pageLength: 25,
@@ -175,9 +176,7 @@
             });
         }
 
-        // Função para montar a linha da tabela com o botão Editar
         function criarLinhaHtml(codigo, descricao, tipo) {
-            // Escapa aspas simples para não quebrar o clique do botão
             const descSegura = descricao.replace(/'/g, "\\'").replace(/"/g, "&quot;");
             const tipoSeguro = tipo.replace(/'/g, "\\'").replace(/"/g, "&quot;");
             
@@ -186,23 +185,26 @@
                     <td><span class="badge-tuss">${codigo}</span></td>
                     <td>${descricao}</td>
                     <td><small>${tipo}</small></td>
-                    <td style="text-align: center;">
-                        <button class="btn-edit" onclick="abrirModal('${codigo}', '${descSegura}', '${tipoSeguro}')">
-                            <i class="fas fa-edit"></i> Editar
+                    <td style="text-align: center; white-space: nowrap;">
+                        <button class="btn-edit" onclick="abrirModal('${codigo}', '${descSegura}', '${tipoSeguro}')" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete" onclick="excluirTuss('${codigo}')" title="Excluir">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
             `;
         }
 
-        // ================= CONTROLE DO MODAL E SALVAMENTO ================= //
+        // ================= CONTROLE DE DADOS ================= //
 
         function abrirModal(codigo = '', descricao = '', tipo = '') {
             document.getElementById('modalTitle').innerText = codigo ? 'Editar Procedimento' : 'Novo Procedimento';
             
             const inputCodigo = document.getElementById('tussCodigo');
             inputCodigo.value = codigo;
-            inputCodigo.disabled = codigo !== ''; // Bloqueia edição do código se for atualização
+            inputCodigo.disabled = codigo !== ''; 
             
             document.getElementById('tussDesc').value = descricao;
             document.getElementById('tussTipo').value = tipo;
@@ -228,15 +230,33 @@
             btn.innerText = "Salvando...";
             btn.disabled = true;
 
-            // O payload usa as chaves exatas que a API genérica do ONCO SMART entende
             const payload = {
                 id_firebase: codigo,
                 descricao: desc,
-                tipo: tipo
+                tipo: tipo,
+                excluido: false // Garante que, se for editado, ele fica ativo
             };
 
+            enviarParaBanco(payload, btn);
+        }
+
+        // Função para realizar a exclusão lógica
+        async function excluirTuss(codigo) {
+            if (!confirm(`Tem certeza que deseja excluir o código ${codigo} da lista?`)) {
+                return;
+            }
+
+            // Marca o item como excluído no banco de dados para sobrepor o CSV
+            const payload = {
+                id_firebase: codigo,
+                excluido: true
+            };
+
+            enviarParaBanco(payload, null);
+        }
+
+        async function enviarParaBanco(payload, btn) {
             try {
-                // Manda para a rota genérica POST /:tabela sem o ID na URL
                 const res = await fetch(`${API_BASE_URL}/tuss`, {
                     method: 'POST',
                     headers: API_HEADERS,
@@ -245,15 +265,16 @@
 
                 if (res.ok) {
                     fecharModal();
-                    // Recarrega a página para puxar os dados atualizados
                     window.location.reload(); 
                 } else {
                     throw new Error("Erro do servidor");
                 }
             } catch (e) {
-                alert("Erro ao salvar no banco de dados. Verifique a conexão.");
-                btn.innerText = "Salvar";
-                btn.disabled = false;
+                alert("Erro ao comunicar com o banco de dados. Verifique a conexão.");
+                if (btn) {
+                    btn.innerText = "Salvar";
+                    btn.disabled = false;
+                }
             }
         }
     </script>
