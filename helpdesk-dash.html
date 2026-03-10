@@ -220,64 +220,64 @@
             return '#' + String(id).padStart(4, '0');
         }
 
-        // =========================================================
-        // BUSCA DIRETA NA TABELA CORRETA (helpdesk_tickets)
-        // =========================================================
+        // ==========================================
+        // BUSCA PRINCIPAL COM PROTEÇÃO DE ERROS
+        // ==========================================
         async function loadAllData() {
             try {
+                // AQUI FOI ADICIONADO O "CRACHÁ" (API_HEADERS)
                 const [resUsers, resTickets] = await Promise.all([
                     fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/helpdesk_tickets?_t=${Date.now()}`, { headers: API_HEADERS })
+                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
 
-                // 1. Processa Usuários
+                // Lendo usuários
                 const textUsers = await resUsers.text();
                 let usersData = {};
                 if (resUsers.ok && !textUsers.startsWith('<')) {
                     usersData = normalizeData(JSON.parse(textUsers));
                 }
+                
                 usersMap = {};
                 Object.values(usersData).forEach(u => {
                     if(u.email) usersMap[u.email.toLowerCase()] = u;
                 });
 
-                // 2. Processa Chamados
-                let rawTickets = {};
+                // Lendo chamados (protegido contra erro 404/banco vazio)
                 const textTickets = await resTickets.text();
+                let rawTickets = {};
                 if (resTickets.ok && !textTickets.startsWith('<')) {
                     rawTickets = JSON.parse(textTickets);
                 } else {
-                    console.warn("⚠️ Tabela helpdesk_tickets não retornou dados.");
+                    console.warn("⚠️ Nenhum dado de chamados encontrado.");
                 }
 
-                let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ id_firebase: key, ...val }));
+                let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ key: key, ...val }));
                 
-                // Extrai a data corretamente (o server.js joga a data_abertura dentro da propriedade .date)
-                arrayRaw.forEach(t => {
-                    if (!t.date) t.date = t.data_abertura || t.timestamp || Date.now();
+                // Ordenação segura (compara as datas garantindo que não quebre se vier nula)
+                arrayRaw = arrayRaw.sort((a, b) => {
+                    const dateA = a.date ? new Date(a.date).getTime() : 0;
+                    const dateB = b.date ? new Date(b.date).getTime() : 0;
+                    return dateA - dateB;
                 });
                 
-                // Ordena do mais antigo para o mais novo para gerar o ID visual correto (1, 2, 3...)
-                arrayRaw = arrayRaw.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                
-                // Atribui o número do chamado
                 arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
                 
                 allTickets = arrayRaw;
-                console.log(`✅ Foram carregados ${allTickets.length} chamados da tabela helpdesk_tickets!`);
+                console.log(`✅ Foram carregados ${allTickets.length} chamados!`);
 
                 updateFilterOptions();
                 renderDashboard();
             } catch (e) { 
-                console.error("Erro na comunicação com o servidor:", e); 
-                document.querySelector('#dashTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">❌ Erro ao conectar com o banco de dados.</td></tr>';
+                console.error("Erro na comunicação com a API:", e); 
+                document.querySelector('#dashTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">❌ Erro ao conectar. Atualize a página.</td></tr>';
             }
         }
 
         function resetFilters() {
             const today = new Date();
             const start = new Date();
-            start.setDate(today.getDate() - 90); // Puxa os últimos 90 dias por padrão
+            start.setDate(today.getDate() - 30);
             document.getElementById('dashEnd').valueAsDate = today;
             document.getElementById('dashStart').valueAsDate = start;
             if(document.getElementById('dashSector')) document.getElementById('dashSector').value = '';
@@ -465,7 +465,7 @@
             const listForTable = [...finalDashList].sort((a,b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : 0;
                 const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA; // Decrescente
+                return dateB - dateA; // Mais novos no topo da lista
             });
 
             dashBody.innerHTML = listForTable.map(t => {
