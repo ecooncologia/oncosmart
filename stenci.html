@@ -23,7 +23,7 @@
     </script>
 
     <style>
-        /* Estilos do Stenci (Mantendo Original) */
+        /* Estilos do Stenci */
         .upload-section { background: #f8f9fa; padding: 25px; border-radius: 10px; border: 2px dashed #03A63C; text-align: center; margin-bottom: 30px; }
         .file-input { display: none; }
         .upload-btn { background: #04D939; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: all 0.3s ease; margin: 10px; }
@@ -39,7 +39,7 @@
         .progress-fill.animated { background: linear-gradient(90deg, #04D939, #03A63C, #04D939); background-size: 200% 100%; animation: shimmer 2s infinite; }
         @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
         .patients-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); table-layout: fixed; }
-        .patients-table th, .patients-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .patients-table th, .patients-table td { padding: 10px 10px; text-align: left; border-bottom: 1px solid #dee2e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9em; }
         .patients-table th { background: #025939; color: white; font-weight: 600; }
         .patients-table tr:hover { background: #f8f9fa; }
         .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; white-space: nowrap; }
@@ -69,20 +69,23 @@
         .confetti { position: fixed; width: 10px; height: 10px; background: #ff0000; opacity: 0; pointer-events: none; }
         @keyframes confetti-fall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(1000px) rotate(360deg); opacity: 0; } }
         @media (max-width: 768px) { .status-grid { grid-template-columns: 1fr; } .patients-table { font-size: 0.8em; } .patients-table th, .patients-table td { padding: 8px 10px; } .filter-section { flex-direction: column; align-items: flex-start; } .filter-select { width: 100%; } .action-buttons { flex-direction: column; align-items: center; } .btn { width: 100%; max-width: 300px; } }
-        .patients-table th:nth-child(1), .patients-table td:nth-child(1) { width: 13%; }
-        .patients-table th:nth-child(2), .patients-table td:nth-child(2) { width: 10%; }
-        .patients-table th:nth-child(3), .patients-table td:nth-child(3) { width: 9%; }
-        .patients-table th:nth-child(4), .patients-table td:nth-child(4) { width: 12%; }
-        .patients-table th:nth-child(5), .patients-table td:nth-child(5) { width: 7%; }
-        .patients-table th:nth-child(6), .patients-table td:nth-child(6) { width: 7%; }
-        .patients-table th:nth-child(7), .patients-table td:nth-child(7) { width: 9%; }
-        .patients-table th:nth-child(8), .patients-table td:nth-child(8) { width: 10%; }
-        .patients-table th:nth-child(9), .patients-table td:nth-child(9) { width: 8%; }
-        .patients-table th:nth-child(10), .patients-table td:nth-child(10) { width: 8%; }
-        .patients-table th:nth-child(11), .patients-table td:nth-child(11) { width: 6%; }
-        .patients-table th:nth-child(12), .patients-table td:nth-child(12) { width: 4%; }
         
-        /* Ajuste do container para design novo */
+        /* Ajuste de larguras para incluir Mãe e Pai (14 Colunas) */
+        .patients-table th:nth-child(1), .patients-table td:nth-child(1) { width: 10%; } /* Nome */
+        .patients-table th:nth-child(2), .patients-table td:nth-child(2) { width: 8%; }  /* CPF */
+        .patients-table th:nth-child(3), .patients-table td:nth-child(3) { width: 8%; }  /* Tel */
+        .patients-table th:nth-child(4), .patients-table td:nth-child(4) { width: 8%; }  /* Email */
+        .patients-table th:nth-child(5), .patients-table td:nth-child(5) { width: 6%; }  /* Nasc */
+        .patients-table th:nth-child(6), .patients-table td:nth-child(6) { width: 8%; }  /* Mãe */
+        .patients-table th:nth-child(7), .patients-table td:nth-child(7) { width: 8%; }  /* Pai */
+        .patients-table th:nth-child(8), .patients-table td:nth-child(8) { width: 6%; }  /* Local */
+        .patients-table th:nth-child(9), .patients-table td:nth-child(9) { width: 8%; }  /* Conv */
+        .patients-table th:nth-child(10), .patients-table td:nth-child(10) { width: 7%; } /* Med */
+        .patients-table th:nth-child(11), .patients-table td:nth-child(11) { width: 7%; } /* Agenda */
+        .patients-table th:nth-child(12), .patients-table td:nth-child(12) { width: 6%; } /* Cart */
+        .patients-table th:nth-child(13), .patients-table td:nth-child(13) { width: 6%; } /* Status */
+        .patients-table th:nth-child(14), .patients-table td:nth-child(14) { width: 4%; } /* Remov */
+        
         .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); margin-bottom: 20px; }
     </style>
 </head>
@@ -118,8 +121,9 @@
                     <table class="patients-table">
                         <thead>
                             <tr>
-                                <th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Data Nasc.</th>
-                                <th>Local</th><th>Convênio</th><th>Médico</th><th>Agenda</th><th>Carteirinha</th>
+                                <th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Nasc.</th>
+                                <th>Mãe</th><th>Pai</th>
+                                <th>Local</th><th>Convênio</th><th>Médico</th><th>Agenda</th><th>Cart.</th>
                                 <th>Status</th><th>Remover</th>
                             </tr>
                         </thead>
@@ -175,7 +179,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             initGlobal('stenci', 'Integração Stenci');
-            // Reatribui eventos após carregamento
             const fileInput = document.getElementById('fileInput');
             if(fileInput) fileInput.addEventListener('change', handleFileSelect);
         });
@@ -183,7 +186,7 @@
         // Configurações e Mapeamentos
         const AGENDA_QUIMIO = {
             scheduleId: '67b47f507883db09d2feec8f',
-            name: 'Medicação (Quimio)', // ADICIONADO PARA CORRIGIR UNDEFINED NA TABELA E LOGS
+            name: 'Medicação (Quimio)', 
             council: { record: 'XXXXX', name: 'CRM', state: 'PR' }
         };
 
@@ -352,8 +355,6 @@
         }
 
         function processSeparateDateTime(dia, mes, ano, horario) {
-            console.log('📅 Processando data separada:', { dia, mes, ano, horario });
-            
             if (!dia || !mes || !ano) {
                 const defaultDate = new Date();
                 defaultDate.setDate(defaultDate.getDate() + 1);
@@ -363,7 +364,6 @@
                 defaultDate.setMinutes(defaultDate.getMinutes() + 30);
                 const endDate = formatToLocalISO(defaultDate);
                 
-                addLog('⚠️ Usando data padrão (dados incompletos)');
                 return { startDate, endDate };
             }
             
@@ -401,13 +401,9 @@
                 dateObj.setMinutes(dateObj.getMinutes() + 30);
                 const endDate = formatToLocalISO(dateObj);
                 
-                addLog(`📅 Data processada: ${startDate} até ${endDate}`);
-                
                 return { startDate, endDate };
                 
             } catch (error) {
-                addLog(`⚠️ Erro ao processar data separada: ${error.message}, usando data padrão`);
-                
                 const defaultDate = new Date();
                 defaultDate.setDate(defaultDate.getDate() + 1);
                 defaultDate.setHours(9, 30, 0, 0);
@@ -421,8 +417,6 @@
         }
 
         function processDateTime(dateTimeStr) {
-            console.log('-------DATA---------', dateTimeStr)
-                
             if (!dateTimeStr) {
                 const defaultDate = new Date();
                 defaultDate.setDate(defaultDate.getDate() + 1);
@@ -466,8 +460,6 @@
                             parseInt(seconds)
                         );
                         
-                        addLog(`🕒 Data processada: ${dateObj.toString()} (Local)`);
-                        
                     } else if (dateTimeStr.includes('T')) {
                         dateObj = new Date(dateTimeStr);
                     } else {
@@ -483,14 +475,9 @@
                 dateObj.setMinutes(dateObj.getMinutes() + 30);
                 const endDate = formatToLocalISO(dateObj);
                 
-                addLog(`📅 Horários: ${startDate} até ${endDate}`);
-                console.log('-------DATA---------', startDate, endDate)
-
                 return { startDate, endDate };
                 
             } catch (error) {
-                addLog(`⚠️ Erro ao processar data: ${dateTimeStr}, usando data padrão. Erro: ${error.message}`);
-                
                 const defaultDate = new Date();
                 defaultDate.setDate(defaultDate.getDate() + 1);
                 defaultDate.setHours(9, 30, 0, 0);
@@ -551,13 +538,11 @@
         }
 
         function displayPatientsTable() {
-            console.log('🎯 DISPLAY TABLE - filteredPatientsData:', filteredPatientsData);
-            
             patientsTableBody.innerHTML = '';
             
             if (filteredPatientsData.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="12" style="text-align: center; color: red;">Nenhum paciente encontrado</td>`;
+                row.innerHTML = `<td colspan="14" style="text-align: center; color: red;">Nenhum paciente encontrado</td>`;
                 patientsTableBody.appendChild(row);
                 dataSection.classList.remove('hidden');
                 return;
@@ -569,7 +554,10 @@
                     <td title="${patient.name || 'N/A'}">${patient.name || 'N/A'}</td>
                     <td>${formatCPF(patient.cpf)}</td>
                     <td>${patient.phone || 'N/A'}</td>
-                    <td title="${patient.email || ''}">${patient.email || ''}</td> <td>${patient.birthDate || 'N/A'}</td>
+                    <td title="${patient.email || ''}">${patient.email || ''}</td>
+                    <td>${patient.birthDate || 'N/A'}</td>
+                    <td title="${patient.mae || ''}">${patient.mae || ''}</td>
+                    <td title="${patient.pai || ''}">${patient.pai || ''}</td>
                     <td>${patient.local || 'N/A'}</td>
                     <td title="${patient.convenio?.name || 'N/A'}">${patient.convenio?.name || 'N/A'}</td>
                     <td title="${patient.medico?.name || 'N/A'}">${patient.medico?.name || 'N/A'}</td>
@@ -616,17 +604,14 @@
             
             const progress = Math.round((processedPatients / totalPatientsToProcess) * 100);
             
-            // Atualizar barra de progresso
             progressFill.style.width = `${progress}%`;
             
-            // Adicionar animação quando estiver completo
             if (progress === 100) {
                 progressFill.classList.add('animated');
             } else {
                 progressFill.classList.remove('animated');
             }
             
-            // Atualizar textos informativos
             document.getElementById('progressText').textContent = `${progress}%`;
             document.getElementById('progressCount').textContent = `${processedPatients}/${totalPatientsToProcess}`;
         }
@@ -663,8 +648,6 @@
                 option.textContent = medico;
                 medicoFilter.appendChild(option);
             });
-            
-            addLog(`🔍 Filtro de médicos atualizado: ${medicos.length} opções`);
         }
 
         function filterByMedico() {
@@ -703,7 +686,6 @@
             }
             
             displayPatientsTable();
-            addLog(`🔍 Filtro aplicado: ${selectedMedico || 'Todos os médicos'} (${filteredPatientsData.length} pacientes)`);
         }
 
         async function startRegistration() {
@@ -728,16 +710,13 @@
                 return;
             }
             
-            // Resetar animação de conclusão
             document.getElementById('completionAnimation').classList.add('hidden');
             
             addLog(`🔐 Iniciando autenticação no sistema...`);
-            addLog(`📋 Processando ${totalPatientsToProcess} paciente(s) ${isFilterActive ? '(filtro ativo)' : ''}`);
             
             try {
                 authToken = await performLogin();
                 addLog('✅ Login realizado com sucesso');
-                
                 addLog(`🔄 Iniciando cadastro de ${totalPatientsToProcess} pacientes...`);
                 
                 for (let i = 0; i < totalPatientsToProcess; i++) {
@@ -746,7 +725,7 @@
                     currentIndex = i;
                     const patient = patientsToProcess[i];
                     
-                    addLog(`📝 Processando: ${patient.name} (${patient.medico.name}) - Horário: ${patient.startDate}`);
+                    addLog(`📝 Processando: ${patient.name} (${patient.medico.name})`);
                     
                     try {
                         await registerPatient(patient);
@@ -764,13 +743,10 @@
                     updateCounters();
                     filterByMedico();
                     
-                    // Reduzir o tempo de espera entre requisições para processamento mais rápido
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
                 
                 addLog(`🎉 Processamento concluído! Sucessos: ${successCount}, Erros: ${errorCount}`);
-                
-                // Mostrar animação de conclusão
                 showCompletionAnimation();
                 
             } catch (error) {
@@ -785,16 +761,10 @@
             const completionElement = document.getElementById('completionAnimation');
             const statsElement = document.getElementById('completionStats');
             
-            // Atualizar estatísticas
             statsElement.textContent = `✅ ${successCount} sucessos | ❌ ${errorCount} erros | 📊 ${totalPatientsToProcess} total`;
-            
-            // Mostrar animação
             completionElement.classList.remove('hidden');
-            
-            // Criar efeito de confete
             createConfetti();
             
-            // Remover animação após alguns segundos
             setTimeout(() => {
                 completionElement.classList.add('hidden');
             }, 5000);
@@ -814,7 +784,6 @@
                 
                 container.appendChild(confetti);
                 
-                // Remover confete após animação
                 setTimeout(() => {
                     confetti.remove();
                 }, 5000);
@@ -825,7 +794,6 @@
             isProcessing = false;
             addLog('⏹️ Processamento cancelado pelo usuário');
             
-            // Resetar barra de progresso
             progressFill.style.width = '0%';
             progressFill.classList.remove('animated');
             document.getElementById('progressText').textContent = '0%';
@@ -867,8 +835,6 @@
 
         async function getPatientByName(patientName, cpf) {
             try {
-                addLog(`🔍 Buscando paciente: ${patientName} (CPF: ${cpf})`);
-                
                 const cleanCPF = typeof cpf === 'string' ? cpf.replace(/\D/g, '') : String(cpf).replace(/\D/g, '');
                 
                 const response = await fetch(`https://api-x.stenci.pro/v1/patients/search?notFilterBranch=true&search=${cpf}`, {
@@ -898,17 +864,14 @@
                         
                         if (foundPatient) {
                             existingPatientsCache.set(cleanCPF, foundPatient);
-                            addLog(`✅ Paciente encontrado: ${foundPatient.name} (ID: ${foundPatient.id})`);
                             return foundPatient;
                         }
                     }
                 }
                 
-                addLog(`⚠️ Paciente não encontrado: ${patientName}`);
                 return null;
                 
             } catch (error) {
-                addLog(`❌ Erro ao buscar paciente: ${error.message}`);
                 return null;
             }
         }
@@ -918,32 +881,24 @@
             const foundColumns = dateColumns.filter(col => 
                 Object.keys(row).some(key => key.toUpperCase() === col)
             );
-            console.log('📅 Colunas de data encontradas:', foundColumns);
             return foundColumns.length >= 3;
         }
 
         function detectAndProcessExcelData(data) {
-            console.log('🔍 Detectando formato da planilha...');
-            
             if (!data || data.length === 0) {
                 addLog('❌ Planilha vazia');
                 return;
             }
 
             const firstRow = data[0];
-            console.log('📋 Estrutura da primeira linha:', firstRow);
-            console.log('🔑 Chaves disponíveis:', Object.keys(firstRow));
-
             const hasSeparateDateColumns = hasDateColumns(firstRow);
             const isSqlFormat = firstRow.hasOwnProperty('nome') && firstRow.hasOwnProperty('CPF');
             const isTasyFormat = Object.keys(firstRow).some(key => 
                 key.toLowerCase().includes('paciente') || key.toLowerCase().includes('nm_')
             );
 
-            console.log('🎯 Resultado detecção:', { hasSeparateDateColumns, isSqlFormat, isTasyFormat });
-
             if (hasSeparateDateColumns) {
-                addLog('✅ Formato com colunas de data separadas detectado (DIA/MES/ANO/HORARIO)');
+                addLog('✅ Formato com colunas de data separadas detectado');
                 processSeparateDateColumns(data);
             } else if (isSqlFormat) {
                 addLog('✅ Formato SQL detectado');
@@ -958,22 +913,18 @@
         }
 
         function processSeparateDateColumns(data) {
-            console.log('🔄 Processando formato com colunas de data separadas...');
-            
             patientsData = data.map((row, index) => {
                 const nome = findValue(row, ['nome', 'NOME', 'NOMEPACIENTE', 'PACIENTE', 'NOMEPAC', 'NOME_PACIENTE']);
                 const cpf = findValue(row, ['CPF', 'cpf', 'NRCPF', 'CPF_PACIENTE', 'NR_CPF']);
                 
-                if (!nome || !cpf) {
-                    console.log(`❌ Linha ${index + 1} ignorada - Nome: "${nome}", CPF: "${cpf}"`);
-                    return null;
-                }
+                if (!nome || !cpf) return null;
 
-                // NOVO: Buscar cd_usuario_convenio da planilha e garantir que é string
                 const cdUsuarioConvenio = ensureString(findValue(row, ['cd_usuario_convenio', 'CD_USUARIO_CONVENIO', 'CARTEIRINHA', 'NR_CARTEIRA', 'CARTEIRA']));
-                
-                // NOVO: Buscar E-mail
                 const email = findValue(row, ['email', 'EMAIL', 'E-MAIL', 'e-mail', 'mail', 'MAIL', 'ds_email', 'DS_EMAIL']) || '';
+                
+                // NOVO: Coleta PAI e MÃE
+                const mae = ensureString(findValue(row, ['mae', 'MÃE', 'NOME_MAE', 'NOMEMAE']));
+                const pai = ensureString(findValue(row, ['pai', 'PAI', 'NOME_PAI', 'NOMEPAI']));
 
                 const dia = row['DIA'] || row['dia'] || '';
                 const mes = row['MES'] || row['mes'] || '';
@@ -987,12 +938,10 @@
                 const nascimento = findValue(row, ['nascimento', 'NASCIMENTO', 'DT_NASCIMENTO', 'NASC']) || '';
                 const genero = findValue(row, ['GENERO', 'genero', 'SEXO', 'TP_SEXO', 'IE_SEXO']) || 'M';
 
-                console.log(`✅ Data Sep - Linha ${index + 1}: ${nome}, Data: ${dia}/${mes}/${ano} ${horario}, Carteirinha: ${cdUsuarioConvenio}, Email: ${email}`);
-
                 return createPatientObject({
                     nome, cpf, codigoConvenio, local, agendaResp, 
                     telefone, nascimento, genero, row, index,
-                    dia, mes, ano, horario, cdUsuarioConvenio, email
+                    dia, mes, ano, horario, cdUsuarioConvenio, email, mae, pai
                 });
             }).filter(patient => patient !== null);
 
@@ -1000,13 +949,10 @@
         }
 
         function processSqlFormat(data) {
-            console.log('🔄 Processando formato SQL...');
-            
             const firstRow = data[0];
             const hasSeparateDates = hasDateColumns(firstRow);
             
             if (hasSeparateDates) {
-                addLog('✅ Formato SQL com colunas de data separadas detectado');
                 processSeparateDateColumns(data);
                 return;
             }
@@ -1017,11 +963,12 @@
                 
                 if (!nome || !cpf) return null;
 
-                // NOVO: Buscar cd_usuario_convenio da planilha e garantir que é string
                 const cdUsuarioConvenio = ensureString(findValue(row, ['cd_usuario_convenio', 'CD_USUARIO_CONVENIO', 'CARTEIRINHA', 'NR_CARTEIRA', 'CARTEIRA']));
-                
-                // NOVO: Buscar E-mail
                 const email = findValue(row, ['email', 'EMAIL', 'E-MAIL', 'e-mail', 'mail', 'MAIL']) || '';
+                
+                // NOVO: Coleta PAI e MÃE
+                const mae = ensureString(row['MAE'] || row['MÃE'] || row['NOME_MAE'] || '');
+                const pai = ensureString(row['PAI'] || row['NOME_PAI'] || '');
                 
                 const codigoConvenio = (row['CODIGO_CONVENIO'] || '1').toString();
                 const local = row['LOCAL'] || 'AGENDA_CONSULTA';
@@ -1033,7 +980,7 @@
 
                 return createPatientObject({
                     nome, cpf, codigoConvenio, local, agendaResp, dataReal, 
-                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email
+                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email, mae, pai
                 });
             }).filter(patient => patient !== null);
 
@@ -1041,13 +988,10 @@
         }
 
         function processTasyFormat(data) {
-            console.log('🔄 Processando formato Tasy Java...');
-            
             const firstRow = data[0];
             const hasSeparateDates = hasDateColumns(firstRow);
             
             if (hasSeparateDates) {
-                addLog('✅ Formato Tasy com colunas de data separadas detectado');
                 processSeparateDateColumns(data);
                 return;
             }
@@ -1056,16 +1000,14 @@
                 const nome = findValue(row, ['nm_paciente', 'nome_paciente', 'paciente', 'nm_pac', 'nome']);
                 const cpf = findValue(row, ['nr_cpf', 'cpf_paciente', 'cpf', 'nr_cpf_paciente']);
                 
-                if (!nome || !cpf) {
-                    console.log(`❌ Linha ${index + 1} ignorada - Nome: "${nome}", CPF: "${cpf}"`);
-                    return null;
-                }
+                if (!nome || !cpf) return null;
 
-                // NOVO: Buscar cd_usuario_convenio da planilha e garantir que é string
                 const cdUsuarioConvenio = ensureString(findValue(row, ['cd_usuario_convenio', 'CD_USUARIO_CONVENIO', 'CARTEIRINHA', 'NR_CARTEIRA', 'CARTEIRA']));
-                
-                // NOVO: Buscar E-mail
                 const email = findValue(row, ['ds_email', 'email', 'e-mail', 'nm_email']) || '';
+                
+                // NOVO: Coleta PAI e MÃE
+                const mae = ensureString(findValue(row, ['nm_mae', 'nome_mae', 'mae', 'mãe']));
+                const pai = ensureString(findValue(row, ['nm_pai', 'nome_pai', 'pai']));
                 
                 const codigoConvenio = findValue(row, ['cd_convenio', 'convenio', 'cod_convenio', 'nr_convenio']) || '1';
                 const local = findValue(row, ['tp_agenda', 'local', 'cd_local', 'local_atend']) || 'AGENDA_CONSULTA';
@@ -1075,11 +1017,9 @@
                 const nascimento = findValue(row, ['dt_nascimento', 'nascimento', 'data_nasc']) || '';
                 const genero = findValue(row, ['tp_sexo', 'sexo', 'genero', 'ie_sexo']) || 'M';
 
-                console.log(`✅ Tasy - Linha ${index + 1}: ${nome}, CPF: ${cpf}, Carteirinha: ${cdUsuarioConvenio}, Email: ${email}`);
-
                 return createPatientObject({
                     nome, cpf, codigoConvenio, local, agendaResp, dataReal, 
-                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email
+                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email, mae, pai
                 });
             }).filter(patient => patient !== null);
 
@@ -1087,36 +1027,26 @@
         }    
 
         function processAutoDetectFormat(data) {
-            console.log('🔄 Tentando detecção automática...');
-            
             const firstRow = data[0];
             const hasSeparateDates = hasDateColumns(firstRow);
             
             if (hasSeparateDates) {
-                addLog('✅ Formato automático com colunas de data separadas detectado');
                 processSeparateDateColumns(data);
                 return;
             }
             
-            const sampleRow = data[0];
-            console.log('🔍 TODAS AS COLUNAS DISPONÍVEIS:', Object.keys(sampleRow));
-            
-            addLog(`🔍 Colunas encontradas: ${Object.keys(sampleRow).join(', ')}`);
-
             patientsData = data.map((row, index) => {
                 const nome = findValueInAnyColumn(row, ['nome', 'paciente', 'nm_', 'name', 'patient']);
                 const cpf = findValueInAnyColumn(row, ['cpf', 'nr_cpf', 'documento', 'doc']);
                 
-                if (!nome || !cpf) {
-                    console.log(`❌ Linha ${index + 1} - Não encontrou nome/CPF`);
-                    return null;
-                }
+                if (!nome || !cpf) return null;
 
-                // NOVO: Buscar cd_usuario_convenio
                 const cdUsuarioConvenio = ensureString(findValueInAnyColumn(row, ['cd_usuario_convenio', 'carteirinha', 'nr_carteira', 'carteira', 'usuario_convenio']));
-                
-                // NOVO: Buscar E-mail
                 const email = findValueInAnyColumn(row, ['email', 'e-mail', 'mail', 'ds_email', 'correio']) || '';
+                
+                // NOVO: Coleta PAI e MÃE
+                const mae = ensureString(findValueInAnyColumn(row, ['mae', 'mãe', 'mother']));
+                const pai = ensureString(findValueInAnyColumn(row, ['pai', 'father']));
                 
                 const codigoConvenio = findValueInAnyColumn(row, ['convenio', 'conv', 'cd_conv', 'cod_conv']) || '1';
                 const local = findValueInAnyColumn(row, ['local', 'agenda', 'tp_', 'cd_local']) || 'AGENDA_CONSULTA';
@@ -1126,11 +1056,9 @@
                 const nascimento = findValueInAnyColumn(row, ['nascimento', 'nasc', 'dt_nasc', 'birth']) || '';
                 const genero = findValueInAnyColumn(row, ['sexo', 'genero', 'gender', 'tp_sexo']) || 'M';
 
-                console.log(`✅ Auto - Linha ${index + 1}: ${nome}, Carteirinha: ${cdUsuarioConvenio}, Email: ${email}`);
-
                 return createPatientObject({
                     nome, cpf, codigoConvenio, local, agendaResp, dataReal, 
-                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email
+                    telefone, nascimento, genero, row, index, cdUsuarioConvenio, email, mae, pai
                 });
             }).filter(patient => patient !== null);
 
@@ -1156,30 +1084,25 @@
                     k.toLowerCase().includes(term.toLowerCase())
                 );
                 if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null && row[foundKey] !== '') {
-                    console.log(`🔍 Encontrado "${term}" na coluna "${foundKey}": ${row[foundKey]}`);
                     return row[foundKey];
                 }
             }
             return '';
         }
 
-        // FUNÇÃO MODIFICADA: Criar objeto do paciente com cd_usuario_convenio e EMAIL
-        function createPatientObject({ nome, cpf, codigoConvenio, local, agendaResp, dataReal, telefone, nascimento, genero, row, index, dia, mes, ano, horario, cdUsuarioConvenio, email }) {
+        // Criar objeto do paciente (agora com Mãe e Pai)
+        function createPatientObject({ nome, cpf, codigoConvenio, local, agendaResp, dataReal, telefone, nascimento, genero, row, index, dia, mes, ano, horario, cdUsuarioConvenio, email, mae, pai }) {
             const convenio = convenioMapping[codigoConvenio] || convenioMapping['default'];
             
             let medico;
             if (local === 'AGENDA_QUIMIO') {
                 medico = AGENDA_QUIMIO;
-                QUIMIO = true;
-                console.log('É AGENDA QUIMIO', QUIMIO, medico);
             } else {
-                console.log('Buscando médico para:', agendaResp);
                 const agendaRespStr = String(agendaResp);
                 const medicoCodigo = Object.keys(medicoMapping).find(key => 
                     agendaRespStr === key || agendaRespStr.includes(medicoMapping[key]?.name)
                 );
                 medico = medicoMapping[medicoCodigo] || medicoMapping['default'];
-                console.log('Médico encontrado:', medico.name);
             }
 
             const formattedPhone = formatPhone(telefone);
@@ -1198,10 +1121,11 @@
             return {
                 id: `patient-${Date.now()}-${index}`,
                 name: nome,
-                name: nome,
                 cpf: cpf,
                 phone: formattedPhone,
-                email: email, // Adicionado
+                email: email,
+                mae: mae, // ADICIONADO
+                pai: pai, // ADICIONADO
                 birthDate: formatDate(nascimento),
                 gender: mapGender(genero),
                 local: local,
@@ -1216,14 +1140,10 @@
         }
 
         function finalizeProcessing() {
-            console.log(`✅ Processamento concluído: ${patientsData.length} pacientes`);
-            
             if (patientsData.length === 0) {
                 addLog('❌ Nenhum paciente válido encontrado');
                 return;
             }
-            
-            addLog(`📊 ${patientsData.length} pacientes carregados`);
             
             updateMedicoFilter();
             filteredPatientsData = [...patientsData];
@@ -1236,8 +1156,6 @@
             let patientData;
             
             if (existingPatient) {
-                addLog(`✅ Paciente encontrado no sistema: ${existingPatient.name}`);
-                
                 patientData = {
                     canSave: false,
                     id: existingPatient.id,
@@ -1251,7 +1169,7 @@
                     profession: existingPatient.profession,
                     phone: existingPatient.phone || patient.phone,
                     cellphone: existingPatient.cellphone || patient.phone,
-                    email: existingPatient.email || patient.email, // Tenta usar o existente, senão usa o da planilha
+                    email: existingPatient.email || patient.email,
                     address: existingPatient.addresses && existingPatient.addresses.length > 0 ? {
                         id: existingPatient.addresses[0].id,
                         type: existingPatient.addresses[0].type,
@@ -1262,31 +1180,22 @@
                         city: existingPatient.addresses[0].city || "",
                         state: existingPatient.addresses[0].state || ""
                     } : {
-                        id: "",
-                        type: "",
-                        postalCode: "",
-                        addressLine1: "",
-                        addressLine2: "",
-                        neighborhood: "",
-                        city: "",
-                        state: ""
+                        id: "", type: "", postalCode: "", addressLine1: "", addressLine2: "", neighborhood: "", city: "", state: ""
                     },
                     notes: existingPatient.notes || "",
                     alert: existingPatient.alert || "",
                     cns: existingPatient.patient?.cns || null,
                     insurance: {
                         id: patient.convenio.id,
-                        // CORREÇÃO: Garantir que é string usando ensureString
                         record: ensureString(patient.cdUsuarioConvenio || existingPatient.patient?.insurance?.record || "00320000008375186"),
                         validity: existingPatient.patient?.insurance?.validity || null,
                         planId: patient.convenio.planId
                     },
-                    motherName: existingPatient.patient?.motherName || null,
-                    fatherName: existingPatient.patient?.fatherName || null
+                    // ADICIONADO: Envia a Mãe e o Pai se existir na planilha. Caso contrário, mantém o que já estava no Stenci.
+                    motherName: patient.mae || existingPatient.patient?.motherName || null,
+                    fatherName: patient.pai || existingPatient.patient?.fatherName || null
                 };
             } else {
-                addLog(`🆕 Paciente NÃO encontrado, criando novo: ${patient.name}`);
-                
                 patientData = {
                     canSave: true,
                     id: null,
@@ -1303,29 +1212,22 @@
                     profession: null,
                     phone: patient.phone,
                     cellphone: patient.phone,
-                    email: patient.email || null, // ADICIONADO: Pega o e-mail do objeto paciente
+                    email: patient.email || null,
                     address: {
-                        id: "",
-                        type: "",
-                        postalCode: "",
-                        addressLine1: "",
-                        addressLine2: "",
-                        neighborhood: "",
-                        city: "",
-                        state: ""
+                        id: "", type: "", postalCode: "", addressLine1: "", addressLine2: "", neighborhood: "", city: "", state: ""
                     },
                     notes: "",
                     alert: "",
                     cns: null,
                     insurance: {
                         id: patient.convenio.id,
-                        // CORREÇÃO: Garantir que é string usando ensureString
                         record: ensureString(patient.cdUsuarioConvenio || ""),
                         validity: null,
                         planId: patient.convenio.planId
                     },
-                    motherName: null,
-                    fatherName: null
+                    // ADICIONADO: Envia a Mãe e o Pai (Novo Cadastro)
+                    motherName: patient.mae || null,
+                    fatherName: patient.pai || null
                 };
             }
 
@@ -1333,31 +1235,20 @@
             let stats;
 
             if (patient.local === 'AGENDA_QUIMIO') {
-                addLog(`💊 Paciente de QUIMIOTERAPIA detectado: ${patient.name}`);
-                
                 professionalData = {
                     id: '5fd44b29941f2587bb4f0523',
                     name: 'Andrielle Sousa dos Santos',
-                    council: {
-                        name: "COREN", 
-                        state: "PR", 
-                        record: "598125"
-                    },
+                    council: { name: "COREN", state: "PR", record: "598125" },
                     specialty: "223505"
                 };
-                
                 stats = 'scheduled';
-                
             } else {
-                addLog(`🩺 Paciente de CONSULTA detectado: ${patient.name}`);
-                
                 professionalData = {
                     id: patient.medico.id,
                     name: patient.medico.name,
                     council: patient.medico.council,
                     specialty: "225121"
                 };
-
                 stats = 'waiting';
             }
 
@@ -1369,7 +1260,6 @@
                 "patient": patientData,
                 "insurance": {
                     "id": patient.convenio.id,
-                    // CORREÇÃO: Garantir que é string usando ensureString
                     "record": ensureString(patientData.insurance.record),
                     "validity": null,
                     "planId": patient.convenio.planId
@@ -1381,27 +1271,15 @@
                 "slot": false,
                 "reserves": 1,
                 "indicated": {
-                    "id": "",
-                    "entityId": "",
-                    "name": "",
-                    "type": "professional",
-                    "council": {
-                        "name": "CRM",
-                        "state": "PR",
-                        "record": ""
-                    },
-                    "specialty": {
-                        "code": "",
-                        "name": ""
-                    }
+                    "id": "", "entityId": "", "name": "", "type": "professional",
+                    "council": { "name": "CRM", "state": "PR", "record": "" },
+                    "specialty": { "code": "", "name": "" }
                 },
                 "asoClient": null,
                 "type": null,
                 "markerId": null,
                 "placeId": null
             };
-
-            addLog(`📝 Tipo: ${patient.local === 'AGENDA_QUIMIO' ? 'QUIMIO' : 'CONSULTA'}, canSave: ${patientData.canSave}, Status: ${stats}, Carteirinha: ${patientData.insurance.record}, Email: ${patientData.email}`);
 
             const response = await fetch("https://api-x.stenci.pro/v1/appointments?toCalendar=true", {
                 method: "POST",

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Editor de Artes - ONCO SMART</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,700&family=Dancing+Script:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { overflow: hidden; background: #f0f2f5; }
+        .container { height: 100vh; display: flex; flex-direction: column; }
+        #global-header, #global-nav { flex-shrink: 0; z-index: 1000; }
+
+        .editor-workspace { display: flex; flex: 1; overflow: hidden; background: #e9ebee; position: relative; }
+        .editor-sidebar { width: 300px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; z-index: 10; }
+        .editor-panel { width: 320px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; z-index: 10; overflow-y: auto; }
+        .editor-main { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        
+        .canvas-scroll-area { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 40px; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 20px 20px; }
+        .canvas-wrapper { background: white; box-shadow: 0 10px 40px rgba(0,0,0,0.15); position: relative; transform-origin: top left; }
+
+        .canvas-layer { position: absolute; cursor: grab; box-sizing: border-box; line-height: 1.2; user-select: none; border: 1px solid transparent; }
+        .canvas-layer:active { cursor: grabbing; }
+        .canvas-layer:hover { border: 1px dashed var(--primary); }
+        .canvas-layer.selected { border: 2px solid var(--primary); z-index: 100 !important; }
+        .canvas-image { width: 100%; height: 100%; object-fit: fill; pointer-events: none; position: absolute; inset: 0; }
+        .text-content { width: 100%; height: 100%; word-wrap: break-word; white-space: pre-wrap; display: flex; flex-direction: column; justify-content: center; }
+        
+        .resize-handle { width: 12px; height: 12px; background: var(--primary); border: 2px solid white; border-radius: 50%; position: absolute; bottom: -6px; right: -6px; cursor: nwse-resize; display: none; }
+        .canvas-layer.selected .resize-handle { display: block; }
+
+        .panel-header { padding: 15px; font-weight: 700; color: var(--secondary); border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; background: #f8f9fa; }
+        .panel-body { padding: 15px; }
+        
+        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .template-card { background: #eee; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; height: 100px; position: relative; }
+        .template-card:hover { border-color: var(--primary); }
+        .template-preview { height: 100%; background-size: cover; background-position: center; }
+        .template-info { position: absolute; bottom: 0; background: rgba(255,255,255,0.9); width: 100%; font-size: 10px; padding: 2px; text-align: center; font-weight: bold; }
+        .btn-delete-tpl { position: absolute; top: 5px; right: 5px; background: #E53E3E; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 10px; z-index: 5; }
+
+        .toolbar { height: 60px; background: white; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 10px; padding: 0 20px; }
+        .prop-group { margin-bottom: 15px; }
+        .prop-label { display: block; font-size: 11px; font-weight: 700; color: #888; margin-bottom: 6px; text-transform: uppercase; }
+        .prop-control { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; outline: none; }
+        .prop-control:focus { border-color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="editor-workspace">
+            <div class="editor-sidebar">
+                <div class="panel-header">
+                    <span><i class="fas fa-layer-group"></i> Modelos</span>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('bgInput').click()"><i class="fas fa-image"></i> Fundo</button>
+                    <input type="file" id="bgInput" accept="image/*" style="display: none;">
+                </div>
+                <div class="panel-body">
+                    <div class="template-grid" id="templateList"></div>
+                </div>
+            </div>
+
+            <div class="editor-main">
+                <div class="toolbar">
+                    <span style="font-weight: bold; color: #E53E3E;"><i class="fas fa-tools"></i> MODO ADMIN</span>
+                    <div style="width: 1px; height: 20px; background: #ddd; margin: 0 10px;"></div>
+                    
+                    <button class="btn btn-sm btn-secondary" onclick="addTextLayer()"><i class="fas fa-font"></i> Add Texto</button>
+                    <button class="btn btn-sm btn-secondary" onclick="resetCanvas()"><i class="fas fa-trash"></i> Limpar</button>
+                    
+                    <div style="margin-left: auto; display: flex; gap: 10px;">
+                        <span id="saveStatus" style="font-size: 12px; color: #888; margin-top: 8px;"></span>
+                        <button class="btn btn-sm btn-success" onclick="saveTemplate()"><i class="fas fa-save"></i> Publicar Modelo</button>
+                    </div>
+                </div>
+
+                <div class="canvas-scroll-area" id="scrollArea">
+                    <div class="canvas-wrapper" id="canvasWrapper" style="width: 800px; height: 800px;">
+                        <img id="bgImage" class="canvas-image" src="" style="display:none;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="editor-panel">
+                <div class="panel-header"><i class="fas fa-sliders-h"></i> Propriedades</div>
+                <div class="panel-body" id="propertiesContent">
+                    <p style="text-align: center; color: #999; margin-top: 20px;">Selecione um texto para editar.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            layers: [], selectedId: null, bgImage: null,
+            canvasW: 800, canvasH: 800, currentTemplateId: null, nextId: 1
+        };
+
+        const els = { wrapper: document.getElementById('canvasWrapper'), bgImage: document.getElementById('bgImage'), props: document.getElementById('propertiesContent'), tplList: document.getElementById('templateList') };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initGlobal('canvas-admin', 'Painel de Artes (Admin)');
+            
+            // Trava de segurança simples, apenas lendo. NUNCA SALVA NADA AQUI.
+            const user = JSON.parse(localStorage.getItem('ecoUser'));
+            if(!user || !user.permissoes || !user.permissoes.admin) {
+                alert("Acesso Restrito.");
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            loadTemplates();
+            renderProperties();
+        });
+
+        // --- SISTEMA DE IMAGEM E CANVAS ---
+        document.getElementById('bgInput').onchange = e => {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = evt => {
+                const img = new Image();
+                img.onload = () => {
+                    state.canvasW = img.naturalWidth; state.canvasH = img.naturalHeight;
+                    els.wrapper.style.width = state.canvasW + 'px'; els.wrapper.style.height = state.canvasH + 'px';
+                    state.bgImage = evt.target.result; els.bgImage.src = state.bgImage; els.bgImage.style.display = 'block';
+                    renderProperties();
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        function resetCanvas() {
+            state.layers = []; state.bgImage = null; state.currentTemplateId = null;
+            els.bgImage.style.display = 'none'; els.bgImage.src = '';
+            renderLayers(); renderProperties();
+        }
+
+        // --- CAMADAS DE TEXTO ---
+        function addTextLayer() {
+            const id = 'layer_' + state.nextId++;
+            state.layers.push({
+                id, content: "Novo Texto", textM: "Texto Masc", textF: "Texto Fem",
+                x: 50, y: 50, w: 300, h: 'auto',
+                style: { fontFamily: 'Roboto', fontSize: 40, color: '#000000', textAlign: 'center' },
+                editable: true
+            });
+            renderLayers(); selectLayer(id);
+        }
+
+        function renderLayers() {
+            document.querySelectorAll('.canvas-layer').forEach(e => e.remove());
+            state.layers.forEach(layer => {
+                const el = document.createElement('div'); el.className = 'canvas-layer'; el.id = layer.id;
+                if(state.selectedId === layer.id) el.classList.add('selected');
+                el.style.left = layer.x + 'px'; el.style.top = layer.y + 'px'; el.style.width = layer.w + 'px';
+                
+                const content = document.createElement('div'); content.className = 'text-content';
+                content.innerText = layer.content; Object.assign(content.style, layer.style);
+                content.style.fontSize = layer.style.fontSize + 'px';
+                
+                const handle = document.createElement('div'); handle.className = 'resize-handle';
+                
+                el.appendChild(content); el.appendChild(handle); els.wrapper.appendChild(el);
+                
+                setupDrag(el, layer); setupResize(el, handle, layer);
+                el.addEventListener('mousedown', (e) => { e.stopPropagation(); selectLayer(layer.id); });
+            });
+        }
+
+        function selectLayer(id) { state.selectedId = id; renderLayers(); renderProperties(); }
+        function deleteLayer(id) { state.layers = state.layers.filter(l => l.id !== id); state.selectedId = null; renderLayers(); renderProperties(); }
+
+        function updateLayer(id, updates) {
+            const layer = state.layers.find(l => l.id === id); if(!layer) return;
+            Object.keys(updates).forEach(k => { if(k === 'style') Object.assign(layer.style, updates.style); else layer[k] = updates[k]; });
+            renderLayers();
+        }
+
+        // --- DRAG AND DROP SIMPLIFICADO ---
+        function setupDrag(el, layer) {
+            let isDragging = false, startX, startY, initialX, initialY;
+            el.addEventListener('mousedown', e => { if(e.target.classList.contains('resize-handle')) return; isDragging = true; startX = e.clientX; startY = e.clientY; initialX = layer.x; initialY = layer.y; });
+            window.addEventListener('mousemove', e => { if(!isDragging) return; layer.x = initialX + (e.clientX - startX); layer.y = initialY + (e.clientY - startY); el.style.left = layer.x + 'px'; el.style.top = layer.y + 'px'; });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+        }
+
+        function setupResize(el, handle, layer) {
+            let isResizing = false, startX, initialW;
+            handle.addEventListener('mousedown', e => { e.stopPropagation(); isResizing = true; startX = e.clientX; initialW = layer.w; });
+            window.addEventListener('mousemove', e => { if(!isResizing) return; layer.w = Math.max(50, initialW + (e.clientX - startX)); el.style.width = layer.w + 'px'; });
+            window.addEventListener('mouseup', () => { isResizing = false; });
+        }
+
+        // --- PAINEL DE PROPRIEDADES ---
+        function renderProperties() {
+            const panel = els.props;
+            const layer = state.layers.find(l => l.id === state.selectedId);
+            
+            if (!layer) {
+                panel.innerHTML = `<div class="prop-group"><label class="prop-label">Tamanho do Fundo</label>
+                <input type="text" class="prop-control" value="${state.canvasW} x ${state.canvasH} px" disabled></div>`;
+                return;
+            }
+
+            const fonts = ['Roboto', 'Montserrat', 'Open Sans', 'Lato', 'Playfair Display', 'Dancing Script', 'Great Vibes'];
+            const fontOpts = fonts.map(f => `<option value="${f}" ${layer.style.fontFamily === f ? 'selected' : ''}>${f}</option>`).join('');
+
+            panel.innerHTML = `
+                <div class="prop-group"><label class="prop-label" style="color:#2563eb"><i class="fas fa-mars"></i> Versão Masculina</label>
+                <textarea class="prop-control" rows="3" oninput="updateLayer('${layer.id}', {textM: this.value, content: this.value})">${layer.textM}</textarea></div>
+                
+                <div class="prop-group"><label class="prop-label" style="color:#db2777"><i class="fas fa-venus"></i> Versão Feminina</label>
+                <textarea class="prop-control" rows="3" oninput="updateLayer('${layer.id}', {textF: this.value})">${layer.textF}</textarea></div>
+                
+                <div class="prop-group"><label class="prop-label">Fonte</label><select class="prop-control" onchange="updateLayer('${layer.id}',{style:{fontFamily:this.value}})">${fontOpts}</select></div>
+                
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div style="flex:1"><label class="prop-label">Tamanho</label><input type="number" class="prop-control" value="${layer.style.fontSize}" oninput="updateLayer('${layer.id}',{style:{fontSize:parseInt(this.value)}})"></div>
+                    <div style="flex:1"><label class="prop-label">Cor</label><input type="color" class="prop-control" value="${layer.style.color}" style="height:35px; padding:2px;" oninput="updateLayer('${layer.id}',{style:{color:this.value}})"></div>
+                </div>
+
+                <div class="prop-group"><label class="prop-label">Alinhamento</label>
+                    <select class="prop-control" onchange="updateLayer('${layer.id}',{style:{textAlign:this.value}})">
+                        <option value="left" ${layer.style.textAlign=='left'?'selected':''}>Esquerda</option>
+                        <option value="center" ${layer.style.textAlign=='center'?'selected':''}>Centro</option>
+                        <option value="right" ${layer.style.textAlign=='right'?'selected':''}>Direita</option>
+                    </select>
+                </div>
+                
+                <div class="prop-group">
+                    <label style="font-size:13px; font-weight:bold; color:#00855B; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" ${layer.editable?'checked':''} onchange="updateLayer('${layer.id}',{editable:this.checked})"> Editável pela Equipe
+                    </label>
+                </div>
+                <button class="btn btn-sm" style="width:100%; background:#FED7D7; color:#E53E3E; border:none; font-weight:bold;" onclick="deleteLayer('${layer.id}')"><i class="fas fa-trash"></i> Excluir Texto</button>
+            `;
+        }
+
+        // --- BANCO DE DADOS (TEMPLATES) ---
+        async function loadTemplates() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/templates`, { headers: API_HEADERS });
+                if(!res.ok) return;
+                const data = await res.json();
+                
+                els.tplList.innerHTML = '';
+                Object.entries(data).forEach(([key, val]) => {
+                    let obj = typeof val === 'string' ? JSON.parse(val) : val;
+                    const div = document.createElement('div'); div.className = 'template-card';
+                    const bg = obj.bgImage ? `url(${obj.bgImage})` : '#eee';
+                    div.innerHTML = `<button class="btn-delete-tpl" onclick="deleteTemplate('${key}',event)"><i class="fas fa-trash"></i></button><div class="template-preview" style="background-image:${bg}"></div><div class="template-info">${obj.name}</div>`;
+                    div.onclick = () => loadTemplateData(key, obj);
+                    els.tplList.appendChild(div);
+                });
+            } catch(e) {}
+        }
+
+        function loadTemplateData(key, data) {
+            state.currentTemplateId = key; state.layers = data.layers || [];
+            state.canvasW = data.canvasW || 800; state.canvasH = data.canvasH || 800;
+            state.bgImage = data.bgImage || null;
+            
+            els.wrapper.style.width = state.canvasW + 'px'; els.wrapper.style.height = state.canvasH + 'px';
+            if(state.bgImage) { els.bgImage.src = state.bgImage; els.bgImage.style.display = 'block'; } else { els.bgImage.style.display = 'none'; }
+            
+            state.nextId = state.layers.length > 0 ? Math.max(...state.layers.map(l => parseInt(l.id.split('_')[1] || 0))) + 1 : 1;
+            state.selectedId = null; renderLayers(); renderProperties();
+        }
+
+        async function saveTemplate() {
+            if(!state.bgImage && state.layers.length === 0) return alert("A tela está vazia!");
+            const payload = { bgImage: state.bgImage, layers: state.layers, canvasW: state.canvasW, canvasH: state.canvasH };
+            
+            document.getElementById('saveStatus').innerText = "Salvando...";
+            try {
+                if (state.currentTemplateId) {
+                    payload.name = state.layers[0] ? state.layers[0].content.substring(0, 15) : "Modelo";
+                    await fetch(`${API_BASE_URL}/templates/${state.currentTemplateId}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(payload) });
+                } else {
+                    const name = prompt("Nome do Modelo:"); if(!name) { document.getElementById('saveStatus').innerText = ""; return; }
+                    payload.name = name; payload.id_firebase = 'tpl_' + Date.now();
+                    await fetch(`${API_BASE_URL}/templates`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(payload) });
+                }
+                document.getElementById('saveStatus').innerText = "Salvo com sucesso!";
+                setTimeout(() => document.getElementById('saveStatus').innerText = "", 3000);
+                loadTemplates();
+            } catch(e) { document.getElementById('saveStatus').innerText = "Erro ao salvar."; }
+        }
+
+        async function deleteTemplate(key, e) {
+            e.stopPropagation();
+            if(confirm("Excluir este modelo para sempre?")) {
+                await fetch(`${API_BASE_URL}/templates/${key}`, { method: 'DELETE', headers: API_HEADERS });
+                resetCanvas(); loadTemplates();
+            }
+        }
+    </script>
+</body>
+</html>
