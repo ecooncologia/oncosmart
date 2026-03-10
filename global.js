@@ -25,7 +25,7 @@ const APP_PAGES = [
     { id: 'repass', label: 'Repasse', file: 'medical-repass.html', perm: 'repasse' },
     { id: 'stenci', label: 'Stenci', file: 'stenci.html', perm: 'stenci' },
     { id: 'selos', label: 'Selos', file: 'selos.html', perm: 'selos' },
-    { id: 'canvas', label: 'Canvas', file: 'canvas.html', perm: 'canvas_special' },
+    { id: 'canvas', label: 'Canvas', file: 'canvas.html', perm: 'canvas' },
     { id: 'eventos', label: 'Eventos', file: 'eventos.html', perm: 'eventos' },
     { id: 'atas', label: 'Mural de ATAs', file: 'atas.html', perm: 'atas' },
     { id: 'tuss', label: 'Tabela TUSS', file: 'tuss.html', perm: 'tuss' },
