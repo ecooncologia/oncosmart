@@ -108,13 +108,20 @@
 
         // ESTRATÉGIA HÍBRIDA: Lê o DB + O CSV
         async function carregarDadosHibridos() {
-            // 1. Puxa as customizações da API (MySQL)
+            // 1. Puxa as customizações da API com segurança máxima
             try {
                 const res = await fetch(`${API_BASE_URL}/tuss`, { headers: API_HEADERS });
-                if (res.ok) {
-                    dbTussCustomizado = await res.json();
+                const texto = await res.text(); // Lê como texto puro primeiro
+                
+                // Só tenta converter para JSON se a resposta não for uma página de erro HTML
+                if (res.ok && !texto.startsWith('<')) {
+                    dbTussCustomizado = JSON.parse(texto);
+                } else {
+                    console.log("ℹ️ Banco TUSS ainda vazio ou não inicializado. Lendo apenas a planilha base...");
                 }
-            } catch (e) { console.warn("Aviso: Nenhum dado customizado encontrado no DB."); }
+            } catch (e) { 
+                console.log("ℹ️ Nenhuma edição no banco de dados ainda."); 
+            }
 
             // 2. Lê a planilha base
             Papa.parse("tabela_tuss.csv", {
@@ -229,8 +236,8 @@
             };
 
             try {
-                // Manda para a rota genérica POST /:tabela que você já tem no server.js
-                const res = await fetch(`${API_BASE_URL}/tuss/${codigo}`, {
+                // Manda para a rota genérica POST /:tabela sem o ID na URL
+                const res = await fetch(`${API_BASE_URL}/tuss`, {
                     method: 'POST',
                     headers: API_HEADERS,
                     body: JSON.stringify(payload)
