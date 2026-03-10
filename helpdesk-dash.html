@@ -221,15 +221,13 @@
         }
 
         // =========================================================
-        // SUPER BUSCA: PROCURA NAS DUAS TABELAS SIMULTANEAMENTE
+        // BUSCA DIRETA NA TABELA CORRETA (helpdesk_tickets)
         // =========================================================
         async function loadAllData() {
             try {
-                // Dispara buscas para as duas possíveis rotas para não perder nada
-                const [resUsers, resChamados, resHelpdesk] = await Promise.all([
+                const [resUsers, resTickets] = await Promise.all([
                     fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/helpdesk?_t=${Date.now()}`, { headers: API_HEADERS })
+                    fetch(`${API_BASE_URL}/helpdesk_tickets?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
 
                 // 1. Processa Usuários
@@ -243,32 +241,30 @@
                     if(u.email) usersMap[u.email.toLowerCase()] = u;
                 });
 
-                // 2. Processa Chamados (Junta a tabela /chamados com a /helpdesk)
+                // 2. Processa Chamados
                 let rawTickets = {};
-                
-                const textChamados = await resChamados.text();
-                if (resChamados.ok && !textChamados.startsWith('<')) {
-                    Object.assign(rawTickets, normalizeData(JSON.parse(textChamados)));
+                const textTickets = await resTickets.text();
+                if (resTickets.ok && !textTickets.startsWith('<')) {
+                    rawTickets = JSON.parse(textTickets);
+                } else {
+                    console.warn("⚠️ Tabela helpdesk_tickets não retornou dados.");
                 }
 
-                const textHelpdesk = await resHelpdesk.text();
-                if (resHelpdesk.ok && !textHelpdesk.startsWith('<')) {
-                    Object.assign(rawTickets, normalizeData(JSON.parse(textHelpdesk)));
-                }
-
-                let arrayRaw = Object.entries(rawTickets).map(([key, val]) => ({ id_firebase: key, ...val }));
+                let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ id_firebase: key, ...val }));
                 
-                // Normaliza as datas que podem vir de colunas diferentes
-                arrayRaw.forEach((t, idx) => { 
-                    t.visual_id = idx + 1;
-                    if (!t.date) t.date = t.data_abertura || t.timestamp || t.data || Date.now();
+                // Extrai a data corretamente (o server.js joga a data_abertura dentro da propriedade .date)
+                arrayRaw.forEach(t => {
+                    if (!t.date) t.date = t.data_abertura || t.timestamp || Date.now();
                 });
                 
-                // Ordena do mais antigo para o mais novo para gerar o ID visual correto
+                // Ordena do mais antigo para o mais novo para gerar o ID visual correto (1, 2, 3...)
                 arrayRaw = arrayRaw.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 
+                // Atribui o número do chamado
+                arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
+                
                 allTickets = arrayRaw;
-                console.log(`✅ Super Busca: Foram carregados ${allTickets.length} chamados!`);
+                console.log(`✅ Foram carregados ${allTickets.length} chamados da tabela helpdesk_tickets!`);
 
                 updateFilterOptions();
                 renderDashboard();
@@ -281,7 +277,7 @@
         function resetFilters() {
             const today = new Date();
             const start = new Date();
-            start.setDate(today.getDate() - 90); // Busca puxando 90 dias por padrão
+            start.setDate(today.getDate() - 90); // Puxa os últimos 90 dias por padrão
             document.getElementById('dashEnd').valueAsDate = today;
             document.getElementById('dashStart').valueAsDate = start;
             if(document.getElementById('dashSector')) document.getElementById('dashSector').value = '';
@@ -362,7 +358,6 @@
             let totalRating = 0, ratedCount = 0;
 
             const finalDashList = allTickets.filter(t => {
-                // Filtro flexível para não quebrar com datas vazias
                 let d = new Date(0);
                 if (t.date) {
                     const parsedDate = new Date(t.date);
@@ -467,11 +462,10 @@
 
             const dashBody = document.querySelector('#dashTable tbody');
             
-            // Ordenação da tabela (mais recentes primeiro)
             const listForTable = [...finalDashList].sort((a,b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : 0;
                 const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA; 
+                return dateB - dateA; // Decrescente
             });
 
             dashBody.innerHTML = listForTable.map(t => {
