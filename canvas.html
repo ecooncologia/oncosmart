@@ -135,7 +135,6 @@
     </div>
 
     <script>
-        // --- ESTADO APENAS PARA USUÁRIO ---
         const state = {
             zoom: 1, selectedId: null, layers: [], customFonts: [],
             bgImage: null, currentTemplateId: null, canvasW: 559, canvasH: 794,
@@ -149,7 +148,6 @@
             loading: document.getElementById('loading') 
         };
 
-        // --- INICIALIZAÇÃO ---
         document.addEventListener('DOMContentLoaded', async () => {
             await initGlobal('canvas', 'Editor de Artes');
             const user = JSON.parse(localStorage.getItem('ecoUser'));
@@ -163,10 +161,10 @@
             updateCanvasSize(); 
         });
 
-        // --- CARREGAR PROGRESSO DO USUÁRIO ---
         async function loadUserProgress(email) {
             try {
-                const res = await fetch(`${API_BASE_URL}/usuarios`);
+                // AQUI: ADICIONADO O CRÁCHÁ
+                const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
                 const allUsers = await res.json();
                 
                 let foundUser = null;
@@ -193,7 +191,6 @@
             }
         }
 
-        // --- SALVAMENTO DE PROGRESSO ---
         let saveTimeout;
         function autoSaveUserState() {
             clearTimeout(saveTimeout);
@@ -213,9 +210,10 @@
             };
 
             try {
+                // AQUI: ADICIONADO O CRÁCHÁ NO PUT
                 await fetch(`${API_BASE_URL}/usuarios/${emailKey}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: API_HEADERS,
                     body: JSON.stringify(payload)
                 });
                 if (!silent) alert("Progresso salvo com sucesso!");
@@ -224,12 +222,12 @@
             }
         }
 
-        // --- CARREGAR FONTES COM A FUNÇÃO CORRIGIDA ---
         async function loadGlobalFonts() {
             try {
-                const res = await fetch(`${API_BASE_URL}/fonts`);
+                // AQUI: ADICIONADO O CRÁCHÁ
+                const res = await fetch(`${API_BASE_URL}/fonts`, { headers: API_HEADERS });
                 const data = await res.json();
-                const fonts = normalizeCanvasData(data); // <- Correção aplicada aqui!
+                const fonts = normalizeCanvasData(data);
                 
                 Object.values(fonts).forEach(async (f) => {
                     if (state.customFonts.includes(f.name)) return;
@@ -273,7 +271,7 @@
 
         function selectLayer(id) {
             const layer = state.layers.find(l => l.id === id);
-            if (!layer || !layer.editable) return; // Se não for editável, ignora
+            if (!layer || !layer.editable) return; 
             state.selectedId = id; 
             renderLayers(); 
             renderProperties();
@@ -328,7 +326,6 @@
             Object.assign(content.style, layer.style); content.style.fontSize = layer.style.fontSize + 'px';
             el.appendChild(content);
             
-            // Clicar seleciona a camada (se editável)
             el.addEventListener('mousedown', (e) => { e.stopPropagation(); selectLayer(layer.id); });
             return el;
         }
@@ -342,7 +339,6 @@
                 return; 
             }
 
-            // Exibe a edição focada apenas no texto para o usuário
             let html = `
             <div class="prop-group">
                 <label class="prop-label">Selecione o Gênero do Paciente:</label>
@@ -359,14 +355,14 @@
             panel.innerHTML = html;
         }
 
-        // --- CARREGAR MODELOS COM A FUNÇÃO CORRIGIDA ---
         async function loadTemplates() {
             try {
-                const res = await fetch(`${API_BASE_URL}/templates`);
+                // AQUI: ADICIONADO O CRÁCHÁ
+                const res = await fetch(`${API_BASE_URL}/templates`, { headers: API_HEADERS });
                 const data = await res.json();
                 
                 const list = document.getElementById('templateList'); list.innerHTML = '';
-                const templates = normalizeCanvasData(data); // <- Correção aplicada aqui!
+                const templates = normalizeCanvasData(data);
                 
                 if (!templates) return;
                 
@@ -396,7 +392,6 @@
             renderProperties();
         }
 
-        // --- EXPORTAÇÃO (BAIXAR ARTE) ---
         function downloadCard() {
             const btn = document.querySelector('button[onclick="downloadCard()"]');
             const originalText = btn.innerHTML;

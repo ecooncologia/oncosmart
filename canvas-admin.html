@@ -141,7 +141,6 @@
     </div>
 
     <script>
-        // --- ESTADO ADMIN (LIVRE ACESSO A TUDO) ---
         const state = {
             zoom: 1, selectedId: null, layers: [], nextId: 1, customFonts: [],
             bgImage: null, currentTemplateId: null, canvasW: 559, canvasH: 794, unit: 'px',
@@ -155,11 +154,9 @@
             loading: document.getElementById('loading') 
         };
 
-        // --- INICIALIZAÇÃO ADMIN ---
         document.addEventListener('DOMContentLoaded', async () => {
             await initGlobal('canvas-admin', 'Painel de Artes');
             
-            // Segurança Básica: Checar se quem acessa tem perfil admin
             const user = JSON.parse(localStorage.getItem('ecoUser'));
             if(user) {
                 let perms = user.permissoes;
@@ -178,10 +175,10 @@
             renderProperties();
         });
 
-        // --- SISTEMA DE FONTES ---
         async function loadGlobalFonts() {
             try {
-                const res = await fetch(`${API_BASE_URL}/fonts`);
+                // AQUI: ADICIONADO O CRÁCHÁ (API_HEADERS)
+                const res = await fetch(`${API_BASE_URL}/fonts`, { headers: API_HEADERS });
                 const data = await res.json();
                 const fonts = normalizeCanvasData(data);
                 
@@ -203,9 +200,10 @@
                 const reader = new FileReader();
                 reader.onload = async (evt) => {
                     const name = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, "");
+                    // AQUI: ADICIONADO O CRÁCHÁ NO POST
                     await fetch(`${API_BASE_URL}/fonts`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: API_HEADERS,
                         body: JSON.stringify({ name, source: evt.target.result })
                     });
                 };
@@ -214,15 +212,8 @@
             setTimeout(() => { loadGlobalFonts(); toggleLoading(false); renderProperties(); }, 2000);
         };
 
-        // --- MANIPULAÇÃO DO CANVAS E LAYOUT ---
         function setBackground(src) { state.bgImage = src; els.bgImage.src = src; els.bgImage.style.display = src ? 'block' : 'none'; }
-        
-        function updateCanvasSize() { 
-            els.wrapper.style.width = state.canvasW + 'px'; 
-            els.wrapper.style.height = state.canvasH + 'px'; 
-            applyTransform(); 
-        }
-        
+        function updateCanvasSize() { els.wrapper.style.width = state.canvasW + 'px'; els.wrapper.style.height = state.canvasH + 'px'; applyTransform(); }
         function applyTransform() { els.wrapper.style.transform = `scale(${state.zoom})`; }
         function setZoom(delta) { state.zoom = Math.max(0.1, Math.min(3, state.zoom + delta)); updateZoomLabel(); }
         function updateZoomLabel() { document.getElementById('zoomLabel').innerText = Math.round(state.zoom*100)+'%'; applyTransform(); }
@@ -251,7 +242,6 @@
         }
 
         function deleteLayer(id) { state.layers = state.layers.filter(l => l.id !== id); state.selectedId = null; renderLayers(); renderProperties(); }
-        
         function selectLayer(id) { state.selectedId = id; renderLayers(); renderProperties(); }
         
         function updateLayerState(id, updates) {
@@ -314,7 +304,6 @@
             window.addEventListener('mouseup', e => { if(!isR) return; isR=false; const dx=(e.clientX-sX)/state.zoom; updateLayer(layer.id, {w:Math.max(50,iW+dx)}); });
         }
 
-        // --- PROPRIEDADES DO PAINEL DIREITO ---
         const PX_CM = 37.795; const PX_MM = 3.7795;
         function convert(val, from, to) {
             let px = val; if(from==='cm') px=val*PX_CM; if(from==='mm') px=val*PX_MM;
@@ -391,10 +380,10 @@
         }
         function getStyle(id) { return state.layers.find(l => l.id === id).style; }
 
-        // --- SISTEMA DE MODELOS (PUBLICAÇÃO) ---
         async function loadTemplates() {
             try {
-                const res = await fetch(`${API_BASE_URL}/templates`);
+                // AQUI: ADICIONADO O CRÁCHÁ
+                const res = await fetch(`${API_BASE_URL}/templates`, { headers: API_HEADERS });
                 const data = await res.json();
                 
                 const list = document.getElementById('templateList'); list.innerHTML = '';
@@ -426,9 +415,10 @@
             try {
                 if (state.currentTemplateId) {
                     payload.name = state.layers.find(l => l.content)?.content || "Modelo Atualizado";
+                    // AQUI: ADICIONADO O CRÁCHÁ NO PUT
                     await fetch(`${API_BASE_URL}/templates/${state.currentTemplateId}`, {
                         method: 'PUT',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: API_HEADERS,
                         body: JSON.stringify(payload)
                     });
                     alert("Modelo Atualizado com Sucesso na Clínica!");
@@ -437,9 +427,10 @@
                     payload.name = name;
                     payload.id_firebase = 'tpl_' + Date.now(); 
                     
+                    // AQUI: ADICIONADO O CRÁCHÁ NO POST
                     await fetch(`${API_BASE_URL}/templates`, {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: API_HEADERS,
                         body: JSON.stringify(payload)
                     });
                     alert("Novo Modelo Publicado!"); 
@@ -451,7 +442,8 @@
         async function deleteTemplate(key, e) { 
             e.stopPropagation(); 
             if(confirm("Deseja realmente excluir este modelo de toda a clínica?")) {
-                await fetch(`${API_BASE_URL}/templates/${key}`, { method: 'DELETE' });
+                // AQUI: ADICIONADO O CRÁCHÁ NO DELETE
+                await fetch(`${API_BASE_URL}/templates/${key}`, { method: 'DELETE', headers: API_HEADERS });
                 resetCanvas();
                 loadTemplates();
             }
