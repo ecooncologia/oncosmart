@@ -221,50 +221,34 @@
         }
 
         // ==========================================
-        // BUSCA PRINCIPAL COM PROTEÇÃO DE ERROS
+        // BUSCA IDÊNTICA AO HELPDESK-ADMIN.HTML
         // ==========================================
         async function loadAllData() {
             try {
-                // AQUI FOI ADICIONADO O "CRACHÁ" (API_HEADERS)
+                // AQUI FOI ADICIONADO O "CRACHÁ" E A ROTA CORRETA (/chamados)
                 const [resUsers, resTickets] = await Promise.all([
                     fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
 
                 // Lendo usuários
-                const textUsers = await resUsers.text();
-                let usersData = {};
-                if (resUsers.ok && !textUsers.startsWith('<')) {
-                    usersData = normalizeData(JSON.parse(textUsers));
-                }
-                
+                const usersData = normalizeData(await resUsers.json());
                 usersMap = {};
                 Object.values(usersData).forEach(u => {
                     if(u.email) usersMap[u.email.toLowerCase()] = u;
                 });
 
-                // Lendo chamados (protegido contra erro 404/banco vazio)
-                const textTickets = await resTickets.text();
-                let rawTickets = {};
-                if (resTickets.ok && !textTickets.startsWith('<')) {
-                    rawTickets = JSON.parse(textTickets);
-                } else {
-                    console.warn("⚠️ Nenhum dado de chamados encontrado.");
-                }
-
+                // Lendo chamados exatamente como o Admin faz
+                const rawTickets = await resTickets.json();
+                
                 let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ key: key, ...val }));
                 
-                // Ordenação segura (compara as datas garantindo que não quebre se vier nula)
-                arrayRaw = arrayRaw.sort((a, b) => {
-                    const dateA = a.date ? new Date(a.date).getTime() : 0;
-                    const dateB = b.date ? new Date(b.date).getTime() : 0;
-                    return dateA - dateB;
-                });
-                
+                // Ordenação garantida pela data para gerar ID numérico
+                arrayRaw = arrayRaw.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
                 arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
                 
                 allTickets = arrayRaw;
-                console.log(`✅ Foram carregados ${allTickets.length} chamados!`);
+                console.log(`✅ Sucesso! O Dashboard puxou ${allTickets.length} chamados da tabela helpdesk_tickets.`);
 
                 updateFilterOptions();
                 renderDashboard();
@@ -277,7 +261,8 @@
         function resetFilters() {
             const today = new Date();
             const start = new Date();
-            start.setDate(today.getDate() - 30);
+            // AUMENTADO PARA 365 DIAS (1 ANO) PARA NÃO ESCONDER CHAMADOS ANTIGOS
+            start.setDate(today.getDate() - 365); 
             document.getElementById('dashEnd').valueAsDate = today;
             document.getElementById('dashStart').valueAsDate = start;
             if(document.getElementById('dashSector')) document.getElementById('dashSector').value = '';
@@ -358,13 +343,20 @@
             let totalRating = 0, ratedCount = 0;
 
             const finalDashList = allTickets.filter(t => {
+                // Filtro flexível para as datas (compara só dia, ignora a hora exata na busca)
                 let d = new Date(0);
                 if (t.date) {
                     const parsedDate = new Date(t.date);
-                    if (!isNaN(parsedDate.getTime())) d = parsedDate;
+                    if (!isNaN(parsedDate.getTime())) {
+                        d = parsedDate;
+                    }
                 }
+                
+                d.setHours(0,0,0,0);
+                const sTemp = new Date(start); sTemp.setHours(0,0,0,0);
+                const eTemp = new Date(end); eTemp.setHours(23,59,59,999);
 
-                if(d < start || d > end) return false;
+                if(d.getTime() < sTemp.getTime() || d.getTime() > eTemp.getTime()) return false;
                 if(sec && t.setor !== sec) return false;
                 
                 const catStr = String(t.categoria || 'Geral');
@@ -465,7 +457,7 @@
             const listForTable = [...finalDashList].sort((a,b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : 0;
                 const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA; // Mais novos no topo da lista
+                return dateB - dateA; // Recentes no topo
             });
 
             dashBody.innerHTML = listForTable.map(t => {
@@ -505,8 +497,12 @@
                     const parsedDate = new Date(t.date);
                     if (!isNaN(parsedDate.getTime())) d = parsedDate;
                 }
+                
+                d.setHours(0,0,0,0);
+                const sTemp = new Date(start); sTemp.setHours(0,0,0,0);
+                const eTemp = new Date(end); eTemp.setHours(23,59,59,999);
 
-                if(d < start || d > end) return false;
+                if(d.getTime() < sTemp.getTime() || d.getTime() > eTemp.getTime()) return false;
                 if(sec && t.setor !== sec) return false;
                 const catPrincipal = String(t.categoria || 'Geral').split(' > ')[0];
                 if(cat && catPrincipal !== cat) return false;
