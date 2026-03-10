@@ -198,26 +198,40 @@
         }
 
         async function manualSaveUser(silent = false) {
-            const user = JSON.parse(localStorage.getItem('ecoUser')); 
-            if(!user || !user.email) return;
+            const userLocal = JSON.parse(localStorage.getItem('ecoUser')); 
+            if(!userLocal || !userLocal.email) return;
             
-            const emailKey = user.email.replace(/\./g, ',');
-            const payload = {
-                lastCanvas: {
-                    layers: state.layers, bgImage: state.bgImage, 
-                    canvasW: state.canvasW, canvasH: state.canvasH, templateId: state.currentTemplateId
-                }
-            };
+            const emailKey = userLocal.email.replace(/\./g, ',');
 
             try {
-                // AQUI: ADICIONADO O CRÁCHÁ NO PUT
+                // 1. Puxa os dados COMPLETOS do usuário no banco para não perder nada
+                const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
+                const allUsers = await res.json();
+                
+                let currentUserDB = allUsers[emailKey];
+                if (!currentUserDB) currentUserDB = Object.values(allUsers).find(u => u.email === userLocal.email);
+                
+                if (!currentUserDB) return; // Se não achar o usuário, aborta para não criar lixo
+
+                // 2. Atualiza APENAS a parte da arte (mantém nome, permissões e senha intactos)
+                currentUserDB.lastCanvas = {
+                    layers: state.layers, 
+                    bgImage: state.bgImage, 
+                    canvasW: state.canvasW, 
+                    canvasH: state.canvasH, 
+                    templateId: state.currentTemplateId
+                };
+
+                // 3. Salva o usuário completo de volta no banco
                 await fetch(`${API_BASE_URL}/usuarios/${emailKey}`, {
-                    method: 'PUT',
+                    method: 'POST', // POST é mais seguro para a nossa rota curinga atualizar sem deletar
                     headers: API_HEADERS,
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(currentUserDB)
                 });
+
                 if (!silent) alert("Progresso salvo com sucesso!");
             } catch (e) {
+                console.error("Erro ao salvar progresso:", e);
                 if(!silent) alert("Erro ao salvar progresso.");
             }
         }
