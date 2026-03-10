@@ -67,7 +67,10 @@
             <div class="editor-main">
                 <div class="toolbar">
                     <span style="font-weight: 600; color: #4A5568;"><i class="fas fa-paint-brush"></i> Personalize a Arte</span>
-                    <button class="btn btn-sm btn-primary" onclick="downloadCard()"><i class="fas fa-download"></i> Baixar Imagem</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-sm btn-primary" onclick="downloadCard()"><i class="fas fa-download"></i> Baixar Imagem</button>
+                        <button class="btn btn-sm btn-success" onclick="salvarRascunhoLocal(false)"><i class="fas fa-save"></i> Salvar Progresso</button>
+                    </div>
                 </div>
 
                 <div class="canvas-scroll-area" id="scrollArea">
@@ -95,16 +98,41 @@
             const user = JSON.parse(localStorage.getItem('ecoUser'));
             if(user) state.userEmail = user.email;
 
+            loadGlobalFonts();
             loadTemplates();
-            loadLocalDraft(); // Carrega o rascunho sem tocar no banco de dados
+            loadLocalDraft(); // Carrega o rascunho 100% da memória local
         });
 
+        // --- SISTEMA DE FONTES ---
+        async function loadGlobalFonts() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/fonts`, { headers: API_HEADERS });
+                const data = await res.json();
+                const fonts = normalizeCanvasData(data);
+                
+                Object.values(fonts).forEach(async (f) => {
+                    try { 
+                        const font = new FontFace(f.name, `url(${f.source})`); 
+                        await font.load(); 
+                        document.fonts.add(font); 
+                    } catch(e) {}
+                });
+            } catch (e) { console.error("Erro fontes:", e); }
+        }
+
         // --- SISTEMA DE RASCUNHO LOCAL (100% SEGURO) ---
-        function saveLocalDraft() {
+        function salvarRascunhoLocal(silent = true) {
             if(!state.userEmail) return;
             const draft = { layers: state.layers, bgImage: state.bgImage, canvasW: state.canvasW, canvasH: state.canvasH };
-            // Salva Numa gaveta separada, impossível de dar conflito com as permissões!
+            // Salva apenas no navegador. Não há risco de conflito com o banco de dados.
             localStorage.setItem('canvas_draft_' + state.userEmail, JSON.stringify(draft));
+            if(!silent) alert("Progresso salvo com sucesso no seu navegador!");
+        }
+
+        let autoSaveTimer;
+        function agendarAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => salvarRascunhoLocal(true), 1500);
         }
 
         function loadLocalDraft() {
@@ -135,14 +163,13 @@
                 
                 el.appendChild(content); els.wrapper.appendChild(el);
                 
-                // Só clica se for editável
                 if(layer.editable) {
                     el.addEventListener('mousedown', (e) => { e.stopPropagation(); selectLayer(layer.id); });
                 } else {
                     el.style.cursor = 'default';
                 }
             });
-            saveLocalDraft();
+            agendarAutoSave();
         }
 
         function selectLayer(id) { state.selectedId = id; renderLayers(); renderProperties(); }
@@ -208,7 +235,6 @@
             state.canvasW = data.canvasW || 800; state.canvasH = data.canvasH || 800;
             state.bgImage = data.bgImage || null;
             
-            // Configura textos iniciais
             state.layers.forEach(l => { if(l.textM && state.currentGender === 'm') l.content = l.textM; if(l.textF && state.currentGender === 'f') l.content = l.textF; });
             
             els.wrapper.style.width = state.canvasW + 'px'; els.wrapper.style.height = state.canvasH + 'px';
@@ -255,6 +281,17 @@
                 let line = ''; para.split(' ').forEach(word => { const test = line + word + ' '; if (ctx.measureText(test).width > maxWidth && line !== '') { ctx.fillText(line, x, y); line = word + ' '; y += lineHeight; } else line = test; });
                 ctx.fillText(line, x, y); y += lineHeight;
             });
+        }
+
+        function normalizeCanvasData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
         }
     </script>
 </body>
