@@ -157,15 +157,11 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await initGlobal('canvas-admin', 'Painel de Artes');
             
+            // Verificação simplificada: só exige que a pessoa esteja logada no sistema.
             const user = JSON.parse(localStorage.getItem('ecoUser'));
-            if(user) {
-                let perms = user.permissoes;
-                if(typeof perms === 'string') { try { perms = JSON.parse(perms); } catch(e){} }
-                if(!perms || (!perms.admin && !perms.canvas_admin)) {
-                    alert("Acesso restrito! Você não é administrador.");
-                    window.location.href = 'dashboard.html';
-                    return;
-                }
+            if(!user) {
+                window.location.href = 'index.html';
+                return;
             }
 
             loadGlobalFonts(); 
