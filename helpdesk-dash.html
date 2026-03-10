@@ -128,7 +128,9 @@
             <div class="table-container">
                 <table id="dashTable" style="width: 100%; text-align: left; border-collapse: collapse;">
                     <thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 10px;">Nº</th><th>Data</th><th>Solicitante</th><th>Item / Assunto</th><th>Atendente</th><th>Status</th><th>SLA Real</th></tr></thead>
-                    <tbody></tbody>
+                    <tbody>
+                        <tr><td colspan="7" style="text-align:center; padding:20px;">⏳ Buscando dados no servidor...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -199,7 +201,7 @@
             resetFilters(); 
             applyDashConfig();
             await loadAllData();
-            setInterval(loadAllData, 10000); // Atualiza dados a cada 10 seg
+            setInterval(loadAllData, 15000); // Atualiza dados a cada 15 seg
         });
 
         function normalizeData(apiData) {
@@ -218,64 +220,68 @@
             return '#' + String(id).padStart(4, '0');
         }
 
-        // ==========================================
-        // FUNÇÃO DE BUSCA (BLINDADA E CORRIGIDA)
-        // ==========================================
+        // =========================================================
+        // SUPER BUSCA: PROCURA NAS DUAS TABELAS SIMULTANEAMENTE
+        // =========================================================
         async function loadAllData() {
             try {
-                // Busca os usuários e os chamados passando o crachá (API_HEADERS)
-                const [resUsers, resTickets] = await Promise.all([
+                // Dispara buscas para as duas possíveis rotas para não perder nada
+                const [resUsers, resChamados, resHelpdesk] = await Promise.all([
                     fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS }) 
+                    fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/helpdesk?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
 
-                // 1. Processa Usuários com Segurança
+                // 1. Processa Usuários
                 const textUsers = await resUsers.text();
                 let usersData = {};
                 if (resUsers.ok && !textUsers.startsWith('<')) {
                     usersData = normalizeData(JSON.parse(textUsers));
                 }
-
                 usersMap = {};
                 Object.values(usersData).forEach(u => {
                     if(u.email) usersMap[u.email.toLowerCase()] = u;
                 });
 
-                // 2. Processa Chamados com Segurança (Ignora erros de HTML se a tabela estiver vazia)
-                const textTickets = await resTickets.text();
+                // 2. Processa Chamados (Junta a tabela /chamados com a /helpdesk)
                 let rawTickets = {};
                 
-                if (resTickets.ok && !textTickets.startsWith('<')) {
-                    rawTickets = JSON.parse(textTickets);
-                } else {
-                    console.warn("⚠️ Nenhuma informação de chamados recebida (Tabela pode estar vazia).");
+                const textChamados = await resChamados.text();
+                if (resChamados.ok && !textChamados.startsWith('<')) {
+                    Object.assign(rawTickets, normalizeData(JSON.parse(textChamados)));
                 }
 
-                let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ key: key, ...val }));
+                const textHelpdesk = await resHelpdesk.text();
+                if (resHelpdesk.ok && !textHelpdesk.startsWith('<')) {
+                    Object.assign(rawTickets, normalizeData(JSON.parse(textHelpdesk)));
+                }
+
+                let arrayRaw = Object.entries(rawTickets).map(([key, val]) => ({ id_firebase: key, ...val }));
                 
-                // Ordenação segura (protege contra datas inválidas)
-                arrayRaw = arrayRaw.sort((a, b) => {
-                    const dateA = a.date ? new Date(a.date).getTime() : 0;
-                    const dateB = b.date ? new Date(b.date).getTime() : 0;
-                    return dateA - dateB;
+                // Normaliza as datas que podem vir de colunas diferentes
+                arrayRaw.forEach((t, idx) => { 
+                    t.visual_id = idx + 1;
+                    if (!t.date) t.date = t.data_abertura || t.timestamp || t.data || Date.now();
                 });
                 
-                arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
+                // Ordena do mais antigo para o mais novo para gerar o ID visual correto
+                arrayRaw = arrayRaw.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 
                 allTickets = arrayRaw;
-                console.log(`✅ Foram carregados ${allTickets.length} chamados!`);
+                console.log(`✅ Super Busca: Foram carregados ${allTickets.length} chamados!`);
 
                 updateFilterOptions();
                 renderDashboard();
             } catch (e) { 
-                console.error("Erro ao comunicar com a API do Dashboard:", e); 
+                console.error("Erro na comunicação com o servidor:", e); 
+                document.querySelector('#dashTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">❌ Erro ao conectar com o banco de dados.</td></tr>';
             }
         }
 
         function resetFilters() {
             const today = new Date();
             const start = new Date();
-            start.setDate(today.getDate() - 30);
+            start.setDate(today.getDate() - 90); // Busca puxando 90 dias por padrão
             document.getElementById('dashEnd').valueAsDate = today;
             document.getElementById('dashStart').valueAsDate = start;
             if(document.getElementById('dashSector')) document.getElementById('dashSector').value = '';
@@ -356,6 +362,7 @@
             let totalRating = 0, ratedCount = 0;
 
             const finalDashList = allTickets.filter(t => {
+                // Filtro flexível para não quebrar com datas vazias
                 let d = new Date(0);
                 if (t.date) {
                     const parsedDate = new Date(t.date);
@@ -459,11 +466,15 @@
             secondChartInstance = buildChart('secondChart', 'chart2Title', conf.c2Data, conf.c2Type, secondChartInstance);
 
             const dashBody = document.querySelector('#dashTable tbody');
-            dashBody.innerHTML = finalDashList.sort((a,b) => {
+            
+            // Ordenação da tabela (mais recentes primeiro)
+            const listForTable = [...finalDashList].sort((a,b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : 0;
                 const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA; // Decrescente
-            }).map(t => {
+                return dateB - dateA; 
+            });
+
+            dashBody.innerHTML = listForTable.map(t => {
                 const dataFormatada = t.date ? new Date(t.date).toLocaleDateString() : '-';
                 const statusName = t.status || 'pendente';
                 const atendente = t.atendente_nome ? `<span class="tech-owner">${t.atendente_nome.split(' ')[0]}</span>` : '<span style="color:#999; font-size:10px;">Aguardando</span>';
@@ -482,7 +493,7 @@
                     <td style="font-family:monospace;">${formatMs(calculateElapsedTime(t))}</td>
                 </tr>
                 `;
-            }).join('') || '<tr><td colspan="7" style="text-align:center; padding:15px; color:#ccc;">Nenhum registro no filtro.</td></tr>';
+            }).join('') || '<tr><td colspan="7" style="text-align:center; padding:15px; color:#ccc;">Nenhum registro encontrado neste período.</td></tr>';
         }
 
         function exportTickets() {
@@ -510,7 +521,7 @@
                 return true;
             });
 
-            if(finalDashList.length === 0) return alert("Nenhum chamado para exportar.");
+            if(finalDashList.length === 0) return alert("Nenhum chamado para exportar no filtro atual.");
 
             let txt = "RELATÓRIO DE CHAMADOS - ONCO SMART\n";
             txt += `Gerado em: ${new Date().toLocaleString()}\n\n`;
