@@ -36,6 +36,8 @@
         .sub-tab-btn:hover:not(.active) { background: #e5e7eb; }
 
         .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; white-space: nowrap; height: 38px; }
+        .btn-sync-robot { background: #00995D; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; white-space: nowrap; height: 38px; box-shadow: 0 2px 4px rgba(0, 153, 93, 0.3); }
+        .btn-sync-robot:hover { background: #007a4a; }
         
         .btn-danger-block { background: #dc2626; color: white; border: none; width: 100%; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-danger-block:hover { background: #b91c1c; }
@@ -46,8 +48,14 @@
         .label-title { font-size: 12px; font-weight: 700; color: #4b5563; display: block; margin-bottom: 5px; }
         .input-field, .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 13px; height: 38px; }
         
-        .layout-simple { display: block; }
-        
+        /* Dashboard Cards Unimed */
+        .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; }
+        .card-stat h2 { margin: 0; color: #1f2937; font-size: 24px; }
+        .card-stat.warning { border-left-color: #f59e0b; }
+        .card-stat.danger { border-left-color: #ef4444; }
+
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -135,27 +143,51 @@
         </div>
 
         <div id="tab-unimed" class="tab-content">
+            
+            <div class="dashboard-cards">
+                <div class="card-stat">
+                    <h5>Total Bruto Unimed</h5>
+                    <h2 id="dashUnimedTotal">R$ 0,00</h2>
+                </div>
+                <div class="card-stat warning">
+                    <h5>Itens MED Retornados</h5>
+                    <h2 id="dashMedCount">0</h2>
+                </div>
+                <div class="card-stat danger">
+                    <h5>Divergências Encontradas</h5>
+                    <h2 id="dashDivergences">0</h2>
+                </div>
+            </div>
+
             <div class="controls">
-                <div>
-                    <h4 style="color:#007bff; margin-top:0;"><i class="fas fa-file-excel"></i> Arquivo Unimed</h4>
-                    <div class="input-group">
-                        <label class="label-title">Upload Planilha Unimed (.xlsx)</label>
-                        <input type="file" id="excelFile" class="input-field" accept=".xlsx, .xls" onchange="handleFileUpload()">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                    
+                    <div style="flex-grow: 1; display: flex; gap: 15px; align-items: flex-end;">
+                        <div>
+                            <h4 style="color:#00995D; margin-top:0; margin-bottom: 10px;"><i class="fas fa-robot"></i> Automação Unimed</h4>
+                            <button class="btn-sync-robot" onclick="fetchBotData()">
+                                <i class="fas fa-sync-alt"></i> Buscar Dados do Robô
+                            </button>
+                        </div>
+
+                        <div style="border-left: 2px solid #e5e7eb; padding-left: 15px;">
+                            <label class="label-title">Ou Upload Manual (.xlsx)</label>
+                            <input type="file" id="excelFile" class="input-field" style="max-width: 250px; height: 38px;" accept=".xlsx, .xls" onchange="handleFileUpload()">
+                        </div>
                     </div>
                     
-                    <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                        <div class="input-group" style="margin:0; flex-grow: 1;">
+                    <div style="display: flex; gap: 10px; align-items: flex-end;">
+                        <div class="input-group" style="margin:0; width: 200px;">
                             <label class="label-title">Filtrar Paciente</label>
                             <select id="filterPatient" class="input-field" onchange="renderAnalysisTable()">
                                 <option value="">Todos</option>
                             </select>
                         </div>
-                        <div>
-                            <button class="btn-danger-block" onclick="deleteSelected()" style="min-width: 150px;">
-                                <i class="fas fa-trash-alt"></i> Excluir Seleção
-                            </button>
-                        </div>
+                        <button class="btn-danger-block" onclick="deleteSelected()" style="min-width: 150px;">
+                            <i class="fas fa-trash-alt"></i> Excluir Seleção
+                        </button>
                     </div>
+
                 </div>
             </div>
 
@@ -174,7 +206,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999;">Faça o upload da planilha da Unimed para visualizar os dados.</td></tr>
+                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999; font-size: 14px;">
+                                <i class="fas fa-cloud-download-alt" style="font-size: 24px; color: #cbd5e1; margin-bottom: 10px; display: block;"></i>
+                                Clique em "Buscar Dados do Robô" ou faça o upload da planilha para visualizar.
+                            </td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -218,6 +253,43 @@
             event.target.classList.add('active');
         }
 
+        // ==========================================
+        // FUNÇÃO DE INTEGRAÇÃO COM O ROBÔ (BACKEND)
+        // ==========================================
+        async function fetchBotData() {
+            const tbody = document.querySelector('#dataTable tbody'); 
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados do Robô Unimed...</td></tr>';
+            
+            try {
+                // Aqui você vai apontar para a rota real da sua API onde o robô salva os dados
+                const response = await fetch(`${API_BASE_URL}/medical-repass/import`, { headers: API_HEADERS });
+                
+                if (!response.ok) throw new Error('Não há dados novos gerados pelo robô para este mês.');
+                
+                const payloadBot = await response.json();
+                
+                // Mapeia o JSON que veio do robô para o formato visual da tabela
+                excelData = payloadBot.map(row => ({
+                    paciente: String(row.paciente).toUpperCase().trim(), 
+                    medicamento: String(row.descricao || row.codigo_procedimento).toUpperCase().trim(), 
+                    valor: parseFloat(row.valor_pago || 0), 
+                    mg: 1, // Padrão se não vier qtd do robô
+                    data: row.data_atendimento || "-", 
+                    tipo: row.is_med_item ? "MED" : "PROC", 
+                    src: "unimed"
+                }));
+
+                alert(`Sucesso! ${excelData.length} registros sincronizados do Robô Unimed.`);
+                updateFilters(); 
+                renderAnalysisTable();
+
+            } catch (err) {
+                alert(err.message);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: #dc2626;">Falha ao sincronizar. Certifique-se que o Robô rodou este mês.</td></tr>';
+            }
+        }
+
+        // Funções de Tabela e Lógica Visual
         function switchShiftTab(tabId, element) {
             currentShiftTab = tabId;
             document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -239,7 +311,7 @@
 
         function handleFileUpload() {
             const fileInput = document.getElementById('excelFile'); if (fileInput.files.length === 0) return;
-            const tbody = document.querySelector('#dataTable tbody'); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Lendo arquivo... <i class="fas fa-spinner fa-spin"></i></td></tr>';
+            const tbody = document.querySelector('#dataTable tbody'); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Lendo arquivo local... <i class="fas fa-spinner fa-spin"></i></td></tr>';
             const file = fileInput.files[0]; const reader = new FileReader();
 
             reader.onload = function(e) {
@@ -264,8 +336,8 @@
                         if(!paciente || !desc) return null;
                         return { paciente: String(paciente).toUpperCase().trim(), medicamento: String(desc).toUpperCase().trim(), valor: parseFloat(val || 0), mg: parseFloat(qtd || 0), data: parseExcelDate(dt), tipo: tipo, src: "unimed" };
                     }).filter(i => i !== null);
-                    alert(`Sucesso! ${excelData.length} registros importados.`); updateFilters(); renderAnalysisTable();
-                } catch (err) { alert("Erro: " + err.message); tbody.innerHTML = ''; }
+                    alert(`Sucesso! ${excelData.length} registros importados do arquivo manual.`); updateFilters(); renderAnalysisTable();
+                } catch (err) { alert("Erro ao ler XLS: " + err.message); tbody.innerHTML = ''; }
             }; reader.readAsArrayBuffer(file);
         }
 
@@ -288,25 +360,39 @@
             const tbody = document.querySelector('#dataTable tbody');
             const patients = {};
             
+            let totalUnimedVal = 0;
+            let itemsMedCount = 0;
+            let divergencesCount = 0;
+
             [...weknowData, ...excelData].forEach(d => {
                 if (excludedPatients.has(d.paciente)) return; if (filter && d.paciente !== "PACIENTE GERAL" && d.paciente !== filter) return;
                 const p = d.paciente; if(!patients[p]) patients[p] = { name: p, totalW: 0, totalU: 0, items: [] };
-                if(d.src === 'weknow') patients[p].totalW += d.valor; else patients[p].totalU += d.valor;
+                
+                if(d.src === 'weknow') { patients[p].totalW += d.valor; } 
+                else { patients[p].totalU += d.valor; totalUnimedVal += d.valor; if(d.tipo === 'MED') itemsMedCount++; }
+                
                 patients[p].items.push(d);
             });
 
             const patList = Object.values(patients).sort((a,b) => a.name.localeCompare(b.name));
-            if(patList.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sem dados.</td></tr>'; return; }
+            
+            // Atualiza os Cards Superiores
+            document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            document.getElementById('dashMedCount').innerText = itemsMedCount;
+            
+            if(patList.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sem dados para exibir.</td></tr>'; return; }
 
             let htmlBuffer = "";
             patList.forEach((pat, idx) => {
                 const diff = pat.totalU - pat.totalW; 
-                let cls = 'bg-gray'; if(diff > 0.05) cls = 'bg-green'; if(diff < -0.05) cls = 'bg-red';
+                let cls = 'bg-gray'; 
+                if(diff > 0.05) cls = 'bg-green'; 
+                if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
                         <td style="text-align:center;"><button class="btn-toggle"><i class="fas fa-chevron-right"></i></button></td>
-                        <td style="font-weight:bold;">${pat.name}</td> <td>R$ 0,00</td> <td>R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                        <td style="font-weight:bold;">${pat.name}</td> <td>R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td> <td>R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                         <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></td>
                         <td style="text-align:center;"><button class="btn-icon-danger" title="Excluir" onclick="deleteRow('${pat.name}')"><i class="fas fa-trash"></i></button></td>
                     </tr>
@@ -329,44 +415,36 @@
                         let dateText = grp.dates.size > 1 ? "Várias" : (Array.from(grp.dates)[0] || "-");
                         htmlBuffer += `<tr><td style="text-align:center;"><button class="btn-toggle" onclick="toggleLevel2('${uniqueId}', this)"><i class="fas fa-chevron-right"></i></button></td>
                                 <td>${dateText}</td><td style="font-weight:bold;">${grp.name} (Agrupado)</td><td style="text-align:center;">${grp.sumMg.toLocaleString()}</td>
-                                <td>R$ 0,00</td><td>R$ ${grp.sumValU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
+                                <td>R$ ${grp.sumValW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>R$ ${grp.sumValU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
 
                         let subRows = "";
                         grp.raw.sort((a,b) => (a.data||"").localeCompare(b.data||"")).forEach(r => {
                             let subExtra = (grp.tipo && grp.tipo.includes("HOS")) ? `<select class="select-doc-row">${generateDoctorSelect()}</select>` : "";
-                            subRows += `<tr><td>${r.data || "-"}</td><td>${r.medicamento}</td><td style="text-align:center;">UN</td><td style="text-align:center;">${r.mg}</td><td>-</td><td>R$ ${r.valor.toFixed(2)}</td><td>${subExtra}</td></tr>`;
+                            let vW = r.src === 'weknow' ? `R$ ${r.valor.toFixed(2)}` : '-';
+                            let vU = r.src === 'unimed' ? `R$ ${r.valor.toFixed(2)}` : '-';
+                            subRows += `<tr><td>${r.data || "-"}</td><td>${r.medicamento}</td><td style="text-align:center;">UN</td><td style="text-align:center;">${r.mg}</td><td>${vW}</td><td>${vU}</td><td>${subExtra}</td></tr>`;
                         });
 
                         htmlBuffer += `<tr id="L2-${uniqueId}" class="row-detail"><td colspan="7"><table class="nested-table" style="background:#fffef0;">
                                         <thead><tr><th>Data</th><th>Item Individual</th><th>Origem</th><th>Qtd</th><th>Weknow</th><th>Unimed</th><th>Médico</th></tr></thead>
-                                        <tbody>${subRows}<tr class="row-total-med"><td colspan="4" style="text-align:right;">SUBTOTAL:</td><td>R$ 0,00</td><td>R$ ${grp.sumValU.toFixed(2)}</td><td></td></tr></tbody>
+                                        <tbody>${subRows}<tr class="row-total-med"><td colspan="4" style="text-align:right;">SUBTOTAL:</td><td>R$ ${grp.sumValW.toFixed(2)}</td><td>R$ ${grp.sumValU.toFixed(2)}</td><td></td></tr></tbody>
                                     </table></td></tr>`;
                     } else {
-                        let item = grp.raw[0]; let valU = item.src === 'unimed' ? item.valor : 0;
-                        htmlBuffer += `<tr><td></td><td>${item.data || "-"}</td><td>${item.medicamento}</td><td style="text-align:center;">${item.mg}</td><td>R$ 0,00</td><td>R$ ${valU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
+                        let item = grp.raw[0]; 
+                        let valW = item.src === 'weknow' ? item.valor : 0;
+                        let valU = item.src === 'unimed' ? item.valor : 0;
+                        htmlBuffer += `<tr><td></td><td>${item.data || "-"}</td><td>${item.medicamento}</td><td style="text-align:center;">${item.mg}</td><td>R$ ${valW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>R$ ${valU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
                     }
                     gIdx++;
                 });
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
+            
+            document.getElementById('dashDivergences').innerText = divergencesCount;
             tbody.innerHTML = htmlBuffer;
         }
 
-        function updateRepassDoctorDropdown() {
-            const dSel = document.getElementById('filterDoctor'); const currentVal = dSel.value; dSel.innerHTML = '<option value="">Todos os Médicos</option>';
-            
-            Object.entries(doctors).filter(([,d]) => {
-                if (d.plantao !== 'sim') return false;
-                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
-                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
-                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
-                return false;
-            }).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''))
-            .forEach(([id,d]) => dSel.add(new Option(d.nome, id)));
-                
-            if (Array.from(dSel.options).some(o => o.value === currentVal)) dSel.value = currentVal; else dSel.value = "";
-        }
-
+        // Funções de Plantão e API
         async function loadDoctors() { 
             try { 
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
@@ -374,6 +452,18 @@
                 doctorList = Object.entries(doctors).filter(([,d]) => d.plantao==='sim').sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).map(([id,d]) => ({id, nome: d.nome}));
                 updateRepassDoctorDropdown();
             } catch(e) {}
+        }
+
+        function updateRepassDoctorDropdown() {
+            const dSel = document.getElementById('filterDoctor'); const currentVal = dSel.value; dSel.innerHTML = '<option value="">Todos os Médicos</option>';
+            Object.entries(doctors).filter(([,d]) => {
+                if (d.plantao !== 'sim') return false;
+                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
+                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
+                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
+                return false;
+            }).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id,d]) => dSel.add(new Option(d.nome, id)));
+            if (Array.from(dSel.options).some(o => o.value === currentVal)) dSel.value = currentVal; else dSel.value = "";
         }
 
         function getHolidays(y) { 
