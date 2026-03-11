@@ -36,8 +36,6 @@
         .sub-tab-btn:hover:not(.active) { background: #e5e7eb; }
 
         .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; white-space: nowrap; height: 38px; }
-        .btn-sync-robot { background: #00995D; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; white-space: nowrap; height: 38px; box-shadow: 0 2px 4px rgba(0, 153, 93, 0.3); }
-        .btn-sync-robot:hover { background: #007a4a; }
         
         .btn-danger-block { background: #dc2626; color: white; border: none; width: 100%; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-danger-block:hover { background: #b91c1c; }
@@ -106,6 +104,17 @@
         <div id="global-header" class="header"></div>
         <div id="global-nav"></div>
 
+        <div class="controls controls-plantao" style="margin-bottom: 20px;">
+            <div class="filters-left">
+                <select id="selMonth" class="form-control" onchange="handleDateChange()"></select>
+                <select id="selYear" class="form-control" onchange="handleDateChange()"></select>
+                <div class="total-box" style="margin-left: 10px;">Total Geral Escala: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span></div>
+            </div>
+            <div class="actions-right">
+                <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir</button>
+            </div>
+        </div>
+
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="openTab('plantao')">Escala Plantão</button>
             <button class="tab-btn" onclick="openTab('unimed')">Repasse Unimed</button>
@@ -119,19 +128,15 @@
                 <button class="sub-tab-btn" onclick="switchShiftTab('cirurgioes', this)">Cirurgiões</button>
             </div>
 
-            <div class="controls controls-plantao">
-                <div class="filters-left">
-                    <select id="selMonth" class="form-control" onchange="renderRepasseTable(); fetchBotData(true);"></select>
-                    <select id="selYear" class="form-control" onchange="renderRepasseTable(); fetchBotData(true);"></select>
-                    <select id="filterDoctor" class="form-control" onchange="renderRepasseTable()">
+            <div class="controls" style="margin-bottom: 15px; padding: 10px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label class="label-title" style="margin: 0;">Filtrar Médico na Escala:</label>
+                    <select id="filterDoctor" class="form-control" style="width: auto; min-width: 250px;" onchange="renderRepasseTable()">
                         <option value="">Carregando...</option>
                     </select>
                 </div>
-                <div class="actions-right">
-                    <div class="total-box">Total Geral: <span id="grandTotal">R$ 0,00</span></div>
-                    <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir</button>
-                </div>
             </div>
+
             <div class="sheet-container">
                 <div class="table-responsive">
                     <table class="scale-table" id="repTable">
@@ -162,23 +167,9 @@
             <div class="controls">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
                     
-                    <div style="flex-grow: 1; display: flex; gap: 15px; align-items: flex-end;">
-                        <div>
-                            <h4 style="color:#00995D; margin-top:0; margin-bottom: 10px;"><i class="fas fa-robot"></i> Automação Unimed</h4>
-                            <button class="btn-sync-robot" onclick="fetchBotData()">
-                                <i class="fas fa-sync-alt"></i> Buscar Dados do Robô
-                            </button>
-                        </div>
-
-                        <div style="border-left: 2px solid #e5e7eb; padding-left: 15px;">
-                            <label class="label-title">Ou Upload Manual (.xlsx)</label>
-                            <input type="file" id="excelFile" class="input-field" style="max-width: 250px; height: 38px;" accept=".xlsx, .xls" onchange="handleFileUpload()">
-                        </div>
-                    </div>
-                    
                     <div style="display: flex; gap: 10px; align-items: flex-end;">
-                        <div class="input-group" style="margin:0; width: 200px;">
-                            <label class="label-title">Filtrar Paciente</label>
+                        <div class="input-group" style="margin:0; width: 250px;">
+                            <label class="label-title">Filtrar Paciente (Unimed)</label>
                             <select id="filterPatient" class="input-field" onchange="renderAnalysisTable()">
                                 <option value="">Todos</option>
                             </select>
@@ -186,6 +177,11 @@
                         <button class="btn-danger-block" onclick="deleteSelected()" style="min-width: 150px;">
                             <i class="fas fa-trash-alt"></i> Excluir Seleção
                         </button>
+                    </div>
+
+                    <div style="border-left: 2px solid #e5e7eb; padding-left: 15px;">
+                        <label class="label-title">Upload Manual (Plano B)</label>
+                        <input type="file" id="excelFile" class="input-field" style="max-width: 250px; height: 38px;" accept=".xlsx, .xls" onchange="handleFileUpload()">
                     </div>
 
                 </div>
@@ -207,8 +203,8 @@
                         </thead>
                         <tbody>
                             <tr><td colspan="7" style="text-align:center; padding:40px; color:#999; font-size: 14px;">
-                                <i class="fas fa-cloud-download-alt" style="font-size: 24px; color: #cbd5e1; margin-bottom: 10px; display: block;"></i>
-                                Clique em "Buscar Dados do Robô" ou faça o upload da planilha para visualizar.
+                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #00995D; margin-bottom: 10px; display: block;"></i>
+                                Carregando dados automáticos...
                             </td></tr>
                         </tbody>
                     </table>
@@ -243,8 +239,16 @@
             mSel.value = curM;
 
             await loadDoctors();
-            renderRepasseTable();
+            
+            // Inicia o carregamento das duas abas automaticamente no onload
+            handleDateChange();
         });
+
+        // Função unificada que roda sempre que o mês ou ano mudar
+        function handleDateChange() {
+            renderRepasseTable(); // Atualiza a escala
+            fetchBotData(true);   // Atualiza a Unimed silenciosamente
+        }
 
         function openTab(t){ 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -254,32 +258,27 @@
         }
 
         // ==========================================
-        // 🚀 COMUNICAÇÃO COM A API DO ROBÔ UNIMED
+        // 🚀 COMUNICAÇÃO AUTOMÁTICA COM A API
         // ==========================================
         async function fetchBotData(isSilent = false) {
             const tbody = document.querySelector('#dataTable tbody'); 
-            if(!isSilent) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados do Robô Unimed...</td></tr>';
+            if(!isSilent) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
             
             try {
-                // Pega a competência selecionada nos filtros (Mês e Ano)
                 const mesSelecionado = String(parseInt(document.getElementById('selMonth').value) + 1).padStart(2, '0');
                 const anoSelecionado = document.getElementById('selYear').value;
-                const competenciaId = `${mesSelecionado}_${anoSelecionado}`; // Ex: "02_2026"
+                const competenciaId = `${mesSelecionado}_${anoSelecionado}`; 
 
-                // Consulta a rota exata onde o robô jogou os dados
                 const response = await fetch(`${API_BASE_URL}/repasse_unimed_${competenciaId}`, { headers: API_HEADERS });
                 
-                if (!response.ok) throw new Error('Não há dados salvos pelo robô para este mês.');
+                if (!response.ok) throw new Error('Dados da Unimed não disponíveis para este mês.');
                 
                 const data = await response.json();
-                
-                // Normaliza o retorno da API
                 const payloadBot = normalizeData(data);
                 const arrayBot = Object.values(payloadBot);
 
-                if(arrayBot.length === 0) throw new Error('A planilha deste mês está vazia.');
+                if(arrayBot.length === 0) throw new Error('A planilha deste mês está vazia no banco de dados.');
 
-                // Transforma o JSON do Robô no formato da nossa tabela visual
                 excelData = arrayBot.map(row => ({
                     paciente: String(row.paciente || '').toUpperCase().trim(), 
                     medicamento: String(row.descricao || row.codigo_procedimento || '').toUpperCase().trim(), 
@@ -288,18 +287,16 @@
                     data: row.data_atendimento || "-", 
                     tipo: String(row.tipo || "MED").toUpperCase(), 
                     src: "unimed"
-                })).filter(item => !item.tipo.startsWith("MAT") && item.paciente && item.medicamento); // Filtra os MAT automaticamente
+                })).filter(item => !item.tipo.startsWith("MAT") && item.paciente && item.medicamento); 
 
-                if(!isSilent) alert(`Sucesso! ${excelData.length} registros sincronizados da competência ${mesSelecionado}/${anoSelecionado}.`);
-                
                 updateFilters(); 
                 renderAnalysisTable();
 
             } catch (err) {
-                if(!isSilent) {
-                    alert(err.message);
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #dc2626;">${err.message}</td></tr>`;
-                }
+                excelData = []; // Limpa os dados se falhar
+                updateFilters();
+                renderAnalysisTable();
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-exclamation-circle" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
             }
         }
 
@@ -395,7 +392,7 @@
             document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
             
-            if(patList.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sem dados para exibir.</td></tr>'; return; }
+            if(patList.length === 0) { return; }
 
             let htmlBuffer = "";
             patList.forEach((pat, idx) => {
