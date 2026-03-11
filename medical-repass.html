@@ -121,8 +121,8 @@
 
             <div class="controls controls-plantao">
                 <div class="filters-left">
-                    <select id="selMonth" class="form-control" onchange="renderRepasseTable()"></select>
-                    <select id="selYear" class="form-control" onchange="renderRepasseTable()"></select>
+                    <select id="selMonth" class="form-control" onchange="renderRepasseTable(); fetchBotData(true);"></select>
+                    <select id="selYear" class="form-control" onchange="renderRepasseTable(); fetchBotData(true);"></select>
                     <select id="filterDoctor" class="form-control" onchange="renderRepasseTable()">
                         <option value="">Carregando...</option>
                     </select>
@@ -254,42 +254,58 @@
         }
 
         // ==========================================
-        // FUNÇÃO DE INTEGRAÇÃO COM O ROBÔ (BACKEND)
+        // 🚀 COMUNICAÇÃO COM A API DO ROBÔ UNIMED
         // ==========================================
-        async function fetchBotData() {
+        async function fetchBotData(isSilent = false) {
             const tbody = document.querySelector('#dataTable tbody'); 
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados do Robô Unimed...</td></tr>';
+            if(!isSilent) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados do Robô Unimed...</td></tr>';
             
             try {
-                // Aqui você vai apontar para a rota real da sua API onde o robô salva os dados
-                const response = await fetch(`${API_BASE_URL}/medical-repass/import`, { headers: API_HEADERS });
-                
-                if (!response.ok) throw new Error('Não há dados novos gerados pelo robô para este mês.');
-                
-                const payloadBot = await response.json();
-                
-                // Mapeia o JSON que veio do robô para o formato visual da tabela
-                excelData = payloadBot.map(row => ({
-                    paciente: String(row.paciente).toUpperCase().trim(), 
-                    medicamento: String(row.descricao || row.codigo_procedimento).toUpperCase().trim(), 
-                    valor: parseFloat(row.valor_pago || 0), 
-                    mg: 1, // Padrão se não vier qtd do robô
-                    data: row.data_atendimento || "-", 
-                    tipo: row.is_med_item ? "MED" : "PROC", 
-                    src: "unimed"
-                }));
+                // Pega a competência selecionada nos filtros (Mês e Ano)
+                const mesSelecionado = String(parseInt(document.getElementById('selMonth').value) + 1).padStart(2, '0');
+                const anoSelecionado = document.getElementById('selYear').value;
+                const competenciaId = `${mesSelecionado}_${anoSelecionado}`; // Ex: "02_2026"
 
-                alert(`Sucesso! ${excelData.length} registros sincronizados do Robô Unimed.`);
+                // Consulta a rota exata onde o robô jogou os dados
+                const response = await fetch(`${API_BASE_URL}/repasse_unimed_${competenciaId}`, { headers: API_HEADERS });
+                
+                if (!response.ok) throw new Error('Não há dados salvos pelo robô para este mês.');
+                
+                const data = await response.json();
+                
+                // Normaliza o retorno da API
+                const payloadBot = normalizeData(data);
+                const arrayBot = Object.values(payloadBot);
+
+                if(arrayBot.length === 0) throw new Error('A planilha deste mês está vazia.');
+
+                // Transforma o JSON do Robô no formato da nossa tabela visual
+                excelData = arrayBot.map(row => ({
+                    paciente: String(row.paciente || '').toUpperCase().trim(), 
+                    medicamento: String(row.descricao || row.codigo_procedimento || '').toUpperCase().trim(), 
+                    valor: parseFloat(row.valor_pago || 0), 
+                    mg: parseFloat(row.quantidade || 1), 
+                    data: row.data_atendimento || "-", 
+                    tipo: String(row.tipo || "MED").toUpperCase(), 
+                    src: "unimed"
+                })).filter(item => !item.tipo.startsWith("MAT") && item.paciente && item.medicamento); // Filtra os MAT automaticamente
+
+                if(!isSilent) alert(`Sucesso! ${excelData.length} registros sincronizados da competência ${mesSelecionado}/${anoSelecionado}.`);
+                
                 updateFilters(); 
                 renderAnalysisTable();
 
             } catch (err) {
-                alert(err.message);
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: #dc2626;">Falha ao sincronizar. Certifique-se que o Robô rodou este mês.</td></tr>';
+                if(!isSilent) {
+                    alert(err.message);
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #dc2626;">${err.message}</td></tr>`;
+                }
             }
         }
 
-        // Funções de Tabela e Lógica Visual
+        // ==========================================
+        // DEMAIS FUNÇÕES DE TABELA E LÓGICA
+        // ==========================================
         function switchShiftTab(tabId, element) {
             currentShiftTab = tabId;
             document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -376,7 +392,6 @@
 
             const patList = Object.values(patients).sort((a,b) => a.name.localeCompare(b.name));
             
-            // Atualiza os Cards Superiores
             document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
             
@@ -444,7 +459,6 @@
             tbody.innerHTML = htmlBuffer;
         }
 
-        // Funções de Plantão e API
         async function loadDoctors() { 
             try { 
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
