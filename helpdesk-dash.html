@@ -27,6 +27,12 @@
         .filter-group label { font-size: 11px; font-weight: bold; color: var(--text-light); text-transform: uppercase; }
         .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
         
+        /* SISTEMA DE ABAS */
+        .dash-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .dash-tab-btn { background: transparent; border: none; font-size: 15px; font-weight: bold; color: #64748b; padding: 10px 20px; cursor: pointer; transition: 0.3s; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
+        .dash-tab-btn:hover { background: #f1f5f9; color: var(--primary); }
+        .dash-tab-btn.active { background: var(--primary); color: white; }
+
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 25px; }
         .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); border-left: 4px solid var(--primary); }
         .kpi-num { font-size: 28px; font-weight: 800; color: var(--secondary); }
@@ -50,9 +56,25 @@
         .tech-owner { font-size: 11px; font-weight: bold; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
         .ticket-id { font-family: monospace; font-weight: bold; color: var(--primary); font-size: 14px; }
         
+        /* ESTILOS DO RELATÓRIO DE ATIVIDADES */
+        .activity-card { border: 1px solid #e2e8f0; border-left: 4px solid #10B981; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .act-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #64748b; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        .act-title { font-size: 15px; font-weight: bold; color: var(--secondary); margin-bottom: 10px; }
+        .act-desc { font-size: 13px; color: #334155; background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
+        .act-sol { font-size: 13px; color: #065F46; background: #ECFDF5; padding: 12px; border-radius: 6px; border: 1px solid #A7F3D0; }
+
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); position: relative; }
         .btn-close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+
+        /* MODO IMPRESSÃO - Oculta tudo que não for o relatório */
+        @media print {
+            body * { visibility: hidden; }
+            #tab-activities, #tab-activities * { visibility: visible; }
+            #tab-activities { position: absolute; left: 0; top: 0; width: 100%; }
+            .header-actions, .filter-bar, .dash-tabs, .btn-print { display: none !important; }
+            .activity-card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
+        }
     </style>
 </head>
 <body>
@@ -62,7 +84,7 @@
 
         <div class="header-actions">
             <div>
-                <h2 style="margin:0; font-size:18px; color:var(--secondary);"><i class="fas fa-chart-pie"></i> Dashboard Helpdesk</h2>
+                <h2 style="margin:0; font-size:18px; color:var(--secondary);"><i class="fas fa-chart-pie"></i> Painel Gerencial de TI</h2>
             </div>
             <a href="helpdesk-admin.html" class="btn btn-primary" style="background:#3b82f6; color:white; padding:8px 15px; border-radius:8px; text-decoration:none; font-weight:bold;">
                 <i class="fas fa-arrow-left"></i> Voltar para Atendimento
@@ -72,11 +94,11 @@
         <div class="filter-bar" style="justify-content: space-between;">
             <div style="display:flex; gap: 15px; flex-wrap:wrap; flex:1;">
                 <div class="filter-group">
-                    <label>De</label>
+                    <label>De (Abertura)</label>
                     <input type="date" id="dashStart" class="form-control" onchange="renderDashboard()" style="margin:0;">
                 </div>
                 <div class="filter-group">
-                    <label>Até</label>
+                    <label>Até (Abertura)</label>
                     <input type="date" id="dashEnd" class="form-control" onchange="renderDashboard()" style="margin:0;">
                 </div>
                 <div class="filter-group">
@@ -84,56 +106,75 @@
                     <select id="dashSector" class="form-control" onchange="renderDashboard()" style="margin:0;"><option value="">Todos</option></select>
                 </div>
                 <div class="filter-group">
-                    <label>Fila</label>
+                    <label>Fila / Categoria</label>
                     <select id="dashCat" class="form-control" onchange="renderDashboard()" style="margin:0;"><option value="">Todas</option></select>
                 </div>
                 <div class="filter-group">
-                    <label>Atendente</label>
+                    <label>Atendente (TI)</label>
                     <select id="dashTech" class="form-control" onchange="renderDashboard()" style="margin:0;"><option value="">Todos</option></select>
                 </div>
             </div>
             <div style="display:flex; gap:10px; align-items:flex-end;">
-                <button class="btn btn-secondary" onclick="exportTickets()" style="height:42px; background:#cbd5e1; border:none; color:#1e293b; font-weight:bold; border-radius:8px; cursor:pointer; padding:0 15px;"><i class="fas fa-file-export"></i> Exportar</button>
-                <button class="btn btn-info" onclick="resetFilters()" style="height:42px;">Limpar</button>
-                <button class="btn-dash-config" onclick="openDashConfigModal()" style="height:42px;"><i class="fas fa-pencil-alt"></i> Layout</button>
+                <button class="btn btn-secondary" onclick="exportTickets()" style="height:42px; background:#cbd5e1; border:none; color:#1e293b; font-weight:bold; border-radius:8px; cursor:pointer; padding:0 15px;"><i class="fas fa-file-excel"></i> Exportar</button>
+                <button class="btn btn-info" onclick="resetFilters()" style="height:42px;"><i class="fas fa-eraser"></i> Limpar</button>
+                <button class="btn-dash-config" onclick="openDashConfigModal()" style="height:42px;"><i class="fas fa-cog"></i> Layout</button>
             </div>
         </div>
 
-        <div id="sect-kpis" class="kpi-grid">
-            <div class="kpi-card"><div class="kpi-num" id="kpiTotal">0</div><div class="kpi-label">Total Chamados</div></div>
-            <div class="kpi-card" style="border-left-color: #D97706;"><div class="kpi-num" id="kpiPending" style="color: #D97706;">0</div><div class="kpi-label">Abertos / Andamento</div></div>
-            <div class="kpi-card" style="border-left-color: #065F46;"><div class="kpi-num" id="kpiFinished" style="color: #065F46;">0</div><div class="kpi-label">Resolvidos</div></div>
-            <div class="kpi-card" style="border-left-color: #F59E0B;"><div class="kpi-num" id="kpiRating" style="color: #F59E0B;">0.0</div><div class="kpi-label">Satisfação Média</div></div>
-            <div class="kpi-card" style="border-left-color: #3B82F6;"><div class="kpi-num" id="kpiSLA">00:00</div><div class="kpi-label">Tempo Médio (SLA)</div></div>
+        <div class="dash-tabs">
+            <button class="dash-tab-btn active" onclick="switchTab('overview')" id="btn-tab-overview"><i class="fas fa-chart-line"></i> Visão Geral</button>
+            <button class="dash-tab-btn" onclick="switchTab('activities')" id="btn-tab-activities"><i class="fas fa-clipboard-check"></i> Atividades Concluídas (Reunião)</button>
         </div>
 
-        <div id="sect-charts" style="display:flex; gap:20px; margin-bottom:25px; flex-wrap:wrap;">
-            <div class="chart-container" id="boxChart1">
-                <h4 id="chart1Title" style="margin:0 0 15px 0; color:var(--secondary); font-size:14px; text-align:left; width:100%;"><i class="fas fa-chart-bar"></i> Gráfico 1</h4>
-                <div style="width: 100%; height: 250px; position: relative;"><canvas id="mainChart"></canvas></div>
+        <div id="tab-overview">
+            <div id="sect-kpis" class="kpi-grid">
+                <div class="kpi-card"><div class="kpi-num" id="kpiTotal">0</div><div class="kpi-label">Total Chamados</div></div>
+                <div class="kpi-card" style="border-left-color: #D97706;"><div class="kpi-num" id="kpiPending" style="color: #D97706;">0</div><div class="kpi-label">Abertos / Andamento</div></div>
+                <div class="kpi-card" style="border-left-color: #065F46;"><div class="kpi-num" id="kpiFinished" style="color: #065F46;">0</div><div class="kpi-label">Resolvidos</div></div>
+                <div class="kpi-card" style="border-left-color: #F59E0B;"><div class="kpi-num" id="kpiRating" style="color: #F59E0B;">0.0</div><div class="kpi-label">Satisfação Média</div></div>
+                <div class="kpi-card" style="border-left-color: #3B82F6;"><div class="kpi-num" id="kpiSLA">00:00</div><div class="kpi-label">Tempo Médio (SLA)</div></div>
             </div>
-            <div class="chart-container" id="boxChart2">
-                <h4 id="chart2Title" style="margin:0 0 15px 0; color:var(--secondary); font-size:14px; text-align:left; width:100%;"><i class="fas fa-chart-pie"></i> Gráfico 2</h4>
-                <div style="width: 100%; height: 250px; position: relative;"><canvas id="secondChart"></canvas></div>
+
+            <div id="sect-charts" style="display:flex; gap:20px; margin-bottom:25px; flex-wrap:wrap;">
+                <div class="chart-container" id="boxChart1">
+                    <h4 id="chart1Title" style="margin:0 0 15px 0; color:var(--secondary); font-size:14px; text-align:left; width:100%;"><i class="fas fa-chart-bar"></i> Gráfico 1</h4>
+                    <div style="width: 100%; height: 250px; position: relative;"><canvas id="mainChart"></canvas></div>
+                </div>
+                <div class="chart-container" id="boxChart2">
+                    <h4 id="chart2Title" style="margin:0 0 15px 0; color:var(--secondary); font-size:14px; text-align:left; width:100%;"><i class="fas fa-chart-pie"></i> Gráfico 2</h4>
+                    <div style="width: 100%; height: 250px; position: relative;"><canvas id="secondChart"></canvas></div>
+                </div>
+            </div>
+
+            <div id="sect-ranks" class="ranking-container">
+                <div class="card"><div class="card-header"><i class="fas fa-tags"></i> Top Filas Demandadas</div><div id="rankCat" style="padding:15px;"></div></div>
+                <div class="card"><div class="card-header"><i class="fas fa-bolt"></i> Top Assuntos Específicos</div><div id="rankAssunto" style="padding:15px;"></div></div>
+            </div>
+
+            <div id="sect-table" class="card">
+                <div class="card-header"><i class="fas fa-list"></i> Últimos Registros Visíveis no Filtro</div>
+                <div class="table-container">
+                    <table id="dashTable" style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 10px;">Nº</th><th>Data</th><th>Solicitante</th><th>Item / Assunto</th><th>Atendente</th><th>Status</th><th>SLA Real</th></tr></thead>
+                        <tbody>
+                            <tr><td colspan="7" style="text-align:center; padding:20px;">⏳ Buscando dados no servidor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div id="sect-ranks" class="ranking-container">
-            <div class="card"><div class="card-header"><i class="fas fa-tags"></i> Top Filas</div><div id="rankCat" style="padding:15px;"></div></div>
-            <div class="card"><div class="card-header"><i class="fas fa-bolt"></i> Top Assuntos</div><div id="rankAssunto" style="padding:15px;"></div></div>
-        </div>
-
-        <div id="sect-table" class="card">
-            <div class="card-header"><i class="fas fa-list"></i> Últimos Registros Visíveis no Filtro</div>
-            <div class="table-container">
-                <table id="dashTable" style="width: 100%; text-align: left; border-collapse: collapse;">
-                    <thead><tr style="border-bottom: 2px solid #eee;"><th style="padding: 10px;">Nº</th><th>Data</th><th>Solicitante</th><th>Item / Assunto</th><th>Atendente</th><th>Status</th><th>SLA Real</th></tr></thead>
-                    <tbody>
-                        <tr><td colspan="7" style="text-align:center; padding:20px;">⏳ Buscando dados no servidor...</td></tr>
-                    </tbody>
-                </table>
+        <div id="tab-activities" style="display:none;">
+            <div class="card">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size: 16px;"><i class="fas fa-clipboard-list"></i> Log de Atividades Finalizadas</span>
+                    <button class="btn btn-secondary btn-print" onclick="window.print()" style="padding: 6px 15px; font-size: 13px; font-weight:bold; background: #334155; color:white; border:none; border-radius:6px; cursor:pointer;"><i class="fas fa-print"></i> Imprimir Relatório</button>
+                </div>
+                <div id="activities-container" style="padding: 20px;">
+                    </div>
             </div>
         </div>
+
     </div>
 
     <div id="modalDashConfig" class="modal-overlay" style="display:none;">
@@ -201,8 +242,19 @@
             resetFilters(); 
             applyDashConfig();
             await loadAllData();
-            setInterval(loadAllData, 15000); // Atualiza dados a cada 15 seg
+            setInterval(loadAllData, 15000); 
         });
+
+        // Alternador de Abas
+        function switchTab(tabName) {
+            document.getElementById('btn-tab-overview').classList.remove('active');
+            document.getElementById('btn-tab-activities').classList.remove('active');
+            document.getElementById('tab-overview').style.display = 'none';
+            document.getElementById('tab-activities').style.display = 'none';
+
+            document.getElementById(`btn-tab-${tabName}`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).style.display = 'block';
+        }
 
         function normalizeData(apiData) {
             if (!apiData) return {};
@@ -220,49 +272,41 @@
             return '#' + String(id).padStart(4, '0');
         }
 
-        // ==========================================
-        // BUSCA IDÊNTICA AO HELPDESK-ADMIN.HTML
-        // ==========================================
         async function loadAllData() {
             try {
-                // AQUI FOI ADICIONADO O "CRACHÁ" E A ROTA CORRETA (/chamados)
                 const [resUsers, resTickets] = await Promise.all([
                     fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/chamados?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
 
-                // Lendo usuários
                 const usersData = normalizeData(await resUsers.json());
                 usersMap = {};
                 Object.values(usersData).forEach(u => {
                     if(u.email) usersMap[u.email.toLowerCase()] = u;
                 });
 
-                // Lendo chamados exatamente como o Admin faz
                 const rawTickets = await resTickets.json();
-                
                 let arrayRaw = Object.entries(normalizeData(rawTickets)).map(([key, val]) => ({ key: key, ...val }));
                 
-                // Ordenação garantida pela data para gerar ID numérico
+                // Ordenação para ID visual (sempre pela data de criação ascendente)
                 arrayRaw = arrayRaw.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
                 arrayRaw.forEach((t, idx) => { t.visual_id = idx + 1; });
                 
                 allTickets = arrayRaw;
-                console.log(`✅ Sucesso! O Dashboard puxou ${allTickets.length} chamados da tabela helpdesk_tickets.`);
+                console.log(`✅ O Dashboard puxou ${allTickets.length} chamados da tabela.`);
 
                 updateFilterOptions();
                 renderDashboard();
             } catch (e) { 
                 console.error("Erro na comunicação com a API:", e); 
-                document.querySelector('#dashTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">❌ Erro ao conectar. Atualize a página.</td></tr>';
+                document.querySelector('#dashTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">❌ Erro ao conectar.</td></tr>';
             }
         }
 
         function resetFilters() {
             const today = new Date();
             const start = new Date();
-            // AUMENTADO PARA 365 DIAS (1 ANO) PARA NÃO ESCONDER CHAMADOS ANTIGOS
-            start.setDate(today.getDate() - 365); 
+            start.setDate(today.getDate() - 30); // Padrão Inicial de 30 dias para não pesar muito
             document.getElementById('dashEnd').valueAsDate = today;
             document.getElementById('dashStart').valueAsDate = start;
             if(document.getElementById('dashSector')) document.getElementById('dashSector').value = '';
@@ -300,7 +344,7 @@
             Array.from(categories).sort().forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
             catSelect.value = currentCat;
 
-            techSelect.innerHTML = '<option value="">Todos</option><option value="aguardando">⏳ Aguardando Atribuição</option>';
+            techSelect.innerHTML = '<option value="">Todos</option><option value="aguardando">⏳ Aguardando</option>';
             Array.from(techs).sort().forEach(tech => {
                 const shortName = tech.split(' ')[0];
                 techSelect.innerHTML += `<option value="${tech}">${shortName}</option>`;
@@ -330,8 +374,20 @@
         function renderDashboard() {
             const startStr = document.getElementById('dashStart').value;
             const endStr = document.getElementById('dashEnd').value;
-            const start = startStr ? new Date(startStr + "T00:00:00") : new Date(0);
-            const end = endStr ? new Date(endStr + "T23:59:59") : new Date();
+            
+            // FILTRO DE DATA BLINDADO
+            let startDate = new Date(0);
+            let endDate = new Date("2100-01-01T23:59:59");
+
+            if(startStr) {
+                const [y, m, d] = startStr.split('-');
+                startDate = new Date(y, m-1, d, 0, 0, 0);
+            }
+            if(endStr) {
+                const [y, m, d] = endStr.split('-');
+                endDate = new Date(y, m-1, d, 23, 59, 59, 999);
+            }
+
             const sec = document.getElementById('dashSector').value;
             const cat = document.getElementById('dashCat').value;
             const tech = document.getElementById('dashTech').value;
@@ -343,22 +399,17 @@
             let totalRating = 0, ratedCount = 0;
 
             const finalDashList = allTickets.filter(t => {
-                // Filtro flexível para as datas (compara só dia, ignora a hora exata na busca)
-                let d = new Date(0);
+                // Parse seguro da data do banco
+                let ticketDate = new Date(0);
                 if (t.date) {
-                    const parsedDate = new Date(t.date);
-                    if (!isNaN(parsedDate.getTime())) {
-                        d = parsedDate;
-                    }
+                    let dStr = typeof t.date === 'string' ? t.date.replace(' ', 'T') : t.date;
+                    const parsed = new Date(dStr);
+                    if (!isNaN(parsed.getTime())) ticketDate = parsed;
                 }
-                
-                d.setHours(0,0,0,0);
-                const sTemp = new Date(start); sTemp.setHours(0,0,0,0);
-                const eTemp = new Date(end); eTemp.setHours(23,59,59,999);
 
-                if(d.getTime() < sTemp.getTime() || d.getTime() > eTemp.getTime()) return false;
-                if(sec && t.setor !== sec) return false;
+                if (ticketDate.getTime() < startDate.getTime() || ticketDate.getTime() > endDate.getTime()) return false;
                 
+                if(sec && t.setor !== sec) return false;
                 const catStr = String(t.categoria || 'Geral');
                 const catPrincipal = catStr.split(' > ')[0];
                 if(cat && catPrincipal !== cat) return false;
@@ -383,6 +434,7 @@
                 return true;
             });
 
+            // === ATUALIZA ABA 1: VISÃO GERAL ===
             const total = finalDashList.length;
             const pend = finalDashList.filter(t => t.status !== 'finalizado').length;
             const fin = finalDashList.filter(t => t.status === 'finalizado').length;
@@ -419,14 +471,13 @@
                 if (dataPref === 'produtividade') {
                     document.getElementById(titleId).innerHTML = '<i class="fas fa-users-cog"></i> Produtividade por Atendente';
                     chartLabels = Object.keys(prodStats);
-                    
                     if(typePref === 'bar' || typePref === 'line') {
                         chartDatasets = [
-                            { label: 'Aberto/And.', data: chartLabels.map(tech => prodStats[tech].andamento), backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
-                            { label: 'Standby', data: chartLabels.map(tech => prodStats[tech].standby), backgroundColor: '#F59E0B', borderColor: '#F59E0B' },
-                            { label: 'Finalizado', data: chartLabels.map(tech => prodStats[tech].finalizado), backgroundColor: '#10B981', borderColor: '#10B981' }
+                            { label: 'Aberto/And.', data: chartLabels.map(tech => prodStats[tech].andamento), backgroundColor: '#3B82F6' },
+                            { label: 'Standby', data: chartLabels.map(tech => prodStats[tech].standby), backgroundColor: '#F59E0B' },
+                            { label: 'Finalizado', data: chartLabels.map(tech => prodStats[tech].finalizado), backgroundColor: '#10B981' }
                         ];
-                        if(typePref === 'bar') { chartOptions.scales = { x: { stacked: true }, y: { stacked: true } }; }
+                        if(typePref === 'bar') chartOptions.scales = { x: { stacked: true }, y: { stacked: true } };
                     } else {
                         chartDatasets = [{ data: chartLabels.map(tech => prodStats[tech].total), backgroundColor: coresFixas }];
                         chartOptions.plugins = { legend: { position: 'right' } };
@@ -434,17 +485,12 @@
                 } else if (dataPref === 'setor') {
                     document.getElementById(titleId).innerHTML = '<i class="fas fa-building"></i> Top Setores';
                     const sorted = Object.entries(statsSetor).sort((a,b)=>b[1]-a[1]).slice(0,6);
-                    chartLabels = sorted.map(i=>i[0]);
-                    chartDatasets = [{ label: 'Chamados', data: sorted.map(i=>i[1]), backgroundColor: coresFixas }];
-                    if(typePref === 'pie' || typePref === 'doughnut') chartOptions.plugins = { legend: { position: 'right' } };
+                    chartLabels = sorted.map(i=>i[0]); chartDatasets = [{ data: sorted.map(i=>i[1]), backgroundColor: coresFixas }];
                 } else if (dataPref === 'categoria') {
                     document.getElementById(titleId).innerHTML = '<i class="fas fa-tags"></i> Top Filas';
                     const sorted = Object.entries(statsCat).sort((a,b)=>b[1]-a[1]).slice(0,6);
-                    chartLabels = sorted.map(i=>i[0]);
-                    chartDatasets = [{ label: 'Chamados', data: sorted.map(i=>i[1]), backgroundColor: coresFixas }];
-                    if(typePref === 'pie' || typePref === 'doughnut') chartOptions.plugins = { legend: { position: 'right' } };
+                    chartLabels = sorted.map(i=>i[0]); chartDatasets = [{ data: sorted.map(i=>i[1]), backgroundColor: coresFixas }];
                 }
-
                 return new Chart(ctx, { type: typePref, data: { labels: chartLabels, datasets: chartDatasets }, options: chartOptions });
             };
 
@@ -453,56 +499,82 @@
             secondChartInstance = buildChart('secondChart', 'chart2Title', conf.c2Data, conf.c2Type, secondChartInstance);
 
             const dashBody = document.querySelector('#dashTable tbody');
+            const listForTable = [...finalDashList].sort((a,b) => new Date(b.date||0).getTime() - new Date(a.date||0).getTime());
             
-            const listForTable = [...finalDashList].sort((a,b) => {
-                const dateA = a.date ? new Date(a.date).getTime() : 0;
-                const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA; // Recentes no topo
-            });
-
             dashBody.innerHTML = listForTable.map(t => {
-                const dataFormatada = t.date ? new Date(t.date).toLocaleDateString() : '-';
+                const dt = t.date ? new Date(t.date).toLocaleDateString() : '-';
                 const statusName = t.status || 'pendente';
-                const atendente = t.atendente_nome ? `<span class="tech-owner">${t.atendente_nome.split(' ')[0]}</span>` : '<span style="color:#999; font-size:10px;">Aguardando</span>';
-                
-                const uData = usersMap[(t.uid||"").toLowerCase()] || {};
-                const userName = (uData.nome && uData.nome.trim() !== 'Usuario') ? uData.nome : (t.user || "Usuário");
-
+                const userName = usersMap[(t.uid||"").toLowerCase()]?.nome || t.user || "Usuário";
                 return `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                     <td class="ticket-id" style="padding:10px;">${formatarId(t.visual_id)}</td>
-                    <td>${dataFormatada}</td>
-                    <td>${userName}</td>
-                    <td><div style="font-size:11px; color:#888;">${t.categoria || ''}</div><div>${t.assunto || ''}</div></td>
-                    <td>${atendente}</td>
+                    <td>${dt}</td><td>${userName}</td>
+                    <td><div style="font-size:11px; color:#888;">${t.categoria||''}</div><div>${t.assunto||''}</div></td>
+                    <td>${t.atendente_nome ? `<span class="tech-owner">${t.atendente_nome.split(' ')[0]}</span>` : '-'}</td>
                     <td><span class="badge bg-${statusName}">${statusName}</span></td>
                     <td style="font-family:monospace;">${formatMs(calculateElapsedTime(t))}</td>
-                </tr>
-                `;
-            }).join('') || '<tr><td colspan="7" style="text-align:center; padding:15px; color:#ccc;">Nenhum registro encontrado neste período.</td></tr>';
+                </tr>`;
+            }).join('') || '<tr><td colspan="7" style="text-align:center; padding:15px; color:#ccc;">Nenhum registro.</td></tr>';
+
+
+            // === ATUALIZA ABA 2: RELATÓRIO DE ATIVIDADES CONCLUÍDAS ===
+            const actContainer = document.getElementById('activities-container');
+            const finishedOnly = finalDashList.filter(t => t.status === 'finalizado');
+            
+            // Ordena as entregas pela data que foram fechadas (mais recentes no topo)
+            finishedOnly.sort((a, b) => {
+                const dA = a.closedAt || a.date || 0;
+                const dB = b.closedAt || b.date || 0;
+                return new Date(dB).getTime() - new Date(dA).getTime();
+            });
+
+            if (finishedOnly.length === 0) {
+                actContainer.innerHTML = '<p style="text-align:center; color:#999;">Nenhuma atividade finalizada encontrada neste filtro.</p>';
+            } else {
+                actContainer.innerHTML = finishedOnly.map(t => {
+                    const dataFim = t.closedAt ? new Date(t.closedAt).toLocaleString('pt-BR') : '-';
+                    const solicitante = usersMap[(t.uid||"").toLowerCase()]?.nome || t.user || 'Usuário';
+                    
+                    // Limpa tags HTML que atrapalham a leitura no relatório e troca aspas
+                    const cleanDesc = String(t.desc || 'Sem detalhes.').replace(/<hr>/g, '\n---\n').replace(/<[^>]*>?/gm, '').trim();
+                    const cleanSol = String(t.solution || 'Resolvido sem detalhes.').replace(/<[^>]*>?/gm, '').trim();
+
+                    return `
+                    <div class="activity-card">
+                        <div class="act-header">
+                            <span><strong>ID:</strong> ${formatarId(t.visual_id)} &nbsp;|&nbsp; <strong>Setor Solicitante:</strong> ${t.setor || '-'}</span>
+                            <span><strong>Para:</strong> ${solicitante}</span>
+                            <span><strong>Por:</strong> ${t.atendente_nome || 'TI'}</span>
+                            <span><strong>Concluído em:</strong> ${dataFim}</span>
+                        </div>
+                        <div class="act-title">${t.categoria || 'Geral'} > ${t.assunto || 'Tarefa'}</div>
+                        <div class="act-desc"><strong><i class="fas fa-comment-dots"></i> Resumo do Pedido:</strong><br>${cleanDesc.replace(/\n/g, '<br>')}</div>
+                        <div class="act-sol"><strong><i class="fas fa-check-double"></i> Solução Aplicada / Entrega:</strong><br>${cleanSol.replace(/\n/g, '<br>')}</div>
+                    </div>`;
+                }).join('');
+            }
         }
 
         function exportTickets() {
             const startStr = document.getElementById('dashStart').value;
             const endStr = document.getElementById('dashEnd').value;
-            const start = startStr ? new Date(startStr + "T00:00:00") : new Date(0);
-            const end = endStr ? new Date(endStr + "T23:59:59") : new Date();
+            let startDate = new Date(0);
+            let endDate = new Date("2100-01-01T23:59:59");
+            if(startStr) { const [y, m, d] = startStr.split('-'); startDate = new Date(y, m-1, d, 0, 0, 0); }
+            if(endStr) { const [y, m, d] = endStr.split('-'); endDate = new Date(y, m-1, d, 23, 59, 59, 999); }
+            
             const sec = document.getElementById('dashSector').value;
             const cat = document.getElementById('dashCat').value;
             const tech = document.getElementById('dashTech').value;
 
             const finalDashList = allTickets.filter(t => {
-                let d = new Date(0);
+                let ticketDate = new Date(0);
                 if (t.date) {
-                    const parsedDate = new Date(t.date);
-                    if (!isNaN(parsedDate.getTime())) d = parsedDate;
+                    let dStr = typeof t.date === 'string' ? t.date.replace(' ', 'T') : t.date;
+                    const parsed = new Date(dStr);
+                    if (!isNaN(parsed.getTime())) ticketDate = parsed;
                 }
-                
-                d.setHours(0,0,0,0);
-                const sTemp = new Date(start); sTemp.setHours(0,0,0,0);
-                const eTemp = new Date(end); eTemp.setHours(23,59,59,999);
-
-                if(d.getTime() < sTemp.getTime() || d.getTime() > eTemp.getTime()) return false;
+                if (ticketDate.getTime() < startDate.getTime() || ticketDate.getTime() > endDate.getTime()) return false;
                 if(sec && t.setor !== sec) return false;
                 const catPrincipal = String(t.categoria || 'Geral').split(' > ')[0];
                 if(cat && catPrincipal !== cat) return false;
@@ -513,35 +585,20 @@
 
             if(finalDashList.length === 0) return alert("Nenhum chamado para exportar no filtro atual.");
 
-            let txt = "RELATÓRIO DE CHAMADOS - ONCO SMART\n";
-            txt += `Gerado em: ${new Date().toLocaleString()}\n\n`;
+            let txt = "RELATÓRIO DE CHAMADOS - ONCO SMART\nGerado em: " + new Date().toLocaleString() + "\n\n";
 
-            finalDashList.sort((a,b) => {
-                const dateA = a.date ? new Date(a.date).getTime() : 0;
-                const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA;
-            }).forEach(t => {
+            finalDashList.sort((a,b) => new Date(b.date||0).getTime() - new Date(a.date||0).getTime()).forEach(t => {
                 txt += "--------------------------------------------------\n";
-                txt += `Nº CHAMADO: ${formatarId(t.visual_id)}\n`;
-                txt += `STATUS: ${String(t.status).toUpperCase()}\n`;
+                txt += `Nº CHAMADO: ${formatarId(t.visual_id)}\nSTATUS: ${String(t.status).toUpperCase()}\n`;
                 txt += `DATA ABERTURA: ${t.date ? new Date(t.date).toLocaleString() : '-'}\n`;
-                
                 const uData = usersMap[(t.uid||"").toLowerCase()] || {};
-                const userName = (uData.nome && uData.nome.trim() !== 'Usuario') ? uData.nome : (t.user || "Usuário");
-                txt += `SOLICITANTE: ${userName} (${t.uid})\n`;
-                
-                txt += `SETOR: ${t.setor || '-'}\n`;
-                txt += `ATENDENTE: ${t.atendente_nome || 'Aguardando'}\n`;
-                txt += `CATEGORIA: ${t.categoria}\n`;
-                txt += `ASSUNTO: ${t.assunto}\n`;
-                txt += `AVALIAÇÃO: ${t.rate ? t.rate + ' Estrelas' : 'N/A'}\n`;
-                txt += `TEMPO SLA: ${formatMs(calculateElapsedTime(t))}\n`;
-                
-                let cleanDesc = String(t.desc || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                txt += `SOLICITANTE: ${uData.nome || t.user || "Usuário"} (${t.uid})\n`;
+                txt += `SETOR: ${t.setor || '-'}\nATENDENTE: ${t.atendente_nome || 'Aguardando'}\n`;
+                txt += `CATEGORIA: ${t.categoria}\nASSUNTO: ${t.assunto}\n`;
+                let cleanDesc = String(t.desc || '').replace(/<[^>]*>?/gm, ' ').trim();
                 txt += `DESCRIÇÃO: ${cleanDesc}\n`;
-                
                 if(t.solution) {
-                    let cleanSol = String(t.solution).replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                    let cleanSol = String(t.solution).replace(/<[^>]*>?/gm, ' ').trim();
                     txt += `SOLUÇÃO: ${cleanSol}\n`;
                 }
                 txt += "--------------------------------------------------\n\n";
@@ -550,46 +607,32 @@
             const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
-            a.href = url;
-            a.download = `Export_Chamados_${new Date().toISOString().slice(0,10)}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
+            a.href = url; a.download = `Export_Chamados_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click(); URL.revokeObjectURL(url);
         }
 
         function openDashConfigModal() {
             const conf = JSON.parse(localStorage.getItem('dashConfig') || '{"kpi":true,"c1Data":"produtividade","c1Type":"bar","c2Data":"none","c2Type":"doughnut","rank":true,"table":true}');
-            
             document.getElementById('chkKpi').checked = conf.kpi;
-            document.getElementById('selC1Data').value = conf.c1Data;
-            document.getElementById('selC1Type').value = conf.c1Type;
-            document.getElementById('selC2Data').value = conf.c2Data;
-            document.getElementById('selC2Type').value = conf.c2Type;
-            document.getElementById('chkRank').checked = conf.rank;
-            document.getElementById('chkTable').checked = conf.table;
-            
+            document.getElementById('selC1Data').value = conf.c1Data; document.getElementById('selC1Type').value = conf.c1Type;
+            document.getElementById('selC2Data').value = conf.c2Data; document.getElementById('selC2Type').value = conf.c2Type;
+            document.getElementById('chkRank').checked = conf.rank; document.getElementById('chkTable').checked = conf.table;
             document.getElementById('modalDashConfig').style.display = 'flex';
         }
 
         function saveDashConfig() {
             const conf = {
                 kpi: document.getElementById('chkKpi').checked,
-                c1Data: document.getElementById('selC1Data').value,
-                c1Type: document.getElementById('selC1Type').value,
-                c2Data: document.getElementById('selC2Data').value,
-                c2Type: document.getElementById('selC2Type').value,
-                rank: document.getElementById('chkRank').checked,
-                table: document.getElementById('chkTable').checked
+                c1Data: document.getElementById('selC1Data').value, c1Type: document.getElementById('selC1Type').value,
+                c2Data: document.getElementById('selC2Data').value, c2Type: document.getElementById('selC2Type').value,
+                rank: document.getElementById('chkRank').checked, table: document.getElementById('chkTable').checked
             };
             localStorage.setItem('dashConfig', JSON.stringify(conf));
-            
-            applyDashConfig();
-            renderDashboard(); 
-            closeModal('modalDashConfig');
+            applyDashConfig(); renderDashboard(); closeModal('modalDashConfig');
         }
 
         function applyDashConfig() {
             const conf = JSON.parse(localStorage.getItem('dashConfig') || '{"kpi":true,"c1Data":"produtividade","c1Type":"bar","c2Data":"none","c2Type":"doughnut","rank":true,"table":true}');
-            
             document.getElementById('sect-kpis').style.display = conf.kpi ? 'grid' : 'none';
             document.getElementById('sect-ranks').style.display = conf.rank ? 'grid' : 'none';
             document.getElementById('sect-table').style.display = conf.table ? 'block' : 'none';
@@ -603,9 +646,7 @@
             }
         }
 
-        function closeModal(id) { 
-            document.getElementById(id).style.display = 'none'; 
-        }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     </script>
 </body>
 </html>
