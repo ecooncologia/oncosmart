@@ -266,7 +266,7 @@
             try {
                 const mesSelecionado = String(parseInt(document.getElementById('selMonth').value) + 1).padStart(2, '0');
                 const anoSelecionado = document.getElementById('selYear').value;
-                const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`; // O formato que está sendo salvo no banco
+                const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`; // O formato salvo pelo robô
 
                 // Bate na tabela ÚNICA
                 const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
@@ -413,7 +413,7 @@
                             <thead>
                                 <tr>
                                     <th style="width: 120px;">Data Atend.</th>
-                                    <th>Descrição (Procedimento / Medicamento)</th>
+                                    <th>Descrição</th>
                                     <th style="width: 80px; text-align: center;">Tipo</th>
                                     <th style="width: 80px; text-align: center;">Qtde.</th>
                                     <th style="width: 120px; text-align: right;">Valor (R$)</th>
@@ -421,16 +421,19 @@
                             </thead>
                             <tbody>`;
 
-                // Renderiza os itens individuais baseados nas colunas pedidas
+                // Renderiza os itens individuais perfeitamente limpos
                 pat.items.forEach(item => {
                     let tipoBadge = item.tipo === 'MED' ? 'bg-green' : 'bg-blue';
                     let valorFormatado = item.valor > 0 ? `R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '-';
                     
+                    // Formata a Quantidade (mg) para não exibir trocentas casas decimais
+                    let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+
                     htmlBuffer += `<tr>
                         <td>${item.data || "-"}</td>
                         <td style="font-weight:500;">${item.medicamento}</td>
                         <td style="text-align: center;"><span class="badge ${tipoBadge}">${item.tipo}</span></td>
-                        <td style="text-align: center;">${item.mg.toLocaleString('pt-BR')}</td>
+                        <td style="text-align: center;">${qtdFormatada}</td>
                         <td style="text-align: right; color: #0f172a;">${valorFormatado}</td>
                     </tr>`;
                 });
