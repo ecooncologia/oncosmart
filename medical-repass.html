@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <title>Repasse Médico & Unimed - ECO Sistema</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
-    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
     <script>
         const versaoApp = Date.now();
         document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
@@ -22,7 +18,6 @@
         body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
         .container { width: 100%; padding: 20px; box-sizing: border-box; }
         
-        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
         .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
         .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
@@ -30,23 +25,25 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Controles Exclusivos de cada Aba */
+        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
+        .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        
+        .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
+        .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
+        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
+        
         .sub-tabs-container { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
         .sub-tab-btn { background: #f3f4f6; border: 1px solid #e5e7eb; border-bottom: none; padding: 10px 20px; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 8px 8px 0 0; transition: 0.2s; white-space: nowrap; }
         .sub-tab-btn.active { background: #00995D; color: white; border-color: #00995D; }
         .sub-tab-btn:hover:not(.active) { background: #e5e7eb; }
 
-        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; white-space: nowrap; height: 38px; }
-        
-        .btn-danger-block { background: #dc2626; color: white; border: none; width: 100%; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; }
+        .btn-danger-block { background: #dc2626; color: white; border: none; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 15px; }
         .btn-danger-block:hover { background: #b91c1c; }
         .btn-icon-danger { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
         .btn-icon-danger:hover { background: #dc2626; color: white; }
-
-        .input-group { margin-bottom: 15px; }
-        .label-title { font-size: 12px; font-weight: 700; color: #4b5563; display: block; margin-bottom: 5px; }
-        .input-field, .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 13px; height: 38px; }
         
-        /* Dashboard Cards Unimed */
         .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; }
@@ -74,16 +71,10 @@
         .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
         .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
-        
-        .row-total-med { background-color: #fef08a !important; font-weight: bold; border-top: 2px solid #fbbf24; }
-        .row-total-med td { color: #854d0e !important; font-size: 12px !important; }
 
         .btn-toggle { background: none; border: none; color: #00995D; font-size: 16px; cursor: pointer; transition: transform 0.3s; }
         .btn-toggle.rotate { transform: rotate(90deg); }
 
-        .controls-plantao { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-        .filters-left { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; white-space: nowrap; }
-        .actions-right { display: flex; align-items: center; gap: 15px; flex-wrap: nowrap; }
         .total-box { background: #dcfce7; border: 1px solid #86efac; padding: 0 15px; border-radius: 8px; font-weight: bold; color: #166534; font-size: 15px; white-space: nowrap; height: 38px; display: flex; align-items: center; }
         
         .scale-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; }
@@ -92,10 +83,6 @@
         .scale-table .col-fixa { position: sticky; left: 0; z-index: 20; width: 250px; background: white; font-weight: bold; border-right: 2px solid #e5e7eb; text-align: left; padding-left: 10px; height: 38px; }
         .scale-table th.th-fixa { position: sticky; left: 0; z-index: 30; background: #00995D; width: 250px; height: 38px; }
         .weekend-col { background-color: #f8fafc; } .holiday-col { background-color: #fef2f2 !important; color: #dc2626; font-weight: bold; }
-
-        #selMonth { width: 110px; } #selYear { width: 80px; } #filterDoctor { min-width: 250px; max-width: 400px; } 
-
-        @media(max-width:768px) { .filters-left { flex-wrap: wrap; } }
     </style>
 </head>
 <body>
@@ -103,37 +90,39 @@
         <div id="global-header" class="header"></div>
         <div id="global-nav"></div>
 
-        <div class="controls controls-plantao" style="margin-bottom: 20px;">
-            <div class="filters-left">
-                <select id="selMonth" class="form-control" onchange="handleDateChange()"></select>
-                <select id="selYear" class="form-control" onchange="handleDateChange()"></select>
-                <div class="total-box" style="margin-left: 10px;">Total Geral Escala: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span></div>
-            </div>
-            <div class="actions-right">
-                <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir</button>
-            </div>
-        </div>
-
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="openTab('plantao')">Escala Plantão</button>
             <button class="tab-btn" onclick="openTab('unimed')">Repasse Unimed</button>
         </div>
 
         <div id="tab-plantao" class="tab-content active">
+            
+            <div class="controls">
+                <div class="controls-group">
+                    <div class="input-group" style="width: 120px;">
+                        <label class="label-title">Mês da Escala</label>
+                        <select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                    </div>
+                    <div class="input-group" style="width: 90px;">
+                        <label class="label-title">Ano</label>
+                        <select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                    </div>
+                    <div class="input-group" style="min-width: 250px;">
+                        <label class="label-title">Filtrar Médico</label>
+                        <select id="filterDoctor" class="input-field" onchange="renderRepasseTable()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="total-box">Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span></div>
+                </div>
+                <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir Escala</button>
+            </div>
+
             <div class="sub-tabs-container">
                 <button class="sub-tab-btn active" onclick="switchShiftTab('eco', this)">Eco Oncologia</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_quimio', this)">Vita - Sala Quimio</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_sobreaviso', this)">Vita - Sobreaviso</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('cirurgioes', this)">Cirurgiões</button>
-            </div>
-
-            <div class="controls" style="margin-bottom: 15px; padding: 10px 20px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <label class="label-title" style="margin: 0;">Filtrar Médico na Escala:</label>
-                    <select id="filterDoctor" class="form-control" style="width: auto; min-width: 250px;" onchange="renderRepasseTable()">
-                        <option value="">Carregando...</option>
-                    </select>
-                </div>
             </div>
 
             <div class="sheet-container">
@@ -154,7 +143,7 @@
                     <h2 id="dashUnimedTotal">R$ 0,00</h2>
                 </div>
                 <div class="card-stat warning">
-                    <h5>Itens MED Retornados</h5>
+                    <h5>Medicamentos Extraídos</h5>
                     <h2 id="dashMedCount">0</h2>
                 </div>
                 <div class="card-stat danger">
@@ -164,26 +153,25 @@
             </div>
 
             <div class="controls">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
-                    
-                    <div style="display: flex; gap: 10px; align-items: flex-end;">
-                        <div class="input-group" style="margin:0; width: 250px;">
-                            <label class="label-title">Filtrar Paciente (Unimed)</label>
-                            <select id="filterPatient" class="input-field" onchange="renderAnalysisTable()">
-                                <option value="">Todos</option>
-                            </select>
-                        </div>
-                        <button class="btn-danger-block" onclick="deleteSelected()" style="min-width: 150px;">
-                            <i class="fas fa-trash-alt"></i> Excluir Seleção
-                        </button>
+                <div class="controls-group">
+                    <div class="input-group" style="width: 140px;">
+                        <label class="label-title">Mês Base Unimed</label>
+                        <select id="selMonthUnimed" class="input-field" onchange="fetchBotData()"></select>
                     </div>
-
-                    <div style="border-left: 2px solid #e5e7eb; padding-left: 15px;">
-                        <label class="label-title">Upload Manual (Plano B)</label>
-                        <input type="file" id="excelFile" class="input-field" style="max-width: 250px; height: 38px;" accept=".xlsx, .xls" onchange="handleFileUpload()">
+                    <div class="input-group" style="width: 90px;">
+                        <label class="label-title">Ano</label>
+                        <select id="selYearUnimed" class="input-field" onchange="fetchBotData()"></select>
                     </div>
-
+                    <div class="input-group" style="width: 250px;">
+                        <label class="label-title">Filtrar Paciente</label>
+                        <select id="filterPatient" class="input-field" onchange="renderAnalysisTable()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
                 </div>
+                <button class="btn-danger-block" onclick="deleteSelected()">
+                    <i class="fas fa-trash-alt"></i> Excluir Seleção
+                </button>
             </div>
 
             <div class="sheet-container">
@@ -201,10 +189,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999; font-size: 14px;">
-                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #00995D; margin-bottom: 10px; display: block;"></i>
-                                Carregando dados automáticos...
-                            </td></tr>
+                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -213,41 +198,39 @@
     </div>
 
     <script>
-        let weknowData = []; 
         let excelData = [];
-        let uniquePatients = new Set(); 
+        let weknowData = []; 
         let excludedPatients = new Set();
         let doctorList = []; 
         let currentShiftTab = 'eco'; 
+        let doctors={}, shifts={};
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-        let doctors={}, shifts={}, curY, curM;
 
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
             const now = new Date(); 
-            curY = now.getFullYear(); 
-            curM = now.getMonth();
+            const curY = now.getFullYear(); 
+            const curM = now.getMonth();
             
-            const ySel = document.getElementById('selYear');
-            for(let i=curY-1; i<=curY+2; i++) ySel.add(new Option(i, i)); 
-            ySel.value = curY;
-            
-            const mSel = document.getElementById('selMonth');
-            months.forEach((m,i) => mSel.add(new Option(m, i))); 
-            mSel.value = curM;
+            // Popula os combos de Ano separadamente
+            ['selYearPlantao', 'selYearUnimed'].forEach(id => {
+                const el = document.getElementById(id);
+                for(let i=curY-2; i<=curY+2; i++) el.add(new Option(i, i));
+                el.value = curY;
+            });
+
+            // Popula os combos de Mês separadamente
+            ['selMonthPlantao', 'selMonthUnimed'].forEach(id => {
+                const el = document.getElementById(id);
+                months.forEach((m,i) => el.add(new Option(m, i)));
+                el.value = curM;
+            });
 
             await loadDoctors();
-            
-            // Inicia o carregamento das duas abas automaticamente no onload
-            handleDateChange();
+            renderRepasseTable(); 
+            fetchBotData();       
         });
-
-        // Função unificada que roda sempre que o mês ou ano mudar
-        function handleDateChange() {
-            renderRepasseTable(); // Atualiza a escala
-            fetchBotData(true);   // Atualiza a Unimed silenciosamente
-        }
 
         function openTab(t){ 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -257,112 +240,46 @@
         }
 
         // ==========================================
-        // 🚀 COMUNICAÇÃO AUTOMÁTICA COM A API (TABELA ÚNICA)
+        // 🚀 COMUNICAÇÃO COM O BANCO DE DADOS (UNIMED)
         // ==========================================
-        async function fetchBotData(isSilent = false) {
+        async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
-            if(!isSilent) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
             
             try {
-                const mesSelecionado = String(parseInt(document.getElementById('selMonth').value) + 1).padStart(2, '0');
-                const anoSelecionado = document.getElementById('selYear').value;
-                const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`; // O formato salvo pelo robô
+                const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
+                const anoSelecionado = document.getElementById('selYearUnimed').value;
+                const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
-                // Bate na tabela ÚNICA
                 const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
-                
-                if (!response.ok) throw new Error('Dados da Unimed não disponíveis.');
+                if (!response.ok) throw new Error('Dados não encontrados no servidor.');
                 
                 const data = await response.json();
-                const payloadBot = normalizeData(data);
-                const arrayBot = Object.values(payloadBot);
-
-                // Filtra pelo mês atual
+                const arrayBot = Object.values(normalizeData(data));
+                
                 const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
-
-                if(dadosFiltrados.length === 0) throw new Error(`A planilha da competência ${competenciaAlvo} ainda não foi processada pelo robô.`);
+                if(dadosFiltrados.length === 0) throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
 
                 excelData = dadosFiltrados.map(row => ({
                     paciente: String(row.paciente || '').toUpperCase().trim(), 
-                    medicamento: String(row.descricao || row.codigo_procedimento || '').toUpperCase().trim(), 
+                    medicamento: String(row.descricao || '').toUpperCase().trim(), 
                     valor: parseFloat(row.valor_pago || 0), 
                     mg: parseFloat(row.quantidade || 1), 
                     data: row.data_atendimento || "-", 
                     tipo: String(row.tipo || "MED").toUpperCase(), 
                     src: "unimed"
-                })).filter(item => !item.tipo.startsWith("MAT") && item.paciente && item.medicamento); 
+                }));
 
                 updateFilters(); 
                 renderAnalysisTable();
-
             } catch (err) {
-                excelData = []; 
-                updateFilters();
-                renderAnalysisTable();
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-calendar-times" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
+                excelData = []; updateFilters(); renderAnalysisTable();
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-robot" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
             }
         }
 
-        // ==========================================
-        // DEMAIS FUNÇÕES DE TABELA E LÓGICA
-        // ==========================================
-        function switchShiftTab(tabId, element) {
-            currentShiftTab = tabId;
-            document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
-            updateRepassDoctorDropdown(); 
-            renderRepasseTable();
-        }
-
-        function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
-        function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
-        
-        function deleteSelected() {
-            const c = document.getElementsByName('rowCheck'); let count = 0;
-            for(let i=0; i<c.length; i++) { if(c[i].checked) { excludedPatients.add(c[i].value); count++; } }
-            if(count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } else { alert("Selecione ao menos um paciente."); }
-        }
-        function deleteRow(paciente) { if(confirm("Excluir " + paciente + "?")) { excludedPatients.add(paciente); renderAnalysisTable(); } }
-
-        function handleFileUpload() {
-            const fileInput = document.getElementById('excelFile'); if (fileInput.files.length === 0) return;
-            const tbody = document.querySelector('#dataTable tbody'); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Lendo arquivo local... <i class="fas fa-spinner fa-spin"></i></td></tr>';
-            const file = fileInput.files[0]; const reader = new FileReader();
-
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' });
-                    let sheetName = workbook.SheetNames.find(n => n.toUpperCase().includes("GUIA DE SERVI"));
-                    if (!sheetName) sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    let headerRowIndex = -1;
-                    for (let i = 0; i < Math.min(jsonData.length, 20); i++) {
-                        const rowStr = JSON.stringify(jsonData[i]).toUpperCase();
-                        if (rowStr.includes("NOME") && (rowStr.includes("DESCRI") || rowStr.includes("EVENTO"))) { headerRowIndex = i; break; }
-                    }
-                    if (headerRowIndex === -1) throw new Error("Cabeçalho não encontrado.");
-                    const finalData = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex });
-
-                    excelData = finalData.map(row => {
-                        const getCol = (names) => { for(let k in row) if(names.includes(k.toUpperCase().trim())) return row[k]; return null; };
-                        const rawTipo = getCol(["TIPO"]); const tipo = rawTipo ? String(rawTipo).toUpperCase().trim() : ""; if (tipo.startsWith("MAT")) return null; 
-                        const paciente = getCol(["NOME", "PACIENTE"]); const desc = getCol(["DESCRIÇÃO", "DESCRICAO", "EVENTO"]); const val = getCol(["VALOR", "VALOR TOTAL"]); const qtd = getCol(["QTDE.", "QTDE", "QTD"]); const dt = getCol(["DATA ATEND.", "DATA"]);
-                        if(!paciente || !desc) return null;
-                        return { paciente: String(paciente).toUpperCase().trim(), medicamento: String(desc).toUpperCase().trim(), valor: parseFloat(val || 0), mg: parseFloat(qtd || 0), data: parseExcelDate(dt), tipo: tipo, src: "unimed" };
-                    }).filter(i => i !== null);
-                    alert(`Sucesso! ${excelData.length} registros importados do arquivo manual.`); updateFilters(); renderAnalysisTable();
-                } catch (err) { alert("Erro ao ler XLS: " + err.message); tbody.innerHTML = ''; }
-            }; reader.readAsArrayBuffer(file);
-        }
-
-        function parseExcelDate(val) {
-            if(!val) return "-"; if(typeof val === 'number') { return new Date(Math.round((val - 25569)*86400*1000)).toLocaleDateString('pt-BR'); }
-            return String(val).split(' ')[0];
-        }
-
         function updateFilters() {
-            let pats = new Set([...weknowData.map(d=>d.paciente), ...excelData.map(d=>d.paciente)]);
+            let pats = new Set([...excelData.map(d=>d.paciente)]);
             const sel = document.getElementById('filterPatient'); sel.innerHTML = '<option value="">Todos</option>'; Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
         }
 
@@ -371,17 +288,13 @@
             const tbody = document.querySelector('#dataTable tbody');
             const patients = {};
             
-            let totalUnimedVal = 0;
-            let itemsMedCount = 0;
-            let divergencesCount = 0;
+            let totalUnimedVal = 0; let itemsMedCount = 0; let divergencesCount = 0;
 
-            [...weknowData, ...excelData].forEach(d => {
-                if (excludedPatients.has(d.paciente)) return; if (filter && d.paciente !== "PACIENTE GERAL" && d.paciente !== filter) return;
+            excelData.forEach(d => {
+                if (excludedPatients.has(d.paciente)) return; if (filter && d.paciente !== filter) return;
                 const p = d.paciente; if(!patients[p]) patients[p] = { name: p, totalW: 0, totalU: 0, items: [] };
                 
-                if(d.src === 'weknow') { patients[p].totalW += d.valor; } 
-                else { patients[p].totalU += d.valor; totalUnimedVal += d.valor; if(d.tipo === 'MED') itemsMedCount++; }
-                
+                patients[p].totalU += d.valor; totalUnimedVal += d.valor; if(d.tipo === 'MED') itemsMedCount++;
                 patients[p].items.push(d);
             });
 
@@ -390,14 +303,12 @@
             document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
             
-            if(patList.length === 0) { return; }
+            if(patList.length === 0) { if(excelData.length > 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum resultado para o filtro.</td></tr>'; return; }
 
             let htmlBuffer = "";
             patList.forEach((pat, idx) => {
                 const diff = pat.totalU - pat.totalW; 
-                let cls = 'bg-gray'; 
-                if(diff > 0.05) cls = 'bg-green'; 
-                if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
+                let cls = 'bg-gray'; if(diff > 0.05) cls = 'bg-green'; if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
@@ -408,49 +319,51 @@
                         <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></td>
                         <td style="text-align:center;"><button class="btn-icon-danger" title="Excluir" onclick="deleteRow('${pat.name}')"><i class="fas fa-trash"></i></button></td>
                     </tr>
-                    <tr id="L1-${idx}" class="row-detail"><td colspan="7" class="level2-container">
-                        <table class="nested-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 120px;">Data Atend.</th>
-                                    <th>Descrição</th>
-                                    <th style="width: 80px; text-align: center;">Tipo</th>
-                                    <th style="width: 80px; text-align: center;">Qtde.</th>
-                                    <th style="width: 120px; text-align: right;">Valor (R$)</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
+                    <tr id="L1-${idx}" class="row-detail"><td colspan="7"><table class="nested-table">
+                        <thead><tr><th>Data Atend.</th><th>Descrição / TUSS Unificada</th><th style="text-align:center;">Tipo</th><th style="text-align:center;">Qtd/Mg</th><th style="text-align:right;">Valor Pago</th></tr></thead><tbody>`;
 
-                // Renderiza os itens individuais perfeitamente limpos
                 pat.items.forEach(item => {
-                    let tipoBadge = item.tipo === 'MED' ? 'bg-green' : 'bg-blue';
-                    let valorFormatado = item.valor > 0 ? `R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '-';
-                    
-                    // Formata a Quantidade (mg) para não exibir trocentas casas decimais
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-
                     htmlBuffer += `<tr>
-                        <td>${item.data || "-"}</td>
-                        <td style="font-weight:500;">${item.medicamento}</td>
-                        <td style="text-align: center;"><span class="badge ${tipoBadge}">${item.tipo}</span></td>
-                        <td style="text-align: center;">${qtdFormatada}</td>
-                        <td style="text-align: right; color: #0f172a;">${valorFormatado}</td>
+                        <td>${item.data}</td><td style="font-weight:600; color:#00855B;">${item.medicamento}</td>
+                        <td style="text-align:center;"><span class="badge bg-green">${item.tipo}</span></td>
+                        <td style="text-align:center; font-weight:bold;">${qtdFormatada}</td>
+                        <td style="text-align:right; font-weight:500;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                     </tr>`;
                 });
-
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
             
-            document.getElementById('dashDivergences').innerText = divergencesCount;
-            tbody.innerHTML = htmlBuffer;
+            document.getElementById('dashDivergences').innerText = divergencesCount; tbody.innerHTML = htmlBuffer;
         }
 
+        // ==========================================
+        // DEMAIS FUNÇÕES DE UI E PLANTÃO
+        // ==========================================
+        function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
+        function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
+        function deleteSelected() { const c = document.getElementsByName('rowCheck'); let count = 0; for(let i=0; i<c.length; i++) { if(c[i].checked) { excludedPatients.add(c[i].value); count++; } } if(count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } else { alert("Selecione um paciente."); } }
+        function deleteRow(paciente) { if(confirm("Excluir " + paciente + "?")) { excludedPatients.add(paciente); renderAnalysisTable(); } }
+        function switchShiftTab(tabId, element) { currentShiftTab = tabId; document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active')); element.classList.add('active'); updateRepassDoctorDropdown(); renderRepasseTable(); }
+        
         async function loadDoctors() { 
             try { 
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 doctors = normalizeData(await r.json()); 
                 doctorList = Object.entries(doctors).filter(([,d]) => d.plantao==='sim').sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).map(([id,d]) => ({id, nome: d.nome}));
+                updateRepassDoctorDropdown();
             } catch(e) {}
+        }
+
+        function updateRepassDoctorDropdown() {
+            const sel = document.getElementById('filterDoctor');
+            if(!sel) return; sel.innerHTML = '<option value="">Todos</option>';
+            doctorList.forEach(doc => {
+                const dData = doctors[doc.id];
+                if (currentShiftTab === 'eco' && (!dData.eco || dData.eco === 'sim')) sel.add(new Option(doc.nome, doc.id));
+                if (currentShiftTab.startsWith('vita') && dData.vita === 'sim') sel.add(new Option(doc.nome, doc.id));
+                if (currentShiftTab === 'cirurgioes' && dData.cirurgiao === 'sim') sel.add(new Option(doc.nome, doc.id));
+            });
         }
 
         function getHolidays(y) { 
@@ -464,11 +377,9 @@
         }
 
         async function renderRepasseTable() { 
-            curY = document.getElementById('selYear').value; curM = parseInt(document.getElementById('selMonth').value); 
-            const filterDoc = document.getElementById('filterDoctor') ? document.getElementById('filterDoctor').value : ""; const moStr = String(curM+1).padStart(2,'0'); 
-            
-            const baseSearchId = `${curY}-${moStr}`;
-            const searchId = currentShiftTab === 'eco' ? baseSearchId : `${baseSearchId}-${currentShiftTab}`;
+            const curY = document.getElementById('selYearPlantao').value; const curM = parseInt(document.getElementById('selMonthPlantao').value); 
+            const filterDoc = document.getElementById('filterDoctor').value; const moStr = String(curM+1).padStart(2,'0'); 
+            const baseSearchId = `${curY}-${moStr}`; const searchId = currentShiftTab === 'eco' ? baseSearchId : `${baseSearchId}-${currentShiftTab}`;
             const endpoint = currentShiftTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentShiftTab}`;
 
             try { 
@@ -482,8 +393,7 @@
             
             let h = '<tr><th class="th-fixa">Médico</th>'; 
             for (let i = 1; i <= days; i++) { 
-                const d = new Date(curY, curM, i); const iso = d.toISOString().split('T')[0]; 
-                const isWk = d.getDay()===0||d.getDay()===6; const isHol = !!holidays[iso]; 
+                const d = new Date(curY, curM, i); const isWk = d.getDay()===0||d.getDay()===6; const isHol = !!holidays[d.toISOString().split('T')[0]]; 
                 h += `<th class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${i}</th>`; 
             } 
             h += '<th class="th-total">Qtd</th><th class="th-total">Total (R$)</th></tr>'; 
@@ -512,12 +422,13 @@
                 } 
                 grandTotal += userTotal; 
                 row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`; 
-                if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) { b += row; } 
+                if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
             document.querySelector('#repTable tbody').innerHTML = b; document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); 
         }
 
         function generatePDF() { 
+            const curY = document.getElementById('selYearPlantao').value; const curM = parseInt(document.getElementById('selMonthPlantao').value); 
             const win = window.open('', '_blank'); const periodStr = `${months[curM]} de ${curY}`; 
             
             let LOGO_URL = "https://imgur.com/nWWyEBG.png"; let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
