@@ -60,27 +60,26 @@
         .data-table th { background: #00995D; color: white; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; }
         .data-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333; vertical-align: middle; }
         
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
-        .bg-green { background: #dcfce7; color: #166534; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; text-align: center; }
+        .bg-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-red { background: #fee2e2; color: #991b1b; }
-        .bg-gray { background: #f3f4f6; color: #374151; }
+        .bg-gray { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+        .bg-blue { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
         
         .row-parent { cursor: pointer; background-color: #fff; transition: background 0.2s; }
         .row-parent:hover { background-color: #f9fafb; }
         .row-detail { display: none; background-color: #f8fafc; }
         .row-detail.expanded { display: table-row; }
         
-        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .nested-table th { background: #e2e8f0; color: #475569; font-size: 11px; padding: 8px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
-        .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 6px 8px; color: #64748b; }
+        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
+        .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
         
         .row-total-med { background-color: #fef08a !important; font-weight: bold; border-top: 2px solid #fbbf24; }
         .row-total-med td { color: #854d0e !important; font-size: 12px !important; }
 
         .btn-toggle { background: none; border: none; color: #00995D; font-size: 16px; cursor: pointer; transition: transform 0.3s; }
         .btn-toggle.rotate { transform: rotate(90deg); }
-
-        .select-doc-row { padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; width: 100%; max-width: 200px; }
 
         .controls-plantao { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .filters-left { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; white-space: nowrap; }
@@ -159,7 +158,7 @@
                     <h2 id="dashMedCount">0</h2>
                 </div>
                 <div class="card-stat danger">
-                    <h5>Divergências Encontradas</h5>
+                    <h5>Divergências de Repasse</h5>
                     <h2 id="dashDivergences">0</h2>
                 </div>
             </div>
@@ -194,7 +193,7 @@
                             <tr>
                                 <th style="width: 40px; text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
                                 <th style="width: 40px;"></th>
-                                <th>Paciente</th>
+                                <th>Nome do Paciente</th>
                                 <th>Total Weknow (R$)</th>
                                 <th>Total Unimed (R$)</th>
                                 <th>Diferença</th>
@@ -258,7 +257,7 @@
         }
 
         // ==========================================
-        // 🚀 COMUNICAÇÃO AUTOMÁTICA COM A API
+        // 🚀 COMUNICAÇÃO AUTOMÁTICA COM A API (TABELA ÚNICA)
         // ==========================================
         async function fetchBotData(isSilent = false) {
             const tbody = document.querySelector('#dataTable tbody'); 
@@ -267,19 +266,23 @@
             try {
                 const mesSelecionado = String(parseInt(document.getElementById('selMonth').value) + 1).padStart(2, '0');
                 const anoSelecionado = document.getElementById('selYear').value;
-                const competenciaId = `${mesSelecionado}_${anoSelecionado}`; 
+                const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`; // O formato que está sendo salvo no banco
 
-                const response = await fetch(`${API_BASE_URL}/repasse_unimed_${competenciaId}`, { headers: API_HEADERS });
+                // Bate na tabela ÚNICA
+                const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
                 
-                if (!response.ok) throw new Error('Dados da Unimed não disponíveis para este mês.');
+                if (!response.ok) throw new Error('Dados da Unimed não disponíveis.');
                 
                 const data = await response.json();
                 const payloadBot = normalizeData(data);
                 const arrayBot = Object.values(payloadBot);
 
-                if(arrayBot.length === 0) throw new Error('A planilha deste mês está vazia no banco de dados.');
+                // Filtra pelo mês atual
+                const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
 
-                excelData = arrayBot.map(row => ({
+                if(dadosFiltrados.length === 0) throw new Error(`A planilha da competência ${competenciaAlvo} ainda não foi processada pelo robô.`);
+
+                excelData = dadosFiltrados.map(row => ({
                     paciente: String(row.paciente || '').toUpperCase().trim(), 
                     medicamento: String(row.descricao || row.codigo_procedimento || '').toUpperCase().trim(), 
                     valor: parseFloat(row.valor_pago || 0), 
@@ -293,10 +296,10 @@
                 renderAnalysisTable();
 
             } catch (err) {
-                excelData = []; // Limpa os dados se falhar
+                excelData = []; 
                 updateFilters();
                 renderAnalysisTable();
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-exclamation-circle" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-calendar-times" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
             }
         }
 
@@ -312,7 +315,6 @@
         }
 
         function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
-        function toggleLevel2(id, btn) { document.getElementById(`L2-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
         function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
         
         function deleteSelected() {
@@ -364,10 +366,6 @@
             const sel = document.getElementById('filterPatient'); sel.innerHTML = '<option value="">Todos</option>'; Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
         }
 
-        function generateDoctorSelect() {
-            let opts = '<option value="">-- Selecione --</option>'; doctorList.forEach(d => opts += `<option value="${d.id}">${d.nome}</option>`); return opts;
-        }
-
         function renderAnalysisTable() {
             const filter = document.getElementById('filterPatient').value;
             const tbody = document.querySelector('#dataTable tbody');
@@ -404,51 +402,39 @@
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
                         <td style="text-align:center;"><button class="btn-toggle"><i class="fas fa-chevron-right"></i></button></td>
-                        <td style="font-weight:bold;">${pat.name}</td> <td>R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td> <td>R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                        <td style="font-weight:bold; color: #1f2937;">${pat.name}</td> 
+                        <td>R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td> 
+                        <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                         <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></td>
                         <td style="text-align:center;"><button class="btn-icon-danger" title="Excluir" onclick="deleteRow('${pat.name}')"><i class="fas fa-trash"></i></button></td>
                     </tr>
-                    <tr id="L1-${idx}" class="row-detail"><td colspan="7" class="level2-container"><table class="nested-table">
-                    <thead><tr><th style="width:30px"></th><th>Data</th><th>Procedimento / Medicamento</th><th>Qtd/Mg Total</th><th>Weknow</th><th>Unimed</th><th style="width:150px">Vínculo</th></tr></thead><tbody>`;
+                    <tr id="L1-${idx}" class="row-detail"><td colspan="7" class="level2-container">
+                        <table class="nested-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 120px;">Data Atend.</th>
+                                    <th>Descrição (Procedimento / Medicamento)</th>
+                                    <th style="width: 80px; text-align: center;">Tipo</th>
+                                    <th style="width: 80px; text-align: center;">Qtde.</th>
+                                    <th style="width: 120px; text-align: right;">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
 
-                const groups = {};
+                // Renderiza os itens individuais baseados nas colunas pedidas
                 pat.items.forEach(item => {
-                    const key = item.medicamento; if(!groups[key]) groups[key] = { name: item.medicamento, tipo: item.tipo, count: 0, sumValW: 0, sumValU: 0, sumMg: 0, dates: new Set(), raw: [] };
-                    groups[key].count++; if(item.src === 'weknow') groups[key].sumValW += item.valor; else groups[key].sumValU += item.valor;
-                    groups[key].sumMg += item.mg; if(item.data) groups[key].dates.add(item.data); groups[key].raw.push(item);
+                    let tipoBadge = item.tipo === 'MED' ? 'bg-green' : 'bg-blue';
+                    let valorFormatado = item.valor > 0 ? `R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '-';
+                    
+                    htmlBuffer += `<tr>
+                        <td>${item.data || "-"}</td>
+                        <td style="font-weight:500;">${item.medicamento}</td>
+                        <td style="text-align: center;"><span class="badge ${tipoBadge}">${item.tipo}</span></td>
+                        <td style="text-align: center;">${item.mg.toLocaleString('pt-BR')}</td>
+                        <td style="text-align: right; color: #0f172a;">${valorFormatado}</td>
+                    </tr>`;
                 });
 
-                let gIdx = 0;
-                Object.values(groups).sort((a,b) => a.name.localeCompare(b.name)).forEach(grp => {
-                    const uniqueId = `${idx}-${gIdx}`;
-                    let extra = ""; if (grp.tipo && grp.tipo.includes("HOS")) extra = `<select class="select-doc-row" onclick="event.stopPropagation()">${generateDoctorSelect()}</select>`;
-
-                    if (grp.count > 1) {
-                        let dateText = grp.dates.size > 1 ? "Várias" : (Array.from(grp.dates)[0] || "-");
-                        htmlBuffer += `<tr><td style="text-align:center;"><button class="btn-toggle" onclick="toggleLevel2('${uniqueId}', this)"><i class="fas fa-chevron-right"></i></button></td>
-                                <td>${dateText}</td><td style="font-weight:bold;">${grp.name} (Agrupado)</td><td style="text-align:center;">${grp.sumMg.toLocaleString()}</td>
-                                <td>R$ ${grp.sumValW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>R$ ${grp.sumValU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
-
-                        let subRows = "";
-                        grp.raw.sort((a,b) => (a.data||"").localeCompare(b.data||"")).forEach(r => {
-                            let subExtra = (grp.tipo && grp.tipo.includes("HOS")) ? `<select class="select-doc-row">${generateDoctorSelect()}</select>` : "";
-                            let vW = r.src === 'weknow' ? `R$ ${r.valor.toFixed(2)}` : '-';
-                            let vU = r.src === 'unimed' ? `R$ ${r.valor.toFixed(2)}` : '-';
-                            subRows += `<tr><td>${r.data || "-"}</td><td>${r.medicamento}</td><td style="text-align:center;">UN</td><td style="text-align:center;">${r.mg}</td><td>${vW}</td><td>${vU}</td><td>${subExtra}</td></tr>`;
-                        });
-
-                        htmlBuffer += `<tr id="L2-${uniqueId}" class="row-detail"><td colspan="7"><table class="nested-table" style="background:#fffef0;">
-                                        <thead><tr><th>Data</th><th>Item Individual</th><th>Origem</th><th>Qtd</th><th>Weknow</th><th>Unimed</th><th>Médico</th></tr></thead>
-                                        <tbody>${subRows}<tr class="row-total-med"><td colspan="4" style="text-align:right;">SUBTOTAL:</td><td>R$ ${grp.sumValW.toFixed(2)}</td><td>R$ ${grp.sumValU.toFixed(2)}</td><td></td></tr></tbody>
-                                    </table></td></tr>`;
-                    } else {
-                        let item = grp.raw[0]; 
-                        let valW = item.src === 'weknow' ? item.valor : 0;
-                        let valU = item.src === 'unimed' ? item.valor : 0;
-                        htmlBuffer += `<tr><td></td><td>${item.data || "-"}</td><td>${item.medicamento}</td><td style="text-align:center;">${item.mg}</td><td>R$ ${valW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>R$ ${valU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
-                    }
-                    gIdx++;
-                });
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
             
@@ -461,20 +447,7 @@
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 doctors = normalizeData(await r.json()); 
                 doctorList = Object.entries(doctors).filter(([,d]) => d.plantao==='sim').sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).map(([id,d]) => ({id, nome: d.nome}));
-                updateRepassDoctorDropdown();
             } catch(e) {}
-        }
-
-        function updateRepassDoctorDropdown() {
-            const dSel = document.getElementById('filterDoctor'); const currentVal = dSel.value; dSel.innerHTML = '<option value="">Todos os Médicos</option>';
-            Object.entries(doctors).filter(([,d]) => {
-                if (d.plantao !== 'sim') return false;
-                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
-                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
-                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
-                return false;
-            }).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id,d]) => dSel.add(new Option(d.nome, id)));
-            if (Array.from(dSel.options).some(o => o.value === currentVal)) dSel.value = currentVal; else dSel.value = "";
         }
 
         function getHolidays(y) { 
@@ -489,7 +462,7 @@
 
         async function renderRepasseTable() { 
             curY = document.getElementById('selYear').value; curM = parseInt(document.getElementById('selMonth').value); 
-            const filterDoc = document.getElementById('filterDoctor').value; const moStr = String(curM+1).padStart(2,'0'); 
+            const filterDoc = document.getElementById('filterDoctor') ? document.getElementById('filterDoctor').value : ""; const moStr = String(curM+1).padStart(2,'0'); 
             
             const baseSearchId = `${curY}-${moStr}`;
             const searchId = currentShiftTab === 'eco' ? baseSearchId : `${baseSearchId}-${currentShiftTab}`;
@@ -565,7 +538,7 @@
                 if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
                 if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
                 return false;
-            }).filter(([id, d]) => document.getElementById('filterDoctor').value === "" || id === document.getElementById('filterDoctor').value).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
+            }).filter(([id, d]) => document.getElementById('filterDoctor') && (document.getElementById('filterDoctor').value === "" || id === document.getElementById('filterDoctor').value)).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
             .forEach(([id, doc]) => { 
                 let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
                 for (let i = 1; i <= daysInMonth; i++) { 
