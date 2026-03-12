@@ -25,7 +25,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Controles Exclusivos de cada Aba */
         .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
@@ -71,6 +70,10 @@
         .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
         .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
+
+        /* Estilo da subcategoria de medicamentos */
+        .sub-item-row { background-color: #f8fafc; font-size: 11px; color: #64748b; }
+        .sub-item-row td { border-bottom: 1px dashed #e2e8f0 !important; padding: 6px 12px !important; }
 
         .btn-toggle { background: none; border: none; color: #00995D; font-size: 16px; cursor: pointer; transition: transform 0.3s; }
         .btn-toggle.rotate { transform: rotate(90deg); }
@@ -213,14 +216,12 @@
             const curY = now.getFullYear(); 
             const curM = now.getMonth();
             
-            // Popula os combos de Ano separadamente
             ['selYearPlantao', 'selYearUnimed'].forEach(id => {
                 const el = document.getElementById(id);
                 for(let i=curY-2; i<=curY+2; i++) el.add(new Option(i, i));
                 el.value = curY;
             });
 
-            // Popula os combos de Mês separadamente
             ['selMonthPlantao', 'selMonthUnimed'].forEach(id => {
                 const el = document.getElementById(id);
                 months.forEach((m,i) => el.add(new Option(m, i)));
@@ -240,7 +241,7 @@
         }
 
         // ==========================================
-        // 🚀 COMUNICAÇÃO COM O BANCO DE DADOS (UNIMED)
+        // 🚀 COMUNICAÇÃO COM O BANCO E LEITURA DA MOCHILA
         // ==========================================
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
@@ -260,15 +261,31 @@
                 const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
                 if(dadosFiltrados.length === 0) throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
 
-                excelData = dadosFiltrados.map(row => ({
-                    paciente: String(row.paciente || '').toUpperCase().trim(), 
-                    medicamento: String(row.descricao || '').toUpperCase().trim(), 
-                    valor: parseFloat(row.valor_pago || 0), 
-                    mg: parseFloat(row.quantidade || 1), 
-                    data: row.data_atendimento || "-", 
-                    tipo: String(row.tipo || "MED").toUpperCase(), 
-                    src: "unimed"
-                }));
+                excelData = dadosFiltrados.map(row => {
+                    // Extrai a mochila de subitens (originais) gerada pelo TUSS
+                    let originais = [];
+                    if (row.itens_originais) {
+                        originais = row.itens_originais;
+                    } else if (row.dados_extras && row.dados_extras.itens_originais) {
+                        originais = row.dados_extras.itens_originais;
+                    } else if (typeof row.dados_extras === 'string') {
+                        try { 
+                            let p = JSON.parse(row.dados_extras); 
+                            if(p.itens_originais) originais = p.itens_originais; 
+                        } catch(e){}
+                    }
+
+                    return {
+                        paciente: String(row.paciente || '').toUpperCase().trim(), 
+                        medicamento: String(row.descricao || '').toUpperCase().trim(), 
+                        valor: parseFloat(row.valor_pago || 0), 
+                        mg: parseFloat(row.quantidade || 1), 
+                        data: row.data_atendimento || "-", 
+                        tipo: String(row.tipo || "MED").toUpperCase(), 
+                        originais: originais, // Salva os subitens
+                        src: "unimed"
+                    };
+                });
 
                 updateFilters(); 
                 renderAnalysisTable();
@@ -324,12 +341,27 @@
 
                 pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                    
+                    // A LINHA DO ITEM AGRUPADO
                     htmlBuffer += `<tr>
                         <td>${item.data}</td><td style="font-weight:600; color:#00855B;">${item.medicamento}</td>
                         <td style="text-align:center;"><span class="badge bg-green">${item.tipo}</span></td>
                         <td style="text-align:center; font-weight:bold;">${qtdFormatada}</td>
                         <td style="text-align:right; font-weight:500;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                     </tr>`;
+
+                    // A MÁGICA DA SUBCATEGORIA: Se tiver itens na mochila, desenha eles embaixo!
+                    if (item.originais && item.originais.length > 1) {
+                        item.originais.forEach(sub => {
+                            htmlBuffer += `<tr class="sub-item-row">
+                                <td style="border-bottom:none;"></td>
+                                <td style="padding-left: 20px;">↳ ${sub.descricao}</td>
+                                <td></td>
+                                <td style="text-align:center;">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+                                <td style="text-align:right;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                            </tr>`;
+                        });
+                    }
                 });
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
