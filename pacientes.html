@@ -25,9 +25,6 @@
         .btn-primary { background: #00995D; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s; }
         .btn-primary:hover { background: #007a4a; }
         
-        .btn-sync { background: #4b5563; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: 600; height: 38px; transition: 0.2s; }
-        .btn-sync:hover { background: #374151; }
-
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -63,7 +60,9 @@
         .form-label { font-weight: bold; font-size: 12px; color: #4b5563; margin-bottom: 5px; display: block; }
         .form-select, .form-textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin-bottom: 15px; box-sizing: border-box; }
         .form-textarea { resize: vertical; min-height: 80px; }
-        .helper-text { font-size: 11px; color: #6b7280; margin-top: -10px; margin-bottom: 15px; display: block; }
+        
+        .btn-sync { background: #4b5563; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: 600; height: 38px; transition: 0.2s; }
+        .btn-sync:hover { background: #374151; }
     </style>
 </head>
 <body>
@@ -74,7 +73,7 @@
         <div class="controls">
             <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                 <div class="input-group">
-                    <input type="text" id="searchPatient" class="input-field" placeholder="Buscar paciente..." onkeyup="filterTable()">
+                    <input type="text" id="searchPatient" class="input-field" placeholder="Buscar por nome ou carteirinha..." onkeyup="filterTable()">
                 </div>
                 <div class="input-group">
                     <select id="filterStatus" class="input-field" onchange="filterTable()" style="min-width: 150px;">
@@ -89,7 +88,7 @@
             
             <div style="display: flex; gap: 10px; align-items: center;">
                 <span id="syncIndicator" style="font-size: 12px; color: #6b7280; display: none;">
-                    <i class="fas fa-sync-alt fa-spin"></i> Buscando novos na Unimed...
+                    <i class="fas fa-sync-alt fa-spin"></i> Buscando dados Unimed...
                 </span>
                 <button class="btn-primary" onclick="openAddModal()">
                     <i class="fas fa-user-plus"></i> Novo Paciente Manual
@@ -102,14 +101,15 @@
                 <table class="data-table" id="patientsTable">
                     <thead>
                         <tr>
-                            <th style="width: 35%">Nome do Paciente</th>
+                            <th style="width: 30%">Nome do Paciente</th>
+                            <th style="width: 15%">Carteirinha</th>
                             <th style="width: 15%; text-align: center;">Status</th>
-                            <th style="width: 30%">Médico Responsável</th>
-                            <th style="width: 20%; text-align: center;">Ações</th>
+                            <th style="width: 25%">Médico Responsável</th>
+                            <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="4" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando pacientes...</td></tr>
+                        <tr><td colspan="5" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando pacientes...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -126,6 +126,9 @@
                 <input type="hidden" id="editPatientId">
                 <label class="form-label">Nome Completo</label>
                 <input type="text" id="patientNameInput" class="form-select" placeholder="Ex: JOÃO DA SILVA" style="text-transform: uppercase;">
+                
+                <label class="form-label">Beneficiário Código (Carteirinha Unimed)</label>
+                <input type="text" id="patientCarteirinhaInput" class="form-select" placeholder="Ex: 0000000000000">
             </div>
             <div class="modal-footer">
                 <button class="btn-sync" style="background: #9ca3af;" onclick="closeModals()">Cancelar</button>
@@ -190,7 +193,7 @@
             await loadDoctors();
             await loadPatients();
             
-            // 🚀 Sincronização Invisível (Auto-Sync)
+            // 🚀 Sincronização Invisível (Auto-Sync) ao abrir a tela
             autoSyncUnimedPatients();
         });
 
@@ -218,12 +221,12 @@
                 else patients = {};
                 renderTable();
             } catch(e) { 
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Erro ao conectar com o banco de pacientes.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro ao conectar com o banco de pacientes.</td></tr>';
             }
         }
 
         // ==========================================
-        // 2. SINCRONIZAÇÃO INVISÍVEL COM UNIMED
+        // 2. SINCRONIZAÇÃO INVISÍVEL COM UNIMED (Busca a Carteirinha)
         // ==========================================
         async function autoSyncUnimedPatients() {
             const indicator = document.getElementById('syncIndicator');
@@ -235,18 +238,20 @@
                 
                 const unimedData = normalizeData(await resUnimed.json());
                 const unimedArray = Object.values(unimedData);
-                let novosEncontrados = false;
+                let dadosAtualizados = false;
 
                 for (const row of unimedArray) {
                     if (row.paciente) {
                         const patName = String(row.paciente).toUpperCase().trim();
                         const patId = generatePatientId(patName);
+                        const carteirinhaRobo = row.carteirinha || '';
 
-                        // Se o paciente não existe na base, cadastra silenciosamente
+                        // Cenário 1: Paciente não existe (Cadastro Novo)
                         if (!patients[patId]) {
                             const newPat = {
                                 id_firebase: patId,
                                 nome: patName,
+                                carteirinha: carteirinhaRobo,
                                 doctor_id: "",
                                 status: "ativo",
                                 data_criacao: new Date().toISOString()
@@ -257,13 +262,20 @@
                             });
                             
                             patients[patId] = newPat;
-                            novosEncontrados = true;
+                            dadosAtualizados = true;
+                        } 
+                        // Cenário 2: Paciente existe, mas ainda não tinha a carteirinha salva
+                        else if (!patients[patId].carteirinha && carteirinhaRobo) {
+                            patients[patId].carteirinha = carteirinhaRobo;
+                            await fetch(API_BASE_URL + '/pacientes', {
+                                method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId])
+                            });
+                            dadosAtualizados = true;
                         }
                     }
                 }
 
-                // Se achou pacientes novos, atualiza a tela para eles aparecerem
-                if(novosEncontrados) renderTable();
+                if(dadosAtualizados) renderTable();
 
             } catch(e) {
                 console.error("Erro na auto-sincronização", e);
@@ -286,15 +298,16 @@
             patArray.forEach(p => {
                 const isInactive = p.status === 'inativo';
                 const hasDoctor = p.doctor_id && p.doctor_id !== "";
+                const cartStr = p.carteirinha || '';
 
-                // Lógica dos Filtros
-                if (searchTerm && !p.nome.includes(searchTerm)) return;
+                // Lógica de Filtro Duplo (Nome ou Carteirinha)
+                if (searchTerm && !p.nome.includes(searchTerm) && !cartStr.includes(searchTerm)) return;
+                
                 if (filterStatus === 'ativos' && isInactive) return;
                 if (filterStatus === 'inativo' && !isInactive) return;
                 if (filterStatus === 'novo' && (hasDoctor || isInactive)) return;
                 if (filterStatus === 'vinculado' && (!hasDoctor || isInactive)) return;
 
-                // Definição de Badges e Layout
                 let statusBadge = '';
                 let doctorName = '';
 
@@ -309,12 +322,12 @@
                     doctorName = `<span style="color:#9ca3af; font-style:italic;">Aguardando vínculo...</span>`;
                 }
 
-                // Botões de Ação Dinâmicos
+                // Botões de Ação
                 let actionButtons = `
                     <button class="btn-icon btn-icon-link" title="Vincular Médico" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.doctor_id || ''}')">
                         <i class="fas fa-link"></i>
                     </button>
-                    <button class="btn-icon btn-icon-edit" title="Editar Nome" onclick="openEditModal('${p.id_firebase}')">
+                    <button class="btn-icon btn-icon-edit" title="Editar Cadastro" onclick="openEditModal('${p.id_firebase}')">
                         <i class="fas fa-edit"></i>
                     </button>
                 `;
@@ -334,13 +347,14 @@
 
                 html += `<tr>
                     <td style="font-weight: bold; color: ${isInactive ? '#9ca3af' : '#1f2937'};">${p.nome}</td>
+                    <td style="font-family: monospace; color: #4b5563;">${cartStr || '-'}</td>
                     <td style="text-align: center;">${statusBadge}</td>
                     <td>${doctorName}</td>
                     <td><div class="actions-cell">${actionButtons}</div></td>
                 </tr>`;
             });
 
-            if (html === '') html = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: #6b7280;">Nenhum paciente encontrado neste filtro.</td></tr>';
+            if (html === '') html = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: #6b7280;">Nenhum paciente encontrado neste filtro.</td></tr>';
             tbody.innerHTML = html;
         }
 
@@ -353,10 +367,11 @@
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
         }
 
-        // --- ADICIONAR / EDITAR NOME ---
+        // --- ADICIONAR / EDITAR PACIENTE ---
         function openAddModal() {
             document.getElementById('editPatientId').value = '';
             document.getElementById('patientNameInput').value = '';
+            document.getElementById('patientCarteirinhaInput').value = '';
             document.getElementById('addEditModalTitle').innerText = 'Adicionar Novo Paciente';
             document.getElementById('addEditModal').classList.add('active');
         }
@@ -366,18 +381,22 @@
             if(!pat) return;
             document.getElementById('editPatientId').value = id;
             document.getElementById('patientNameInput').value = pat.nome;
-            document.getElementById('addEditModalTitle').innerText = 'Editar Nome do Paciente';
+            document.getElementById('patientCarteirinhaInput').value = pat.carteirinha || '';
+            document.getElementById('addEditModalTitle').innerText = 'Editar Cadastro do Paciente';
             document.getElementById('addEditModal').classList.add('active');
         }
 
         async function savePatient() {
             const idInput = document.getElementById('editPatientId').value;
             const nameInput = document.getElementById('patientNameInput').value.trim().toUpperCase();
+            const cartInput = document.getElementById('patientCarteirinhaInput').value.trim();
+            
             if (!nameInput) return alert('O nome é obrigatório!');
 
             if (idInput) {
                 // MODO EDIÇÃO
                 patients[idInput].nome = nameInput;
+                patients[idInput].carteirinha = cartInput;
                 try {
                     await fetch(API_BASE_URL + '/pacientes', {
                         method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[idInput])
@@ -391,6 +410,7 @@
                 const newPat = {
                     id_firebase: newId,
                     nome: nameInput,
+                    carteirinha: cartInput,
                     doctor_id: "",
                     status: "ativo",
                     data_criacao: new Date().toISOString()
@@ -422,7 +442,7 @@
             if (!patId) return;
 
             patients[patId].doctor_id = docId; 
-            if(patients[patId].status === 'inativo') patients[patId].status = 'ativo'; // Reativa se vincular médico
+            if(patients[patId].status === 'inativo') patients[patId].status = 'ativo';
 
             try {
                 await fetch(API_BASE_URL + '/pacientes', {
@@ -463,7 +483,6 @@
             if(!confirm("CUIDADO: Tem certeza que deseja EXCLUIR PERMANENTEMENTE este paciente?\n\nSe ele aparecer na Unimed novamente, será recriado do zero.")) return;
             
             try {
-                // Usa o padrão DELETE para a API
                 await fetch(`${API_BASE_URL}/pacientes/${id}`, { method: 'DELETE', headers: API_HEADERS });
                 delete patients[id];
                 renderTable();

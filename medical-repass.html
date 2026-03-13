@@ -71,7 +71,7 @@
         .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
         .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
 
-        /* Estilo da subcategoria de medicamentos */
+        /* Estilo da subcategoria de medicamentos da Mochila TUSS */
         .sub-item-row { background-color: #f8fafc; font-size: 11px; color: #64748b; }
         .sub-item-row td { border-bottom: 1px dashed #e2e8f0 !important; padding: 6px 12px !important; }
 
@@ -184,7 +184,7 @@
                             <tr>
                                 <th style="width: 40px; text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
                                 <th style="width: 40px;"></th>
-                                <th>Nome do Paciente</th>
+                                <th>Paciente / Carteirinha</th>
                                 <th>Total Weknow (R$)</th>
                                 <th>Total Unimed (R$)</th>
                                 <th>Diferença</th>
@@ -206,9 +206,16 @@
         let excludedPatients = new Set();
         let doctorList = []; 
         let currentShiftTab = 'eco'; 
-        let doctors={}, shifts={};
+        let doctors = {};
+        let shifts = {};
+        let pacientesDb = {}; // Guarda o cérebro dos pacientes (para vincular as regras médicas)
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+        // 🛡️ O Gerador de ID Blindado (Igual ao do Robô e da Tela Pacientes)
+        const generatePatientId = (name) => {
+            return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        };
 
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
@@ -216,12 +223,14 @@
             const curY = now.getFullYear(); 
             const curM = now.getMonth();
             
+            // Popula os combos de Ano separadamente
             ['selYearPlantao', 'selYearUnimed'].forEach(id => {
                 const el = document.getElementById(id);
                 for(let i=curY-2; i<=curY+2; i++) el.add(new Option(i, i));
                 el.value = curY;
             });
 
+            // Popula os combos de Mês separadamente
             ['selMonthPlantao', 'selMonthUnimed'].forEach(id => {
                 const el = document.getElementById(id);
                 months.forEach((m,i) => el.add(new Option(m, i)));
@@ -229,6 +238,7 @@
             });
 
             await loadDoctors();
+            await loadPacientesDb(); // Carrega a inteligência de vínculos
             renderRepasseTable(); 
             fetchBotData();       
         });
@@ -241,8 +251,17 @@
         }
 
         // ==========================================
-        // 🚀 COMUNICAÇÃO COM O BANCO E LEITURA DA MOCHILA
+        // 🚀 COMUNICAÇÃO COM OS BANCOS DE DADOS
         // ==========================================
+        async function loadPacientesDb() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
+                if(res.ok) pacientesDb = normalizeData(await res.json());
+            } catch(e) {
+                console.error("Erro ao carregar banco de pacientes", e);
+            }
+        }
+
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
@@ -262,7 +281,7 @@
                 if(dadosFiltrados.length === 0) throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
 
                 excelData = dadosFiltrados.map(row => {
-                    // Extrai a mochila de subitens (originais) gerada pelo TUSS
+                    // Extrai a mochila de subitens (originais) gerada pela fusão TUSS
                     let originais = [];
                     if (row.itens_originais) {
                         originais = row.itens_originais;
@@ -277,12 +296,13 @@
 
                     return {
                         paciente: String(row.paciente || '').toUpperCase().trim(), 
+                        carteirinha: String(row.carteirinha || ''),
                         medicamento: String(row.descricao || '').toUpperCase().trim(), 
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
                         data: row.data_atendimento || "-", 
                         tipo: String(row.tipo || "MED").toUpperCase(), 
-                        originais: originais, // Salva os subitens
+                        originais: originais,
                         src: "unimed"
                     };
                 });
@@ -297,40 +317,82 @@
 
         function updateFilters() {
             let pats = new Set([...excelData.map(d=>d.paciente)]);
-            const sel = document.getElementById('filterPatient'); sel.innerHTML = '<option value="">Todos</option>'; Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
+            const sel = document.getElementById('filterPatient'); 
+            sel.innerHTML = '<option value="">Todos</option>'; 
+            Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
         }
 
         function renderAnalysisTable() {
             const filter = document.getElementById('filterPatient').value;
             const tbody = document.querySelector('#dataTable tbody');
-            const patients = {};
+            const patientsTableObj = {};
             
-            let totalUnimedVal = 0; let itemsMedCount = 0; let divergencesCount = 0;
+            let totalUnimedVal = 0; 
+            let itemsMedCount = 0; 
+            let divergencesCount = 0;
 
             excelData.forEach(d => {
-                if (excludedPatients.has(d.paciente)) return; if (filter && d.paciente !== filter) return;
-                const p = d.paciente; if(!patients[p]) patients[p] = { name: p, totalW: 0, totalU: 0, items: [] };
+                if (excludedPatients.has(d.paciente)) return; 
+                if (filter && d.paciente !== filter) return;
                 
-                patients[p].totalU += d.valor; totalUnimedVal += d.valor; if(d.tipo === 'MED') itemsMedCount++;
-                patients[p].items.push(d);
+                const p = d.paciente; 
+                if(!patientsTableObj[p]) {
+                    patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [] };
+                }
+                
+                // 🛡️ REGRA DRA. GRAZIELLY: Cortar Taxas se o paciente não for dela
+                const patId = generatePatientId(d.paciente);
+                const patDb = pacientesDb[patId];
+                const docId = patDb ? patDb.doctor_id : null;
+                const docDb = docId && doctors[docId] ? doctors[docId] : null;
+                
+                const isGrazielly = docDb && String(docDb.nome).toUpperCase().includes('GRAZIELLY');
+                
+                // É taxa se o tipo for HOS ou se o nome do medicamento tiver a palavra TAXA
+                const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
+                
+                let valorConsiderado = d.valor;
+                let isCortado = false;
+
+                if (isTaxa && !isGrazielly) {
+                    valorConsiderado = 0; // O valor não soma para a Unimed
+                    isCortado = true;     // Ativa a flag visual vermelha
+                }
+
+                patientsTableObj[p].totalU += valorConsiderado; 
+                totalUnimedVal += valorConsiderado; 
+                
+                if(d.tipo === 'MED') itemsMedCount++;
+                
+                patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            const patList = Object.values(patients).sort((a,b) => a.name.localeCompare(b.name));
+            const patList = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
             
             document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
             
-            if(patList.length === 0) { if(excelData.length > 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum resultado para o filtro.</td></tr>'; return; }
+            if(patList.length === 0) { 
+                if(excelData.length > 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum resultado para o filtro.</td></tr>'; 
+                return; 
+            }
 
             let htmlBuffer = "";
             patList.forEach((pat, idx) => {
                 const diff = pat.totalU - pat.totalW; 
-                let cls = 'bg-gray'; if(diff > 0.05) cls = 'bg-green'; if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
+                let cls = 'bg-gray'; 
+                if(diff > 0.05) cls = 'bg-green'; 
+                if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
                         <td style="text-align:center;"><button class="btn-toggle"><i class="fas fa-chevron-right"></i></button></td>
-                        <td style="font-weight:bold; color: #1f2937;">${pat.name}</td> 
+                        <td style="font-weight:bold; color: #1f2937;">
+                            ${pat.name}<br>
+                            <span style="font-size: 11px; color: #6b7280; font-weight: normal; font-family: monospace;">
+                                <i class="fas fa-id-card"></i> ${pat.carteirinha || 'Não informada'}
+                            </span>
+                        </td> 
                         <td>R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td> 
                         <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                         <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></td>
@@ -342,23 +404,31 @@
                 pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     
+                    // Lógica Visual do Corte da Glosa Interna (Dra. Grazielly)
+                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+                    let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Paciente não está vinculado à Dra. Grazielly"' : '';
+                    let valorVisual = item.isCortado 
+                        ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</s> <br><span style="font-size:11px; color:#dc2626; font-weight:bold;">R$ 0,00</span>` 
+                        : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
                     // A LINHA DO ITEM AGRUPADO
-                    htmlBuffer += `<tr>
-                        <td>${item.data}</td><td style="font-weight:600; color:#00855B;">${item.medicamento}</td>
-                        <td style="text-align:center;"><span class="badge bg-green">${item.tipo}</span></td>
-                        <td style="text-align:center; font-weight:bold;">${qtdFormatada}</td>
-                        <td style="text-align:right; font-weight:500;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                    htmlBuffer += `<tr ${titleTooltip}>
+                        <td style="${styleCorte}">${item.data}</td>
+                        <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
+                        <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
+                        <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
+                        <td style="text-align:right; font-weight:500;">${valorVisual}</td>
                     </tr>`;
 
-                    // A MÁGICA DA SUBCATEGORIA: Se tiver itens na mochila, desenha eles embaixo!
+                    // A MÁGICA DA SUBCATEGORIA: Desenha a mochila embaixo se houver agrupamento
                     if (item.originais && item.originais.length > 1) {
                         item.originais.forEach(sub => {
-                            htmlBuffer += `<tr class="sub-item-row">
+                            htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
                                 <td style="border-bottom:none;"></td>
-                                <td style="padding-left: 20px;">↳ ${sub.descricao}</td>
+                                <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
                                 <td></td>
-                                <td style="text-align:center;">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
-                                <td style="text-align:right;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                                <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+                                <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                             </tr>`;
                         });
                     }
@@ -366,7 +436,8 @@
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
             
-            document.getElementById('dashDivergences').innerText = divergencesCount; tbody.innerHTML = htmlBuffer;
+            document.getElementById('dashDivergences').innerText = divergencesCount; 
+            tbody.innerHTML = htmlBuffer;
         }
 
         // ==========================================
