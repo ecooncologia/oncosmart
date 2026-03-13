@@ -22,6 +22,7 @@ const APP_PAGES = [
     { id: 'sales', label: 'Particulares', file: 'sales.html', perm: 'consultas' },
     { id: 'procedures', label: 'Procedimentos', file: 'procedures.html', perm: 'procedimentos' },
     { id: 'doctors', label: 'Médicos', file: 'doctors.html', perm: 'medicos' },
+    { id: 'pacientes', label: 'Pacientes', file: 'pacientes.html', perm: 'pacientes' },
     { id: 'shifts', label: 'Plantão', file: 'shifts.html', perm: 'plantao' },
     { id: 'repass', label: 'Repasse', file: 'medical-repass.html', perm: 'repasse' },
     { id: 'stenci', label: 'Stenci', file: 'stenci.html', perm: 'stenci' },
