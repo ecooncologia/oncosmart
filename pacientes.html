@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacientes - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        
+        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        
+        .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
+        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; min-width: 250px; }
+        
+        .btn-primary { background: #00995D; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s; }
+        .btn-primary:hover { background: #007a4a; }
+        
+        .btn-sync { background: #4b5563; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: 600; height: 38px; transition: 0.2s; }
+        .btn-sync:hover { background: #374151; }
+
+        .btn-link { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; }
+        .btn-link:hover { background: #0284c7; color: white; }
+
+        .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
+        .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #00995D; color: white; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333; vertical-align: middle; }
+        
+        .badge { padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 11px; display: inline-block; text-align: center; }
+        .bg-new { background: #fef08a; color: #854d0e; border: 1px solid #fde047; animation: pulse 2s infinite; }
+        .bg-linked { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        /* Modais */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; width: 400px; max-width: 90%; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
+        .modal-header { background: #00995D; color: white; padding: 15px 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: #f9fafb; }
+        
+        .form-label { font-weight: bold; font-size: 12px; color: #4b5563; margin-bottom: 5px; display: block; }
+        .form-select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin-bottom: 15px; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="controls">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="input-group">
+                    <input type="text" id="searchPatient" class="input-field" placeholder="Buscar paciente..." onkeyup="filterTable()">
+                </div>
+                <div class="input-group">
+                    <select id="filterStatus" class="input-field" onchange="filterTable()" style="min-width: 150px;">
+                        <option value="all">Todos os Status</option>
+                        <option value="novo">Somente Novos (Sem Médico)</option>
+                        <option value="vinculado">Vinculados</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-sync" onclick="syncFromUnimed()" title="Puxar novos pacientes da planilha Unimed">
+                    <i class="fas fa-sync-alt"></i> Sincronizar Base
+                </button>
+                <button class="btn-primary" onclick="openAddModal()">
+                    <i class="fas fa-user-plus"></i> Novo Paciente Manual
+                </button>
+            </div>
+        </div>
+
+        <div class="sheet-container">
+            <div class="table-responsive">
+                <table class="data-table" id="patientsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%">Nome do Paciente</th>
+                            <th style="width: 15%; text-align: center;">Status</th>
+                            <th style="width: 30%">Médico Responsável</th>
+                            <th style="width: 15%; text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando pacientes...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Adicionar Novo Paciente</span>
+                <button class="modal-close" onclick="closeModals()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Nome Completo</label>
+                <input type="text" id="newPatientName" class="form-select" placeholder="Ex: JOÃO DA SILVA" style="text-transform: uppercase;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sync" style="background: #9ca3af;" onclick="closeModals()">Cancelar</button>
+                <button class="btn-primary" onclick="saveNewPatient()">Salvar Paciente</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="linkModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Vincular Médico</span>
+                <button class="modal-close" onclick="closeModals()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Paciente: <strong id="linkPatientName" style="color: #000;"></strong></p>
+                <input type="hidden" id="linkPatientId">
+                
+                <label class="form-label">Selecione o Médico Responsável</label>
+                <select id="linkDoctorSelect" class="form-select">
+                    <option value="">-- Selecione --</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sync" style="background: #9ca3af;" onclick="closeModals()">Cancelar</button>
+                <button class="btn-primary" onclick="saveDoctorLink()">Confirmar Vínculo</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let patients = {};
+        let doctors = {};
+
+        // 🛡️ O Gerador de ID Blindado (Igual ao do Robô)
+        const generatePatientId = (name) => {
+            return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('pacientes', 'Pacientes');
+            await loadDoctors();
+            await loadPatients();
+        });
+
+        // 1. Carrega os médicos para o Dropdown
+        async function loadDoctors() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    doctors = normalizeData(data);
+                    
+                    const select = document.getElementById('linkDoctorSelect');
+                    Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
+                        select.add(new Option(doc.nome, id));
+                    });
+                }
+            } catch(e) { console.error("Erro ao carregar médicos", e); }
+        }
+
+        // 2. Carrega os Pacientes do Banco
+        async function loadPatients() {
+            const tbody = document.querySelector('#patientsTable tbody');
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    patients = normalizeData(data);
+                } else { patients = {}; }
+                renderTable();
+            } catch(e) { 
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Erro ao conectar com o banco de pacientes.</td></tr>';
+            }
+        }
+
+        // 3. Renderiza a Tabela
+        function renderTable() {
+            const tbody = document.querySelector('#patientsTable tbody');
+            const searchTerm = document.getElementById('searchPatient').value.toUpperCase();
+            const filterStatus = document.getElementById('filterStatus').value;
+
+            const patArray = Object.values(patients).sort((a,b) => a.nome.localeCompare(b.nome));
+            
+            let html = '';
+            patArray.forEach(p => {
+                // Filtros
+                if (searchTerm && !p.nome.includes(searchTerm)) return;
+                const hasDoctor = p.doctor_id && p.doctor_id !== "";
+                if (filterStatus === 'novo' && hasDoctor) return;
+                if (filterStatus === 'vinculado' && !hasDoctor) return;
+
+                // Layout da linha
+                const doctorName = hasDoctor && doctors[p.doctor_id] ? doctors[p.doctor_id].nome : '<span style="color:#9ca3af; font-style:italic;">Não vinculado</span>';
+                const statusBadge = hasDoctor ? `<span class="badge bg-linked"><i class="fas fa-check-circle"></i> Vinculado</span>` : `<span class="badge bg-new"><i class="fas fa-exclamation-circle"></i> Novo</span>`;
+
+                html += `<tr>
+                    <td style="font-weight: bold; color: #1f2937;">${p.nome}</td>
+                    <td style="text-align: center;">${statusBadge}</td>
+                    <td>${doctorName}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-link" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.doctor_id || ''}')">
+                            <i class="fas fa-link"></i> ${hasDoctor ? 'Trocar Médico' : 'Vincular Médico'}
+                        </button>
+                    </td>
+                </tr>`;
+            });
+
+            if (html === '') html = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum paciente encontrado.</td></tr>';
+            tbody.innerHTML = html;
+        }
+
+        function filterTable() { renderTable(); }
+
+        // ==========================================
+        // LÓGICA DOS MODAIS
+        // ==========================================
+        function closeModals() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+        }
+
+        function openAddModal() {
+            document.getElementById('newPatientName').value = '';
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        async function saveNewPatient() {
+            const nameInput = document.getElementById('newPatientName').value.trim().toUpperCase();
+            if (!nameInput) return alert('Digite o nome do paciente!');
+
+            const newId = generatePatientId(nameInput);
+            
+            // Regra Ouro: Nunca duplicar
+            if (patients[newId]) {
+                alert('Este paciente já existe na base de dados!');
+                return;
+            }
+
+            const newPat = {
+                id_firebase: newId,
+                nome: nameInput,
+                doctor_id: "", // Nasce sem médico
+                data_criacao: new Date().toISOString()
+            };
+
+            try {
+                await fetch(API_BASE_URL + '/pacientes', {
+                    method: 'POST',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(newPat)
+                });
+                patients[newId] = newPat; // Atualiza a tela
+                closeModals();
+                renderTable();
+            } catch(e) { alert("Erro ao salvar paciente."); }
+        }
+
+        function openLinkModal(id, name, currentDoctorId) {
+            document.getElementById('linkPatientId').value = id;
+            document.getElementById('linkPatientName').innerText = name;
+            document.getElementById('linkDoctorSelect').value = currentDoctorId;
+            document.getElementById('linkModal').classList.add('active');
+        }
+
+        async function saveDoctorLink() {
+            const patId = document.getElementById('linkPatientId').value;
+            const docId = document.getElementById('linkDoctorSelect').value;
+
+            if (!patId) return;
+
+            const pat = patients[patId];
+            pat.doctor_id = docId; // Atualiza o objeto
+
+            try {
+                // Como não sabemos se o endpoint PUT já existe perfeitamente configurado na sua API,
+                // enviamos via POST (se sua API Firebase fizer merge) ou ajustamos depois.
+                await fetch(API_BASE_URL + '/pacientes', {
+                    method: 'POST',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(pat)
+                });
+                
+                closeModals();
+                renderTable();
+            } catch(e) { alert("Erro ao vincular médico."); }
+        }
+
+        // ==========================================
+        // 🚀 O BOTÃO MÁGICO DE SINCRONIZAÇÃO (Puxa da Unimed)
+        // ==========================================
+        async function syncFromUnimed() {
+            const btn = document.querySelector('.btn-sync');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+            btn.disabled = true;
+
+            try {
+                // 1. Puxa tudo que o robô da Unimed jogou no banco
+                const resUnimed = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
+                if (!resUnimed.ok) throw new Error("Sem dados na Unimed");
+                
+                const unimedData = normalizeData(await resUnimed.json());
+                const unimedArray = Object.values(unimedData);
+                
+                let novosCriados = 0;
+
+                // 2. Extrai os nomes e verifica se já existem
+                for (const row of unimedArray) {
+                    if (row.paciente) {
+                        const patName = String(row.paciente).toUpperCase().trim();
+                        const patId = generatePatientId(patName);
+
+                        // Se não existe na nossa memória de pacientes, cria e manda pro banco!
+                        if (!patients[patId]) {
+                            const newPat = {
+                                id_firebase: patId,
+                                nome: patName,
+                                doctor_id: "", // Entra como "Novo"
+                                data_criacao: new Date().toISOString()
+                            };
+                            
+                            await fetch(API_BASE_URL + '/pacientes', {
+                                method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat)
+                            });
+                            
+                            patients[patId] = newPat; // Salva na memória local da tela
+                            novosCriados++;
+                        }
+                    }
+                }
+
+                alert(`Sincronização concluída! ${novosCriados} novos pacientes encontrados e adicionados à base.`);
+                renderTable();
+
+            } catch(e) {
+                alert("Erro ao sincronizar. Verifique se a tabela da Unimed tem dados.");
+            } finally {
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar Base';
+                btn.disabled = false;
+            }
+        }
+
+        // Utilitário
+        function normalizeData(apiData) {
+            if (!apiData) return {}; const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            }); return normalized;
+        }
+    </script>
+</body>
+</html>
