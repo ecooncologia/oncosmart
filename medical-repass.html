@@ -3,26 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <title>Repasse Médico & Unimed - ECO Sistema</title>
-    
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
-    <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
     <script>
         const versaoApp = Date.now();
         document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
         document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
     </script>
-
     <style>
         body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
         .container { width: 100%; padding: 20px; box-sizing: border-box; }
-        
-        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
         .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
         .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
@@ -30,55 +22,53 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
+        .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
+        .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
+        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
+        
         .sub-tabs-container { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
         .sub-tab-btn { background: #f3f4f6; border: 1px solid #e5e7eb; border-bottom: none; padding: 10px 20px; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 8px 8px 0 0; transition: 0.2s; white-space: nowrap; }
         .sub-tab-btn.active { background: #00995D; color: white; border-color: #00995D; }
         .sub-tab-btn:hover:not(.active) { background: #e5e7eb; }
 
-        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; white-space: nowrap; height: 38px; }
-        
-        .btn-danger-block { background: #dc2626; color: white; border: none; width: 100%; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; }
+        .btn-danger-block { background: #dc2626; color: white; border: none; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 15px; }
         .btn-danger-block:hover { background: #b91c1c; }
-        .btn-icon-danger { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        .btn-icon-danger:hover { background: #dc2626; color: white; }
 
-        .input-group { margin-bottom: 15px; }
-        .label-title { font-size: 12px; font-weight: 700; color: #4b5563; display: block; margin-bottom: 5px; }
-        .input-field, .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 13px; height: 38px; }
-        
-        .layout-simple { display: block; }
-        
+        .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; }
+        .card-stat h2 { margin: 0; color: #1f2937; font-size: 24px; }
+        .card-stat.warning { border-left-color: #f59e0b; }
+        .card-stat.danger { border-left-color: #ef4444; }
+
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .data-table th { background: #00995D; color: white; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; }
         .data-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333; vertical-align: middle; }
         
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
-        .bg-green { background: #dcfce7; color: #166534; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; text-align: center; }
+        .bg-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-red { background: #fee2e2; color: #991b1b; }
-        .bg-gray { background: #f3f4f6; color: #374151; }
+        .bg-gray { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
         
         .row-parent { cursor: pointer; background-color: #fff; transition: background 0.2s; }
         .row-parent:hover { background-color: #f9fafb; }
         .row-detail { display: none; background-color: #f8fafc; }
         .row-detail.expanded { display: table-row; }
         
-        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .nested-table th { background: #e2e8f0; color: #475569; font-size: 11px; padding: 8px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
-        .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 6px 8px; color: #64748b; }
-        
-        .row-total-med { background-color: #fef08a !important; font-weight: bold; border-top: 2px solid #fbbf24; }
-        .row-total-med td { color: #854d0e !important; font-size: 12px !important; }
+        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
+        .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
+        .sub-item-row { background-color: #f8fafc; font-size: 11px; color: #64748b; }
+        .sub-item-row td { border-bottom: 1px dashed #e2e8f0 !important; padding: 6px 12px !important; }
 
         .btn-toggle { background: none; border: none; color: #00995D; font-size: 16px; cursor: pointer; transition: transform 0.3s; }
         .btn-toggle.rotate { transform: rotate(90deg); }
 
-        .select-doc-row { padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; width: 100%; max-width: 200px; }
-
-        .controls-plantao { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-        .filters-left { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; white-space: nowrap; }
-        .actions-right { display: flex; align-items: center; gap: 15px; flex-wrap: nowrap; }
         .total-box { background: #dcfce7; border: 1px solid #86efac; padding: 0 15px; border-radius: 8px; font-weight: bold; color: #166534; font-size: 15px; white-space: nowrap; height: 38px; display: flex; align-items: center; }
         
         .scale-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; }
@@ -87,10 +77,6 @@
         .scale-table .col-fixa { position: sticky; left: 0; z-index: 20; width: 250px; background: white; font-weight: bold; border-right: 2px solid #e5e7eb; text-align: left; padding-left: 10px; height: 38px; }
         .scale-table th.th-fixa { position: sticky; left: 0; z-index: 30; background: #00995D; width: 250px; height: 38px; }
         .weekend-col { background-color: #f8fafc; } .holiday-col { background-color: #fef2f2 !important; color: #dc2626; font-weight: bold; }
-
-        #selMonth { width: 110px; } #selYear { width: 80px; } #filterDoctor { min-width: 250px; max-width: 400px; } 
-
-        @media(max-width:768px) { .filters-left { flex-wrap: wrap; } }
     </style>
 </head>
 <body>
@@ -104,61 +90,42 @@
         </div>
 
         <div id="tab-plantao" class="tab-content active">
+            <div class="controls">
+                <div class="controls-group">
+                    <div class="input-group" style="width: 120px;"><label class="label-title">Mês da Escala</label><select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select></div>
+                    <div class="input-group" style="width: 90px;"><label class="label-title">Ano</label><select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select></div>
+                    <div class="input-group" style="min-width: 250px;"><label class="label-title">Filtrar Médico</label><select id="filterDoctor" class="input-field" onchange="renderRepasseTable()"><option value="">Todos</option></select></div>
+                    <div class="total-box">Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span></div>
+                </div>
+                <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir Escala</button>
+            </div>
             <div class="sub-tabs-container">
                 <button class="sub-tab-btn active" onclick="switchShiftTab('eco', this)">Eco Oncologia</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_quimio', this)">Vita - Sala Quimio</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_sobreaviso', this)">Vita - Sobreaviso</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('cirurgioes', this)">Cirurgiões</button>
             </div>
-
-            <div class="controls controls-plantao">
-                <div class="filters-left">
-                    <select id="selMonth" class="form-control" onchange="renderRepasseTable()"></select>
-                    <select id="selYear" class="form-control" onchange="renderRepasseTable()"></select>
-                    <select id="filterDoctor" class="form-control" onchange="renderRepasseTable()">
-                        <option value="">Carregando...</option>
-                    </select>
-                </div>
-                <div class="actions-right">
-                    <div class="total-box">Total Geral: <span id="grandTotal">R$ 0,00</span></div>
-                    <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir</button>
-                </div>
-            </div>
             <div class="sheet-container">
                 <div class="table-responsive">
-                    <table class="scale-table" id="repTable">
-                        <thead></thead>
-                        <tbody></tbody>
-                    </table>
+                    <table class="scale-table" id="repTable"><thead></thead><tbody></tbody></table>
                 </div>
             </div>
         </div>
 
         <div id="tab-unimed" class="tab-content">
-            <div class="controls">
-                <div>
-                    <h4 style="color:#007bff; margin-top:0;"><i class="fas fa-file-excel"></i> Arquivo Unimed</h4>
-                    <div class="input-group">
-                        <label class="label-title">Upload Planilha Unimed (.xlsx)</label>
-                        <input type="file" id="excelFile" class="input-field" accept=".xlsx, .xls" onchange="handleFileUpload()">
-                    </div>
-                    
-                    <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                        <div class="input-group" style="margin:0; flex-grow: 1;">
-                            <label class="label-title">Filtrar Paciente</label>
-                            <select id="filterPatient" class="input-field" onchange="renderAnalysisTable()">
-                                <option value="">Todos</option>
-                            </select>
-                        </div>
-                        <div>
-                            <button class="btn-danger-block" onclick="deleteSelected()" style="min-width: 150px;">
-                                <i class="fas fa-trash-alt"></i> Excluir Seleção
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div class="dashboard-cards">
+                <div class="card-stat"><h5>Total Bruto Unimed</h5><h2 id="dashUnimedTotal">R$ 0,00</h2></div>
+                <div class="card-stat warning"><h5>Medicamentos Extraídos</h5><h2 id="dashMedCount">0</h2></div>
+                <div class="card-stat danger"><h5>Divergências de Repasse</h5><h2 id="dashDivergences">0</h2></div>
             </div>
-
+            <div class="controls">
+                <div class="controls-group">
+                    <div class="input-group" style="width: 140px;"><label class="label-title">Mês Base Unimed</label><select id="selMonthUnimed" class="input-field" onchange="fetchBotData()"></select></div>
+                    <div class="input-group" style="width: 90px;"><label class="label-title">Ano</label><select id="selYearUnimed" class="input-field" onchange="fetchBotData()"></select></div>
+                    <div class="input-group" style="width: 250px;"><label class="label-title">Filtrar Paciente</label><select id="filterPatient" class="input-field" onchange="renderAnalysisTable()"><option value="">Todos</option></select></div>
+                </div>
+                <button class="btn-danger-block" onclick="deleteSelected()"><i class="fas fa-trash-alt"></i> Excluir Seleção</button>
+            </div>
             <div class="sheet-container">
                 <div class="table-responsive">
                     <table class="data-table" id="dataTable">
@@ -166,7 +133,7 @@
                             <tr>
                                 <th style="width: 40px; text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
                                 <th style="width: 40px;"></th>
-                                <th>Paciente</th>
+                                <th>Paciente / Carteirinha</th>
                                 <th>Total Weknow (R$)</th>
                                 <th>Total Unimed (R$)</th>
                                 <th>Diferença</th>
@@ -174,7 +141,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999;">Faça o upload da planilha da Unimed para visualizar os dados.</td></tr>
+                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -183,32 +150,27 @@
     </div>
 
     <script>
-        let weknowData = []; 
-        let excelData = [];
-        let uniquePatients = new Set(); 
-        let excludedPatients = new Set();
-        let doctorList = []; 
-        let currentShiftTab = 'eco'; 
+        let excelData = []; let weknowData = []; let excludedPatients = new Set();
+        let doctorList = []; let currentShiftTab = 'eco'; 
+        let doctors={}, shifts={}, pacientesDb={};
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-        let doctors={}, shifts={}, curY, curM;
+
+        const generatePatientId = (name) => {
+            return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        };
 
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
-            const now = new Date(); 
-            curY = now.getFullYear(); 
-            curM = now.getMonth();
+            const now = new Date(); const curY = now.getFullYear(); const curM = now.getMonth();
             
-            const ySel = document.getElementById('selYear');
-            for(let i=curY-1; i<=curY+2; i++) ySel.add(new Option(i, i)); 
-            ySel.value = curY;
-            
-            const mSel = document.getElementById('selMonth');
-            months.forEach((m,i) => mSel.add(new Option(m, i))); 
-            mSel.value = curM;
+            ['selYearPlantao', 'selYearUnimed'].forEach(id => { const el = document.getElementById(id); for(let i=curY-2; i<=curY+2; i++) el.add(new Option(i, i)); el.value = curY; });
+            ['selMonthPlantao', 'selMonthUnimed'].forEach(id => { const el = document.getElementById(id); months.forEach((m,i) => el.add(new Option(m, i))); el.value = curM; });
 
             await loadDoctors();
-            renderRepasseTable();
+            await loadPacientesDb();
+            renderRepasseTable(); 
+            fetchBotData();       
         });
 
         function openTab(t){ 
@@ -218,155 +180,166 @@
             event.target.classList.add('active');
         }
 
-        function switchShiftTab(tabId, element) {
-            currentShiftTab = tabId;
-            document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
-            updateRepassDoctorDropdown(); 
-            renderRepasseTable();
+        async function loadPacientesDb() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
+                if(res.ok) pacientesDb = normalizeData(await res.json());
+            } catch(e) {}
         }
 
-        function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
-        function toggleLevel2(id, btn) { document.getElementById(`L2-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
-        function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
-        
-        function deleteSelected() {
-            const c = document.getElementsByName('rowCheck'); let count = 0;
-            for(let i=0; i<c.length; i++) { if(c[i].checked) { excludedPatients.add(c[i].value); count++; } }
-            if(count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } else { alert("Selecione ao menos um paciente."); }
-        }
-        function deleteRow(paciente) { if(confirm("Excluir " + paciente + "?")) { excludedPatients.add(paciente); renderAnalysisTable(); } }
+        async function fetchBotData() {
+            const tbody = document.querySelector('#dataTable tbody'); 
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
+            
+            try {
+                const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
+                const anoSelecionado = document.getElementById('selYearUnimed').value;
+                const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
-        function handleFileUpload() {
-            const fileInput = document.getElementById('excelFile'); if (fileInput.files.length === 0) return;
-            const tbody = document.querySelector('#dataTable tbody'); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Lendo arquivo... <i class="fas fa-spinner fa-spin"></i></td></tr>';
-            const file = fileInput.files[0]; const reader = new FileReader();
+                const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
+                if (!response.ok) throw new Error('Dados não encontrados no servidor.');
+                
+                const data = await response.json();
+                const arrayBot = Object.values(normalizeData(data));
+                
+                const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
+                if(dadosFiltrados.length === 0) throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
 
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' });
-                    let sheetName = workbook.SheetNames.find(n => n.toUpperCase().includes("GUIA DE SERVI"));
-                    if (!sheetName) sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    let headerRowIndex = -1;
-                    for (let i = 0; i < Math.min(jsonData.length, 20); i++) {
-                        const rowStr = JSON.stringify(jsonData[i]).toUpperCase();
-                        if (rowStr.includes("NOME") && (rowStr.includes("DESCRI") || rowStr.includes("EVENTO"))) { headerRowIndex = i; break; }
-                    }
-                    if (headerRowIndex === -1) throw new Error("Cabeçalho não encontrado.");
-                    const finalData = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex });
+                excelData = dadosFiltrados.map(row => {
+                    let originais = [];
+                    if (row.itens_originais) originais = row.itens_originais;
+                    else if (row.dados_extras && row.dados_extras.itens_originais) originais = row.dados_extras.itens_originais;
+                    else if (typeof row.dados_extras === 'string') { try { let p = JSON.parse(row.dados_extras); if(p.itens_originais) originais = p.itens_originais; } catch(e){} }
 
-                    excelData = finalData.map(row => {
-                        const getCol = (names) => { for(let k in row) if(names.includes(k.toUpperCase().trim())) return row[k]; return null; };
-                        const rawTipo = getCol(["TIPO"]); const tipo = rawTipo ? String(rawTipo).toUpperCase().trim() : ""; if (tipo.startsWith("MAT")) return null; 
-                        const paciente = getCol(["NOME", "PACIENTE"]); const desc = getCol(["DESCRIÇÃO", "DESCRICAO", "EVENTO"]); const val = getCol(["VALOR", "VALOR TOTAL"]); const qtd = getCol(["QTDE.", "QTDE", "QTD"]); const dt = getCol(["DATA ATEND.", "DATA"]);
-                        if(!paciente || !desc) return null;
-                        return { paciente: String(paciente).toUpperCase().trim(), medicamento: String(desc).toUpperCase().trim(), valor: parseFloat(val || 0), mg: parseFloat(qtd || 0), data: parseExcelDate(dt), tipo: tipo, src: "unimed" };
-                    }).filter(i => i !== null);
-                    alert(`Sucesso! ${excelData.length} registros importados.`); updateFilters(); renderAnalysisTable();
-                } catch (err) { alert("Erro: " + err.message); tbody.innerHTML = ''; }
-            }; reader.readAsArrayBuffer(file);
-        }
+                    return {
+                        paciente: String(row.paciente || '').toUpperCase().trim(), 
+                        carteirinha: row.carteirinha || "",
+                        medicamento: String(row.descricao || '').toUpperCase().trim(), 
+                        valor: parseFloat(row.valor_pago || 0), 
+                        mg: parseFloat(row.quantidade || 1), 
+                        data: row.data_atendimento || "-", 
+                        tipo: String(row.tipo || "MED").toUpperCase(), 
+                        originais: originais,
+                        src: "unimed"
+                    };
+                });
 
-        function parseExcelDate(val) {
-            if(!val) return "-"; if(typeof val === 'number') { return new Date(Math.round((val - 25569)*86400*1000)).toLocaleDateString('pt-BR'); }
-            return String(val).split(' ')[0];
+                updateFilters(); 
+                renderAnalysisTable();
+            } catch (err) {
+                excelData = []; updateFilters(); renderAnalysisTable();
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-robot" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
+            }
         }
 
         function updateFilters() {
-            let pats = new Set([...weknowData.map(d=>d.paciente), ...excelData.map(d=>d.paciente)]);
+            let pats = new Set([...excelData.map(d=>d.paciente)]);
             const sel = document.getElementById('filterPatient'); sel.innerHTML = '<option value="">Todos</option>'; Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
-        }
-
-        function generateDoctorSelect() {
-            let opts = '<option value="">-- Selecione --</option>'; doctorList.forEach(d => opts += `<option value="${d.id}">${d.nome}</option>`); return opts;
         }
 
         function renderAnalysisTable() {
             const filter = document.getElementById('filterPatient').value;
             const tbody = document.querySelector('#dataTable tbody');
-            const patients = {};
+            const patientsTableObj = {};
             
-            [...weknowData, ...excelData].forEach(d => {
-                if (excludedPatients.has(d.paciente)) return; if (filter && d.paciente !== "PACIENTE GERAL" && d.paciente !== filter) return;
-                const p = d.paciente; if(!patients[p]) patients[p] = { name: p, totalW: 0, totalU: 0, items: [] };
-                if(d.src === 'weknow') patients[p].totalW += d.valor; else patients[p].totalU += d.valor;
-                patients[p].items.push(d);
+            let totalUnimedVal = 0; let itemsMedCount = 0; let divergencesCount = 0;
+
+            excelData.forEach(d => {
+                if (excludedPatients.has(d.paciente)) return; 
+                if (filter && d.paciente !== filter) return;
+                
+                const p = d.paciente; 
+                if(!patientsTableObj[p]) patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [] };
+                
+                const patId = generatePatientId(d.paciente);
+                const patDb = pacientesDb[patId];
+                const docId = patDb ? patDb.doctor_id : null;
+                const docDb = docId && doctors[docId] ? doctors[docId] : null;
+                
+                const isGrazielly = docDb && docDb.nome.toUpperCase().includes('GRAZIELLY');
+                const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
+                
+                let valorConsiderado = d.valor;
+                let isCortado = false;
+
+                if (isTaxa && !isGrazielly) {
+                    valorConsiderado = 0; 
+                    isCortado = true;     
+                }
+
+                patientsTableObj[p].totalU += valorConsiderado; 
+                totalUnimedVal += valorConsiderado; 
+                if(d.tipo === 'MED') itemsMedCount++;
+                
+                patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            const patList = Object.values(patients).sort((a,b) => a.name.localeCompare(b.name));
-            if(patList.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sem dados.</td></tr>'; return; }
+            const patList = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
+            
+            document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            document.getElementById('dashMedCount').innerText = itemsMedCount;
+            
+            if(patList.length === 0) { if(excelData.length > 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum resultado para o filtro.</td></tr>'; return; }
 
             let htmlBuffer = "";
             patList.forEach((pat, idx) => {
                 const diff = pat.totalU - pat.totalW; 
-                let cls = 'bg-gray'; if(diff > 0.05) cls = 'bg-green'; if(diff < -0.05) cls = 'bg-red';
+                let cls = 'bg-gray'; if(diff > 0.05) cls = 'bg-green'; if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
                         <td style="text-align:center;"><button class="btn-toggle"><i class="fas fa-chevron-right"></i></button></td>
-                        <td style="font-weight:bold;">${pat.name}</td> <td>R$ 0,00</td> <td>R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                        <td style="font-weight:bold; color: #1f2937;">
+                            ${pat.name}<br>
+                            <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span>
+                        </td> 
+                        <td>R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td> 
+                        <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                         <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></td>
                         <td style="text-align:center;"><button class="btn-icon-danger" title="Excluir" onclick="deleteRow('${pat.name}')"><i class="fas fa-trash"></i></button></td>
                     </tr>
-                    <tr id="L1-${idx}" class="row-detail"><td colspan="7" class="level2-container"><table class="nested-table">
-                    <thead><tr><th style="width:30px"></th><th>Data</th><th>Procedimento / Medicamento</th><th>Qtd/Mg Total</th><th>Weknow</th><th>Unimed</th><th style="width:150px">Vínculo</th></tr></thead><tbody>`;
+                    <tr id="L1-${idx}" class="row-detail"><td colspan="7"><table class="nested-table">
+                        <thead><tr><th>Data Atend.</th><th>Descrição / TUSS Unificada</th><th style="text-align:center;">Tipo</th><th style="text-align:center;">Qtd/Mg</th><th style="text-align:right;">Valor Pago</th></tr></thead><tbody>`;
 
-                const groups = {};
                 pat.items.forEach(item => {
-                    const key = item.medicamento; if(!groups[key]) groups[key] = { name: item.medicamento, tipo: item.tipo, count: 0, sumValW: 0, sumValU: 0, sumMg: 0, dates: new Set(), raw: [] };
-                    groups[key].count++; if(item.src === 'weknow') groups[key].sumValW += item.valor; else groups[key].sumValU += item.valor;
-                    groups[key].sumMg += item.mg; if(item.data) groups[key].dates.add(item.data); groups[key].raw.push(item);
-                });
+                    let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                    
+                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+                    let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Paciente não está vinculado à Dra Grazielly"' : '';
+                    let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
-                let gIdx = 0;
-                Object.values(groups).sort((a,b) => a.name.localeCompare(b.name)).forEach(grp => {
-                    const uniqueId = `${idx}-${gIdx}`;
-                    let extra = ""; if (grp.tipo && grp.tipo.includes("HOS")) extra = `<select class="select-doc-row" onclick="event.stopPropagation()">${generateDoctorSelect()}</select>`;
+                    htmlBuffer += `<tr ${titleTooltip}>
+                        <td style="${styleCorte}">${item.data}</td>
+                        <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
+                        <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
+                        <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
+                        <td style="text-align:right; font-weight:500;">${valorVisual}</td>
+                    </tr>`;
 
-                    if (grp.count > 1) {
-                        let dateText = grp.dates.size > 1 ? "Várias" : (Array.from(grp.dates)[0] || "-");
-                        htmlBuffer += `<tr><td style="text-align:center;"><button class="btn-toggle" onclick="toggleLevel2('${uniqueId}', this)"><i class="fas fa-chevron-right"></i></button></td>
-                                <td>${dateText}</td><td style="font-weight:bold;">${grp.name} (Agrupado)</td><td style="text-align:center;">${grp.sumMg.toLocaleString()}</td>
-                                <td>R$ 0,00</td><td>R$ ${grp.sumValU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
-
-                        let subRows = "";
-                        grp.raw.sort((a,b) => (a.data||"").localeCompare(b.data||"")).forEach(r => {
-                            let subExtra = (grp.tipo && grp.tipo.includes("HOS")) ? `<select class="select-doc-row">${generateDoctorSelect()}</select>` : "";
-                            subRows += `<tr><td>${r.data || "-"}</td><td>${r.medicamento}</td><td style="text-align:center;">UN</td><td style="text-align:center;">${r.mg}</td><td>-</td><td>R$ ${r.valor.toFixed(2)}</td><td>${subExtra}</td></tr>`;
+                    if (item.originais && item.originais.length > 1) {
+                        item.originais.forEach(sub => {
+                            htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
+                                <td style="border-bottom:none;"></td>
+                                <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
+                                <td></td>
+                                <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+                                <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                            </tr>`;
                         });
-
-                        htmlBuffer += `<tr id="L2-${uniqueId}" class="row-detail"><td colspan="7"><table class="nested-table" style="background:#fffef0;">
-                                        <thead><tr><th>Data</th><th>Item Individual</th><th>Origem</th><th>Qtd</th><th>Weknow</th><th>Unimed</th><th>Médico</th></tr></thead>
-                                        <tbody>${subRows}<tr class="row-total-med"><td colspan="4" style="text-align:right;">SUBTOTAL:</td><td>R$ 0,00</td><td>R$ ${grp.sumValU.toFixed(2)}</td><td></td></tr></tbody>
-                                    </table></td></tr>`;
-                    } else {
-                        let item = grp.raw[0]; let valU = item.src === 'unimed' ? item.valor : 0;
-                        htmlBuffer += `<tr><td></td><td>${item.data || "-"}</td><td>${item.medicamento}</td><td style="text-align:center;">${item.mg}</td><td>R$ 0,00</td><td>R$ ${valU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${extra}</td></tr>`;
                     }
-                    gIdx++;
                 });
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
-            tbody.innerHTML = htmlBuffer;
-        }
-
-        function updateRepassDoctorDropdown() {
-            const dSel = document.getElementById('filterDoctor'); const currentVal = dSel.value; dSel.innerHTML = '<option value="">Todos os Médicos</option>';
             
-            Object.entries(doctors).filter(([,d]) => {
-                if (d.plantao !== 'sim') return false;
-                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
-                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
-                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
-                return false;
-            }).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''))
-            .forEach(([id,d]) => dSel.add(new Option(d.nome, id)));
-                
-            if (Array.from(dSel.options).some(o => o.value === currentVal)) dSel.value = currentVal; else dSel.value = "";
+            document.getElementById('dashDivergences').innerText = divergencesCount; tbody.innerHTML = htmlBuffer;
         }
 
+        function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
+        function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
+        function deleteSelected() { const c = document.getElementsByName('rowCheck'); let count = 0; for(let i=0; i<c.length; i++) { if(c[i].checked) { excludedPatients.add(c[i].value); count++; } } if(count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } else { alert("Selecione um paciente."); } }
+        function deleteRow(paciente) { if(confirm("Excluir " + paciente + "?")) { excludedPatients.add(paciente); renderAnalysisTable(); } }
+        function switchShiftTab(tabId, element) { currentShiftTab = tabId; document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active')); element.classList.add('active'); updateRepassDoctorDropdown(); renderRepasseTable(); }
+        
         async function loadDoctors() { 
             try { 
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
@@ -376,21 +349,57 @@
             } catch(e) {}
         }
 
+        function updateRepassDoctorDropdown() {
+            const sel = document.getElementById('filterDoctor');
+            if(!sel) return; sel.innerHTML = '<option value="">Todos</option>';
+            doctorList.forEach(doc => {
+                const dData = doctors[doc.id];
+                if (currentShiftTab === 'eco' && (!dData.eco || dData.eco === 'sim')) sel.add(new Option(doc.nome, doc.id));
+                if (currentShiftTab.startsWith('vita') && dData.vita === 'sim') sel.add(new Option(doc.nome, doc.id));
+                if (currentShiftTab === 'cirurgioes' && dData.cirurgiao === 'sim') sel.add(new Option(doc.nome, doc.id));
+            });
+        }
+
+        // ==========================================
+        // 🛡️ CORREÇÃO: FUSO HORÁRIO NOS FERIADOS
+        // ==========================================
         function getHolidays(y) { 
-            const h = { [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra', [`${y}-11-02`]:'Finados', [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' }; 
+            const pad = n => String(n).padStart(2,'0');
+            const h = { 
+                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
+                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
+                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
+            }; 
+            
             const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
-            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; I = I - 30*Math.floor((I/30)); let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
-            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); J = J - 7*Math.floor(J/7); const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
-            const pad = n => String(n).padStart(2,'0'); const pascoa = new Date(`${y}-${pad(mo)}-${pad(da)}`); const add = (d, days) => { const r = new Date(d); r.setDate(r.getDate() + days); return r.toISOString().split('T')[0]; }; 
-            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
+            I = I - 30*Math.floor((I/30)); 
+            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
+            J = J - 7*Math.floor(J/7); 
+            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
+            
+            // Força a data ao meio-dia (12:00) para evitar que o fuso horário (GMT-3) mude o dia
+            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
+            
+            const add = (baseDate, days) => { 
+                const r = new Date(baseDate.getTime()); 
+                r.setDate(r.getDate() + days); 
+                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
+            }; 
+            
+            h[add(pascoa, -47)] = 'Carnaval'; 
+            h[add(pascoa, -2)] = 'Sexta Santa'; 
+            h[add(pascoa, 60)] = 'Corpus Christi'; 
             return h; 
         }
 
         async function renderRepasseTable() { 
-            curY = document.getElementById('selYear').value; curM = parseInt(document.getElementById('selMonth').value); 
-            const filterDoc = document.getElementById('filterDoctor').value; const moStr = String(curM+1).padStart(2,'0'); 
-            
-            const baseSearchId = `${curY}-${moStr}`;
+            const curY = parseInt(document.getElementById('selYearPlantao').value); 
+            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
+            const filterDoc = document.getElementById('filterDoctor').value; 
+            const moStr = String(curM+1).padStart(2,'0'); 
+            const baseSearchId = `${curY}-${moStr}`; 
             const searchId = currentShiftTab === 'eco' ? baseSearchId : `${baseSearchId}-${currentShiftTab}`;
             const endpoint = currentShiftTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentShiftTab}`;
 
@@ -401,12 +410,16 @@
                 shifts = foundId ? allScales[foundId] : {}; 
             } catch(e) { shifts = {}; } 
 
-            const days = new Date(curY, curM+1, 0).getDate(); const holidays = getHolidays(curY); let grandTotal = 0; 
+            const days = new Date(curY, curM+1, 0).getDate(); 
+            const holidays = getHolidays(curY); 
+            let grandTotal = 0; 
             
             let h = '<tr><th class="th-fixa">Médico</th>'; 
             for (let i = 1; i <= days; i++) { 
-                const d = new Date(curY, curM, i); const iso = d.toISOString().split('T')[0]; 
-                const isWk = d.getDay()===0||d.getDay()===6; const isHol = !!holidays[iso]; 
+                const d = new Date(curY, curM, i, 12, 0, 0); // 12h garantido
+                const isWk = d.getDay()===0||d.getDay()===6; 
+                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                const isHol = !!holidays[isoDateStr]; 
                 h += `<th class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${i}</th>`; 
             } 
             h += '<th class="th-total">Qtd</th><th class="th-total">Total (R$)</th></tr>'; 
@@ -424,7 +437,10 @@
                 let userTotal = 0; let countShifts = 0; let row = `<tr><td class="col-fixa">${doc.nome}</td>`; 
                 for (let i = 1; i <= days; i++) { 
                     const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
-                    const d = new Date(curY, curM, i); const isWk = d.getDay()===0||d.getDay()===6; const isHol = !!holidays[d.toISOString().split('T')[0]]; 
+                    const d = new Date(curY, curM, i, 12, 0, 0); 
+                    const isWk = d.getDay()===0||d.getDay()===6; 
+                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                    const isHol = !!holidays[isoDateStr]; 
                     let money = 0; 
                     if(val && val !== 'S') { 
                         if (val === 'M/T') countShifts += 2; else countShifts += 1; 
@@ -435,12 +451,14 @@
                 } 
                 grandTotal += userTotal; 
                 row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`; 
-                if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) { b += row; } 
+                if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
             document.querySelector('#repTable tbody').innerHTML = b; document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); 
         }
 
         function generatePDF() { 
+            const curY = parseInt(document.getElementById('selYearPlantao').value); 
+            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
             const win = window.open('', '_blank'); const periodStr = `${months[curM]} de ${curY}`; 
             
             let LOGO_URL = "https://imgur.com/nWWyEBG.png"; let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
@@ -451,7 +469,10 @@
             const holidays = getHolidays(curY); const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
             let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
             for (let i = 1; i <= daysInMonth; i++) { 
-                const d = new Date(curY, curM, i); const iso = d.toISOString().split('T')[0]; const isHol = !!holidays[iso]; const isWk = d.getDay()===0||d.getDay()===6; 
+                const d = new Date(curY, curM, i, 12, 0, 0); 
+                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
+                const isHol = !!holidays[isoDateStr]; 
+                const isWk = d.getDay()===0||d.getDay()===6; 
                 const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); const color = isHol ? '#DC2626' : '#333'; 
                 thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
             } 
@@ -464,12 +485,15 @@
                 if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
                 if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
                 return false;
-            }).filter(([id, d]) => document.getElementById('filterDoctor').value === "" || id === document.getElementById('filterDoctor').value).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
+            }).filter(([id, d]) => document.getElementById('filterDoctor') && (document.getElementById('filterDoctor').value === "" || id === document.getElementById('filterDoctor').value)).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
             .forEach(([id, doc]) => { 
                 let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
                 for (let i = 1; i <= daysInMonth; i++) { 
                     const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
-                    const d = new Date(curY, curM, i); const isWk = d.getDay()===0||d.getDay()===6; const isHol = !!holidays[d.toISOString().split('T')[0]]; 
+                    const d = new Date(curY, curM, i, 12, 0, 0); 
+                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                    const isHol = !!holidays[isoDateStr]; 
+                    const isWk = d.getDay()===0||d.getDay()===6; 
                     let money = 0; 
                     if(val && val !== 'S') { 
                         hasValue = true; if (val === 'M/T') countShifts += 2; else countShifts += 1; 
