@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repasse Médico & Unimed - ECO Sistema</title>
+    
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
@@ -12,9 +13,11 @@
         document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
         document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
     </script>
+
     <style>
         body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
         .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        
         .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
         .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
         .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
@@ -24,6 +27,7 @@
 
         .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        
         .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
         .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
         .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
@@ -33,10 +37,11 @@
         .sub-tab-btn.active { background: #00995D; color: white; border-color: #00995D; }
         .sub-tab-btn:hover:not(.active) { background: #e5e7eb; }
 
-        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; }
-        .btn-danger-block { background: #dc2626; color: white; border: none; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 15px; }
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s;}
+        .btn-print:hover { background: #374151; }
+        .btn-danger-block { background: #dc2626; color: white; border: none; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 15px; transition: 0.2s;}
         .btn-danger-block:hover { background: #b91c1c; }
-
+        
         .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; }
@@ -63,6 +68,7 @@
         .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
         .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
+
         .sub-item-row { background-color: #f8fafc; font-size: 11px; color: #64748b; }
         .sub-item-row td { border-bottom: 1px dashed #e2e8f0 !important; padding: 6px 12px !important; }
 
@@ -92,40 +98,110 @@
         <div id="tab-plantao" class="tab-content active">
             <div class="controls">
                 <div class="controls-group">
-                    <div class="input-group" style="width: 120px;"><label class="label-title">Mês da Escala</label><select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select></div>
-                    <div class="input-group" style="width: 90px;"><label class="label-title">Ano</label><select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select></div>
-                    <div class="input-group" style="min-width: 250px;"><label class="label-title">Filtrar Médico</label><select id="filterDoctor" class="input-field" onchange="renderRepasseTable()"><option value="">Todos</option></select></div>
-                    <div class="total-box">Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span></div>
+                    <div class="input-group" style="width: 120px;">
+                        <label class="label-title">Mês da Escala</label>
+                        <select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                    </div>
+                    <div class="input-group" style="width: 90px;">
+                        <label class="label-title">Ano</label>
+                        <select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                    </div>
+                    <div class="input-group" style="min-width: 250px;">
+                        <label class="label-title">Filtrar Médico</label>
+                        <select id="filterDoctor" class="input-field" onchange="renderRepasseTable()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="total-box">
+                        Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span>
+                    </div>
                 </div>
-                <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir Escala</button>
+                <button class="btn-print" onclick="generatePDF()">
+                    <i class="fas fa-print"></i> Imprimir Escala
+                </button>
             </div>
+            
             <div class="sub-tabs-container">
                 <button class="sub-tab-btn active" onclick="switchShiftTab('eco', this)">Eco Oncologia</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_quimio', this)">Vita - Sala Quimio</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_sobreaviso', this)">Vita - Sobreaviso</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('cirurgioes', this)">Cirurgiões</button>
             </div>
+            
             <div class="sheet-container">
                 <div class="table-responsive">
-                    <table class="scale-table" id="repTable"><thead></thead><tbody></tbody></table>
+                    <table class="scale-table" id="repTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <div id="tab-unimed" class="tab-content">
             <div class="dashboard-cards">
-                <div class="card-stat"><h5>Total Bruto Unimed</h5><h2 id="dashUnimedTotal">R$ 0,00</h2></div>
-                <div class="card-stat warning"><h5>Medicamentos Extraídos</h5><h2 id="dashMedCount">0</h2></div>
-                <div class="card-stat danger"><h5>Divergências de Repasse</h5><h2 id="dashDivergences">0</h2></div>
+                <div class="card-stat">
+                    <h5>Total Bruto Unimed</h5>
+                    <h2 id="dashUnimedTotal">R$ 0,00</h2>
+                </div>
+                <div class="card-stat warning">
+                    <h5>Medicamentos Extraídos</h5>
+                    <h2 id="dashMedCount">0</h2>
+                </div>
+                <div class="card-stat danger">
+                    <h5>Divergências de Repasse</h5>
+                    <h2 id="dashDivergences">0</h2>
+                </div>
             </div>
+            
             <div class="controls">
                 <div class="controls-group">
-                    <div class="input-group" style="width: 140px;"><label class="label-title">Mês Base Unimed</label><select id="selMonthUnimed" class="input-field" onchange="fetchBotData()"></select></div>
-                    <div class="input-group" style="width: 90px;"><label class="label-title">Ano</label><select id="selYearUnimed" class="input-field" onchange="fetchBotData()"></select></div>
-                    <div class="input-group" style="width: 250px;"><label class="label-title">Filtrar Paciente</label><select id="filterPatient" class="input-field" onchange="renderAnalysisTable()"><option value="">Todos</option></select></div>
+                    <div class="input-group" style="width: 130px;">
+                        <label class="label-title">Mês Unimed</label>
+                        <select id="selMonthUnimed" class="input-field" onchange="fetchBotData()"></select>
+                    </div>
+                    <div class="input-group" style="width: 80px;">
+                        <label class="label-title">Ano</label>
+                        <select id="selYearUnimed" class="input-field" onchange="fetchBotData()"></select>
+                    </div>
+                    
+                    <div class="input-group" style="width: 200px;">
+                        <label class="label-title">Filtro de Médico (Repasse)</label>
+                        <select id="filterRepasseDoctor" class="input-field" onchange="renderAnalysisTable()">
+                            <option value="">Todos os Médicos</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group" style="width: 200px;">
+                        <label class="label-title">Filtro de Cruzamento</label>
+                        <select id="filterAuditoria" class="input-field" onchange="renderAnalysisTable()">
+                            <option value="todos">Mostrar Todos</option>
+                            <option value="cruzados">Somente na Planilha Interna</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group" style="width: 200px;">
+                        <label class="label-title">Buscar Paciente</label>
+                        <select id="filterPatient" class="input-field" onchange="renderAnalysisTable()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group" style="width: 220px;">
+                        <label class="label-title"><i class="fas fa-database" style="color:#10b981;"></i> Subir Planilha Interna</label>
+                        <input type="file" id="importPlanilhaNicolas" class="input-field" accept=".xlsx, .xls" style="padding: 6px; cursor:pointer;" onchange="importarPlanilhaNicolas(event)">
+                    </div>
                 </div>
-                <button class="btn-danger-block" onclick="deleteSelected()"><i class="fas fa-trash-alt"></i> Excluir Seleção</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-print" onclick="generateUnimedPDF()">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
+                    <button class="btn-danger-block" onclick="deleteSelected()">
+                        <i class="fas fa-trash-alt"></i> Excluir
+                    </button>
+                </div>
             </div>
+            
             <div class="sheet-container">
                 <div class="table-responsive">
                     <table class="data-table" id="dataTable">
@@ -134,14 +210,16 @@
                                 <th style="width: 40px; text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
                                 <th style="width: 40px;"></th>
                                 <th>Paciente / Carteirinha</th>
-                                <th>Total Weknow (R$)</th>
+                                <th>Total Planilha (R$)</th>
                                 <th>Total Unimed (R$)</th>
                                 <th>Diferença</th>
                                 <th style="width: 50px;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td></tr>
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -150,9 +228,15 @@
     </div>
 
     <script>
-        let excelData = []; let weknowData = []; let excludedPatients = new Set();
-        let doctorList = []; let currentShiftTab = 'eco'; 
-        let doctors={}, shifts={}, pacientesDb={};
+        let excelData = []; 
+        let nicolasDataDb = []; // Dados brutos da planilha interna salvos no BD
+        let excludedPatients = new Set();
+        let doctorList = []; 
+        let currentShiftTab = 'eco'; 
+        let doctors = {};
+        let shifts = {};
+        let pacientesDb = {};
+        let patListToPrint = []; 
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -160,12 +244,49 @@
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
 
+        const cleanStr = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+        // Normalizador de Datas para Cruzamento
+        function normalizeDate(d) {
+            if (!d) return "";
+            if (typeof d === 'number') {
+                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
+                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
+            }
+            let str = String(d).trim();
+            if (str.includes('T')) str = str.split('T')[0];
+            if (str.includes('-')) {
+                let p = str.split('-');
+                if (p[0].length === 4) return p[2].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + p[0];
+                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+            }
+            if (str.includes('/')) {
+                let p = str.split('/');
+                if (parseInt(p[0], 10) <= 12 && parseInt(p[1], 10) > 12) {
+                    return p[1].padStart(2,'0') + '/' + p[0].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+                }
+                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+            }
+            return str;
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
-            const now = new Date(); const curY = now.getFullYear(); const curM = now.getMonth();
+            const now = new Date(); 
+            const curY = now.getFullYear(); 
+            const curM = now.getMonth();
             
-            ['selYearPlantao', 'selYearUnimed'].forEach(id => { const el = document.getElementById(id); for(let i=curY-2; i<=curY+2; i++) el.add(new Option(i, i)); el.value = curY; });
-            ['selMonthPlantao', 'selMonthUnimed'].forEach(id => { const el = document.getElementById(id); months.forEach((m,i) => el.add(new Option(m, i))); el.value = curM; });
+            ['selYearPlantao', 'selYearUnimed'].forEach(id => { 
+                const el = document.getElementById(id); 
+                for(let i = curY - 2; i <= curY + 2; i++) { el.add(new Option(i, i)); }
+                el.value = curY; 
+            });
+            
+            ['selMonthPlantao', 'selMonthUnimed'].forEach(id => { 
+                const el = document.getElementById(id); 
+                months.forEach((m, i) => el.add(new Option(m, i))); 
+                el.value = curM; 
+            });
 
             await loadDoctors();
             await loadPacientesDb();
@@ -183,33 +304,49 @@
         async function loadPacientesDb() {
             try {
                 const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
-                if(res.ok) pacientesDb = normalizeData(await res.json());
+                if (res.ok) pacientesDb = normalizeData(await res.json());
             } catch(e) {}
         }
 
+        // ==========================================
+        // 🔄 BUSCA DA UNIMED + BUSCA DA PLANILHA INTERNA (BANCO)
+        // ==========================================
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed e da Planilha Interna...</td></tr>';
             
             try {
                 const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
                 const anoSelecionado = document.getElementById('selYearUnimed').value;
                 const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
+                // 1. Busca Planilha Interna no Banco (Se a rota existir)
+                nicolasDataDb = [];
+                try {
+                    const resNic = await fetch(`${API_BASE_URL}/planilha_interna`, { headers: API_HEADERS });
+                    if (resNic.ok) {
+                        const allNic = Object.values(normalizeData(await resNic.json()));
+                        nicolasDataDb = allNic.filter(r => r.competencia === competenciaAlvo);
+                    }
+                } catch(e) { console.log("Rota /planilha_interna ainda não criada no backend."); }
+
+                // 2. Busca Unimed no Banco
                 const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
                 if (!response.ok) throw new Error('Dados não encontrados no servidor.');
                 
                 const data = await response.json();
                 const arrayBot = Object.values(normalizeData(data));
-                
                 const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
-                if(dadosFiltrados.length === 0) throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
+                
+                if (dadosFiltrados.length === 0) {
+                    throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
+                }
 
                 excelData = dadosFiltrados.map(row => {
                     let originais = [];
                     if (row.itens_originais) originais = row.itens_originais;
                     else if (row.dados_extras && row.dados_extras.itens_originais) originais = row.dados_extras.itens_originais;
-                    else if (typeof row.dados_extras === 'string') { try { let p = JSON.parse(row.dados_extras); if(p.itens_originais) originais = p.itens_originais; } catch(e){} }
+                    else if (typeof row.dados_extras === 'string') { try { let p = JSON.parse(row.dados_extras); if(p.itens_originais) originais = p.itens_originais; } catch(e) {} }
 
                     return {
                         paciente: String(row.paciente || '').toUpperCase().trim(), 
@@ -217,7 +354,8 @@
                         medicamento: String(row.descricao || '').toUpperCase().trim(), 
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
-                        data: row.data_atendimento || "-", 
+                        data: normalizeDate(row.data_atendimento || "-"), 
+                        competencia: row.competencia,
                         tipo: String(row.tipo || "MED").toUpperCase(), 
                         originais: originais,
                         src: "unimed"
@@ -227,116 +365,562 @@
                 updateFilters(); 
                 renderAnalysisTable();
             } catch (err) {
-                excelData = []; updateFilters(); renderAnalysisTable();
+                excelData = []; nicolasDataDb = [];
+                updateFilters(); 
+                renderAnalysisTable();
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-robot" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
             }
         }
 
-        function updateFilters() {
-            let pats = new Set([...excelData.map(d=>d.paciente)]);
-            const sel = document.getElementById('filterPatient'); sel.innerHTML = '<option value="">Todos</option>'; Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
+        // ==========================================
+        // 📥 IMPORTAÇÃO E SALVAMENTO NO BANCO (/planilha_interna)
+        // ==========================================
+        function importarPlanilhaNicolas(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
+            const anoSelecionado = document.getElementById('selYearUnimed').value;
+            const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
+
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    let sheetName = workbook.SheetNames.find(n => n.toUpperCase() === "GERAL");
+                    if (!sheetName) sheetName = workbook.SheetNames[0]; 
+                    
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: true});
+                    
+                    let novosRegistros = [];
+                    
+                    jsonData.forEach(row => {
+                        let paciente = '', dataAplic = '', medicamento = 'ITEM DIVERSO', valor = 0;
+                        
+                        for (let k in row) {
+                            let kUp = k.toUpperCase().trim();
+                            if (kUp === 'PACIENTE') paciente = String(row[k]).toUpperCase().trim();
+                            else if (kUp.includes('APLICA') || kUp.includes('DATA')) dataAplic = normalizeDate(row[k]);
+                            else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL')) {
+                                let v = row[k];
+                                if (typeof v === 'number') valor = v;
+                                else if (typeof v === 'string') {
+                                    let s = v.replace(/R\$\s?/ig, '').trim();
+                                    if (s.includes('.') && s.includes(',')) s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); 
+                                    else if (s.includes(',')) s = s.replace(',', '.'); 
+                                    valor = parseFloat(s) || 0;
+                                }
+                            }
+                            // Busca a coluna do medicamento/produto para o detalhamento
+                            else if (kUp.includes('MEDICAMENTO') || kUp.includes('PRODUTO') || kUp.includes('DESCRI') || kUp.includes('ITEM') || kUp.includes('TIPO')) {
+                                medicamento = String(row[k]).toUpperCase().trim();
+                            }
+                        }
+
+                        if (paciente && dataAplic && valor > 0) {
+                            novosRegistros.push({
+                                id_firebase: `int_${cleanStr(competenciaAlvo)}_${cleanStr(paciente).substring(0,10)}_${cleanStr(dataAplic)}_${cleanStr(medicamento).substring(0,10)}_${Math.floor(Math.random()*1000)}`,
+                                competencia: competenciaAlvo,
+                                paciente: paciente,
+                                data_atendimento: dataAplic,
+                                medicamento: medicamento,
+                                valor: Number(valor.toFixed(2))
+                            });
+                        }
+                    });
+
+                    // Avisa o usuário que vai mandar pro banco
+                    document.getElementById('importPlanilhaNicolas').value = ''; 
+                    const tbody = document.querySelector('#dataTable tbody'); 
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;"><i class="fas fa-cloud-upload-alt fa-spin" style="font-size:20px; color:#10b981;"></i><br><br>Salvando ${novosRegistros.length} itens no Banco de Dados para todos os usuários...</td></tr>`;
+
+                    let inseridos = 0;
+                    for(const item of novosRegistros) {
+                        try {
+                            await fetch(`${API_BASE_URL}/planilha_interna`, {
+                                method: 'POST', headers: API_HEADERS, body: JSON.stringify(item)
+                            });
+                            inseridos++;
+                        } catch(err) { console.log("A API ainda não possui a rota /planilha_interna"); break; }
+                    }
+
+                    if (inseridos > 0) {
+                        alert(`Sucesso! ${inseridos} itens salvos no banco. Todos os usuários agora verão o cruzamento.`);
+                    } else {
+                        alert("Não foi possível salvar no banco (A rota /planilha_interna pode não estar criada na sua API). Utilizando os dados temporariamente na tela.");
+                        nicolasDataDb = nicolasDataDb.concat(novosRegistros); // Salva na memória volátil como fallback
+                    }
+
+                    // Atualiza a tela puxando do banco novamente
+                    fetchBotData();
+                    
+                } catch(err) {
+                    alert('Erro ao ler a planilha: ' + err.message);
+                    fetchBotData();
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
+        function calcularDataRepasse(comp) {
+            if (!comp) return "-";
+            const parts = comp.split('/');
+            if (parts.length !== 2) return "-";
+            let month = parseInt(parts[0], 10);
+            let year = parseInt(parts[1], 10);
+            let runDate = new Date(year, month, 1, 12, 0, 0); 
+            runDate.setDate(runDate.getDate() + 40); 
+            return String(runDate.getDate()).padStart(2,'0') + '/' + String(runDate.getMonth()+1).padStart(2,'0') + '/' + runDate.getFullYear();
+        }
+
+        function updateFilters() {
+            let pats = new Set([...excelData.map(d => d.paciente)]);
+            const sel = document.getElementById('filterPatient'); 
+            sel.innerHTML = '<option value="">Todos</option>'; 
+            Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
+        }
+
+        // ==========================================
+        // RENDERIZAÇÃO DA TABELA DO REPASSE UNIMED
+        // ==========================================
         function renderAnalysisTable() {
-            const filter = document.getElementById('filterPatient').value;
+            const filterPatient = document.getElementById('filterPatient').value;
+            const filterAuditoria = document.getElementById('filterAuditoria').value;
+            const filterRepasseDoc = document.getElementById('filterRepasseDoctor').value; // Filtro de Médico
+            
             const tbody = document.querySelector('#dataTable tbody');
             const patientsTableObj = {};
             
-            let totalUnimedVal = 0; let itemsMedCount = 0; let divergencesCount = 0;
+            let totalUnimedVal = 0; 
+            let itemsMedCount = 0; 
+            let divergencesCount = 0;
 
+            // 1. Alimenta com a Unimed
             excelData.forEach(d => {
                 if (excludedPatients.has(d.paciente)) return; 
-                if (filter && d.paciente !== filter) return;
                 
                 const p = d.paciente; 
-                if(!patientsTableObj[p]) patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [] };
+                if (!patientsTableObj[p]) {
+                    patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [], docId: null, docName: '' };
+                }
                 
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
                 const docId = patDb ? patDb.doctor_id : null;
                 const docDb = docId && doctors[docId] ? doctors[docId] : null;
                 
+                patientsTableObj[p].docId = docId;
+                patientsTableObj[p].docName = docDb ? docDb.nome : 'Sem médico vinculado';
+                
                 const isGrazielly = docDb && docDb.nome.toUpperCase().includes('GRAZIELLY');
                 const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
                 
-                let valorConsiderado = d.valor;
+                let valorConsiderado = Number(d.valor.toFixed(2));
                 let isCortado = false;
 
-                if (isTaxa && !isGrazielly) {
+                if (isTaxa && !isGrazielly) { 
                     valorConsiderado = 0; 
-                    isCortado = true;     
+                    isCortado = true; 
                 }
 
-                patientsTableObj[p].totalU += valorConsiderado; 
-                totalUnimedVal += valorConsiderado; 
-                if(d.tipo === 'MED') itemsMedCount++;
+                patientsTableObj[p].totalU = Number((patientsTableObj[p].totalU + valorConsiderado).toFixed(2)); 
+                totalUnimedVal = Number((totalUnimedVal + valorConsiderado).toFixed(2));
+                if (d.tipo === 'MED') itemsMedCount++;
                 
                 patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            const patList = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
+            // 2. Alimenta e Agrupa a Planilha Interna (Nicolas) baseada no BD
+            let nicolasAgrupado = {};
+            nicolasDataDb.forEach(nic => {
+                const pac = nic.paciente;
+                if (!nicolasAgrupado[pac]) nicolasAgrupado[pac] = { total: 0, dates: {} };
+                
+                nicolasAgrupado[pac].total = Number((nicolasAgrupado[pac].total + nic.valor).toFixed(2));
+                
+                if (!nicolasAgrupado[pac].dates[nic.data_atendimento]) {
+                    nicolasAgrupado[pac].dates[nic.data_atendimento] = []; // Array de itens para o detalhamento
+                }
+                nicolasAgrupado[pac].dates[nic.data_atendimento].push({ descricao: nic.medicamento, valor: nic.valor });
+            });
+
+            // Se paciente só estiver na planilha interna, adiciona na tela
+            Object.keys(nicolasAgrupado).forEach(pacName => {
+                if (!patientsTableObj[pacName]) {
+                    const patId = generatePatientId(pacName);
+                    const patDb = pacientesDb[patId];
+                    const docId = patDb ? patDb.doctor_id : null;
+                    const docDb = docId && doctors[docId] ? doctors[docId] : null;
+
+                    patientsTableObj[pacName] = { 
+                        name: pacName, carteirinha: 'Apenas Planilha Interna', 
+                        totalW: 0, totalU: 0, items: [], 
+                        docId: docId, docName: docDb ? docDb.nome : 'Sem médico vinculado' 
+                    };
+                }
+            });
+
+            // 3. Aplica os Filtros de Tela e Calcula Total Planilha
+            Object.keys(patientsTableObj).forEach(key => {
+                let pObj = patientsTableObj[key];
+                let keep = true;
+                
+                if (filterPatient && key !== filterPatient) keep = false;
+                if (filterAuditoria === 'cruzados' && !nicolasAgrupado[key]) keep = false; // Exclui quem não está na planilha
+                if (filterRepasseDoc && pObj.docId !== filterRepasseDoc) keep = false; // FILTRO DO MÉDICO
+                
+                if(!keep) {
+                    // Remove do somatório geral se foi ocultado
+                    totalUnimedVal = Number((totalUnimedVal - pObj.totalU).toFixed(2));
+                    delete patientsTableObj[key];
+                } else {
+                    patientsTableObj[key].totalW = nicolasAgrupado[key] ? nicolasAgrupado[key].total : 0; 
+                }
+            });
             
-            document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            patListToPrint = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
+            
+            document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
             
-            if(patList.length === 0) { if(excelData.length > 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum resultado para o filtro.</td></tr>'; return; }
+            if (patListToPrint.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
+                return; 
+            }
 
+            // Clona para consumir no render
+            const visualMap = JSON.parse(JSON.stringify(nicolasAgrupado));
             let htmlBuffer = "";
-            patList.forEach((pat, idx) => {
-                const diff = pat.totalU - pat.totalW; 
-                let cls = 'bg-gray'; if(diff > 0.05) cls = 'bg-green'; if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
+            
+            patListToPrint.forEach((pat, idx) => {
+                const diff = Number((pat.totalU - pat.totalW).toFixed(2)); 
+                let cls = 'bg-gray'; 
+                
+                if (diff > 0.05) cls = 'bg-green'; 
+                if (diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
                         <td style="text-align:center;"><button class="btn-toggle"><i class="fas fa-chevron-right"></i></button></td>
                         <td style="font-weight:bold; color: #1f2937;">
                             ${pat.name}<br>
-                            <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span>
+                            <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span><br>
+                            <span style="font-size: 10px; color: #00995D; font-weight: bold;"><i class="fas fa-user-md"></i> ${pat.docName}</span>
                         </td> 
-                        <td>R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td> 
-                        <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                        <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></td>
+                        <td style="font-weight:600; color:#0284c7;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td> 
+                        <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span></td>
                         <td style="text-align:center;"><button class="btn-icon-danger" title="Excluir" onclick="deleteRow('${pat.name}')"><i class="fas fa-trash"></i></button></td>
                     </tr>
                     <tr id="L1-${idx}" class="row-detail"><td colspan="7"><table class="nested-table">
-                        <thead><tr><th>Data Atend.</th><th>Descrição / TUSS Unificada</th><th style="text-align:center;">Tipo</th><th style="text-align:center;">Qtd/Mg</th><th style="text-align:right;">Valor Pago</th></tr></thead><tbody>`;
+                        <thead><tr>
+                            <th>Data Atend.</th>
+                            <th>Data Prev. Repasse</th>
+                            <th>Descrição / TUSS Unificada</th>
+                            <th style="text-align:center;">Tipo</th>
+                            <th style="text-align:center;">Qtd/Mg</th>
+                            <th style="text-align:right;">Valor Unimed</th>
+                            <th style="text-align:right; color:#0284c7;">Valor Planilha Interna</th>
+                        </tr></thead><tbody>`;
 
+                let dateGroups = {};
+                
+                // Agrupa Unimed por Data
                 pat.items.forEach(item => {
-                    let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                    if (!dateGroups[item.data]) dateGroups[item.data] = { unimedItems: [], nicItems: [] };
+                    dateGroups[item.data].unimedItems.push(item);
+                });
+
+                // Agrupa Nicolas por Data no mesmo dicionário
+                if (visualMap[pat.name] && visualMap[pat.name].dates) {
+                    Object.keys(visualMap[pat.name].dates).forEach(dDate => {
+                        if (!dateGroups[dDate]) dateGroups[dDate] = { unimedItems: [], nicItems: [] };
+                        dateGroups[dDate].nicItems = visualMap[pat.name].dates[dDate]; // Traz os itens detalhados
+                    });
+                }
+
+                let sortedDates = Object.keys(dateGroups).sort((a,b) => {
+                    let pa = a.split('/'); let pb = b.split('/');
+                    return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
+                });
+
+                sortedDates.forEach(dDate => {
+                    let group = dateGroups[dDate];
                     
-                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
-                    let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Paciente não está vinculado à Dra Grazielly"' : '';
-                    let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                    let diaUnimedTotal = 0;
+                    let diaNicTotal = 0;
+                    
+                    // Arrays para manipular o Match
+                    let unimedToRender = [...group.unimedItems];
+                    let nicolasToRender = [...group.nicItems];
 
-                    htmlBuffer += `<tr ${titleTooltip}>
-                        <td style="${styleCorte}">${item.data}</td>
-                        <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
-                        <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
-                        <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
-                        <td style="text-align:right; font-weight:500;">${valorVisual}</td>
-                    </tr>`;
+                    // Soma os totais do dia
+                    unimedToRender.forEach(u => diaUnimedTotal += u.valorConsiderado);
+                    nicolasToRender.forEach(n => diaNicTotal += n.valor);
 
-                    if (item.originais && item.originais.length > 1) {
-                        item.originais.forEach(sub => {
-                            htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
-                                <td style="border-bottom:none;"></td>
-                                <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
-                                <td></td>
-                                <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
-                                <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                    if (unimedToRender.length === 0) {
+                        // Linhas só da Planilha do Nicolas
+                        nicolasToRender.forEach(nic => {
+                            htmlBuffer += `<tr style="background:#fffbeb;">
+                                <td style="color:#b45309;">${dDate}</td><td>-</td>
+                                <td style="color:#b45309; font-style:italic;"><i class="fas fa-exclamation-triangle"></i> Lançamento Planilha: ${nic.descricao}</td>
+                                <td>-</td><td>-</td><td style="text-align:right;">-</td>
+                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nic.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                             </tr>`;
                         });
+                    } else {
+                        // Faz o Match Unimed x Nicolas
+                        unimedToRender.forEach((item) => {
+                            let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                            let dataPrevista = calcularDataRepasse(item.competencia);
+                            let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+                            let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                            
+                            // A LÓGICA DO MATCH POR NOME
+                            let matchIdx = -1;
+                            let valorPlanilhaVisual = '-';
+
+                            if (nicolasToRender.length > 0) {
+                                matchIdx = nicolasToRender.findIndex(n => {
+                                    let nDesc = n.descricao.toUpperCase();
+                                    let uDesc = item.medicamento.toUpperCase();
+                                    return uDesc.includes(nDesc) || nDesc.includes(uDesc);
+                                });
+
+                                // Fallback: Se não achou pelo nome, mas tem só 1 item na unimed e 1 na planilha, casa eles!
+                                if (matchIdx === -1 && unimedToRender.length === 1 && nicolasToRender.length === 1) {
+                                    matchIdx = 0;
+                                }
+
+                                if (matchIdx !== -1) {
+                                    let vP = nicolasToRender[matchIdx].valor;
+                                    valorPlanilhaVisual = `<span style="font-weight:bold; color:#0284c7;">R$ ${vP.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                                    nicolasToRender.splice(matchIdx, 1); // Tira da fila pois já foi exibido ao lado
+                                }
+                            }
+
+                            htmlBuffer += `<tr>
+                                <td style="${styleCorte}">${item.data}</td>
+                                <td style="color: #0284c7; font-weight: bold; ${styleCorte}">${dataPrevista}</td>
+                                <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
+                                <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
+                                <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
+                                <td style="text-align:right; font-weight:500;">${valorVisual}</td>
+                                <td style="text-align:right; background:#f0f9ff; border-left: 2px solid #bae6fd;">${valorPlanilhaVisual}</td>
+                            </tr>`;
+
+                            if (item.originais && item.originais.length > 1) {
+                                item.originais.forEach(sub => {
+                                    htmlBuffer += `<tr class="sub-item-row">
+                                        <td style="border-bottom:none;"></td><td></td>
+                                        <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
+                                        <td></td><td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+                                        <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                        <td style="background:#f0f9ff; border-left: 2px solid #bae6fd;"></td>
+                                    </tr>`;
+                                });
+                            }
+                        });
+
+                        // Itens do Nicolas que não casaram com ninguém da Unimed
+                        nicolasToRender.forEach(nicExtra => {
+                            htmlBuffer += `<tr style="background:#fffbeb;">
+                                <td style="color:#b45309;">${dDate}</td><td>-</td>
+                                <td style="color:#b45309; font-style:italic;"><i class="fas fa-exclamation-triangle"></i> Lançamento Planilha: ${nicExtra.descricao}</td>
+                                <td>-</td><td>-</td><td style="text-align:right;">-</td>
+                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicExtra.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            </tr>`;
+                        });
+
+                        // LINHA DE SUBTOTAL DIÁRIO
+                        htmlBuffer += `<tr style="background:#e0f2fe; border-top: 2px solid #bae6fd;">
+                            <td colspan="5" style="text-align:right; font-weight:bold; color:#0369a1; padding: 12px;">SUBTOTAL DO DIA (${dDate}):</td>
+                            <td style="text-align:right; font-weight:bold; color:#00855b; padding: 12px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td style="text-align:right; font-weight:bold; color:#0284c7; padding: 12px;">R$ ${diaNicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        </tr>`;
                     }
                 });
+                
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
             
-            document.getElementById('dashDivergences').innerText = divergencesCount; tbody.innerHTML = htmlBuffer;
+            document.getElementById('dashDivergences').innerText = divergencesCount; 
+            tbody.innerHTML = htmlBuffer;
         }
 
+        // ==========================================
+        // 🖨️ EXPORTAÇÃO PDF DO REPASSE UNIMED
+        // ==========================================
+        function generateUnimedPDF() {
+            if (patListToPrint.length === 0) {
+                return alert("Não há dados para exportar.");
+            }
+            
+            const mesSel = document.getElementById('selMonthUnimed').options[document.getElementById('selMonthUnimed').selectedIndex].text;
+            const anoSel = document.getElementById('selYearUnimed').value;
+            const docFilter = document.getElementById('filterRepasseDoctor');
+            const docNameExport = docFilter.value ? docFilter.options[docFilter.selectedIndex].text : "Todos os Médicos";
+            
+            const periodStr = `${mesSel} de ${anoSel}`;
+            const LOGO_URL = "https://imgur.com/nWWyEBG.png";
+            
+            const win = window.open('', '_blank');
+            let html = `<html><head><title>Relatório Unimed - ${periodStr}</title><style>
+                @page { size: landscape; margin: 10mm; } 
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
+                .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; justify-content: space-between; } 
+                .header-left { display: flex; align-items: center; }
+                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } 
+                .header-text { margin-left: 20px; } 
+                .header-text h1 { margin: 0; color: #00855B; font-size: 18px; text-transform: uppercase; } 
+                .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } 
+                .header-right { text-align: right; background: #f0f9ff; padding: 10px; border-radius: 8px; border: 1px solid #bae6fd;}
+                .header-right p { margin: 0; font-size: 14px; font-weight: bold; color: #0369a1;}
+                table { width: 100%; border-collapse: collapse; font-size: 10px; } 
+                th, td { border: 1px solid #ccc; padding: 4px; text-align: left; } 
+                th { background: #00855B !important; color: white !important; font-size: 10px; text-align:center;} 
+                .sub-table th { background: #f1f5f9 !important; color: #333 !important; font-size: 9px; }
+            </style></head><body>`;
+            
+            html += `<div class="header-row">
+                        <div class="header-left">
+                            <img src="${LOGO_URL}" alt="Logo">
+                            <div class="header-text">
+                                <h1>Auditoria de Repasse Unimed</h1>
+                                <p>Competência Base: ${periodStr}</p>
+                            </div>
+                        </div>
+                        <div class="header-right">
+                            <p><i class="fas fa-user-md"></i> Filtro: ${docNameExport}</p>
+                        </div>
+                    </div>`;
+            html += `<table><thead><tr><th>Paciente / Carteirinha</th><th>Total Planilha Interna</th><th>Total Unimed</th><th>Diferença</th></tr></thead><tbody>`;
+            
+            let nicolasAgrupado = {};
+            nicolasDataDb.forEach(nic => {
+                const pac = nic.paciente;
+                if (!nicolasAgrupado[pac]) nicolasAgrupado[pac] = { dates: {} };
+                if (!nicolasAgrupado[pac].dates[nic.data_atendimento]) nicolasAgrupado[pac].dates[nic.data_atendimento] = [];
+                nicolasAgrupado[pac].dates[nic.data_atendimento].push({ descricao: nic.medicamento, valor: nic.valor });
+            });
+            const visualMap = JSON.parse(JSON.stringify(nicolasAgrupado));
+
+            patListToPrint.forEach(pat => {
+                const diff = Number((pat.totalU - pat.totalW).toFixed(2));
+                let colorDiff = diff < -0.05 ? 'color:#dc2626;' : (diff > 0.05 ? 'color:#166534;' : 'color:#333;');
+
+                html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
+                    <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${pat.docName}</span></td>
+                    <td style="text-align:right;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td style="text-align:right;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td style="text-align:right; ${colorDiff}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                </tr>`;
+                
+                html += `<tr><td colspan="4" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
+                html += `<tr><th style="width:10%;">Data Atend.</th><th style="width:10%;">Prev. Repasse</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Tipo</th><th style="width:5%;">Qtd</th><th style="width:12%;">Valor Unimed</th><th style="width:12%;">Valor Planilha</th></tr>`;
+                
+                let dateGroups = {};
+                pat.items.forEach(item => { 
+                    if (!dateGroups[item.data]) dateGroups[item.data] = { unimedItems: [], nicItems: [] }; 
+                    dateGroups[item.data].unimedItems.push(item); 
+                });
+
+                if (visualMap[pat.name] && visualMap[pat.name].dates) {
+                    Object.keys(visualMap[pat.name].dates).forEach(dDate => {
+                        if (!dateGroups[dDate]) dateGroups[dDate] = { unimedItems: [], nicItems: [] };
+                        dateGroups[dDate].nicItems = visualMap[pat.name].dates[dDate];
+                    });
+                }
+
+                let sortedDates = Object.keys(dateGroups).sort((a,b) => {
+                    let pa = a.split('/'); let pb = b.split('/');
+                    return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
+                });
+
+                sortedDates.forEach(dDate => {
+                    let group = dateGroups[dDate]; 
+                    let diaUnimedTotal = 0; let diaNicTotal = 0;
+                    
+                    let unimedToRender = [...group.unimedItems];
+                    let nicolasToRender = [...group.nicItems];
+
+                    unimedToRender.forEach(u => diaUnimedTotal += u.valorConsiderado);
+                    nicolasToRender.forEach(n => diaNicTotal += n.valor);
+                    
+                    if (unimedToRender.length === 0) {
+                        nicolasToRender.forEach(nic => {
+                            html += `<tr>
+                                <td style="text-align:center; color:#b45309;">${dDate}</td><td style="text-align:center;">-</td>
+                                <td style="color:#b45309;">(Planilha Interna: ${nic.descricao})</td><td style="text-align:center;">-</td>
+                                <td style="text-align:center;">-</td><td style="text-align:right;">-</td>
+                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nic.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            </tr>`;
+                        });
+                    } else {
+                        unimedToRender.forEach((item, index) => {
+                            let valU = item.isCortado ? `0,00` : item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+                            let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+
+                            let matchIdx = -1; let vPStr = '-';
+                            if (nicolasToRender.length > 0) {
+                                matchIdx = nicolasToRender.findIndex(n => item.medicamento.toUpperCase().includes(n.descricao.toUpperCase()) || n.descricao.toUpperCase().includes(item.medicamento.toUpperCase()));
+                                if (matchIdx === -1 && unimedToRender.length === 1 && nicolasToRender.length === 1) matchIdx = 0;
+                                if (matchIdx !== -1) {
+                                    vPStr = `R$ ${nicolasToRender[matchIdx].valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                                    nicolasToRender.splice(matchIdx, 1);
+                                }
+                            }
+
+                            html += `<tr>
+                                <td style="text-align:center; ${styleCorte}">${item.data}</td>
+                                <td style="text-align:center; ${styleCorte}">${calcularDataRepasse(item.competencia)}</td>
+                                <td style="${styleCorte}">${item.medicamento}</td><td style="text-align:center;">${item.tipo}</td>
+                                <td style="text-align:center; ${styleCorte}">${item.mg}</td><td style="text-align:right;">R$ ${valU}</td>
+                                <td style="text-align:right; font-weight:bold; color:#0284c7;">${vPStr}</td>
+                            </tr>`;
+                        });
+
+                        nicolasToRender.forEach(nicExtra => {
+                            html += `<tr style="background:#fffbeb;">
+                                <td style="text-align:center; color:#b45309;">${dDate}</td><td style="text-align:center;">-</td>
+                                <td style="color:#b45309;">(Planilha Interna: ${nicExtra.descricao})</td><td style="text-align:center;">-</td>
+                                <td style="text-align:center;">-</td><td style="text-align:right;">-</td>
+                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicExtra.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            </tr>`;
+                        });
+
+                        html += `<tr style="background:#f0f9ff; font-weight:bold;">
+                            <td colspan="5" style="text-align:right; color:#0369a1; padding:6px;">SUBTOTAL DO DIA (${dDate}):</td>
+                            <td style="text-align:right; color:#00855B; padding:6px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td style="text-align:right; color:#0284c7; padding:6px;">R$ ${diaNicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        </tr>`;
+                    }
+                });
+                html += `</table></td></tr>`;
+            });
+            
+            html += `</tbody></table></body><script>window.onload=()=>{window.print();}<\/script></html>`;
+            win.document.write(html); 
+            win.document.close();
+        }
+
+        // Funções Base Plantão...
         function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
         function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
-        function deleteSelected() { const c = document.getElementsByName('rowCheck'); let count = 0; for(let i=0; i<c.length; i++) { if(c[i].checked) { excludedPatients.add(c[i].value); count++; } } if(count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } else { alert("Selecione um paciente."); } }
+        
+        function deleteSelected() { 
+            const c = document.getElementsByName('rowCheck'); 
+            let count = 0; 
+            for(let i=0; i<c.length; i++) { 
+                if(c[i].checked) { excludedPatients.add(c[i].value); count++; } 
+            } 
+            if (count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } 
+            else { alert("Selecione um paciente."); } 
+        }
+        
         function deleteRow(paciente) { if(confirm("Excluir " + paciente + "?")) { excludedPatients.add(paciente); renderAnalysisTable(); } }
         function switchShiftTab(tabId, element) { currentShiftTab = tabId; document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active')); element.classList.add('active'); updateRepassDoctorDropdown(); renderRepasseTable(); }
         
@@ -346,12 +930,20 @@
                 doctors = normalizeData(await r.json()); 
                 doctorList = Object.entries(doctors).filter(([,d]) => d.plantao==='sim').sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).map(([id,d]) => ({id, nome: d.nome}));
                 updateRepassDoctorDropdown();
+
+                // Popula o Filtro de Médicos do Repasse também!
+                const selRepasse = document.getElementById('filterRepasseDoctor');
+                doctorList.forEach(doc => {
+                    selRepasse.add(new Option(doc.nome, doc.id));
+                });
+
             } catch(e) {}
         }
 
         function updateRepassDoctorDropdown() {
             const sel = document.getElementById('filterDoctor');
-            if(!sel) return; sel.innerHTML = '<option value="">Todos</option>';
+            if(!sel) return; 
+            sel.innerHTML = '<option value="">Todos</option>';
             doctorList.forEach(doc => {
                 const dData = doctors[doc.id];
                 if (currentShiftTab === 'eco' && (!dData.eco || dData.eco === 'sim')) sel.add(new Option(doc.nome, doc.id));
@@ -360,9 +952,6 @@
             });
         }
 
-        // ==========================================
-        // 🛡️ CORREÇÃO: FUSO HORÁRIO NOS FERIADOS
-        // ==========================================
         function getHolidays(y) { 
             const pad = n => String(n).padStart(2,'0');
             const h = { 
@@ -370,7 +959,6 @@
                 [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
                 [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
             }; 
-            
             const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
             let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
             I = I - 30*Math.floor((I/30)); 
@@ -379,18 +967,14 @@
             J = J - 7*Math.floor(J/7); 
             const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
             
-            // Força a data ao meio-dia (12:00) para evitar que o fuso horário (GMT-3) mude o dia
             const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
-            
             const add = (baseDate, days) => { 
                 const r = new Date(baseDate.getTime()); 
                 r.setDate(r.getDate() + days); 
                 return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
             }; 
             
-            h[add(pascoa, -47)] = 'Carnaval'; 
-            h[add(pascoa, -2)] = 'Sexta Santa'; 
-            h[add(pascoa, 60)] = 'Corpus Christi'; 
+            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
             return h; 
         }
 
@@ -416,7 +1000,7 @@
             
             let h = '<tr><th class="th-fixa">Médico</th>'; 
             for (let i = 1; i <= days; i++) { 
-                const d = new Date(curY, curM, i, 12, 0, 0); // 12h garantido
+                const d = new Date(curY, curM, i, 12, 0, 0); 
                 const isWk = d.getDay()===0||d.getDay()===6; 
                 const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                 const isHol = !!holidays[isoDateStr]; 
@@ -450,35 +1034,44 @@
                     row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${money || ''}</td>`; 
                 } 
                 grandTotal += userTotal; 
-                row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`; 
+                row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
                 if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
-            document.querySelector('#repTable tbody').innerHTML = b; document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); 
+            document.querySelector('#repTable tbody').innerHTML = b; 
+            document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
         }
 
         function generatePDF() { 
             const curY = parseInt(document.getElementById('selYearPlantao').value); 
             const curM = parseInt(document.getElementById('selMonthPlantao').value); 
-            const win = window.open('', '_blank'); const periodStr = `${months[curM]} de ${curY}`; 
+            const win = window.open('', '_blank'); 
+            const periodStr = `${months[curM]} de ${curY}`; 
             
-            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
+            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; 
+            let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
+            
             if (currentShiftTab === 'vita_quimio') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Quimio)"; } 
             else if (currentShiftTab === 'vita_sobreaviso') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Sobreaviso)"; } 
             else if (currentShiftTab === 'cirurgioes') { LOGO_URL = "https://imgur.com/maJNHKc.png"; pdfTitle = "Relatório de Repasse Médico - Cirurgiões"; }
 
-            const holidays = getHolidays(curY); const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
+            const holidays = getHolidays(curY); 
+            const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
+            
             let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
             for (let i = 1; i <= daysInMonth; i++) { 
                 const d = new Date(curY, curM, i, 12, 0, 0); 
                 const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
                 const isHol = !!holidays[isoDateStr]; 
                 const isWk = d.getDay()===0||d.getDay()===6; 
-                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); const color = isHol ? '#DC2626' : '#333'; 
+                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                const color = isHol ? '#DC2626' : '#333'; 
                 thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
             } 
             thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL</th></tr>'; 
             
-            let tbody = ''; let totalGeral = 0; 
+            let tbody = ''; 
+            let totalGeral = 0; 
+            
             Object.entries(doctors).filter(([,d]) => {
                 if (d.plantao !== 'sim') return false;
                 if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
@@ -496,28 +1089,40 @@
                     const isWk = d.getDay()===0||d.getDay()===6; 
                     let money = 0; 
                     if(val && val !== 'S') { 
-                        hasValue = true; if (val === 'M/T') countShifts += 2; else countShifts += 1; 
+                        hasValue = true; 
+                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
                         if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
                     } 
-                    userTotal += money; const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                    userTotal += money; 
+                    const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
                     row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
                 } 
                 if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
                     totalGeral += userTotal; 
-                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`; 
+                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
                 } 
             }); 
             
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
-            win.document.write(html); win.document.close(); 
+            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
+            win.document.write(html); 
+            win.document.close(); 
         }
 
         function normalizeData(apiData) {
-            if (!apiData) return {}; const normalized = {};
+            if (!apiData) return {}; 
+            const normalized = {};
             Object.entries(apiData).forEach(([key, val]) => {
-                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
-                } else { normalized[key] = val; }
-            }); return normalized;
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
+                    try { 
+                        normalized[key] = JSON.parse(val); 
+                    } catch(e) { 
+                        normalized[key] = val; 
+                    }
+                } else { 
+                    normalized[key] = val; 
+                }
+            }); 
+            return normalized;
         }
     </script>
 </body>
