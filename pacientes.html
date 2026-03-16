@@ -36,6 +36,11 @@
         .bg-new { background: #fef08a; color: #854d0e; border: 1px solid #fde047; animation: pulse 2s infinite; }
         .bg-linked { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-inactive { background: #e5e7eb; color: #4b5563; border: 1px solid #d1d5db; }
+        
+        /* Novos Badges de Médico */
+        .badge.prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
+        .badge.encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         /* Botões de Ação na Tabela */
@@ -206,8 +211,15 @@
                 if(res.ok) {
                     doctors = normalizeData(await res.json());
                     const select = document.getElementById('linkDoctorSelect');
+                    
+                    // Ordena e popula o dropdown mostrando os papéis (Prescritor / Encaminhador)
                     Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
-                        select.add(new Option(doc.nome, id));
+                        let roles = [];
+                        if (doc.prescritor === 'sim') roles.push('Prescritor');
+                        if (doc.encaminhador === 'sim') roles.push('Encaminhador');
+                        
+                        let roleText = roles.length > 0 ? ` [${roles.join(' / ')}]` : '';
+                        select.add(new Option(doc.nome + roleText, id));
                     });
                 }
             } catch(e) {}
@@ -309,17 +321,36 @@
                 if (filterStatus === 'vinculado' && (!hasDoctor || isInactive)) return;
 
                 let statusBadge = '';
-                let doctorName = '';
+                let doctorNameHtml = '';
 
                 if (isInactive) {
                     statusBadge = `<span class="badge bg-inactive" title="Motivo: ${p.motivo_inativacao || 'Não informado'}"><i class="fas fa-ban"></i> Inativo</span>`;
-                    doctorName = `<span style="color:#9ca3af; text-decoration: line-through;">${hasDoctor && doctors[p.doctor_id] ? doctors[p.doctor_id].nome : 'Sem médico'}</span>`;
+                    doctorNameHtml = `<span style="color:#9ca3af; text-decoration: line-through;">${hasDoctor && doctors[p.doctor_id] ? doctors[p.doctor_id].nome : 'Sem médico'}</span>`;
                 } else if (hasDoctor) {
                     statusBadge = `<span class="badge bg-linked"><i class="fas fa-check-circle"></i> Vinculado</span>`;
-                    doctorName = doctors[p.doctor_id] ? doctors[p.doctor_id].nome : 'Médico Excluído';
+                    
+                    const doc = doctors[p.doctor_id];
+                    if (doc) {
+                        doctorNameHtml = `<span style="font-weight:bold; color:#00855B;"><i class="fas fa-user-md"></i> ${doc.nome}</span>`;
+                        
+                        let rolesHtml = '';
+                        if (doc.prescritor === 'sim') {
+                            rolesHtml += '<span class="badge prescritor" style="margin-right:4px;">Prescritor</span>';
+                        }
+                        if (doc.encaminhador === 'sim') {
+                            rolesHtml += '<span class="badge encaminhador">Encaminhador</span>';
+                        }
+                        
+                        if (rolesHtml) {
+                            doctorNameHtml += `<div style="margin-top:5px;">${rolesHtml}</div>`;
+                        }
+                    } else {
+                        doctorNameHtml = 'Médico Excluído';
+                    }
+                    
                 } else {
                     statusBadge = `<span class="badge bg-new"><i class="fas fa-exclamation-circle"></i> Novo</span>`;
-                    doctorName = `<span style="color:#9ca3af; font-style:italic;">Aguardando vínculo...</span>`;
+                    doctorNameHtml = `<span style="color:#9ca3af; font-style:italic;">Aguardando vínculo...</span>`;
                 }
 
                 // Botões de Ação
@@ -349,7 +380,7 @@
                     <td style="font-weight: bold; color: ${isInactive ? '#9ca3af' : '#1f2937'};">${p.nome}</td>
                     <td style="font-family: monospace; color: #4b5563;">${cartStr || '-'}</td>
                     <td style="text-align: center;">${statusBadge}</td>
-                    <td>${doctorName}</td>
+                    <td>${doctorNameHtml}</td>
                     <td><div class="actions-cell">${actionButtons}</div></td>
                 </tr>`;
             });

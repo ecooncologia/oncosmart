@@ -229,7 +229,7 @@
 
     <script>
         let excelData = []; 
-        let nicolasDataDb = []; // Dados brutos da planilha interna salvos no BD
+        let nicolasDataDb = []; 
         let excludedPatients = new Set();
         let doctorList = []; 
         let currentShiftTab = 'eco'; 
@@ -246,7 +246,6 @@
 
         const cleanStr = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
-        // Normalizador de Datas para Cruzamento
         function normalizeDate(d) {
             if (!d) return "";
             if (typeof d === 'number') {
@@ -308,9 +307,6 @@
             } catch(e) {}
         }
 
-        // ==========================================
-        // 🔄 BUSCA DA UNIMED + BUSCA DA PLANILHA INTERNA (BANCO)
-        // ==========================================
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed e da Planilha Interna...</td></tr>';
@@ -320,7 +316,6 @@
                 const anoSelecionado = document.getElementById('selYearUnimed').value;
                 const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
-                // 1. Busca Planilha Interna no Banco (Se a rota existir)
                 nicolasDataDb = [];
                 try {
                     const resNic = await fetch(`${API_BASE_URL}/planilha_interna`, { headers: API_HEADERS });
@@ -330,7 +325,6 @@
                     }
                 } catch(e) { console.log("Rota /planilha_interna ainda não criada no backend."); }
 
-                // 2. Busca Unimed no Banco
                 const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
                 if (!response.ok) throw new Error('Dados não encontrados no servidor.');
                 
@@ -372,9 +366,6 @@
             }
         }
 
-        // ==========================================
-        // 📥 IMPORTAÇÃO E SALVAMENTO NO BANCO (/planilha_interna)
-        // ==========================================
         function importarPlanilhaNicolas(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -414,7 +405,6 @@
                                     valor = parseFloat(s) || 0;
                                 }
                             }
-                            // Busca a coluna do medicamento/produto para o detalhamento
                             else if (kUp.includes('MEDICAMENTO') || kUp.includes('PRODUTO') || kUp.includes('DESCRI') || kUp.includes('ITEM') || kUp.includes('TIPO')) {
                                 medicamento = String(row[k]).toUpperCase().trim();
                             }
@@ -432,7 +422,6 @@
                         }
                     });
 
-                    // Avisa o usuário que vai mandar pro banco
                     document.getElementById('importPlanilhaNicolas').value = ''; 
                     const tbody = document.querySelector('#dataTable tbody'); 
                     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;"><i class="fas fa-cloud-upload-alt fa-spin" style="font-size:20px; color:#10b981;"></i><br><br>Salvando ${novosRegistros.length} itens no Banco de Dados para todos os usuários...</td></tr>`;
@@ -450,11 +439,10 @@
                     if (inseridos > 0) {
                         alert(`Sucesso! ${inseridos} itens salvos no banco. Todos os usuários agora verão o cruzamento.`);
                     } else {
-                        alert("Não foi possível salvar no banco (A rota /planilha_interna pode não estar criada na sua API). Utilizando os dados temporariamente na tela.");
-                        nicolasDataDb = nicolasDataDb.concat(novosRegistros); // Salva na memória volátil como fallback
+                        alert("Não foi possível salvar no banco. Utilizando os dados temporariamente na tela.");
+                        nicolasDataDb = nicolasDataDb.concat(novosRegistros); 
                     }
 
-                    // Atualiza a tela puxando do banco novamente
                     fetchBotData();
                     
                 } catch(err) {
@@ -483,13 +471,10 @@
             Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
         }
 
-        // ==========================================
-        // RENDERIZAÇÃO DA TABELA DO REPASSE UNIMED
-        // ==========================================
         function renderAnalysisTable() {
             const filterPatient = document.getElementById('filterPatient').value;
             const filterAuditoria = document.getElementById('filterAuditoria').value;
-            const filterRepasseDoc = document.getElementById('filterRepasseDoctor').value; // Filtro de Médico
+            const filterRepasseDoc = document.getElementById('filterRepasseDoctor').value; 
             
             const tbody = document.querySelector('#dataTable tbody');
             const patientsTableObj = {};
@@ -498,13 +483,12 @@
             let itemsMedCount = 0; 
             let divergencesCount = 0;
 
-            // 1. Alimenta com a Unimed
             excelData.forEach(d => {
                 if (excludedPatients.has(d.paciente)) return; 
                 
                 const p = d.paciente; 
                 if (!patientsTableObj[p]) {
-                    patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [], docId: null, docName: '' };
+                    patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [], docId: null, docName: '', docRoles: '' };
                 }
                 
                 const patId = generatePatientId(d.paciente);
@@ -515,13 +499,24 @@
                 patientsTableObj[p].docId = docId;
                 patientsTableObj[p].docName = docDb ? docDb.nome : 'Sem médico vinculado';
                 
-                const isGrazielly = docDb && docDb.nome.toUpperCase().includes('GRAZIELLY');
+                // Atribui as funções (Prescritor/Encaminhador) para renderizar o Badge
+                if (docDb) {
+                    let roles = [];
+                    if (docDb.prescritor === 'sim') roles.push('Prescritor');
+                    if (docDb.encaminhador === 'sim') roles.push('Encaminhador');
+                    patientsTableObj[p].docRoles = roles.join(' e ');
+                } else {
+                    patientsTableObj[p].docRoles = '';
+                }
+                
+                // 🧠 A NOVA REGRA UNIVERSAL DE PRESCRITOR (Substitui Dra. Grazielly)
+                const isPrescritor = docDb && docDb.prescritor === 'sim';
                 const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
                 
                 let valorConsiderado = Number(d.valor.toFixed(2));
                 let isCortado = false;
 
-                if (isTaxa && !isGrazielly) { 
+                if (isTaxa && !isPrescritor) { 
                     valorConsiderado = 0; 
                     isCortado = true; 
                 }
@@ -533,7 +528,6 @@
                 patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            // 2. Alimenta e Agrupa a Planilha Interna (Nicolas) baseada no BD
             let nicolasAgrupado = {};
             nicolasDataDb.forEach(nic => {
                 const pac = nic.paciente;
@@ -542,12 +536,11 @@
                 nicolasAgrupado[pac].total = Number((nicolasAgrupado[pac].total + nic.valor).toFixed(2));
                 
                 if (!nicolasAgrupado[pac].dates[nic.data_atendimento]) {
-                    nicolasAgrupado[pac].dates[nic.data_atendimento] = []; // Array de itens para o detalhamento
+                    nicolasAgrupado[pac].dates[nic.data_atendimento] = []; 
                 }
                 nicolasAgrupado[pac].dates[nic.data_atendimento].push({ descricao: nic.medicamento, valor: nic.valor });
             });
 
-            // Se paciente só estiver na planilha interna, adiciona na tela
             Object.keys(nicolasAgrupado).forEach(pacName => {
                 if (!patientsTableObj[pacName]) {
                     const patId = generatePatientId(pacName);
@@ -555,25 +548,28 @@
                     const docId = patDb ? patDb.doctor_id : null;
                     const docDb = docId && doctors[docId] ? doctors[docId] : null;
 
+                    let roles = [];
+                    if (docDb && docDb.prescritor === 'sim') roles.push('Prescritor');
+                    if (docDb && docDb.encaminhador === 'sim') roles.push('Encaminhador');
+
                     patientsTableObj[pacName] = { 
                         name: pacName, carteirinha: 'Apenas Planilha Interna', 
                         totalW: 0, totalU: 0, items: [], 
-                        docId: docId, docName: docDb ? docDb.nome : 'Sem médico vinculado' 
+                        docId: docId, docName: docDb ? docDb.nome : 'Sem médico vinculado',
+                        docRoles: roles.join(' e ')
                     };
                 }
             });
 
-            // 3. Aplica os Filtros de Tela e Calcula Total Planilha
             Object.keys(patientsTableObj).forEach(key => {
                 let pObj = patientsTableObj[key];
                 let keep = true;
                 
                 if (filterPatient && key !== filterPatient) keep = false;
-                if (filterAuditoria === 'cruzados' && !nicolasAgrupado[key]) keep = false; // Exclui quem não está na planilha
-                if (filterRepasseDoc && pObj.docId !== filterRepasseDoc) keep = false; // FILTRO DO MÉDICO
+                if (filterAuditoria === 'cruzados' && !nicolasAgrupado[key]) keep = false; 
+                if (filterRepasseDoc && pObj.docId !== filterRepasseDoc) keep = false; 
                 
                 if(!keep) {
-                    // Remove do somatório geral se foi ocultado
                     totalUnimedVal = Number((totalUnimedVal - pObj.totalU).toFixed(2));
                     delete patientsTableObj[key];
                 } else {
@@ -591,7 +587,6 @@
                 return; 
             }
 
-            // Clona para consumir no render
             const visualMap = JSON.parse(JSON.stringify(nicolasAgrupado));
             let htmlBuffer = "";
             
@@ -602,6 +597,13 @@
                 if (diff > 0.05) cls = 'bg-green'; 
                 if (diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
+                // Montagem dos Badges Visuais (Prescritor e Encaminhador)
+                let rolesHtml = '';
+                if (pat.docRoles) {
+                    if (pat.docRoles.includes('Prescritor')) rolesHtml += '<span class="badge prescritor" style="background:#fce7f3; color:#be185d; border:1px solid #fbcfe8;">Prescritor</span> ';
+                    if (pat.docRoles.includes('Encaminhador')) rolesHtml += '<span class="badge encaminhador" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;">Encaminhador</span>';
+                }
+
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
                         <td style="text-align:center;"><button class="btn-toggle"><i class="fas fa-chevron-right"></i></button></td>
@@ -609,6 +611,7 @@
                             ${pat.name}<br>
                             <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span><br>
                             <span style="font-size: 10px; color: #00995D; font-weight: bold;"><i class="fas fa-user-md"></i> ${pat.docName}</span>
+                            <div style="margin-top:3px;">${rolesHtml}</div>
                         </td> 
                         <td style="font-weight:600; color:#0284c7;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td> 
                         <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
@@ -628,17 +631,15 @@
 
                 let dateGroups = {};
                 
-                // Agrupa Unimed por Data
                 pat.items.forEach(item => {
                     if (!dateGroups[item.data]) dateGroups[item.data] = { unimedItems: [], nicItems: [] };
                     dateGroups[item.data].unimedItems.push(item);
                 });
 
-                // Agrupa Nicolas por Data no mesmo dicionário
                 if (visualMap[pat.name] && visualMap[pat.name].dates) {
                     Object.keys(visualMap[pat.name].dates).forEach(dDate => {
                         if (!dateGroups[dDate]) dateGroups[dDate] = { unimedItems: [], nicItems: [] };
-                        dateGroups[dDate].nicItems = visualMap[pat.name].dates[dDate]; // Traz os itens detalhados
+                        dateGroups[dDate].nicItems = visualMap[pat.name].dates[dDate]; 
                     });
                 }
 
@@ -653,16 +654,13 @@
                     let diaUnimedTotal = 0;
                     let diaNicTotal = 0;
                     
-                    // Arrays para manipular o Match
                     let unimedToRender = [...group.unimedItems];
                     let nicolasToRender = [...group.nicItems];
 
-                    // Soma os totais do dia
                     unimedToRender.forEach(u => diaUnimedTotal += u.valorConsiderado);
                     nicolasToRender.forEach(n => diaNicTotal += n.valor);
 
                     if (unimedToRender.length === 0) {
-                        // Linhas só da Planilha do Nicolas
                         nicolasToRender.forEach(nic => {
                             htmlBuffer += `<tr style="background:#fffbeb;">
                                 <td style="color:#b45309;">${dDate}</td><td>-</td>
@@ -672,14 +670,16 @@
                             </tr>`;
                         });
                     } else {
-                        // Faz o Match Unimed x Nicolas
                         unimedToRender.forEach((item) => {
                             let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                             let dataPrevista = calcularDataRepasse(item.competencia);
                             let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+                            
+                            // Nova frase do Tooltip (Avisa que cortou pq não é Prescritor)
+                            let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Profissional não é Prescritor"' : '';
+                            
                             let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
                             
-                            // A LÓGICA DO MATCH POR NOME
                             let matchIdx = -1;
                             let valorPlanilhaVisual = '-';
 
@@ -690,7 +690,6 @@
                                     return uDesc.includes(nDesc) || nDesc.includes(uDesc);
                                 });
 
-                                // Fallback: Se não achou pelo nome, mas tem só 1 item na unimed e 1 na planilha, casa eles!
                                 if (matchIdx === -1 && unimedToRender.length === 1 && nicolasToRender.length === 1) {
                                     matchIdx = 0;
                                 }
@@ -698,11 +697,11 @@
                                 if (matchIdx !== -1) {
                                     let vP = nicolasToRender[matchIdx].valor;
                                     valorPlanilhaVisual = `<span style="font-weight:bold; color:#0284c7;">R$ ${vP.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-                                    nicolasToRender.splice(matchIdx, 1); // Tira da fila pois já foi exibido ao lado
+                                    nicolasToRender.splice(matchIdx, 1); 
                                 }
                             }
 
-                            htmlBuffer += `<tr>
+                            htmlBuffer += `<tr ${titleTooltip}>
                                 <td style="${styleCorte}">${item.data}</td>
                                 <td style="color: #0284c7; font-weight: bold; ${styleCorte}">${dataPrevista}</td>
                                 <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
@@ -714,7 +713,7 @@
 
                             if (item.originais && item.originais.length > 1) {
                                 item.originais.forEach(sub => {
-                                    htmlBuffer += `<tr class="sub-item-row">
+                                    htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
                                         <td style="border-bottom:none;"></td><td></td>
                                         <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
                                         <td></td><td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
@@ -725,7 +724,6 @@
                             }
                         });
 
-                        // Itens do Nicolas que não casaram com ninguém da Unimed
                         nicolasToRender.forEach(nicExtra => {
                             htmlBuffer += `<tr style="background:#fffbeb;">
                                 <td style="color:#b45309;">${dDate}</td><td>-</td>
@@ -735,7 +733,6 @@
                             </tr>`;
                         });
 
-                        // LINHA DE SUBTOTAL DIÁRIO
                         htmlBuffer += `<tr style="background:#e0f2fe; border-top: 2px solid #bae6fd;">
                             <td colspan="5" style="text-align:right; font-weight:bold; color:#0369a1; padding: 12px;">SUBTOTAL DO DIA (${dDate}):</td>
                             <td style="text-align:right; font-weight:bold; color:#00855b; padding: 12px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
@@ -813,7 +810,7 @@
                 let colorDiff = diff < -0.05 ? 'color:#dc2626;' : (diff > 0.05 ? 'color:#166534;' : 'color:#333;');
 
                 html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
-                    <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${pat.docName}</span></td>
+                    <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${pat.docName} - ${pat.docRoles}</span></td>
                     <td style="text-align:right;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                     <td style="text-align:right;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                     <td style="text-align:right; ${colorDiff}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
@@ -933,8 +930,8 @@
 
                 // Popula o Filtro de Médicos do Repasse também!
                 const selRepasse = document.getElementById('filterRepasseDoctor');
-                doctorList.forEach(doc => {
-                    selRepasse.add(new Option(doc.nome, doc.id));
+                Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
+                    selRepasse.add(new Option(doc.nome, id));
                 });
 
             } catch(e) {}

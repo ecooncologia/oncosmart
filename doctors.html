@@ -34,6 +34,11 @@
         .badge.vita { background: #e0f2fe; color: #0284c7; } 
         .badge.cirurgiao { background: #fef3c7; color: #b45309; } 
         .badge.eco { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        
+        /* Novos Badges: Prescritor e Encaminhador */
+        .badge.prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
+        .badge.encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
         .actions-cell { display: flex; gap: 8px; justify-content: center; align-items: center;}
         
         /* Grid flexível para caber todas as opções novas */
@@ -132,6 +137,22 @@
                                     <option value="nao" selected>Não</option>
                                 </select>
                             </div>
+
+                            <div class="form-group">
+                                <label style="color:#be185d; font-weight:bold;">É Prescritor?</label>
+                                <select id="doctorPrescritor" class="form-control" style="border-color:#be185d;">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao" selected>Não</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="color:#c2410c; font-weight:bold;">É Encaminhador?</label>
+                                <select id="doctorEncaminhador" class="form-control" style="border-color:#c2410c;">
+                                    <option value="sim">Sim</option>
+                                    <option value="nao" selected>Não</option>
+                                </select>
+                            </div>
+
                             <div class="form-group">
                                 <label style="color:#00995D; font-weight:bold;">Repasse?</label>
                                 <select id="doctorRepasse" class="form-control" style="border-color:#00995D;">
@@ -163,7 +184,7 @@
                                     <th>Nome / Categoria</th>
                                     <th>Registro</th>
                                     <th>WhatsApp</th>
-                                    <th>Atendimentos & Locais</th>
+                                    <th>Atendimentos & Papéis</th>
                                     <th style="text-align:center">Ações</th>
                                 </tr>
                             </thead>
@@ -219,7 +240,9 @@
                 repasse: document.getElementById('doctorRepasse').value,
                 eco: document.getElementById('doctorEco').value,
                 vita: document.getElementById('doctorVita').value,
-                cirurgiao: document.getElementById('doctorCirurgiao').value 
+                cirurgiao: document.getElementById('doctorCirurgiao').value,
+                prescritor: document.getElementById('doctorPrescritor').value,
+                encaminhador: document.getElementById('doctorEncaminhador').value
             };
             
             const id = document.getElementById('editingDoctorId').value;
@@ -281,10 +304,15 @@
                 const v = d.vita==='sim' ? '<span class="badge vita">Vita</span>' : ''; 
                 const cir = d.cirurgiao==='sim' ? '<span class="badge cirurgiao">Cirurgião</span>' : ''; 
                 
+                const prescritor = d.prescritor === 'sim' ? '<span class="badge prescritor">Prescritor</span>' : '';
+                const encaminhador = d.encaminhador === 'sim' ? '<span class="badge encaminhador">Encaminhador</span>' : '';
+                
                 const r = d.repasse==='sim' ? '<span class="badge sim" style="background:#d1fae5; color:#065f46;">SIM</span>' : '<span class="badge nao">NÃO</span>';
 
                 let atendimentos = [p, c, l, eco, v, cir].filter(x => x).join(' ');
                 if (!atendimentos) atendimentos = '<span class="badge nao">NENHUM</span>';
+
+                let papeis = [prescritor, encaminhador].filter(x => x).join(' ');
 
                 // Tratamento de Categoria para visual e retrocompatibilidade
                 let catBadge = '';
@@ -312,7 +340,11 @@
                         </td>
                         <td style="font-size:0.9rem;">${d.crm || '-'}</td>
                         <td style="font-size:0.9rem; font-weight:600; color:var(--primary);"><i class="fab fa-whatsapp"></i> ${foneTela}</td>
-                        <td>${atendimentos}<br><div style="margin-top:4px;">Repasse: ${r}</div></td>
+                        <td>
+                            ${atendimentos}<br>
+                            <div style="margin-top:4px;">${papeis}</div>
+                            <div style="margin-top:4px;">Repasse: ${r}</div>
+                        </td>
                         <td class="actions-cell">
                             <button class="btn-icon" style="background:var(--info)" onclick="edit('${id}')"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon" style="background:var(--danger)" onclick="del('${id}')"><i class="fas fa-trash"></i></button>
@@ -341,6 +373,9 @@
             document.getElementById('doctorEco').value = d.eco || 'sim'; // Padrão é sim
             document.getElementById('doctorVita').value = d.vita || 'nao'; 
             document.getElementById('doctorCirurgiao').value = d.cirurgiao || 'nao'; 
+            
+            document.getElementById('doctorPrescritor').value = d.prescritor || 'nao';
+            document.getElementById('doctorEncaminhador').value = d.encaminhador || 'nao';
 
             document.getElementById('editingDoctorId').value = id;
             document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editando Profissional';
