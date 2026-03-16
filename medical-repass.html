@@ -230,12 +230,11 @@
         };
 
         // ==========================================
-        // NORMALIZADOR DE DATAS (O Segredo do PROC-V)
+        // NORMALIZADOR DE DATAS
         // ==========================================
         function normalizeDate(d) {
             if (!d) return "";
             
-            // Trata data serial do Excel (Garante matemática exata, sem erro de formato)
             if (typeof d === 'number') {
                 let date = new Date(Math.round((d - 25569) * 86400 * 1000));
                 return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
@@ -246,7 +245,6 @@
                 str = str.split('T')[0];
             }
             
-            // Formato YYYY-MM-DD
             if (str.includes('-')) {
                 let p = str.split('-');
                 if (p[0].length === 4) {
@@ -255,16 +253,11 @@
                 return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
             }
             
-            // Tratamento do formato Americano escondido (MM/DD/YYYY ou MM/DD/YY)
             if (str.includes('/')) {
                 let p = str.split('/');
-                
-                // Se a primeira parte (o dia) for menor que 12 e a segunda (mês) for maior que 12, ele é formato americano!
                 if (parseInt(p[0], 10) <= 12 && parseInt(p[1], 10) > 12) {
                     return p[1].padStart(2,'0') + '/' + p[0].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
                 }
-                
-                // Formato padrão Brasileiro
                 return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
             }
             
@@ -392,7 +385,6 @@
                         sheetName = workbook.SheetNames[0]; 
                     }
                     
-                    // A mágica acontece aqui: raw: true força o sistema a ler as datas como NÚMEROS em vez de strings
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: true});
                     
@@ -409,7 +401,6 @@
                             if (kUp === 'PACIENTE') {
                                 paciente = String(row[k]).toUpperCase().trim();
                             } else if (kUp.includes('APLICA') || kUp.includes('DATA')) {
-                                // Aplica o motor de formatação forte
                                 dataAplic = normalizeDate(row[k]);
                             } else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL')) {
                                 let v = row[k];
@@ -428,17 +419,20 @@
                         }
 
                         if (paciente && dataAplic) {
+                            // TRAVA DE DÍZIMA FLUTUANTE: Força exatamente 2 casas decimais no momento da leitura
+                            valor = Number(valor.toFixed(2));
+                            
                             if (!nicolasMap[paciente]) {
                                 nicolasMap[paciente] = { total: 0, dates: {} };
                             }
                             
-                            nicolasMap[paciente].total += valor;
+                            nicolasMap[paciente].total = Number((nicolasMap[paciente].total + valor).toFixed(2));
                             
                             if (!nicolasMap[paciente].dates[dataAplic]) {
                                 nicolasMap[paciente].dates[dataAplic] = 0;
                             }
                             
-                            nicolasMap[paciente].dates[dataAplic] += valor;
+                            nicolasMap[paciente].dates[dataAplic] = Number((nicolasMap[paciente].dates[dataAplic] + valor).toFixed(2));
                         }
                     });
 
@@ -507,7 +501,7 @@
                 const isGrazielly = docDb && docDb.nome.toUpperCase().includes('GRAZIELLY');
                 const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
                 
-                let valorConsiderado = d.valor;
+                let valorConsiderado = Number(d.valor.toFixed(2));
                 let isCortado = false;
 
                 if (isTaxa && !isGrazielly) { 
@@ -515,8 +509,8 @@
                     isCortado = true; 
                 }
 
-                patientsTableObj[p].totalU += valorConsiderado; 
-                totalUnimedVal += valorConsiderado; 
+                patientsTableObj[p].totalU = Number((patientsTableObj[p].totalU + valorConsiderado).toFixed(2)); 
+                totalUnimedVal = Number((totalUnimedVal + valorConsiderado).toFixed(2));
                 
                 if (d.tipo === 'MED') {
                     itemsMedCount++;
@@ -543,7 +537,7 @@
             
             patListToPrint = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
             
-            document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
             
             if (patListToPrint.length === 0) { 
@@ -557,7 +551,7 @@
             let htmlBuffer = "";
             
             patListToPrint.forEach((pat, idx) => {
-                const diff = pat.totalU - pat.totalW; 
+                const diff = Number((pat.totalU - pat.totalW).toFixed(2)); 
                 let cls = 'bg-gray'; 
                 
                 if (diff > 0.05) cls = 'bg-green'; 
@@ -570,9 +564,9 @@
                             ${pat.name}<br>
                             <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span>
                         </td> 
-                        <td style="font-weight:600; color:#0284c7;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td> 
-                        <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                        <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></td>
+                        <td style="font-weight:600; color:#0284c7;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td> 
+                        <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td><span class="badge ${cls}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span></td>
                         <td style="text-align:center;"><button class="btn-icon-danger" title="Excluir" onclick="deleteRow('${pat.name}')"><i class="fas fa-trash"></i></button></td>
                     </tr>
                     <tr id="L1-${idx}" class="row-detail"><td colspan="7"><table class="nested-table">
@@ -601,7 +595,7 @@
                             if (!dateGroups[dDate]) {
                                 dateGroups[dDate] = { unimedItems: [], nicolasTotal: 0 };
                             }
-                            dateGroups[dDate].nicolasTotal += visualMap[pat.name].dates[dDate];
+                            dateGroups[dDate].nicolasTotal = Number((dateGroups[dDate].nicolasTotal + visualMap[pat.name].dates[dDate]).toFixed(2));
                             visualMap[pat.name].dates[dDate] = undefined;
                         }
                     });
@@ -627,16 +621,16 @@
                             <td>-</td>
                             <td>-</td>
                             <td style="text-align:right;">-</td>
-                            <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                            <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         </tr>`;
                     } else {
                         group.unimedItems.forEach((item, index) => {
                             let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                             let dataPrevista = calcularDataRepasse(item.competencia);
                             let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
-                            let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                            let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
                             
-                            let valorPlanilhaVisual = (index === 0 && nicTotal > 0) ? `<span style="font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>` : '-';
+                            let valorPlanilhaVisual = (index === 0 && nicTotal > 0) ? `<span style="font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>` : '-';
 
                             htmlBuffer += `<tr>
                                 <td style="${styleCorte}">${item.data}</td>
@@ -656,7 +650,7 @@
                                         <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
                                         <td></td>
                                         <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
-                                        <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                                        <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                                         <td style="background:#f0f9ff; border-left: 2px solid #bae6fd;"></td>
                                     </tr>`;
                                 });
@@ -683,7 +677,7 @@
             const mesSel = document.getElementById('selMonthUnimed').options[document.getElementById('selMonthUnimed').selectedIndex].text;
             const anoSel = document.getElementById('selYearUnimed').value;
             const periodStr = `${mesSel} de ${anoSel}`;
-            const LOGO_URL = "https://imgur.com/m9NWY03.png";
+            const LOGO_URL = "https://imgur.com/nWWyEBG.png";
             
             const win = window.open('', '_blank');
             let html = `<html><head><title>Relatório Unimed - ${periodStr}</title><style>
@@ -706,14 +700,14 @@
             const visualMap = JSON.parse(JSON.stringify(nicolasMap));
 
             patListToPrint.forEach(pat => {
-                const diff = pat.totalU - pat.totalW;
+                const diff = Number((pat.totalU - pat.totalW).toFixed(2));
                 let colorDiff = diff < -0.05 ? 'color:#dc2626;' : (diff > 0.05 ? 'color:#166534;' : 'color:#333;');
 
                 html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
                     <td>${pat.name} <span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span></td>
-                    <td style="text-align:right;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                    <td style="text-align:right;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                    <td style="text-align:right; ${colorDiff}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                    <td style="text-align:right;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td style="text-align:right;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td style="text-align:right; ${colorDiff}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                 </tr>`;
                 
                 html += `<tr><td colspan="4" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
@@ -733,7 +727,7 @@
                             if (!dateGroups[dDate]) {
                                 dateGroups[dDate] = { unimedItems: [], nicolasTotal: 0 };
                             }
-                            dateGroups[dDate].nicolasTotal += visualMap[pat.name].dates[dDate];
+                            dateGroups[dDate].nicolasTotal = Number((dateGroups[dDate].nicolasTotal + visualMap[pat.name].dates[dDate]).toFixed(2));
                             visualMap[pat.name].dates[dDate] = undefined;
                         }
                     });
@@ -757,12 +751,12 @@
                             <td style="text-align:center;">-</td>
                             <td style="text-align:center;">-</td>
                             <td style="text-align:right;">-</td>
-                            <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                            <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         </tr>`;
                     } else {
                         group.unimedItems.forEach((item, index) => {
-                            let vP = (index === 0 && nicTotal > 0) ? `R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '-';
-                            let valU = item.isCortado ? `0,00` : item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2});
+                            let vP = (index === 0 && nicTotal > 0) ? `R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
+                            let valU = item.isCortado ? `0,00` : item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
                             let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
 
                             html += `<tr>
@@ -926,11 +920,11 @@
                     row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${money || ''}</td>`; 
                 } 
                 grandTotal += userTotal; 
-                row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`; 
+                row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
                 if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
             document.querySelector('#repTable tbody').innerHTML = b; 
-            document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); 
+            document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
         }
 
         function generatePDF() { 
@@ -991,11 +985,11 @@
                 } 
                 if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
                     totalGeral += userTotal; 
-                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`; 
+                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
                 } 
             }); 
             
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
+            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
             win.document.write(html); 
             win.document.close(); 
         }
