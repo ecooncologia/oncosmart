@@ -15,73 +15,394 @@
     </script>
 
     <style>
-        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        body { 
+            background-color: #f3f4f6; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+        }
         
-        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
-        .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
-        .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
-        .tab-content { display: none; animation: fadeIn 0.3s; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .container { 
+            width: 100%; 
+            padding: 20px; 
+            box-sizing: border-box; 
+        }
+        
+        .tabs-nav { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #e5e7eb; 
+            padding-bottom: 0; 
+        }
+        
+        .tab-btn { 
+            padding: 12px 24px; 
+            border: none; 
+            background: none; 
+            font-weight: 700; 
+            color: #6b7280; 
+            cursor: pointer; 
+            border-bottom: 3px solid transparent; 
+            transition: 0.3s; 
+        }
+        
+        .tab-btn.active { 
+            color: #00995D; 
+            border-bottom: 3px solid #00995D; 
+            background: white; 
+            border-radius: 8px 8px 0 0; 
+        }
+        
+        .tab-content { 
+            display: none; 
+            animation: fadeIn 0.3s; 
+        }
+        
+        .tab-content.active { 
+            display: block; 
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(5px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
 
-        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
-        .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        .controls { 
+            background: white; 
+            padding: 15px 20px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+            align-items: flex-end; 
+            justify-content: space-between;
+        }
         
-        .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
-        .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
-        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
+        .controls-group { 
+            display: flex; 
+            gap: 15px; 
+            align-items: flex-end; 
+            flex-wrap: wrap; 
+        }
         
-        .sub-tabs-container { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
-        .sub-tab-btn { background: #f3f4f6; border: 1px solid #e5e7eb; border-bottom: none; padding: 10px 20px; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 8px 8px 0 0; transition: 0.2s; white-space: nowrap; }
-        .sub-tab-btn.active { background: #00995D; color: white; border-color: #00995D; }
-        .sub-tab-btn:hover:not(.active) { background: #e5e7eb; }
+        .input-group { 
+            margin-bottom: 0; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .label-title { 
+            font-size: 12px; 
+            font-weight: 700; 
+            color: #4b5563; 
+            margin-bottom: 5px; 
+        }
+        
+        .input-field { 
+            padding: 10px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px; 
+            font-size: 13px; 
+            height: 38px; 
+            box-sizing: border-box; 
+        }
+        
+        .sub-tabs-container { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 15px; 
+            border-bottom: 2px solid #e2e8f0; 
+            overflow-x: auto; 
+        }
+        
+        .sub-tab-btn { 
+            background: #f3f4f6; 
+            border: 1px solid #e5e7eb; 
+            border-bottom: none; 
+            padding: 10px 20px; 
+            font-size: 13px; 
+            font-weight: 700; 
+            color: #6b7280; 
+            cursor: pointer; 
+            border-radius: 8px 8px 0 0; 
+            transition: 0.2s; 
+            white-space: nowrap; 
+        }
+        
+        .sub-tab-btn.active { 
+            background: #00995D; 
+            color: white; 
+            border-color: #00995D; 
+        }
+        
+        .sub-tab-btn:hover:not(.active) { 
+            background: #e5e7eb; 
+        }
 
-        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; }
-        .btn-danger-block { background: #dc2626; color: white; border: none; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 15px; }
-        .btn-danger-block:hover { background: #b91c1c; }
+        .btn-print { 
+            background: #4b5563; 
+            color: white; 
+            border: none; 
+            padding: 0 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+            height: 38px; 
+            transition: 0.2s;
+        }
         
-        .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; }
-        .card-stat h2 { margin: 0; color: #1f2937; font-size: 24px; }
-        .card-stat.warning { border-left-color: #f59e0b; }
-        .card-stat.danger { border-left-color: #ef4444; }
+        .btn-print:hover { 
+            background: #374151; 
+        }
+        
+        .btn-danger-block { 
+            background: #dc2626; 
+            color: white; 
+            border: none; 
+            height: 38px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 5px; 
+            padding: 0 15px; 
+        }
+        
+        .btn-danger-block:hover { 
+            background: #b91c1c; 
+        }
+        
+        .dashboard-cards { 
+            display: flex; 
+            gap: 15px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+        }
+        
+        .card-stat { 
+            background: white; 
+            flex: 1; 
+            min-width: 200px; 
+            padding: 15px; 
+            border-radius: 10px; 
+            border-left: 4px solid #00995D; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+        }
+        
+        .card-stat h5 { 
+            margin: 0 0 5px 0; 
+            color: #6b7280; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+        }
+        
+        .card-stat h2 { 
+            margin: 0; 
+            color: #1f2937; 
+            font-size: 24px; 
+        }
+        
+        .card-stat.warning { 
+            border-left-color: #f59e0b; 
+        }
+        
+        .card-stat.danger { 
+            border-left-color: #ef4444; 
+        }
 
-        .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
-        .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .data-table th { background: #00995D; color: white; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; }
-        .data-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333; vertical-align: middle; }
+        .sheet-container { 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+            overflow: hidden; 
+            padding-bottom: 10px; 
+        }
         
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; text-align: center; }
+        .table-responsive { 
+            overflow-x: auto; 
+            background: white; 
+            padding-bottom: 10px; 
+            max-height: 700px; 
+        }
+        
+        .data-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 13px; 
+        }
+        
+        .data-table th { 
+            background: #00995D; 
+            color: white; 
+            padding: 12px; 
+            text-align: left; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+        }
+        
+        .data-table td { 
+            padding: 10px; 
+            border-bottom: 1px solid #eee; 
+            color: #333; 
+            vertical-align: middle; 
+        }
+        
+        .badge { 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 11px; 
+            display: inline-block; 
+            text-align: center; 
+        }
+        
         .bg-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         .bg-gray { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
         
-        .row-parent { cursor: pointer; background-color: #fff; transition: background 0.2s; }
-        .row-parent:hover { background-color: #f9fafb; }
-        .row-detail { display: none; background-color: #f8fafc; }
-        .row-detail.expanded { display: table-row; }
+        .row-parent { 
+            cursor: pointer; 
+            background-color: #fff; 
+            transition: background 0.2s; 
+        }
         
-        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
-        .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
-
-        .sub-item-row { background-color: #f8fafc; font-size: 11px; color: #64748b; }
-        .sub-item-row td { border-bottom: 1px dashed #e2e8f0 !important; padding: 6px 12px !important; }
-
-        .btn-toggle { background: none; border: none; color: #00995D; font-size: 16px; cursor: pointer; transition: transform 0.3s; }
-        .btn-toggle.rotate { transform: rotate(90deg); }
-
-        .total-box { background: #dcfce7; border: 1px solid #86efac; padding: 0 15px; border-radius: 8px; font-weight: bold; color: #166534; font-size: 15px; white-space: nowrap; height: 38px; display: flex; align-items: center; }
+        .row-parent:hover { 
+            background-color: #f9fafb; 
+        }
         
-        .scale-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; }
-        .scale-table th, .scale-table td { border: 1px solid #e5e7eb; text-align: center; font-size: 11px; padding: 0; vertical-align: middle; }
-        .scale-table th:not(.th-fixa):not(.th-total), .scale-table td:not(.col-fixa):not(.td-total) { width: 38px !important; min-width: 38px !important; height: 38px !important; }
-        .scale-table .col-fixa { position: sticky; left: 0; z-index: 20; width: 250px; background: white; font-weight: bold; border-right: 2px solid #e5e7eb; text-align: left; padding-left: 10px; height: 38px; }
-        .scale-table th.th-fixa { position: sticky; left: 0; z-index: 30; background: #00995D; width: 250px; height: 38px; }
-        .weekend-col { background-color: #f8fafc; } .holiday-col { background-color: #fef2f2 !important; color: #dc2626; font-weight: bold; }
+        .row-detail { 
+            display: none; 
+            background-color: #f8fafc; 
+        }
+        
+        .row-detail.expanded { 
+            display: table-row; 
+        }
+        
+        .nested-table { 
+            width: 98%; 
+            margin: 10px auto; 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+        }
+        
+        .nested-table th { 
+            background: #f1f5f9; 
+            color: #475569; 
+            font-size: 11px; 
+            padding: 10px 12px; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid #cbd5e1; 
+        }
+        
+        .nested-table td { 
+            font-size: 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+            padding: 8px 12px; 
+            color: #475569; 
+        }
+
+        .sub-item-row { 
+            background-color: #f8fafc; 
+            font-size: 11px; 
+            color: #64748b; 
+        }
+        
+        .sub-item-row td { 
+            border-bottom: 1px dashed #e2e8f0 !important; 
+            padding: 6px 12px !important; 
+        }
+
+        .btn-toggle { 
+            background: none; 
+            border: none; 
+            color: #00995D; 
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: transform 0.3s; 
+        }
+        
+        .btn-toggle.rotate { 
+            transform: rotate(90deg); 
+        }
+
+        .total-box { 
+            background: #dcfce7; 
+            border: 1px solid #86efac; 
+            padding: 0 15px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            color: #166534; 
+            font-size: 15px; 
+            white-space: nowrap; 
+            height: 38px; 
+            display: flex; 
+            align-items: center; 
+        }
+        
+        .scale-table { 
+            border-collapse: separate; 
+            border-spacing: 0; 
+            table-layout: fixed; 
+            width: max-content; 
+            min-width: 100%; 
+        }
+        
+        .scale-table th, .scale-table td { 
+            border: 1px solid #e5e7eb; 
+            text-align: center; 
+            font-size: 11px; 
+            padding: 0; 
+            vertical-align: middle; 
+        }
+        
+        .scale-table th:not(.th-fixa):not(.th-total), .scale-table td:not(.col-fixa):not(.td-total) { 
+            width: 38px !important; 
+            min-width: 38px !important; 
+            height: 38px !important; 
+        }
+        
+        .scale-table .col-fixa { 
+            position: sticky; 
+            left: 0; 
+            z-index: 20; 
+            width: 250px; 
+            background: white; 
+            font-weight: bold; 
+            border-right: 2px solid #e5e7eb; 
+            text-align: left; 
+            padding-left: 10px; 
+            height: 38px; 
+        }
+        
+        .scale-table th.th-fixa { 
+            position: sticky; 
+            left: 0; 
+            z-index: 30; 
+            background: #00995D; 
+            width: 250px; 
+            height: 38px; 
+        }
+        
+        .weekend-col { 
+            background-color: #f8fafc; 
+        } 
+        
+        .holiday-col { 
+            background-color: #fef2f2 !important; 
+            color: #dc2626; 
+            font-weight: bold; 
+        }
     </style>
 </head>
 <body>
@@ -97,32 +418,62 @@
         <div id="tab-plantao" class="tab-content active">
             <div class="controls">
                 <div class="controls-group">
-                    <div class="input-group" style="width: 120px;"><label class="label-title">Mês da Escala</label><select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select></div>
-                    <div class="input-group" style="width: 90px;"><label class="label-title">Ano</label><select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select></div>
-                    <div class="input-group" style="min-width: 250px;"><label class="label-title">Filtrar Médico</label><select id="filterDoctor" class="input-field" onchange="renderRepasseTable()"><option value="">Todos</option></select></div>
-                    <div class="total-box">Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span></div>
+                    <div class="input-group" style="width: 120px;">
+                        <label class="label-title">Mês da Escala</label>
+                        <select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                    </div>
+                    <div class="input-group" style="width: 90px;">
+                        <label class="label-title">Ano</label>
+                        <select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                    </div>
+                    <div class="input-group" style="min-width: 250px;">
+                        <label class="label-title">Filtrar Médico</label>
+                        <select id="filterDoctor" class="input-field" onchange="renderRepasseTable()">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="total-box">
+                        Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span>
+                    </div>
                 </div>
-                <button class="btn-print" onclick="generatePDF()"><i class="fas fa-print"></i> Imprimir Escala</button>
+                <button class="btn-print" onclick="generatePDF()">
+                    <i class="fas fa-print"></i> Imprimir Escala
+                </button>
             </div>
+            
             <div class="sub-tabs-container">
                 <button class="sub-tab-btn active" onclick="switchShiftTab('eco', this)">Eco Oncologia</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_quimio', this)">Vita - Sala Quimio</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('vita_sobreaviso', this)">Vita - Sobreaviso</button>
                 <button class="sub-tab-btn" onclick="switchShiftTab('cirurgioes', this)">Cirurgiões</button>
             </div>
+            
             <div class="sheet-container">
                 <div class="table-responsive">
-                    <table class="scale-table" id="repTable"><thead></thead><tbody></tbody></table>
+                    <table class="scale-table" id="repTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <div id="tab-unimed" class="tab-content">
             <div class="dashboard-cards">
-                <div class="card-stat"><h5>Total Bruto Unimed</h5><h2 id="dashUnimedTotal">R$ 0,00</h2></div>
-                <div class="card-stat warning"><h5>Medicamentos Extraídos</h5><h2 id="dashMedCount">0</h2></div>
-                <div class="card-stat danger"><h5>Divergências de Repasse</h5><h2 id="dashDivergences">0</h2></div>
+                <div class="card-stat">
+                    <h5>Total Bruto Unimed</h5>
+                    <h2 id="dashUnimedTotal">R$ 0,00</h2>
+                </div>
+                <div class="card-stat warning">
+                    <h5>Medicamentos Extraídos</h5>
+                    <h2 id="dashMedCount">0</h2>
+                </div>
+                <div class="card-stat danger">
+                    <h5>Divergências de Repasse</h5>
+                    <h2 id="dashDivergences">0</h2>
+                </div>
             </div>
+            
             <div class="controls">
                 <div class="controls-group">
                     <div class="input-group" style="width: 140px;">
@@ -139,12 +490,20 @@
                             <option value="">Todos</option>
                         </select>
                     </div>
+                    
                     <div class="input-group" style="width: 250px;">
                         <label class="label-title"><i class="fas fa-file-excel" style="color:#10b981;"></i> Importar Planilha Interna</label>
                         <input type="file" id="importPlanilhaNicolas" class="input-field" accept=".xlsx, .xls" style="padding: 6px; cursor:pointer;" onchange="importarPlanilhaNicolas(event)">
                     </div>
                 </div>
-                <button class="btn-danger-block" onclick="deleteSelected()"><i class="fas fa-trash-alt"></i> Excluir Seleção</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-print" onclick="generateUnimedPDF()">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
+                    <button class="btn-danger-block" onclick="deleteSelected()">
+                        <i class="fas fa-trash-alt"></i> Excluir
+                    </button>
+                </div>
             </div>
             
             <div class="sheet-container">
@@ -162,7 +521,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="7" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td></tr>
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -173,11 +534,14 @@
     <script>
         let excelData = []; 
         let weknowData = []; 
-        let nicolasMap = {}; // Armazena a inteligência do PROC-V
+        let nicolasMap = {}; 
         let excludedPatients = new Set();
         let doctorList = []; 
         let currentShiftTab = 'eco'; 
-        let doctors={}, shifts={}, pacientesDb={};
+        let doctors = {};
+        let shifts = {};
+        let pacientesDb = {};
+        let patListToPrint = []; // Guarda os dados filtrados para a exportação PDF
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -185,12 +549,58 @@
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
 
+        // ==========================================
+        // NORMALIZADOR DE DATAS (Para o PROC-V)
+        // ==========================================
+        function normalizeDate(d) {
+            if (!d) return "";
+            
+            // Lida com datas seriais do Excel
+            if (typeof d === 'number') {
+                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
+                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
+            }
+            
+            let str = String(d).trim();
+            if (str.includes('T')) {
+                str = str.split('T')[0];
+            }
+            
+            if (str.includes('-')) {
+                let p = str.split('-');
+                if (p[0].length === 4) {
+                    return p[2].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + p[0];
+                }
+                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+            }
+            
+            if (str.includes('/')) {
+                let p = str.split('/');
+                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+            }
+            
+            return str;
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
-            const now = new Date(); const curY = now.getFullYear(); const curM = now.getMonth();
+            const now = new Date(); 
+            const curY = now.getFullYear(); 
+            const curM = now.getMonth();
             
-            ['selYearPlantao', 'selYearUnimed'].forEach(id => { const el = document.getElementById(id); for(let i=curY-2; i<=curY+2; i++) el.add(new Option(i, i)); el.value = curY; });
-            ['selMonthPlantao', 'selMonthUnimed'].forEach(id => { const el = document.getElementById(id); months.forEach((m,i) => el.add(new Option(m, i))); el.value = curM; });
+            ['selYearPlantao', 'selYearUnimed'].forEach(id => { 
+                const el = document.getElementById(id); 
+                for(let i = curY - 2; i <= curY + 2; i++) {
+                    el.add(new Option(i, i)); 
+                }
+                el.value = curY; 
+            });
+            
+            ['selMonthPlantao', 'selMonthUnimed'].forEach(id => { 
+                const el = document.getElementById(id); 
+                months.forEach((m, i) => el.add(new Option(m, i))); 
+                el.value = curM; 
+            });
 
             await loadDoctors();
             await loadPacientesDb();
@@ -208,10 +618,17 @@
         async function loadPacientesDb() {
             try {
                 const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
-                if(res.ok) pacientesDb = normalizeData(await res.json());
-            } catch(e) {}
+                if (res.ok) {
+                    pacientesDb = normalizeData(await res.json());
+                }
+            } catch(e) {
+                console.error("Erro ao carregar banco de pacientes", e);
+            }
         }
 
+        // ==========================================
+        // BUSCA DE DADOS DA UNIMED NO SERVIDOR
+        // ==========================================
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
@@ -222,19 +639,32 @@
                 const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
                 const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
-                if (!response.ok) throw new Error('Dados não encontrados no servidor.');
+                
+                if (!response.ok) {
+                    throw new Error('Dados não encontrados no servidor.');
+                }
                 
                 const data = await response.json();
                 const arrayBot = Object.values(normalizeData(data));
                 
                 const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
-                if(dadosFiltrados.length === 0) throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
+                
+                if (dadosFiltrados.length === 0) {
+                    throw new Error(`Sem dados do robô para a competência ${competenciaAlvo}.`);
+                }
 
                 excelData = dadosFiltrados.map(row => {
                     let originais = [];
-                    if (row.itens_originais) originais = row.itens_originais;
-                    else if (row.dados_extras && row.dados_extras.itens_originais) originais = row.dados_extras.itens_originais;
-                    else if (typeof row.dados_extras === 'string') { try { let p = JSON.parse(row.dados_extras); if(p.itens_originais) originais = p.itens_originais; } catch(e){} }
+                    if (row.itens_originais) {
+                        originais = row.itens_originais;
+                    } else if (row.dados_extras && row.dados_extras.itens_originais) {
+                        originais = row.dados_extras.itens_originais;
+                    } else if (typeof row.dados_extras === 'string') { 
+                        try { 
+                            let p = JSON.parse(row.dados_extras); 
+                            if(p.itens_originais) originais = p.itens_originais; 
+                        } catch(e) {} 
+                    }
 
                     return {
                         paciente: String(row.paciente || '').toUpperCase().trim(), 
@@ -242,7 +672,7 @@
                         medicamento: String(row.descricao || '').toUpperCase().trim(), 
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
-                        data: row.data_atendimento || "-", 
+                        data: normalizeDate(row.data_atendimento || "-"), 
                         competencia: row.competencia,
                         tipo: String(row.tipo || "MED").toUpperCase(), 
                         originais: originais,
@@ -253,17 +683,19 @@
                 updateFilters(); 
                 renderAnalysisTable();
             } catch (err) {
-                excelData = []; updateFilters(); renderAnalysisTable();
+                excelData = []; 
+                updateFilters(); 
+                renderAnalysisTable();
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-robot" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
             }
         }
 
         // ==========================================
-        // 📥 IMPORTAÇÃO DO EXCEL E PROC-V (NICOLAS)
+        // 📥 IMPORTAÇÃO DA PLANILHA INTERNA (NICOLAS)
         // ==========================================
         function importarPlanilhaNicolas(e) {
             const file = e.target.files[0];
-            if(!file) return;
+            if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -272,31 +704,32 @@
                     const workbook = XLSX.read(data, {type: 'array'});
                     
                     let sheetName = workbook.SheetNames.find(n => n.toUpperCase() === "GERAL");
-                    if(!sheetName) sheetName = workbook.SheetNames[0]; 
+                    if (!sheetName) {
+                        sheetName = workbook.SheetNames[0]; 
+                    }
                     
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: false});
                     
-                    nicolasMap = {}; // Reseta o mapa para o novo mês
+                    nicolasMap = {}; // Reseta o mapa para a nova importação
                     
                     jsonData.forEach(row => {
-                        let paciente = '', dataAplic = '', valor = 0;
-                        for(let k in row) {
+                        let paciente = '';
+                        let dataAplic = '';
+                        let valor = 0;
+                        
+                        for (let k in row) {
                             let kUp = k.toUpperCase().trim();
-                            if(kUp === 'PACIENTE') paciente = String(row[k]).toUpperCase().trim();
-                            else if(kUp.includes('APLICA') || kUp.includes('DATA')) {
-                                let d = row[k];
-                                if(typeof d === 'number') {
-                                    let date = new Date(Math.round((d - 25569)*86400*1000));
-                                    dataAplic = String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
-                                } else {
-                                    dataAplic = String(d).trim();
-                                }
-                            }
-                            else if(kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL')) {
+                            
+                            if (kUp === 'PACIENTE') {
+                                paciente = String(row[k]).toUpperCase().trim();
+                            } else if (kUp.includes('APLICA') || kUp.includes('DATA')) {
+                                dataAplic = normalizeDate(row[k]);
+                            } else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL')) {
                                 let v = row[k];
-                                if(typeof v === 'number') valor = v;
-                                else if(typeof v === 'string') {
+                                if (typeof v === 'number') {
+                                    valor = v;
+                                } else if (typeof v === 'string') {
                                     let s = v.replace(/R\$\s?/ig, '').trim();
                                     if (s.includes('.') && s.includes(',')) {
                                         s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); 
@@ -308,15 +741,22 @@
                             }
                         }
 
-                        if(paciente) {
-                            if(!nicolasMap[paciente]) nicolasMap[paciente] = { total: 0, dates: {} };
+                        if (paciente) {
+                            if (!nicolasMap[paciente]) {
+                                nicolasMap[paciente] = { total: 0, dates: {} };
+                            }
+                            
                             nicolasMap[paciente].total += valor;
-                            if(!nicolasMap[paciente].dates[dataAplic]) nicolasMap[paciente].dates[dataAplic] = 0;
+                            
+                            if (!nicolasMap[paciente].dates[dataAplic]) {
+                                nicolasMap[paciente].dates[dataAplic] = 0;
+                            }
+                            
                             nicolasMap[paciente].dates[dataAplic] += valor;
                         }
                     });
 
-                    alert('Planilha importada com sucesso! O PROC-V foi aplicado nas linhas.');
+                    alert('Planilha importada com sucesso! O PROC-V foi aplicado nas linhas cronologicamente.');
                     renderAnalysisTable();
                     
                 } catch(err) {
@@ -326,39 +766,52 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // 🕒 CÁLCULO DA DATA PREVISTA DE REPASSE (+ 40 DIAS DA COMPETÊNCIA)
+        // ==========================================
+        // 🕒 CÁLCULO DA DATA DE REPASSE (+40 DIAS)
+        // ==========================================
         function calcularDataRepasse(comp) {
-            if(!comp) return "-";
+            if (!comp) return "-";
             const parts = comp.split('/');
-            if(parts.length !== 2) return "-";
-            let month = parseInt(parts[0], 10); // Ex: Mês 02 (Fev)
+            
+            if (parts.length !== 2) return "-";
+            
+            let month = parseInt(parts[0], 10);
             let year = parseInt(parts[1], 10);
             
-            // O robô roda no mês seguinte, então month = 02 aponta para o dia 1 de Março (mês é 0-index)
             let runDate = new Date(year, month, 1, 12, 0, 0); 
-            runDate.setDate(runDate.getDate() + 40); // Soma os 40 dias de prazo
+            runDate.setDate(runDate.getDate() + 40); 
+            
             return String(runDate.getDate()).padStart(2,'0') + '/' + String(runDate.getMonth()+1).padStart(2,'0') + '/' + runDate.getFullYear();
         }
 
         function updateFilters() {
-            let pats = new Set([...excelData.map(d=>d.paciente)]);
-            const sel = document.getElementById('filterPatient'); sel.innerHTML = '<option value="">Todos</option>'; Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
+            let pats = new Set([...excelData.map(d => d.paciente)]);
+            const sel = document.getElementById('filterPatient'); 
+            sel.innerHTML = '<option value="">Todos</option>'; 
+            
+            Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
         }
 
+        // ==========================================
+        // RENDERIZAÇÃO DA TABELA DO REPASSE UNIMED
+        // ==========================================
         function renderAnalysisTable() {
             const filter = document.getElementById('filterPatient').value;
             const tbody = document.querySelector('#dataTable tbody');
             const patientsTableObj = {};
             
-            let totalUnimedVal = 0; let itemsMedCount = 0; let divergencesCount = 0;
+            let totalUnimedVal = 0; 
+            let itemsMedCount = 0; 
+            let divergencesCount = 0;
 
-            // Alimenta os pacientes da Unimed
             excelData.forEach(d => {
                 if (excludedPatients.has(d.paciente)) return; 
                 if (filter && d.paciente !== filter) return;
                 
                 const p = d.paciente; 
-                if(!patientsTableObj[p]) patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [] };
+                if (!patientsTableObj[p]) {
+                    patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [] };
+                }
                 
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
@@ -371,47 +824,60 @@
                 let valorConsiderado = d.valor;
                 let isCortado = false;
 
-                if (isTaxa && !isGrazielly) {
+                if (isTaxa && !isGrazielly) { 
                     valorConsiderado = 0; 
-                    isCortado = true;     
+                    isCortado = true; 
                 }
 
                 patientsTableObj[p].totalU += valorConsiderado; 
                 totalUnimedVal += valorConsiderado; 
-                if(d.tipo === 'MED') itemsMedCount++;
+                
+                if (d.tipo === 'MED') {
+                    itemsMedCount++;
+                }
                 
                 patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            // E se o paciente estiver na Planilha Interna mas não na Unimed? Garante que ele apareça na tela
+            // Adiciona pacientes que só existem na planilha interna do Nicolas
             Object.keys(nicolasMap).forEach(pacName => {
-                if(!patientsTableObj[pacName] && (!filter || pacName === filter)) {
+                if (!patientsTableObj[pacName] && (!filter || pacName === filter)) {
                     patientsTableObj[pacName] = { 
-                        name: pacName, carteirinha: 'Apenas Planilha Interna', 
-                        totalW: 0, totalU: 0, items: [] 
+                        name: pacName, 
+                        carteirinha: 'Apenas Planilha Interna', 
+                        totalW: 0, 
+                        totalU: 0, 
+                        items: [] 
                     };
                 }
             });
 
-            // Aplica o Total do PROC-V Weknow na linha Principal do Paciente
-            Object.values(patientsTableObj).forEach(p => {
-                p.totalW = nicolasMap[p.name] ? nicolasMap[p.name].total : 0;
+            // Aplica o Total do PROC-V
+            Object.values(patientsTableObj).forEach(p => { 
+                p.totalW = nicolasMap[p.name] ? nicolasMap[p.name].total : 0; 
             });
-
-            const patList = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
+            
+            patListToPrint = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
             
             document.getElementById('dashUnimedTotal').innerText = totalUnimedVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
             
-            if(patList.length === 0) { if(excelData.length > 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum resultado para o filtro.</td></tr>'; return; }
+            if (patListToPrint.length === 0) { 
+                if (excelData.length > 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum resultado.</td></tr>'; 
+                }
+                return; 
+            }
 
-            // Clona o nicolasMap para não esvaziar ao renderizar
             const visualMap = JSON.parse(JSON.stringify(nicolasMap));
-
             let htmlBuffer = "";
-            patList.forEach((pat, idx) => {
+            
+            patListToPrint.forEach((pat, idx) => {
                 const diff = pat.totalU - pat.totalW; 
-                let cls = 'bg-gray'; if(diff > 0.05) cls = 'bg-green'; if(diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
+                let cls = 'bg-gray'; 
+                
+                if (diff > 0.05) cls = 'bg-green'; 
+                if (diff < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
@@ -433,78 +899,245 @@
                             <th style="text-align:center;">Tipo</th>
                             <th style="text-align:center;">Qtd/Mg</th>
                             <th style="text-align:right;">Valor Unimed</th>
-                            <th style="text-align:right;">Valor Planilha Interna</th>
+                            <th style="text-align:right; color:#0284c7;">Valor Planilha Interna</th>
                         </tr></thead><tbody>`;
 
+                let dateGroups = {};
+                
                 pat.items.forEach(item => {
-                    let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-                    let dataPrevista = calcularDataRepasse(item.competencia);
-                    
-                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
-                    let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Paciente não está vinculado à Dra Grazielly"' : '';
-                    let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-
-                    // PROC-V PARA A COLUNA INDIVIDUAL DE CADA ITEM (POR DATA)
-                    let valorPlanilhaVisual = "-";
-                    if (visualMap[pat.name] && visualMap[pat.name].dates[item.data] !== undefined) {
-                        valorPlanilhaVisual = `R$ ${visualMap[pat.name].dates[item.data].toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                        visualMap[pat.name].dates[item.data] = undefined; // Consome o valor para não repetir no mesmo dia
+                    if (!dateGroups[item.data]) {
+                        dateGroups[item.data] = { unimedItems: [], nicolasTotal: 0 };
                     }
+                    dateGroups[item.data].unimedItems.push(item);
+                });
 
-                    htmlBuffer += `<tr ${titleTooltip}>
-                        <td style="${styleCorte}">${item.data}</td>
-                        <td style="color: #0284c7; font-weight: bold; ${styleCorte}">${dataPrevista}</td>
-                        <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
-                        <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
-                        <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
-                        <td style="text-align:right; font-weight:500;">${valorVisual}</td>
-                        <td style="text-align:right; font-weight:bold; color:#0284c7;">${valorPlanilhaVisual}</td>
-                    </tr>`;
+                if (visualMap[pat.name] && visualMap[pat.name].dates) {
+                    Object.keys(visualMap[pat.name].dates).forEach(dDate => {
+                        if (visualMap[pat.name].dates[dDate] !== undefined) {
+                            if (!dateGroups[dDate]) {
+                                dateGroups[dDate] = { unimedItems: [], nicolasTotal: 0 };
+                            }
+                            dateGroups[dDate].nicolasTotal += visualMap[pat.name].dates[dDate];
+                            visualMap[pat.name].dates[dDate] = undefined;
+                        }
+                    });
+                }
 
-                    if (item.originais && item.originais.length > 1) {
-                        item.originais.forEach(sub => {
-                            htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
-                                <td style="border-bottom:none;"></td>
-                                <td></td>
-                                <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
-                                <td></td>
-                                <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
-                                <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                                <td></td>
+                let sortedDates = Object.keys(dateGroups).sort((a,b) => {
+                    let pa = a.split('/'); 
+                    let pb = b.split('/');
+                    let da = new Date(pa[2], pa[1]-1, pa[0]); 
+                    let db = new Date(pb[2], pb[1]-1, pb[0]);
+                    return da - db;
+                });
+
+                sortedDates.forEach(dDate => {
+                    let group = dateGroups[dDate];
+                    let nicTotal = group.nicolasTotal;
+                    
+                    if (group.unimedItems.length === 0) {
+                        htmlBuffer += `<tr style="background:#fffbeb;">
+                            <td style="color:#b45309;">${dDate}</td>
+                            <td>-</td>
+                            <td style="color:#b45309; font-style:italic;"><i class="fas fa-exclamation-triangle"></i> Lançamento apenas na Planilha Interna</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td style="text-align:right;">-</td>
+                            <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                        </tr>`;
+                    } else {
+                        group.unimedItems.forEach((item, index) => {
+                            let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                            let dataPrevista = calcularDataRepasse(item.competencia);
+                            let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+                            let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                            
+                            let valorPlanilhaVisual = (index === 0 && nicTotal > 0) ? `<span style="font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>` : '-';
+
+                            htmlBuffer += `<tr>
+                                <td style="${styleCorte}">${item.data}</td>
+                                <td style="color: #0284c7; font-weight: bold; ${styleCorte}">${dataPrevista}</td>
+                                <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
+                                <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
+                                <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
+                                <td style="text-align:right; font-weight:500;">${valorVisual}</td>
+                                <td style="text-align:right; background:#f0f9ff; border-left: 2px solid #bae6fd;">${valorPlanilhaVisual}</td>
+                            </tr>`;
+
+                            if (item.originais && item.originais.length > 1) {
+                                item.originais.forEach(sub => {
+                                    htmlBuffer += `<tr class="sub-item-row">
+                                        <td style="border-bottom:none;"></td>
+                                        <td></td>
+                                        <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
+                                        <td></td>
+                                        <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+                                        <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                                        <td style="background:#f0f9ff; border-left: 2px solid #bae6fd;"></td>
+                                    </tr>`;
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                htmlBuffer += `</tbody></table></td></tr>`;
+            });
+            
+            document.getElementById('dashDivergences').innerText = divergencesCount; 
+            tbody.innerHTML = htmlBuffer;
+        }
+
+        // ==========================================
+        // 🖨️ EXPORTAÇÃO PDF DO REPASSE UNIMED
+        // ==========================================
+        function generateUnimedPDF() {
+            if (patListToPrint.length === 0) {
+                return alert("Não há dados para exportar.");
+            }
+            
+            const mesSel = document.getElementById('selMonthUnimed').options[document.getElementById('selMonthUnimed').selectedIndex].text;
+            const anoSel = document.getElementById('selYearUnimed').value;
+            const periodStr = `${mesSel} de ${anoSel}`;
+            const LOGO_URL = "https://imgur.com/nWWyEBG.png";
+            
+            const win = window.open('', '_blank');
+            let html = `<html><head><title>Relatório Unimed - ${periodStr}</title><style>
+                @page { size: landscape; margin: 10mm; } 
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
+                .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } 
+                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } 
+                .header-text { margin-left: 20px; } 
+                .header-text h1 { margin: 0; color: #00855B; font-size: 18px; text-transform: uppercase; } 
+                .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } 
+                table { width: 100%; border-collapse: collapse; font-size: 10px; } 
+                th, td { border: 1px solid #ccc; padding: 4px; text-align: left; } 
+                th { background: #00855B !important; color: white !important; font-size: 10px; text-align:center;} 
+                .sub-table th { background: #f1f5f9 !important; color: #333 !important; font-size: 9px; }
+            </style></head><body>`;
+            
+            html += `<div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>Auditoria de Repasse Unimed x Planilha Interna</h1><p>Competência Base: ${periodStr}</p></div></div>`;
+            html += `<table><thead><tr><th>Paciente / Carteirinha</th><th>Total Planilha Interna</th><th>Total Unimed</th><th>Diferença</th></tr></thead><tbody>`;
+            
+            const visualMap = JSON.parse(JSON.stringify(nicolasMap));
+
+            patListToPrint.forEach(pat => {
+                const diff = pat.totalU - pat.totalW;
+                let colorDiff = diff < -0.05 ? 'color:#dc2626;' : (diff > 0.05 ? 'color:#166534;' : 'color:#333;');
+
+                html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
+                    <td>${pat.name} <span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span></td>
+                    <td style="text-align:right;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                    <td style="text-align:right;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                    <td style="text-align:right; ${colorDiff}">R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                </tr>`;
+                
+                html += `<tr><td colspan="4" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
+                html += `<tr><th style="width:10%;">Data Atend.</th><th style="width:10%;">Prev. Repasse</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Tipo</th><th style="width:5%;">Qtd</th><th style="width:12%;">Valor Unimed</th><th style="width:12%;">Valor Planilha</th></tr>`;
+                
+                let dateGroups = {};
+                pat.items.forEach(item => { 
+                    if (!dateGroups[item.data]) {
+                        dateGroups[item.data] = { unimedItems: [], nicolasTotal: 0 }; 
+                    }
+                    dateGroups[item.data].unimedItems.push(item); 
+                });
+
+                if (visualMap[pat.name] && visualMap[pat.name].dates) {
+                    Object.keys(visualMap[pat.name].dates).forEach(dDate => {
+                        if (visualMap[pat.name].dates[dDate] !== undefined) {
+                            if (!dateGroups[dDate]) {
+                                dateGroups[dDate] = { unimedItems: [], nicolasTotal: 0 };
+                            }
+                            dateGroups[dDate].nicolasTotal += visualMap[pat.name].dates[dDate];
+                            visualMap[pat.name].dates[dDate] = undefined;
+                        }
+                    });
+                }
+
+                let sortedDates = Object.keys(dateGroups).sort((a,b) => {
+                    let pa = a.split('/'); 
+                    let pb = b.split('/');
+                    return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
+                });
+
+                sortedDates.forEach(dDate => {
+                    let group = dateGroups[dDate]; 
+                    let nicTotal = group.nicolasTotal;
+                    
+                    if (group.unimedItems.length === 0) {
+                        html += `<tr>
+                            <td style="text-align:center; color:#b45309;">${dDate}</td>
+                            <td style="text-align:center;">-</td>
+                            <td style="color:#b45309;">(Apenas Planilha Interna)</td>
+                            <td style="text-align:center;">-</td>
+                            <td style="text-align:center;">-</td>
+                            <td style="text-align:right;">-</td>
+                            <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                        </tr>`;
+                    } else {
+                        group.unimedItems.forEach((item, index) => {
+                            let vP = (index === 0 && nicTotal > 0) ? `R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '-';
+                            let valU = item.isCortado ? `0,00` : item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2});
+                            let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+
+                            html += `<tr>
+                                <td style="text-align:center; ${styleCorte}">${item.data}</td>
+                                <td style="text-align:center; ${styleCorte}">${calcularDataRepasse(item.competencia)}</td>
+                                <td style="${styleCorte}">${item.medicamento}</td>
+                                <td style="text-align:center;">${item.tipo}</td>
+                                <td style="text-align:center; ${styleCorte}">${item.mg}</td>
+                                <td style="text-align:right;">R$ ${valU}</td>
+                                <td style="text-align:right; font-weight:bold; color:#0284c7;">${vP}</td>
                             </tr>`;
                         });
                     }
                 });
-
-                // SE TEM DADOS DO NICOLAS PERDIDOS (SEM UNIMED CORRESPONDENTE)
-                if (visualMap[pat.name] && Object.values(visualMap[pat.name].dates).some(v => v !== undefined)) {
-                    for(let dataPerdida in visualMap[pat.name].dates) {
-                        let valorPerdido = visualMap[pat.name].dates[dataPerdida];
-                        if(valorPerdido !== undefined) {
-                            htmlBuffer += `<tr style="background:#fffbeb;">
-                                <td style="color:#b45309;">${dataPerdida}</td>
-                                <td>-</td>
-                                <td style="color:#b45309; font-style:italic;"><i class="fas fa-exclamation-triangle"></i> Encontrado apenas na Planilha (S/ Unimed)</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td style="text-align:right;">-</td>
-                                <td style="text-align:right; font-weight:bold; color:#b45309;">R$ ${valorPerdido.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                            </tr>`;
-                        }
-                    }
-                }
-
-                htmlBuffer += `</tbody></table></td></tr>`;
+                html += `</table></td></tr>`;
             });
             
-            document.getElementById('dashDivergences').innerText = divergencesCount; tbody.innerHTML = htmlBuffer;
+            html += `</tbody></table></body><script>window.onload=()=>{window.print();}<\/script></html>`;
+            win.document.write(html); 
+            win.document.close();
         }
 
+        // ==========================================
+        // DEMAIS FUNÇÕES DE UI
+        // ==========================================
         function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
         function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
-        function deleteSelected() { const c = document.getElementsByName('rowCheck'); let count = 0; for(let i=0; i<c.length; i++) { if(c[i].checked) { excludedPatients.add(c[i].value); count++; } } if(count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } else { alert("Selecione um paciente."); } }
-        function deleteRow(paciente) { if(confirm("Excluir " + paciente + "?")) { excludedPatients.add(paciente); renderAnalysisTable(); } }
-        function switchShiftTab(tabId, element) { currentShiftTab = tabId; document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active')); element.classList.add('active'); updateRepassDoctorDropdown(); renderRepasseTable(); }
+        
+        function deleteSelected() { 
+            const c = document.getElementsByName('rowCheck'); 
+            let count = 0; 
+            for(let i=0; i<c.length; i++) { 
+                if(c[i].checked) { 
+                    excludedPatients.add(c[i].value); 
+                    count++; 
+                } 
+            } 
+            if (count > 0) { 
+                renderAnalysisTable(); 
+                document.getElementById('checkAll').checked = false; 
+            } else { 
+                alert("Selecione um paciente."); 
+            } 
+        }
+        
+        function deleteRow(paciente) { 
+            if(confirm("Excluir " + paciente + "?")) { 
+                excludedPatients.add(paciente); 
+                renderAnalysisTable(); 
+            } 
+        }
+        
+        function switchShiftTab(tabId, element) { 
+            currentShiftTab = tabId; 
+            document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active')); 
+            element.classList.add('active'); 
+            updateRepassDoctorDropdown(); 
+            renderRepasseTable(); 
+        }
         
         async function loadDoctors() { 
             try { 
@@ -517,7 +1150,8 @@
 
         function updateRepassDoctorDropdown() {
             const sel = document.getElementById('filterDoctor');
-            if(!sel) return; sel.innerHTML = '<option value="">Todos</option>';
+            if(!sel) return; 
+            sel.innerHTML = '<option value="">Todos</option>';
             doctorList.forEach(doc => {
                 const dData = doctors[doc.id];
                 if (currentShiftTab === 'eco' && (!dData.eco || dData.eco === 'sim')) sel.add(new Option(doc.nome, doc.id));
@@ -615,32 +1249,41 @@
                 row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`; 
                 if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
-            document.querySelector('#repTable tbody').innerHTML = b; document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); 
+            document.querySelector('#repTable tbody').innerHTML = b; 
+            document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); 
         }
 
         function generatePDF() { 
             const curY = parseInt(document.getElementById('selYearPlantao').value); 
             const curM = parseInt(document.getElementById('selMonthPlantao').value); 
-            const win = window.open('', '_blank'); const periodStr = `${months[curM]} de ${curY}`; 
+            const win = window.open('', '_blank'); 
+            const periodStr = `${months[curM]} de ${curY}`; 
             
-            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
+            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; 
+            let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
+            
             if (currentShiftTab === 'vita_quimio') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Quimio)"; } 
             else if (currentShiftTab === 'vita_sobreaviso') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Sobreaviso)"; } 
             else if (currentShiftTab === 'cirurgioes') { LOGO_URL = "https://imgur.com/maJNHKc.png"; pdfTitle = "Relatório de Repasse Médico - Cirurgiões"; }
 
-            const holidays = getHolidays(curY); const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
+            const holidays = getHolidays(curY); 
+            const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
+            
             let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
             for (let i = 1; i <= daysInMonth; i++) { 
                 const d = new Date(curY, curM, i, 12, 0, 0); 
                 const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
                 const isHol = !!holidays[isoDateStr]; 
                 const isWk = d.getDay()===0||d.getDay()===6; 
-                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); const color = isHol ? '#DC2626' : '#333'; 
+                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                const color = isHol ? '#DC2626' : '#333'; 
                 thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
             } 
             thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL</th></tr>'; 
             
-            let tbody = ''; let totalGeral = 0; 
+            let tbody = ''; 
+            let totalGeral = 0; 
+            
             Object.entries(doctors).filter(([,d]) => {
                 if (d.plantao !== 'sim') return false;
                 if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
@@ -658,10 +1301,12 @@
                     const isWk = d.getDay()===0||d.getDay()===6; 
                     let money = 0; 
                     if(val && val !== 'S') { 
-                        hasValue = true; if (val === 'M/T') countShifts += 2; else countShifts += 1; 
+                        hasValue = true; 
+                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
                         if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
                     } 
-                    userTotal += money; const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                    userTotal += money; 
+                    const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
                     row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
                 } 
                 if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
@@ -671,15 +1316,25 @@
             }); 
             
             const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
-            win.document.write(html); win.document.close(); 
+            win.document.write(html); 
+            win.document.close(); 
         }
 
         function normalizeData(apiData) {
-            if (!apiData) return {}; const normalized = {};
+            if (!apiData) return {}; 
+            const normalized = {};
             Object.entries(apiData).forEach(([key, val]) => {
-                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
-                } else { normalized[key] = val; }
-            }); return normalized;
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
+                    try { 
+                        normalized[key] = JSON.parse(val); 
+                    } catch(e) { 
+                        normalized[key] = val; 
+                    }
+                } else { 
+                    normalized[key] = val; 
+                }
+            }); 
+            return normalized;
         }
     </script>
 </body>
