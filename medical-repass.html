@@ -15,394 +15,74 @@
     </script>
 
     <style>
-        body { 
-            background-color: #f3f4f6; 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; 
-        }
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; }
         
-        .container { 
-            width: 100%; 
-            padding: 20px; 
-            box-sizing: border-box; 
-        }
-        
-        .tabs-nav { 
-            display: flex; 
-            gap: 10px; 
-            margin-bottom: 20px; 
-            border-bottom: 2px solid #e5e7eb; 
-            padding-bottom: 0; 
-        }
-        
-        .tab-btn { 
-            padding: 12px 24px; 
-            border: none; 
-            background: none; 
-            font-weight: 700; 
-            color: #6b7280; 
-            cursor: pointer; 
-            border-bottom: 3px solid transparent; 
-            transition: 0.3s; 
-        }
-        
-        .tab-btn.active { 
-            color: #00995D; 
-            border-bottom: 3px solid #00995D; 
-            background: white; 
-            border-radius: 8px 8px 0 0; 
-        }
-        
-        .tab-content { 
-            display: none; 
-            animation: fadeIn 0.3s; 
-        }
-        
-        .tab-content.active { 
-            display: block; 
-        }
-        
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(5px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
+        .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
+        .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .controls { 
-            background: white; 
-            padding: 15px 20px; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 15px; 
-            align-items: flex-end; 
-            justify-content: space-between;
-        }
+        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
+        .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
-        .controls-group { 
-            display: flex; 
-            gap: 15px; 
-            align-items: flex-end; 
-            flex-wrap: wrap; 
-        }
+        .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
+        .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
+        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
         
-        .input-group { 
-            margin-bottom: 0; 
-            display: flex; 
-            flex-direction: column; 
-        }
-        
-        .label-title { 
-            font-size: 12px; 
-            font-weight: 700; 
-            color: #4b5563; 
-            margin-bottom: 5px; 
-        }
-        
-        .input-field { 
-            padding: 10px; 
-            border: 1px solid #d1d5db; 
-            border-radius: 6px; 
-            font-size: 13px; 
-            height: 38px; 
-            box-sizing: border-box; 
-        }
-        
-        .sub-tabs-container { 
-            display: flex; 
-            gap: 10px; 
-            margin-bottom: 15px; 
-            border-bottom: 2px solid #e2e8f0; 
-            overflow-x: auto; 
-        }
-        
-        .sub-tab-btn { 
-            background: #f3f4f6; 
-            border: 1px solid #e5e7eb; 
-            border-bottom: none; 
-            padding: 10px 20px; 
-            font-size: 13px; 
-            font-weight: 700; 
-            color: #6b7280; 
-            cursor: pointer; 
-            border-radius: 8px 8px 0 0; 
-            transition: 0.2s; 
-            white-space: nowrap; 
-        }
-        
-        .sub-tab-btn.active { 
-            background: #00995D; 
-            color: white; 
-            border-color: #00995D; 
-        }
-        
-        .sub-tab-btn:hover:not(.active) { 
-            background: #e5e7eb; 
-        }
+        .sub-tabs-container { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
+        .sub-tab-btn { background: #f3f4f6; border: 1px solid #e5e7eb; border-bottom: none; padding: 10px 20px; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 8px 8px 0 0; transition: 0.2s; white-space: nowrap; }
+        .sub-tab-btn.active { background: #00995D; color: white; border-color: #00995D; }
+        .sub-tab-btn:hover:not(.active) { background: #e5e7eb; }
 
-        .btn-print { 
-            background: #4b5563; 
-            color: white; 
-            border: none; 
-            padding: 0 20px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: 600; 
-            display: flex; 
-            gap: 8px; 
-            align-items: center; 
-            height: 38px; 
-            transition: 0.2s;
-        }
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s;}
+        .btn-print:hover { background: #374151; }
+        .btn-danger-block { background: #dc2626; color: white; border: none; height: 38px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 15px; }
+        .btn-danger-block:hover { background: #b91c1c; }
         
-        .btn-print:hover { 
-            background: #374151; 
-        }
-        
-        .btn-danger-block { 
-            background: #dc2626; 
-            color: white; 
-            border: none; 
-            height: 38px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-weight: 600; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 5px; 
-            padding: 0 15px; 
-        }
-        
-        .btn-danger-block:hover { 
-            background: #b91c1c; 
-        }
-        
-        .dashboard-cards { 
-            display: flex; 
-            gap: 15px; 
-            margin-bottom: 20px; 
-            flex-wrap: wrap; 
-        }
-        
-        .card-stat { 
-            background: white; 
-            flex: 1; 
-            min-width: 200px; 
-            padding: 15px; 
-            border-radius: 10px; 
-            border-left: 4px solid #00995D; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-        }
-        
-        .card-stat h5 { 
-            margin: 0 0 5px 0; 
-            color: #6b7280; 
-            font-size: 12px; 
-            text-transform: uppercase; 
-        }
-        
-        .card-stat h2 { 
-            margin: 0; 
-            color: #1f2937; 
-            font-size: 24px; 
-        }
-        
-        .card-stat.warning { 
-            border-left-color: #f59e0b; 
-        }
-        
-        .card-stat.danger { 
-            border-left-color: #ef4444; 
-        }
+        .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; }
+        .card-stat h2 { margin: 0; color: #1f2937; font-size: 24px; }
+        .card-stat.warning { border-left-color: #f59e0b; }
+        .card-stat.danger { border-left-color: #ef4444; }
 
-        .sheet-container { 
-            background: white; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
-            overflow: hidden; 
-            padding-bottom: 10px; 
-        }
+        .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
+        .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #00995D; color: white; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; }
+        .data-table td { padding: 10px; border-bottom: 1px solid #eee; color: #333; vertical-align: middle; }
         
-        .table-responsive { 
-            overflow-x: auto; 
-            background: white; 
-            padding-bottom: 10px; 
-            max-height: 700px; 
-        }
-        
-        .data-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            font-size: 13px; 
-        }
-        
-        .data-table th { 
-            background: #00995D; 
-            color: white; 
-            padding: 12px; 
-            text-align: left; 
-            position: sticky; 
-            top: 0; 
-            z-index: 10; 
-        }
-        
-        .data-table td { 
-            padding: 10px; 
-            border-bottom: 1px solid #eee; 
-            color: #333; 
-            vertical-align: middle; 
-        }
-        
-        .badge { 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            font-weight: bold; 
-            font-size: 11px; 
-            display: inline-block; 
-            text-align: center; 
-        }
-        
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; text-align: center; }
         .bg-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         .bg-gray { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
         
-        .row-parent { 
-            cursor: pointer; 
-            background-color: #fff; 
-            transition: background 0.2s; 
-        }
+        .row-parent { cursor: pointer; background-color: #fff; transition: background 0.2s; }
+        .row-parent:hover { background-color: #f9fafb; }
+        .row-detail { display: none; background-color: #f8fafc; }
+        .row-detail.expanded { display: table-row; }
         
-        .row-parent:hover { 
-            background-color: #f9fafb; 
-        }
-        
-        .row-detail { 
-            display: none; 
-            background-color: #f8fafc; 
-        }
-        
-        .row-detail.expanded { 
-            display: table-row; 
-        }
-        
-        .nested-table { 
-            width: 98%; 
-            margin: 10px auto; 
-            background: white; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 8px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
-        }
-        
-        .nested-table th { 
-            background: #f1f5f9; 
-            color: #475569; 
-            font-size: 11px; 
-            padding: 10px 12px; 
-            text-transform: uppercase; 
-            border-bottom: 2px solid #cbd5e1; 
-        }
-        
-        .nested-table td { 
-            font-size: 12px; 
-            border-bottom: 1px solid #f1f5f9; 
-            padding: 8px 12px; 
-            color: #475569; 
-        }
+        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .nested-table th { background: #f1f5f9; color: #475569; font-size: 11px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
+        .nested-table td { font-size: 12px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; }
 
-        .sub-item-row { 
-            background-color: #f8fafc; 
-            font-size: 11px; 
-            color: #64748b; 
-        }
-        
-        .sub-item-row td { 
-            border-bottom: 1px dashed #e2e8f0 !important; 
-            padding: 6px 12px !important; 
-        }
+        .sub-item-row { background-color: #f8fafc; font-size: 11px; color: #64748b; }
+        .sub-item-row td { border-bottom: 1px dashed #e2e8f0 !important; padding: 6px 12px !important; }
 
-        .btn-toggle { 
-            background: none; 
-            border: none; 
-            color: #00995D; 
-            font-size: 16px; 
-            cursor: pointer; 
-            transition: transform 0.3s; 
-        }
-        
-        .btn-toggle.rotate { 
-            transform: rotate(90deg); 
-        }
+        .btn-toggle { background: none; border: none; color: #00995D; font-size: 16px; cursor: pointer; transition: transform 0.3s; }
+        .btn-toggle.rotate { transform: rotate(90deg); }
 
-        .total-box { 
-            background: #dcfce7; 
-            border: 1px solid #86efac; 
-            padding: 0 15px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            color: #166534; 
-            font-size: 15px; 
-            white-space: nowrap; 
-            height: 38px; 
-            display: flex; 
-            align-items: center; 
-        }
+        .total-box { background: #dcfce7; border: 1px solid #86efac; padding: 0 15px; border-radius: 8px; font-weight: bold; color: #166534; font-size: 15px; white-space: nowrap; height: 38px; display: flex; align-items: center; }
         
-        .scale-table { 
-            border-collapse: separate; 
-            border-spacing: 0; 
-            table-layout: fixed; 
-            width: max-content; 
-            min-width: 100%; 
-        }
-        
-        .scale-table th, .scale-table td { 
-            border: 1px solid #e5e7eb; 
-            text-align: center; 
-            font-size: 11px; 
-            padding: 0; 
-            vertical-align: middle; 
-        }
-        
-        .scale-table th:not(.th-fixa):not(.th-total), .scale-table td:not(.col-fixa):not(.td-total) { 
-            width: 38px !important; 
-            min-width: 38px !important; 
-            height: 38px !important; 
-        }
-        
-        .scale-table .col-fixa { 
-            position: sticky; 
-            left: 0; 
-            z-index: 20; 
-            width: 250px; 
-            background: white; 
-            font-weight: bold; 
-            border-right: 2px solid #e5e7eb; 
-            text-align: left; 
-            padding-left: 10px; 
-            height: 38px; 
-        }
-        
-        .scale-table th.th-fixa { 
-            position: sticky; 
-            left: 0; 
-            z-index: 30; 
-            background: #00995D; 
-            width: 250px; 
-            height: 38px; 
-        }
-        
-        .weekend-col { 
-            background-color: #f8fafc; 
-        } 
-        
-        .holiday-col { 
-            background-color: #fef2f2 !important; 
-            color: #dc2626; 
-            font-weight: bold; 
-        }
+        .scale-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; }
+        .scale-table th, .scale-table td { border: 1px solid #e5e7eb; text-align: center; font-size: 11px; padding: 0; vertical-align: middle; }
+        .scale-table th:not(.th-fixa):not(.th-total), .scale-table td:not(.col-fixa):not(.td-total) { width: 38px !important; min-width: 38px !important; height: 38px !important; }
+        .scale-table .col-fixa { position: sticky; left: 0; z-index: 20; width: 250px; background: white; font-weight: bold; border-right: 2px solid #e5e7eb; text-align: left; padding-left: 10px; height: 38px; }
+        .scale-table th.th-fixa { position: sticky; left: 0; z-index: 30; background: #00995D; width: 250px; height: 38px; }
+        .weekend-col { background-color: #f8fafc; } .holiday-col { background-color: #fef2f2 !important; color: #dc2626; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -541,7 +221,7 @@
         let doctors = {};
         let shifts = {};
         let pacientesDb = {};
-        let patListToPrint = []; // Guarda os dados filtrados para a exportação PDF
+        let patListToPrint = []; 
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -550,12 +230,12 @@
         };
 
         // ==========================================
-        // NORMALIZADOR DE DATAS (Para o PROC-V)
+        // NORMALIZADOR DE DATAS (O Segredo do PROC-V)
         // ==========================================
         function normalizeDate(d) {
             if (!d) return "";
             
-            // Lida com datas seriais do Excel
+            // Trata data serial do Excel (Garante matemática exata, sem erro de formato)
             if (typeof d === 'number') {
                 let date = new Date(Math.round((d - 25569) * 86400 * 1000));
                 return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
@@ -566,6 +246,7 @@
                 str = str.split('T')[0];
             }
             
+            // Formato YYYY-MM-DD
             if (str.includes('-')) {
                 let p = str.split('-');
                 if (p[0].length === 4) {
@@ -574,8 +255,16 @@
                 return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
             }
             
+            // Tratamento do formato Americano escondido (MM/DD/YYYY ou MM/DD/YY)
             if (str.includes('/')) {
                 let p = str.split('/');
+                
+                // Se a primeira parte (o dia) for menor que 12 e a segunda (mês) for maior que 12, ele é formato americano!
+                if (parseInt(p[0], 10) <= 12 && parseInt(p[1], 10) > 12) {
+                    return p[1].padStart(2,'0') + '/' + p[0].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+                }
+                
+                // Formato padrão Brasileiro
                 return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
             }
             
@@ -590,9 +279,7 @@
             
             ['selYearPlantao', 'selYearUnimed'].forEach(id => { 
                 const el = document.getElementById(id); 
-                for(let i = curY - 2; i <= curY + 2; i++) {
-                    el.add(new Option(i, i)); 
-                }
+                for(let i = curY - 2; i <= curY + 2; i++) { el.add(new Option(i, i)); }
                 el.value = curY; 
             });
             
@@ -626,9 +313,6 @@
             }
         }
 
-        // ==========================================
-        // BUSCA DE DADOS DA UNIMED NO SERVIDOR
-        // ==========================================
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed...</td></tr>';
@@ -708,10 +392,11 @@
                         sheetName = workbook.SheetNames[0]; 
                     }
                     
+                    // A mágica acontece aqui: raw: true força o sistema a ler as datas como NÚMEROS em vez de strings
                     const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: false});
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: true});
                     
-                    nicolasMap = {}; // Reseta o mapa para a nova importação
+                    nicolasMap = {}; 
                     
                     jsonData.forEach(row => {
                         let paciente = '';
@@ -724,6 +409,7 @@
                             if (kUp === 'PACIENTE') {
                                 paciente = String(row[k]).toUpperCase().trim();
                             } else if (kUp.includes('APLICA') || kUp.includes('DATA')) {
+                                // Aplica o motor de formatação forte
                                 dataAplic = normalizeDate(row[k]);
                             } else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL')) {
                                 let v = row[k];
@@ -741,7 +427,7 @@
                             }
                         }
 
-                        if (paciente) {
+                        if (paciente && dataAplic) {
                             if (!nicolasMap[paciente]) {
                                 nicolasMap[paciente] = { total: 0, dates: {} };
                             }
@@ -839,7 +525,6 @@
                 patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            // Adiciona pacientes que só existem na planilha interna do Nicolas
             Object.keys(nicolasMap).forEach(pacName => {
                 if (!patientsTableObj[pacName] && (!filter || pacName === filter)) {
                     patientsTableObj[pacName] = { 
@@ -852,7 +537,6 @@
                 }
             });
 
-            // Aplica o Total do PROC-V
             Object.values(patientsTableObj).forEach(p => { 
                 p.totalW = nicolasMap[p.name] ? nicolasMap[p.name].total : 0; 
             });
@@ -999,7 +683,7 @@
             const mesSel = document.getElementById('selMonthUnimed').options[document.getElementById('selMonthUnimed').selectedIndex].text;
             const anoSel = document.getElementById('selYearUnimed').value;
             const periodStr = `${mesSel} de ${anoSel}`;
-            const LOGO_URL = "https://imgur.com/nWWyEBG.png";
+            const LOGO_URL = "https://imgur.com/m9NWY03.png";
             
             const win = window.open('', '_blank');
             let html = `<html><head><title>Relatório Unimed - ${periodStr}</title><style>
@@ -1101,9 +785,7 @@
             win.document.close();
         }
 
-        // ==========================================
-        // DEMAIS FUNÇÕES DE UI
-        // ==========================================
+        // Funções Base Plantão...
         function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
         function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
         
@@ -1167,7 +849,6 @@
                 [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
                 [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
             }; 
-            
             const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
             let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
             I = I - 30*Math.floor((I/30)); 
@@ -1177,7 +858,6 @@
             const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
             
             const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
-            
             const add = (baseDate, days) => { 
                 const r = new Date(baseDate.getTime()); 
                 r.setDate(r.getDate() + days); 
