@@ -101,6 +101,12 @@
         <div class="card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px;">
                 <span><i class="fas fa-user-nurse"></i> Fila de Atendimento</span>
+                
+                <select id="seletor-posto" onchange="salvarPosto()" style="padding: 8px 15px; border-radius: 8px; border: 1px solid #cbd5e0; font-weight: bold; color: #1E293B; background: #f8fafc; cursor: pointer;">
+                    <option value="Posto 1">Posto 1</option>
+                    <option value="Posto 2">Posto 2</option>
+                </select>
+
                 <button class="btn btn-warning" id="audio-btn" onclick="toggleSound()" style="padding: 8px 15px; border-radius: 20px; font-size: 12px;">
                     <i class="fas fa-volume-mute"></i> SOM
                 </button>
@@ -128,6 +134,11 @@
         const emotions = { 'muito-feliz': '😄', 'feliz': '😊', 'neutro': '😐', 'triste': '😔', 'muito-triste': '😢', 'ansioso': '😰' };
         const needs = { 'silence': 'Silêncio', 'conversation': 'Conversa', 'questions': 'Dúvidas' };
 
+        function salvarPosto() {
+            const posto = document.getElementById('seletor-posto').value;
+            localStorage.setItem('postoEnfermagem', posto);
+        }
+
         function updateSoundBtn() {
             const btn = document.getElementById('audio-btn');
             if(audioUnlocked) {
@@ -141,6 +152,10 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initGlobal('enfermagem', 'Enfermagem'); 
+            
+            const postoSalvo = localStorage.getItem('postoEnfermagem') || 'Posto 1';
+            document.getElementById('seletor-posto').value = postoSalvo;
+
             if(localStorage.getItem('audioNursingEnabled') === 'true') {
                 audioUnlocked = true;
                 updateSoundBtn();
@@ -337,6 +352,8 @@
         }
 
         async function callTransport(key, name, origin) {
+            const postoAtual = document.getElementById('seletor-posto').value; 
+
             await fetch(`${API_BASE_URL}/patientCalls`, {
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json', ...API_HEADERS },
@@ -345,7 +362,8 @@
                     patientName: name,
                     origin: origin,
                     timestamp: new Date().toISOString(),
-                    status: 'called'
+                    status: 'called',
+                    posto: postoAtual 
                 })
             });
             loadData();
