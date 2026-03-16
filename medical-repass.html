@@ -419,7 +419,6 @@
                         }
 
                         if (paciente && dataAplic) {
-                            // TRAVA DE DÍZIMA FLUTUANTE: Força exatamente 2 casas decimais no momento da leitura
                             valor = Number(valor.toFixed(2));
                             
                             if (!nicolasMap[paciente]) {
@@ -436,7 +435,7 @@
                         }
                     });
 
-                    alert('Planilha importada com sucesso! O PROC-V foi aplicado nas linhas cronologicamente.');
+                    alert('Planilha importada com sucesso! Os valores foram aplicados nos subtotais de cada dia.');
                     renderAnalysisTable();
                     
                 } catch(err) {
@@ -446,9 +445,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // ==========================================
-        // 🕒 CÁLCULO DA DATA DE REPASSE (+40 DIAS)
-        // ==========================================
         function calcularDataRepasse(comp) {
             if (!comp) return "-";
             const parts = comp.split('/');
@@ -468,7 +464,6 @@
             let pats = new Set([...excelData.map(d => d.paciente)]);
             const sel = document.getElementById('filterPatient'); 
             sel.innerHTML = '<option value="">Todos</option>'; 
-            
             Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
         }
 
@@ -624,14 +619,16 @@
                             <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         </tr>`;
                     } else {
-                        group.unimedItems.forEach((item, index) => {
+                        let diaUnimedTotal = 0;
+
+                        group.unimedItems.forEach((item) => {
+                            diaUnimedTotal += item.valorConsiderado;
+
                             let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                             let dataPrevista = calcularDataRepasse(item.competencia);
                             let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
                             let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
                             
-                            let valorPlanilhaVisual = (index === 0 && nicTotal > 0) ? `<span style="font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>` : '-';
-
                             htmlBuffer += `<tr>
                                 <td style="${styleCorte}">${item.data}</td>
                                 <td style="color: #0284c7; font-weight: bold; ${styleCorte}">${dataPrevista}</td>
@@ -639,7 +636,7 @@
                                 <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
                                 <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
                                 <td style="text-align:right; font-weight:500;">${valorVisual}</td>
-                                <td style="text-align:right; background:#f0f9ff; border-left: 2px solid #bae6fd;">${valorPlanilhaVisual}</td>
+                                <td style="text-align:center; color:#9ca3af;">-</td>
                             </tr>`;
 
                             if (item.originais && item.originais.length > 1) {
@@ -651,11 +648,18 @@
                                         <td></td>
                                         <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
                                         <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                        <td style="background:#f0f9ff; border-left: 2px solid #bae6fd;"></td>
+                                        <td></td>
                                     </tr>`;
                                 });
                             }
                         });
+
+                        // LINHA DE SUBTOTAL DIÁRIO
+                        htmlBuffer += `<tr style="background:#e0f2fe; border-top: 2px solid #bae6fd;">
+                            <td colspan="5" style="text-align:right; font-weight:bold; color:#0369a1; padding: 12px;">SUBTOTAL DO DIA (${dDate}):</td>
+                            <td style="text-align:right; font-weight:bold; color:#00855b; padding: 12px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td style="text-align:right; font-weight:bold; color:#0284c7; padding: 12px;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        </tr>`;
                     }
                 });
                 
@@ -754,8 +758,11 @@
                             <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         </tr>`;
                     } else {
+                        let diaUnimedTotal = 0;
+
                         group.unimedItems.forEach((item, index) => {
-                            let vP = (index === 0 && nicTotal > 0) ? `R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
+                            diaUnimedTotal += item.valorConsiderado;
+
                             let valU = item.isCortado ? `0,00` : item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
                             let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
 
@@ -766,9 +773,16 @@
                                 <td style="text-align:center;">${item.tipo}</td>
                                 <td style="text-align:center; ${styleCorte}">${item.mg}</td>
                                 <td style="text-align:right;">R$ ${valU}</td>
-                                <td style="text-align:right; font-weight:bold; color:#0284c7;">${vP}</td>
+                                <td style="text-align:center;">-</td>
                             </tr>`;
                         });
+
+                        // LINHA SUBTOTAL NO PDF
+                        html += `<tr style="background:#f0f9ff; font-weight:bold;">
+                            <td colspan="5" style="text-align:right; color:#0369a1; padding:6px;">SUBTOTAL DO DIA (${dDate}):</td>
+                            <td style="text-align:right; color:#00855B; padding:6px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td style="text-align:right; color:#0284c7; padding:6px;">R$ ${nicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        </tr>`;
                     }
                 });
                 html += `</table></td></tr>`;
