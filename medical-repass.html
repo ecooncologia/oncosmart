@@ -148,11 +148,11 @@
                     <h2 id="dashUnimedTotal">R$ 0,00</h2>
                 </div>
                 <div class="card-stat warning">
-                    <h5>Lucro Bruto (Diferença)</h5>
+                    <h5>Lucro Global (Planilha Interna)</h5>
                     <h2 id="dashLucroTotal">R$ 0,00</h2>
                 </div>
                 <div class="card-stat danger">
-                    <h5>Total em Repasse</h5>
+                    <h5>Total em Repasses Gerados</h5>
                     <h2 id="dashRepasseTotal">R$ 0,00</h2>
                 </div>
                 <div class="card-stat info">
@@ -160,7 +160,7 @@
                     <h2 id="dashMedCount">0</h2>
                 </div>
                 <div class="card-stat purple">
-                    <h5>Divergências</h5>
+                    <h5>Divergências de Custo</h5>
                     <h2 id="dashDivergences">0</h2>
                 </div>
             </div>
@@ -221,16 +221,15 @@
                                 <th style="width: 40px; text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
                                 <th style="width: 40px;"></th>
                                 <th>Paciente / Carteirinha</th>
-                                <th>Total Planilha</th>
-                                <th>Total Unimed</th>
-                                <th>Lucro (Dif)</th>
+                                <th>Faturamento Unimed</th>
+                                <th>Lucro (Planilha Interna)</th>
                                 <th>Repasse Médico</th>
                                 <th style="width: 50px;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="8" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td>
+                                <td colspan="7" style="text-align:center; padding:40px; color:#999;">Carregando dados...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -259,13 +258,12 @@
         const cleanStr = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
         // ==========================================
-        // LÓGICA FINANCEIRA DE REPASSE (MOTOR DE CÁLCULO)
+        // LÓGICA FINANCEIRA DE REPASSE (O MOTOR DE CÁLCULO)
         // ==========================================
-        function getComissaoInfo(nomeMedico, isPrescritor, isEncaminhador) {
-            let nomeUpper = String(nomeMedico).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-            let percPrescritor = 0;
-            let percEncaminhador = 0;
-
+        function getComissaoInfo(pName, eName) {
+            let percP = 0;
+            let percE = 0;
+            
             const grupoMama = [
                 'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
                 'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
@@ -273,22 +271,28 @@
                 'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO'
             ];
 
-            const isGrupoMama = grupoMama.some(m => nomeUpper.includes(m));
-            const isMaikol = nomeUpper.includes('MAIKOL');
+            const isSpecial = (name) => {
+                if(!name) return false;
+                let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                return upper.includes('MAIKOL') || grupoMama.some(m => upper.includes(m));
+            };
 
-            if (isMaikol) {
-                if (isPrescritor) percPrescritor = 12.50;
-                if (isEncaminhador) percEncaminhador = 37.50;
-            } else if (isGrupoMama) {
-                if (isPrescritor) percPrescritor = 12.50;
-                if (isEncaminhador) percEncaminhador = 37.50;
-            } else {
-                if (isPrescritor) percPrescritor = 12.50;
-                if (isEncaminhador) percEncaminhador = 12.50;
+            // Regra do Prescritor
+            if (pName) {
+                // Prescritor sempre ganha 12.50% de acordo com a regra.
+                percP = 12.50; 
             }
 
-            let totalPerc = percPrescritor + percEncaminhador;
-            return { percPrescritor, percEncaminhador, totalPerc };
+            // Regra do Encaminhador
+            if (eName) {
+                if (isSpecial(eName)) {
+                    percE = 37.50; // Maikol e Grupo da Mama ganham 37.5% como Encaminhadores
+                } else {
+                    percE = 12.50; // Outros ganham 12.5% como Encaminhadores
+                }
+            }
+
+            return { percP, percE, totalPerc: percP + percE };
         }
 
         function normalizeDate(d) {
@@ -326,7 +330,7 @@
                 el.value = curY; 
             });
             
-            // Carrega Unimed focada no Mês Passado (Repasse é retroativo)
+            // Carrega Unimed focada no Mês Passado
             const elPlantao = document.getElementById('selMonthPlantao');
             months.forEach((m, i) => elPlantao.add(new Option(m, i)));
             elPlantao.value = curM;
@@ -359,7 +363,7 @@
 
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed e da Planilha Interna...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Consultando banco de dados da Unimed e da Planilha Interna...</td></tr>';
             
             try {
                 const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
@@ -410,7 +414,7 @@
                 excelData = []; nicolasDataDb = [];
                 updateFilters(); 
                 renderAnalysisTable();
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-robot" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #6b7280; padding: 30px;"><i class="fas fa-robot" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
             }
         }
 
@@ -443,12 +447,18 @@
                             let kUp = k.toUpperCase().trim();
                             if (kUp === 'PACIENTE') paciente = String(row[k]).toUpperCase().trim();
                             else if (kUp.includes('APLICA') || kUp.includes('DATA')) dataAplic = normalizeDate(row[k]);
-                            else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL')) {
+                            // ATUALIZADO: Captura o LUCRO da Planilha
+                            else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL') || kUp.includes('LUCRO')) {
                                 let v = row[k];
                                 if (typeof v === 'number') valor = v;
                                 else if (typeof v === 'string') {
                                     let s = v.replace(/R\$\s?/ig, '').trim();
-                                    if (s.includes('.') && s.includes(',')) s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); 
+                                    if (s.includes('.') && s.includes(',')) {
+                                        let lastDot = s.lastIndexOf('.');
+                                        let lastComma = s.lastIndexOf(',');
+                                        if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.'); 
+                                        else s = s.replace(/,/g, ''); 
+                                    }
                                     else if (s.includes(',')) s = s.replace(',', '.'); 
                                     valor = parseFloat(s) || 0;
                                 }
@@ -458,7 +468,7 @@
                             }
                         }
 
-                        if (paciente && dataAplic && valor > 0) {
+                        if (paciente && dataAplic && valor !== 0) {
                             novosRegistros.push({
                                 id_firebase: `int_${cleanStr(competenciaAlvo)}_${cleanStr(paciente).substring(0,10)}_${cleanStr(dataAplic)}_${cleanStr(medicamento).substring(0,10)}_${Math.floor(Math.random()*1000)}`,
                                 competencia: competenciaAlvo,
@@ -472,7 +482,7 @@
 
                     document.getElementById('importPlanilhaNicolas').value = ''; 
                     const tbody = document.querySelector('#dataTable tbody'); 
-                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px;"><i class="fas fa-cloud-upload-alt fa-spin" style="font-size:20px; color:#10b981;"></i><br><br>Salvando ${novosRegistros.length} itens no Banco de Dados para todos os usuários...</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;"><i class="fas fa-cloud-upload-alt fa-spin" style="font-size:20px; color:#10b981;"></i><br><br>Salvando ${novosRegistros.length} itens no Banco de Dados para todos os usuários...</td></tr>`;
 
                     let inseridos = 0;
                     for(const item of novosRegistros) {
@@ -518,9 +528,6 @@
             Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
         }
 
-        // ==========================================
-        // RENDERIZAÇÃO DA TABELA PRINCIPAL
-        // ==========================================
         function toggleAll(source) {
             const checkboxes = document.getElementsByName('rowCheck');
             for (let i = 0; i < checkboxes.length; i++) {
@@ -528,6 +535,9 @@
             }
         }
 
+        // ==========================================
+        // RENDERIZAÇÃO DA TABELA PRINCIPAL
+        // ==========================================
         function renderAnalysisTable() {
             const filterPatient = document.getElementById('filterPatient').value;
             const filterAuditoria = document.getElementById('filterAuditoria').value;
@@ -547,33 +557,34 @@
                 
                 const p = d.paciente; 
                 if (!patientsTableObj[p]) {
-                    patientsTableObj[p] = { name: p, carteirinha: d.carteirinha, totalW: 0, totalU: 0, items: [], docId: null, docName: '', docRoles: '', isPrescritor: false, isEncaminhador: false };
+                    patientsTableObj[p] = { 
+                        name: p, carteirinha: d.carteirinha, 
+                        totalW: 0, totalU: 0, items: [], 
+                        pId: null, pName: '', eId: null, eName: ''
+                    };
                 }
                 
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
                 
-                // Suporte para o banco com vínculo duplo
-                const docId = patDb ? (patDb.prescritor_id || patDb.encaminhador_id || patDb.doctor_id) : null;
-                const docDb = docId && doctors[docId] ? doctors[docId] : null;
-                
-                patientsTableObj[p].docId = docId;
-                patientsTableObj[p].docName = docDb ? docDb.nome : 'Sem médico vinculado';
-                
-                if (docDb) {
-                    patientsTableObj[p].isPrescritor = (docDb.prescritor === 'sim');
-                    patientsTableObj[p].isEncaminhador = (docDb.encaminhador === 'sim');
+                // LÓGICA DE VÍNCULO CORRETA (Baseada no Paciente, não no perfil global do médico)
+                if (patDb) {
+                    patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
+                    patientsTableObj[p].eId = patDb.encaminhador_id;
                     
-                    let roles = [];
-                    if (patientsTableObj[p].isPrescritor) roles.push('Prescritor');
-                    if (patientsTableObj[p].isEncaminhador) roles.push('Encaminhador');
-                    patientsTableObj[p].docRoles = roles.join(' e ');
+                    if (patientsTableObj[p].pId && doctors[patientsTableObj[p].pId]) {
+                        patientsTableObj[p].pName = doctors[patientsTableObj[p].pId].nome;
+                    }
+                    if (patientsTableObj[p].eId && doctors[patientsTableObj[p].eId]) {
+                        patientsTableObj[p].eName = doctors[patientsTableObj[p].eId].nome;
+                    }
                 }
                 
-                // 🧠 A REGRA DA DRA. GRAZIELLY (Apenas ela ganha TAXA)
-                const isGrazielly = docDb && docDb.nome.toUpperCase().includes('GRAZIELLY');
-                const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
+                // A REGRA DA DRA. GRAZIELLY (Corta a TAXA se ela NÃO for Prescritora nem Encaminhadora)
+                const isGrazielly = (patientsTableObj[p].pName && patientsTableObj[p].pName.toUpperCase().includes('GRAZIELLY')) || 
+                                    (patientsTableObj[p].eName && patientsTableObj[p].eName.toUpperCase().includes('GRAZIELLY'));
                 
+                const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
                 let valorConsiderado = Number(d.valor.toFixed(2));
                 let isCortado = false;
 
@@ -589,6 +600,7 @@
                 patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
+            // Lendo a Planilha Interna (Que contém o LUCRO)
             let nicolasAgrupado = {};
             nicolasDataDb.forEach(nic => {
                 const pac = nic.paciente;
@@ -606,22 +618,21 @@
                 if (!patientsTableObj[pacName]) {
                     const patId = generatePatientId(pacName);
                     const patDb = pacientesDb[patId];
-                    const docId = patDb ? (patDb.prescritor_id || patDb.encaminhador_id || patDb.doctor_id) : null;
-                    const docDb = docId && doctors[docId] ? doctors[docId] : null;
-
-                    let isPresc = false; let isEncam = false; let roles = [];
-                    if (docDb) {
-                        isPresc = (docDb.prescritor === 'sim');
-                        isEncam = (docDb.encaminhador === 'sim');
-                        if (isPresc) roles.push('Prescritor');
-                        if (isEncam) roles.push('Encaminhador');
+                    
+                    let pId = null; let eId = null; let pName = ''; let eName = '';
+                    
+                    if (patDb) {
+                        pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
+                        eId = patDb.encaminhador_id;
+                        
+                        if (pId && doctors[pId]) pName = doctors[pId].nome;
+                        if (eId && doctors[eId]) eName = doctors[eId].nome;
                     }
 
                     patientsTableObj[pacName] = { 
                         name: pacName, carteirinha: 'Apenas Planilha Interna', 
                         totalW: 0, totalU: 0, items: [], 
-                        docId: docId, docName: docDb ? docDb.nome : 'Sem médico vinculado',
-                        isPrescritor: isPresc, isEncaminhador: isEncam, docRoles: roles.join(' e ')
+                        pId: pId, pName: pName, eId: eId, eName: eName
                     };
                 }
             });
@@ -632,7 +643,9 @@
                 
                 if (filterPatient && key !== filterPatient) keep = false;
                 if (filterAuditoria === 'cruzados' && !nicolasAgrupado[key]) keep = false; 
-                if (filterRepasseDoc && pObj.docId !== filterRepasseDoc) keep = false; 
+                
+                // Se filtrar por um médico, mostra se ele for Prescritor OU Encaminhador
+                if (filterRepasseDoc && (pObj.pId !== filterRepasseDoc && pObj.eId !== filterRepasseDoc)) keep = false; 
                 
                 if(!keep) {
                     sumUnimed = Number((sumUnimed - pObj.totalU).toFixed(2));
@@ -650,7 +663,7 @@
                 document.getElementById('dashRepasseTotal').innerText = "R$ 0,00";
                 document.getElementById('dashMedCount').innerText = "0";
                 document.getElementById('dashDivergences').innerText = "0"; 
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
                 return; 
             }
 
@@ -658,25 +671,37 @@
             let htmlBuffer = "";
             
             patListToPrint.forEach((pat, idx) => {
-                const lucroBruto = Number((pat.totalU - pat.totalW).toFixed(2)); 
-                sumLucro = Number((sumLucro + lucroBruto).toFixed(2));
+                const faturamentoUnimed = pat.totalU;
+                const lucroApurado = pat.totalW; // A Planilha Interna É O LUCRO!
+                sumLucro = Number((sumLucro + lucroApurado).toFixed(2));
                 
-                let cls = 'bg-gray'; 
-                if (lucroBruto > 0.05) cls = 'bg-green'; 
-                if (lucroBruto < -0.05) { cls = 'bg-red'; divergencesCount++; }
-
-                // CALCULA O REPASSE FINANCEIRO DO PACIENTE (TRAVA DECIMAL)
-                const comissaoInfo = getComissaoInfo(pat.docName, pat.isPrescritor, pat.isEncaminhador);
+                // CALCULA O REPASSE FINANCEIRO SOBRE A PLANILHA INTERNA (LUCRO)
+                const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 let valorRepasse = 0;
-                if (lucroBruto > 0 && comissaoInfo.totalPerc > 0) {
-                    valorRepasse = Number((lucroBruto * (comissaoInfo.totalPerc / 100)).toFixed(2));
+                
+                // Só repassa se o Lucro da Planilha Interna for positivo
+                if (lucroApurado > 0 && comissaoInfo.totalPerc > 0) {
+                    valorRepasse = Number((lucroApurado * (comissaoInfo.totalPerc / 100)).toFixed(2));
                 }
                 sumRepasse = Number((sumRepasse + valorRepasse).toFixed(2));
 
-                // Montagem dos Badges Visuais
-                let rolesHtml = '';
-                if (pat.isPrescritor) rolesHtml += '<span class="badge prescritor" style="margin-right:4px;"><i class="fas fa-stethoscope"></i> Prescritor</span>';
-                if (pat.isEncaminhador) rolesHtml += '<span class="badge encaminhador"><i class="fas fa-share-square"></i> Encaminhador</span>';
+                // Construção visual dos Médicos
+                let docHtml = '';
+                if (pat.pName) docHtml += `<div style="font-size:11px; color:#be185d; font-weight:bold; margin-bottom:2px;"><i class="fas fa-stethoscope"></i> Prescritor: ${pat.pName}</div>`;
+                if (pat.eName) docHtml += `<div style="font-size:11px; color:#c2410c; font-weight:bold;"><i class="fas fa-share-square"></i> Encaminhador: ${pat.eName}</div>`;
+                if (!docHtml) docHtml = `<span style="color:#9ca3af; font-style:italic;">Sem médico vinculado</span>`;
+
+                // Badge do Repasse
+                let repasseBadge = '';
+                if (lucroApurado <= 0) {
+                    repasseBadge = `<span style="color:#9ca3af; font-size:11px; font-weight:bold;">Sem Lucro</span>`;
+                } else if (valorRepasse > 0) {
+                    repasseBadge = `<span class="badge bg-purple" title="P: ${comissaoInfo.percP}% | E: ${comissaoInfo.percE}%">
+                        ${comissaoInfo.totalPerc}% <br> R$ ${valorRepasse.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}
+                    </span>`;
+                } else {
+                    repasseBadge = `<span class="badge bg-gray">0%</span>`;
+                }
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
                         <td style="text-align:center;"><input type="checkbox" name="rowCheck" value="${pat.name}"></td>
@@ -684,32 +709,25 @@
                         <td style="font-weight:bold; color: #1f2937;">
                             ${pat.name}<br>
                             <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span><br>
-                            <span style="font-size: 11px; color: #00995D; font-weight: bold;"><i class="fas fa-user-md"></i> ${pat.docName}</span>
-                            <div style="margin-top:4px;">${rolesHtml}</div>
+                            <div style="margin-top:6px;">${docHtml}</div>
                         </td> 
-                        <td style="font-weight:600; color:#0284c7;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td> 
-                        <td style="font-weight:600;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td><span class="badge ${cls}">R$ ${lucroBruto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span></td>
-                        <td>
-                            <span class="badge bg-purple" title="${comissaoInfo.percPrescritor}% Prescritor + ${comissaoInfo.percEncaminhador}% Encaminhador">
-                                ${comissaoInfo.totalPerc}% <br> (R$ ${valorRepasse.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})})
-                            </span>
-                        </td>
+                        <td style="font-weight:600; color:#0284c7;">R$ ${faturamentoUnimed.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td> 
+                        <td style="font-weight:600; color:#166534;">R$ ${lucroApurado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:center;">${repasseBadge}</td>
                         <td style="text-align:center;"><button class="btn-icon-danger" title="Excluir" onclick="deleteRow('${pat.name}')"><i class="fas fa-trash"></i></button></td>
                     </tr>
-                    <tr id="L1-${idx}" class="row-detail"><td colspan="8"><table class="nested-table">
+                    <tr id="L1-${idx}" class="row-detail"><td colspan="7"><table class="nested-table">
                         <thead><tr>
                             <th>Data Atend.</th>
                             <th>Data Prev. Repasse</th>
                             <th>Descrição / TUSS Unificada</th>
                             <th style="text-align:center;">Tipo</th>
                             <th style="text-align:center;">Qtd/Mg</th>
-                            <th style="text-align:right;">Valor Unimed</th>
-                            <th style="text-align:right; color:#0284c7;">Valor Planilha Interna</th>
+                            <th style="text-align:right;">Faturamento Unimed</th>
+                            <th style="text-align:right; color:#166534;">Lucro (Planilha)</th>
                         </tr></thead><tbody>`;
 
                 let dateGroups = {};
-                
                 pat.items.forEach(item => {
                     if (!dateGroups[item.data]) dateGroups[item.data] = { unimedItems: [], nicItems: [] };
                     dateGroups[item.data].unimedItems.push(item);
@@ -731,13 +749,13 @@
                     let group = dateGroups[dDate];
                     
                     let diaUnimedTotal = 0;
-                    let diaNicTotal = 0;
+                    let diaLucroPlanilha = 0;
                     
                     let unimedToRender = [...group.unimedItems];
                     let nicolasToRender = [...group.nicItems];
 
                     unimedToRender.forEach(u => diaUnimedTotal += u.valorConsiderado);
-                    nicolasToRender.forEach(n => diaNicTotal += n.valor);
+                    nicolasToRender.forEach(n => diaLucroPlanilha += n.valor);
 
                     if (unimedToRender.length === 0) {
                         nicolasToRender.forEach(nic => {
@@ -745,7 +763,7 @@
                                 <td style="color:#b45309;">${dDate}</td><td>-</td>
                                 <td style="color:#b45309; font-style:italic;"><i class="fas fa-exclamation-triangle"></i> Lançamento Planilha: ${nic.descricao}</td>
                                 <td>-</td><td>-</td><td style="text-align:right;">-</td>
-                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nic.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                <td style="text-align:right; font-weight:bold; color:#166534;">R$ ${nic.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                             </tr>`;
                         });
                     } else {
@@ -754,7 +772,7 @@
                             let dataPrevista = calcularDataRepasse(item.competencia);
                             let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
                             
-                            let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Paciente não está vinculado à Dra Grazielly"' : '';
+                            let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Dra Grazielly não está vinculada à este paciente"' : '';
                             let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
                             
                             let matchIdx = -1;
@@ -773,7 +791,7 @@
 
                                 if (matchIdx !== -1) {
                                     let vP = nicolasToRender[matchIdx].valor;
-                                    valorPlanilhaVisual = `<span style="font-weight:bold; color:#0284c7;">R$ ${vP.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                                    valorPlanilhaVisual = `<span style="font-weight:bold; color:#166534;">R$ ${vP.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                                     nicolasToRender.splice(matchIdx, 1); 
                                 }
                             }
@@ -784,8 +802,8 @@
                                 <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento}</td>
                                 <td style="text-align:center;"><span class="badge bg-green" style="${item.isCortado ? 'background:#fee2e2; color:#dc2626; border-color:#fca5a5;' : ''}">${item.tipo}</span></td>
                                 <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
-                                <td style="text-align:right; font-weight:500;">${valorVisual}</td>
-                                <td style="text-align:right; background:#f0f9ff; border-left: 2px solid #bae6fd;">${valorPlanilhaVisual}</td>
+                                <td style="text-align:right; font-weight:500; color:#0284c7;">${valorVisual}</td>
+                                <td style="text-align:right; background:#f0fdf4; border-left: 2px solid #bbf7d0;">${valorPlanilhaVisual}</td>
                             </tr>`;
 
                             if (item.originais && item.originais.length > 1) {
@@ -794,8 +812,8 @@
                                         <td style="border-bottom:none;"></td><td></td>
                                         <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
                                         <td></td><td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
-                                        <td style="text-align:right; ${styleCorte}">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                        <td style="background:#f0f9ff; border-left: 2px solid #bae6fd;"></td>
+                                        <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                        <td style="background:#f0fdf4; border-left: 2px solid #bbf7d0;"></td>
                                     </tr>`;
                                 });
                             }
@@ -806,19 +824,18 @@
                                 <td style="color:#b45309;">${dDate}</td><td>-</td>
                                 <td style="color:#b45309; font-style:italic;"><i class="fas fa-exclamation-triangle"></i> Lançamento Planilha: ${nicExtra.descricao}</td>
                                 <td>-</td><td>-</td><td style="text-align:right;">-</td>
-                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicExtra.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                <td style="text-align:right; font-weight:bold; color:#166534;">R$ ${nicExtra.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                             </tr>`;
                         });
                         
-                        let diaLucro = Number((diaUnimedTotal - diaNicTotal).toFixed(2));
-                        let diaRepasseVal = diaLucro > 0 ? Number((diaLucro * (comissaoInfo.totalPerc / 100)).toFixed(2)) : 0;
+                        let diaRepasseVal = diaLucroPlanilha > 0 ? Number((diaLucroPlanilha * (comissaoInfo.totalPerc / 100)).toFixed(2)) : 0;
 
-                        htmlBuffer += `<tr style="background:#e0f2fe; border-top: 2px solid #bae6fd;">
-                            <td colspan="5" style="text-align:right; font-weight:bold; color:#0369a1; padding: 12px;">SUBTOTAL DO DIA (${dDate}):</td>
-                            <td style="text-align:right; font-weight:bold; color:#00855b; padding: 12px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                            <td style="text-align:right; font-weight:bold; color:#0284c7; padding: 12px;">
-                                R$ ${diaNicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}<br>
-                                <span style="font-size:10px; color:#7e22ce;">Lucro: R$ ${diaLucro.toLocaleString('pt-BR',{minimumFractionDigits:2})} | Repasse: R$ ${diaRepasseVal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+                        htmlBuffer += `<tr style="background:#f3f4f6; border-top: 2px solid #d1d5db;">
+                            <td colspan="5" style="text-align:right; font-weight:bold; color:#4b5563; padding: 12px;">SUBTOTAL DO DIA (${dDate}):</td>
+                            <td style="text-align:right; font-weight:bold; color:#0284c7; padding: 12px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td style="text-align:right; font-weight:bold; color:#166534; padding: 12px;">
+                                R$ ${diaLucroPlanilha.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}<br>
+                                <span style="font-size:10px; color:#7e22ce;">Repasse Gerado: R$ ${diaRepasseVal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
                             </td>
                         </tr>`;
                     }
@@ -831,7 +848,6 @@
             document.getElementById('dashLucroTotal').innerText = sumLucro.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashRepasseTotal').innerText = sumRepasse.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
-            document.getElementById('dashDivergences').innerText = divergencesCount; 
             tbody.innerHTML = htmlBuffer;
         }
 
@@ -881,7 +897,7 @@
                             <p><i class="fas fa-user-md"></i> Filtro: ${docNameExport}</p>
                         </div>
                     </div>`;
-            html += `<table><thead><tr><th>Paciente / Carteirinha</th><th>Total Planilha</th><th>Total Unimed</th><th>Lucro Bruto</th><th>Repasse Médico</th></tr></thead><tbody>`;
+            html += `<table><thead><tr><th>Paciente / Carteirinha</th><th>Faturamento Unimed</th><th>Lucro (Planilha)</th><th>Repasse Médico</th></tr></thead><tbody>`;
             
             let nicolasAgrupado = {};
             nicolasDataDb.forEach(nic => {
@@ -893,22 +909,25 @@
             const visualMap = JSON.parse(JSON.stringify(nicolasAgrupado));
 
             patListToPrint.forEach(pat => {
-                const lucro = Number((pat.totalU - pat.totalW).toFixed(2));
-                let colorDiff = lucro < -0.05 ? 'color:#dc2626;' : (lucro > 0.05 ? 'color:#166534;' : 'color:#333;');
+                const lucro = pat.totalW;
                 
-                const comissaoInfo = getComissaoInfo(pat.docName, pat.isPrescritor, pat.isEncaminhador);
+                const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 let valorRepasse = 0;
                 if(lucro > 0) valorRepasse = Number((lucro * (comissaoInfo.totalPerc / 100)).toFixed(2));
 
+                let rolesStr = '';
+                if (pat.pName) rolesStr += `P: ${pat.pName} `;
+                if (pat.eName) rolesStr += `E: ${pat.eName}`;
+                if (!rolesStr) rolesStr = 'Sem Vínculo';
+
                 html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
-                    <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${pat.docName} - ${pat.docRoles}</span></td>
-                    <td style="text-align:right;">R$ ${pat.totalW.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${rolesStr}</span></td>
                     <td style="text-align:right;">R$ ${pat.totalU.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td style="text-align:right; ${colorDiff}">R$ ${lucro.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td style="text-align:right; color:#166534;">R$ ${lucro.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                     <td style="text-align:center; color:#7e22ce;">${comissaoInfo.totalPerc}% (R$ ${valorRepasse.toLocaleString('pt-BR',{minimumFractionDigits:2})})</td>
                 </tr>`;
                 
-                html += `<tr><td colspan="5" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
+                html += `<tr><td colspan="4" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
                 html += `<tr><th style="width:10%;">Data Atend.</th><th style="width:10%;">Prev. Repasse</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Tipo</th><th style="width:5%;">Qtd</th><th style="width:12%;">Valor Unimed</th><th style="width:12%;">Valor Planilha</th></tr>`;
                 
                 let dateGroups = {};
@@ -945,7 +964,7 @@
                                 <td style="text-align:center; color:#b45309;">${dDate}</td><td style="text-align:center;">-</td>
                                 <td style="color:#b45309;">(Planilha Interna: ${nic.descricao})</td><td style="text-align:center;">-</td>
                                 <td style="text-align:center;">-</td><td style="text-align:right;">-</td>
-                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nic.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                <td style="text-align:right; font-weight:bold; color:#166534;">R$ ${nic.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                             </tr>`;
                         });
                     } else {
@@ -967,8 +986,8 @@
                                 <td style="text-align:center; ${styleCorte}">${item.data}</td>
                                 <td style="text-align:center; ${styleCorte}">${calcularDataRepasse(item.competencia)}</td>
                                 <td style="${styleCorte}">${item.medicamento}</td><td style="text-align:center;">${item.tipo}</td>
-                                <td style="text-align:center; ${styleCorte}">${item.mg}</td><td style="text-align:right;">R$ ${valU}</td>
-                                <td style="text-align:right; font-weight:bold; color:#0284c7;">${vPStr}</td>
+                                <td style="text-align:center; ${styleCorte}">${item.mg}</td><td style="text-align:right; color:#0284c7;">R$ ${valU}</td>
+                                <td style="text-align:right; font-weight:bold; color:#166534;">${vPStr}</td>
                             </tr>`;
                         });
 
@@ -977,14 +996,14 @@
                                 <td style="text-align:center; color:#b45309;">${dDate}</td><td style="text-align:center;">-</td>
                                 <td style="color:#b45309;">(Planilha Interna: ${nicExtra.descricao})</td><td style="text-align:center;">-</td>
                                 <td style="text-align:center;">-</td><td style="text-align:right;">-</td>
-                                <td style="text-align:right; font-weight:bold; color:#0284c7;">R$ ${nicExtra.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                <td style="text-align:right; font-weight:bold; color:#166534;">R$ ${nicExtra.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                             </tr>`;
                         });
 
-                        html += `<tr style="background:#f0f9ff; font-weight:bold;">
-                            <td colspan="5" style="text-align:right; color:#0369a1; padding:6px;">SUBTOTAL DO DIA (${dDate}):</td>
-                            <td style="text-align:right; color:#00855B; padding:6px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                            <td style="text-align:right; color:#0284c7; padding:6px;">R$ ${diaNicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        html += `<tr style="background:#f3f4f6; font-weight:bold;">
+                            <td colspan="5" style="text-align:right; color:#4b5563; padding:6px;">SUBTOTAL DO DIA (${dDate}):</td>
+                            <td style="text-align:right; color:#0284c7; padding:6px;">R$ ${diaUnimedTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td style="text-align:right; color:#166534; padding:6px;">R$ ${diaNicTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         </tr>`;
                     }
                 });
@@ -994,206 +1013,6 @@
             html += `</tbody></table></body><script>window.onload=()=>{window.print();}<\/script></html>`;
             win.document.write(html); 
             win.document.close();
-        }
-
-        // Funções Base Plantão...
-        function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
-        
-        function deleteSelected() { 
-            const c = document.getElementsByName('rowCheck'); 
-            let count = 0; 
-            for(let i=0; i<c.length; i++) { 
-                if(c[i].checked) { excludedPatients.add(c[i].value); count++; } 
-            } 
-            if (count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } 
-            else { alert("Selecione um paciente."); } 
-        }
-        
-        function deleteRow(paciente) { if(confirm("Excluir " + paciente + "?")) { excludedPatients.add(paciente); renderAnalysisTable(); } }
-        function switchShiftTab(tabId, element) { currentShiftTab = tabId; document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active')); element.classList.add('active'); updateRepassDoctorDropdown(); renderRepasseTable(); }
-        
-        async function loadDoctors() { 
-            try { 
-                const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
-                doctors = normalizeData(await r.json()); 
-                doctorList = Object.entries(doctors).filter(([,d]) => d.plantao==='sim').sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).map(([id,d]) => ({id, nome: d.nome}));
-                updateRepassDoctorDropdown();
-
-                // Popula o Filtro de Médicos do Repasse também!
-                const selRepasse = document.getElementById('filterRepasseDoctor');
-                Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
-                    selRepasse.add(new Option(doc.nome, id));
-                });
-
-            } catch(e) {}
-        }
-
-        function updateRepassDoctorDropdown() {
-            const sel = document.getElementById('filterDoctor');
-            if(!sel) return; 
-            sel.innerHTML = '<option value="">Todos</option>';
-            doctorList.forEach(doc => {
-                const dData = doctors[doc.id];
-                if (currentShiftTab === 'eco' && (!dData.eco || dData.eco === 'sim')) sel.add(new Option(doc.nome, doc.id));
-                if (currentShiftTab.startsWith('vita') && dData.vita === 'sim') sel.add(new Option(doc.nome, doc.id));
-                if (currentShiftTab === 'cirurgioes' && dData.cirurgiao === 'sim') sel.add(new Option(doc.nome, doc.id));
-            });
-        }
-
-        function getHolidays(y) { 
-            const pad = n => String(n).padStart(2,'0');
-            const h = { 
-                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
-                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
-                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
-            }; 
-            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
-            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
-            I = I - 30*Math.floor((I/30)); 
-            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
-            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
-            J = J - 7*Math.floor(J/7); 
-            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
-            
-            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
-            const add = (baseDate, days) => { 
-                const r = new Date(baseDate.getTime()); 
-                r.setDate(r.getDate() + days); 
-                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
-            }; 
-            
-            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
-            return h; 
-        }
-
-        async function renderRepasseTable() { 
-            const curY = parseInt(document.getElementById('selYearPlantao').value); 
-            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
-            const filterDoc = document.getElementById('filterDoctor').value; 
-            const moStr = String(curM+1).padStart(2,'0'); 
-            const baseSearchId = `${curY}-${moStr}`; 
-            const searchId = currentShiftTab === 'eco' ? baseSearchId : `${baseSearchId}-${currentShiftTab}`;
-            const endpoint = currentShiftTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentShiftTab}`;
-
-            try { 
-                const r = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS }); 
-                const allScales = normalizeData(await r.json());
-                let foundId = Object.keys(allScales).find(k => allScales[k].id_firebase === searchId || allScales[k].id === searchId || k === searchId);
-                shifts = foundId ? allScales[foundId] : {}; 
-            } catch(e) { shifts = {}; } 
-
-            const days = new Date(curY, curM+1, 0).getDate(); 
-            const holidays = getHolidays(curY); 
-            let grandTotal = 0; 
-            
-            let h = '<tr><th class="th-fixa">Médico</th>'; 
-            for (let i = 1; i <= days; i++) { 
-                const d = new Date(curY, curM, i, 12, 0, 0); 
-                const isWk = d.getDay()===0||d.getDay()===6; 
-                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                const isHol = !!holidays[isoDateStr]; 
-                h += `<th class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${i}</th>`; 
-            } 
-            h += '<th class="th-total">Qtd</th><th class="th-total">Total (R$)</th></tr>'; 
-            document.querySelector('#repTable thead').innerHTML = h; 
-            
-            let b = ''; 
-            Object.entries(doctors).filter(([,d]) => {
-                if (d.plantao !== 'sim') return false;
-                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
-                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
-                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
-                return false;
-            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=> (a[1].nome||'').localeCompare(b[1].nome||''))
-            .forEach(([id, doc]) => { 
-                let userTotal = 0; let countShifts = 0; let row = `<tr><td class="col-fixa">${doc.nome}</td>`; 
-                for (let i = 1; i <= days; i++) { 
-                    const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
-                    const d = new Date(curY, curM, i, 12, 0, 0); 
-                    const isWk = d.getDay()===0||d.getDay()===6; 
-                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                    const isHol = !!holidays[isoDateStr]; 
-                    let money = 0; 
-                    if(val && val !== 'S') { 
-                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
-                        if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
-                    } 
-                    userTotal += money; 
-                    row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${money || ''}</td>`; 
-                } 
-                grandTotal += userTotal; 
-                row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
-                if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
-            }); 
-            document.querySelector('#repTable tbody').innerHTML = b; 
-            document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
-        }
-
-        function generatePDF() { 
-            const curY = parseInt(document.getElementById('selYearPlantao').value); 
-            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
-            const win = window.open('', '_blank'); 
-            const periodStr = `${months[curM]} de ${curY}`; 
-            
-            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; 
-            let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
-            
-            if (currentShiftTab === 'vita_quimio') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Quimio)"; } 
-            else if (currentShiftTab === 'vita_sobreaviso') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Sobreaviso)"; } 
-            else if (currentShiftTab === 'cirurgioes') { LOGO_URL = "https://imgur.com/maJNHKc.png"; pdfTitle = "Relatório de Repasse Médico - Cirurgiões"; }
-
-            const holidays = getHolidays(curY); 
-            const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
-            
-            let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
-            for (let i = 1; i <= daysInMonth; i++) { 
-                const d = new Date(curY, curM, i, 12, 0, 0); 
-                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
-                const isHol = !!holidays[isoDateStr]; 
-                const isWk = d.getDay()===0||d.getDay()===6; 
-                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                const color = isHol ? '#DC2626' : '#333'; 
-                thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
-            } 
-            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL</th></tr>'; 
-            
-            let tbody = ''; 
-            let totalGeral = 0; 
-            
-            Object.entries(doctors).filter(([,d]) => {
-                if (d.plantao !== 'sim') return false;
-                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
-                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
-                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
-                return false;
-            }).filter(([id, d]) => document.getElementById('filterDoctor') && (document.getElementById('filterDoctor').value === "" || id === document.getElementById('filterDoctor').value)).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
-            .forEach(([id, doc]) => { 
-                let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
-                for (let i = 1; i <= daysInMonth; i++) { 
-                    const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
-                    const d = new Date(curY, curM, i, 12, 0, 0); 
-                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                    const isHol = !!holidays[isoDateStr]; 
-                    const isWk = d.getDay()===0||d.getDay()===6; 
-                    let money = 0; 
-                    if(val && val !== 'S') { 
-                        hasValue = true; 
-                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
-                        if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
-                    } 
-                    userTotal += money; 
-                    const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
-                } 
-                if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
-                    totalGeral += userTotal; 
-                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
-                } 
-            }); 
-            
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
-            win.document.write(html); 
-            win.document.close(); 
         }
 
         function normalizeData(apiData) {
