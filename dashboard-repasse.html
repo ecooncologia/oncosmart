@@ -16,7 +16,7 @@
     <style>
         body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
         
-        /* TELA INTEIRA COM PADDING DE RESPIRO */
+        /* TELA INTEIRA (100% WIDTH) COM PADDING DE RESPIRO */
         .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
         
         /* Controles do Topo */
@@ -52,10 +52,10 @@
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         
         /* Fundos Coloridos Suaves */
-        .kpi-card.total { background: #f3e8ff; } /* Roxo suave */
-        .kpi-card.plantao { background: #e0f2fe; } /* Azul suave */
-        .kpi-card.tratamento { background: #dcfce7; } /* Verde suave */
-        .kpi-card.particular { background: #fef3c7; } /* Laranja suave */
+        .kpi-card.total { background: #e9e0f2; }
+        .kpi-card.plantao { background: #d0e9f3; }
+        .kpi-card.tratamento { background: #bceec8; }
+        .kpi-card.particular { background: #fdebc3; }
 
         .kpi-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; position: relative;}
         .kpi-title { font-size: 12px; font-weight: 800; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -67,21 +67,23 @@
         .kpi-card.tratamento .kpi-icon { color: #059669; }
         .kpi-card.particular .kpi-icon { color: #d97706; }
 
-        /* Valores - Sobrepondo com cores vibrantes */
-        .kpi-value { font-size: 34px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; white-space: nowrap;}
-        .kpi-card.total .kpi-value { color: #7e22ce; font-size: 40px; }
-        .kpi-card.plantao .kpi-value { color: #0284c7; }
-        .kpi-card.tratamento .kpi-value { color: #059669; }
+        /* Valores Massiveis - Sobrepondo */
+        .kpi-value { font-size: 36px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; white-space: nowrap; }
+        .kpi-card.total .kpi-value { color: #7e22ce; }
 
-        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: space-between; z-index: 2; position: relative;}
+        /* Ajuste do Subtexto colado ao valor */
+        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; z-index: 2; position: relative; margin-top: auto;}
+        .kpi-subtext span { color: #111827; font-weight: 700; }
 
         /* Blocos de Detalhamento - Flexível */
         .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .details-column { display: flex; flex-direction: column; gap: 20px; }
+        .details-column.c1 { background: #fefeff; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
+        .details-column.c2 { background: #fdfdfe; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
         
         .detail-card { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; overflow: hidden; display: flex; flex-direction: column; }
         .detail-header { background: #ffffff; padding: 18px 22px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
-        .detail-header i { color: #00995D; font-size: 16px; }
+        .detail-header i { font-size: 16px; }
         
         /* Tabela Bonita */
         .modern-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
@@ -92,9 +94,6 @@
         
         .empty-state { padding: 40px 20px; text-align: center; color: #9ca3af; font-size: 14px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .empty-state i { font-size: 36px; color: #e5e7eb; }
-
-        .pending-row td { color: #d97706; }
-        .pending-row td:first-child { border-left: 3px solid #f59e0b; }
 
         /* Tabela Resumo Menor */
         .summary-table { width: 100%; font-size: 14px; }
@@ -164,7 +163,6 @@
             </div>
 
             <div class="kpi-row">
-                
                 <div class="kpi-card total" style="flex: 2 1 300px;">
                     <div class="kpi-header">
                         <span class="kpi-title">Total a Receber</span>
@@ -200,16 +198,16 @@
                         <div class="kpi-icon"><i class="fas fa-user-friends"></i></div>
                     </div>
                     <p class="kpi-value" id="kpiTotalPart">R$ 0,00</p>
-                    <div class="kpi-subtext">Atendimentos: <span>0</span></div>
+                    <div class="kpi-subtext">Atendimentos: <span id="kpiPartAtend">0</span></div>
                 </div>
             </div>
 
             <div class="details-grid">
                 
-                <div class="details-column">
+                <div class="details-column c1">
                     
                     <div class="detail-card">
-                        <div class="detail-header">
+                        <div class="detail-header" style="color: #0284c7;">
                             <i class="fas fa-user-md" style="color: #0ea5e9;"></i> Resumo de Sala Médica (Plantões)
                         </div>
                         <table class="summary-table">
@@ -227,8 +225,8 @@
                     </div>
 
                     <div class="detail-card">
-                        <div class="detail-header">
-                            <i class="fas fa-chart-pie"></i> Resumo Analítico - Tratamentos
+                        <div class="detail-header" style="color: #059669;">
+                            <i class="fas fa-chart-pie" style="color: #10b981;"></i> Resumo Analítico - Tratamentos
                         </div>
                         <table class="summary-table">
                             <tbody>
@@ -237,7 +235,7 @@
                                     <td class="summary-val" id="detTratPac">0</td>
                                 </tr>
                                 <tr>
-                                    <td class="summary-label">Volume Total de Atendimentos (Itens/Aplicações)</td>
+                                    <td class="summary-label">Volume Total de Atendimentos (Itens)</td>
                                     <td class="summary-val" id="detTratItens">0</td>
                                 </tr>
                                 <tr>
@@ -249,8 +247,8 @@
                     </div>
 
                     <div class="detail-card">
-                        <div class="detail-header">
-                            <i class="fas fa-building"></i> Consultas - Convênio (Prédio)
+                        <div class="detail-header" style="color: #1f2937;">
+                            <i class="fas fa-building" style="color: #6b7280;"></i> Consultas - Convênio (Prédio)
                         </div>
                         <div class="coming-soon">Integração com o Módulo em Breve</div>
                         <table class="summary-table" style="opacity: 0.5;">
@@ -274,11 +272,11 @@
 
                 </div>
 
-                <div class="details-column">
+                <div class="details-column c2">
                     
                     <div class="detail-card" style="flex: 1;">
-                        <div class="detail-header">
-                            <i class="fas fa-list-check"></i> Relação de Pacientes Pagos (Tratamentos)
+                        <div class="detail-header" style="color: #059669;">
+                            <i class="fas fa-list-check" style="color: #10b981;"></i> Relação de Pacientes Pagos (Tratamentos)
                         </div>
                         <div class="list-container">
                             <table class="modern-table">
@@ -347,6 +345,7 @@
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
 
+        // Lógica Exata de Repasse (Maikol / Grupo Mama = Encaminhador Especial 37.5%)
         function getComissaoInfo(pName, eName) {
             let percP = 0; let percE = 0;
             const grupoMama = [
@@ -484,7 +483,7 @@
             const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento'];
             elsToReset.forEach(id => {
                 let el = document.getElementById(id);
-                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>';
+                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:30px;"></i>';
             });
             
             let tbPac = document.getElementById('tablePacientesTrat');
@@ -502,16 +501,22 @@
                 // ------------------------------------------------
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
-                const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
+                
+                const shiftTabs = [
+                    { url: '/escala_mensal', tab: 'eco' },
+                    { url: '/escala_mensal_vita_quimio', tab: 'vita_quimio' },
+                    { url: '/escala_mensal_vita_sobreaviso', tab: 'vita_sobreaviso' },
+                    { url: '/escala_mensal_cirurgioes', tab: 'cirurgioes' }
+                ];
+                
                 const holidays = getHolidays(yr);
                 const daysInMonth = new Date(yr, mo+1, 0).getDate();
 
-                for (let ep of endpoints) {
+                for (let ep of shiftTabs) {
                     try {
-                        let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
-                        let searchId = tabName === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${tabName}`;
+                        let searchId = ep.tab === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${ep.tab}`;
                         
-                        const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
+                        const r = await fetch(`${API_BASE_URL}${ep.url}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (r.ok) {
                             const dataObj = normalizeData(await r.json());
                             let foundId = Object.keys(dataObj).find(k => {
@@ -544,10 +549,10 @@
                                 }
                             }
                         }
-                    } catch(e) {}
+                    } catch(e) { console.error("Erro ao puxar tab", ep.tab, e); }
                 }
 
-                // Proteção para não dar erro se não achar o elemento - Agora Variável Correta!
+                // Injeta na UI do Plantão
                 let elPlantTurnos = document.getElementById('kpiPlantTurnos');
                 if(elPlantTurnos) elPlantTurnos.innerText = turnosPlantao;
                 
@@ -577,6 +582,7 @@
                     uData.forEach(d => {
                         let pac = String(d.paciente || '').toUpperCase().trim();
                         if(!pac) return;
+                        
                         let patId = generatePatientId(pac);
                         let patDb = pacientesDb[patId];
                         
@@ -651,6 +657,7 @@
 
                 } catch(e) {}
 
+                // Injeta na UI de Tratamento
                 let elKpiTratPac = document.getElementById('kpiTratPac');
                 if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
                 
@@ -675,7 +682,7 @@
                 // ------------------------------------------------
                 // 3. TOTAL GERAL (SOMA TUDO)
                 // ------------------------------------------------
-                let valorParticular = 0; // Mockado até integrar módulo particular
+                let valorParticular = 0; // Preparado para o futuro
                 let totalGeral = valorPlantao + valorTratamento + valorParticular;
                 
                 let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
