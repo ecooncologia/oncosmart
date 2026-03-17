@@ -35,13 +35,13 @@
         .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e5e7eb; }
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .dash-header-title h1 { margin: 0; font-size: 26px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
-        .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 15px; font-weight: 500; }
+        .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 15px; font-weight: 500; text-transform: uppercase; }
         .dash-header-title i { color: #00995D; }
         
         /* Logo Oculta na Tela (Só aparece na Impressão) */
-        .print-logo { display: none; height: 50px; object-fit: contain; }
+        .print-logo { display: none; height: 65px; object-fit: contain; }
 
         /* Grid de KPIs Principais */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
@@ -104,7 +104,7 @@
         /* Em Breve Banner */
         .coming-soon { background: #fefce8; border: 1px dashed #fcd34d; padding: 15px; text-align: center; color: #b45309; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* Impressão - Regras de Paisagem e Ocultação */
+        /* Impressão */
         @media print {
             body { background: white; -webkit-print-color-adjust: exact; }
             .controls, #global-header, #global-nav { display: none !important; }
@@ -133,15 +133,15 @@
             <div class="controls-group">
                 <div class="input-group" style="width: 320px;">
                     <label class="label-title">Selecione o Médico</label>
-                    <select id="dashSelectDoctor" class="input-field"></select>
+                    <select id="dashSelectDoctor" class="input-field" onchange="renderDashboard()"></select>
                 </div>
                 <div class="input-group" style="width: 150px;">
                     <label class="label-title">Mês de Referência</label>
-                    <select id="dashSelectMonth" class="input-field"></select>
+                    <select id="dashSelectMonth" class="input-field" onchange="renderDashboard()"></select>
                 </div>
                 <div class="input-group" style="width: 110px;">
                     <label class="label-title">Ano</label>
-                    <select id="dashSelectYear" class="input-field"></select>
+                    <select id="dashSelectYear" class="input-field" onchange="renderDashboard()"></select>
                 </div>
             </div>
             <button class="btn-print" onclick="window.print()">
@@ -479,7 +479,11 @@
                         const r = await fetch(`${API_BASE_URL}${ep}`, { headers: API_HEADERS });
                         if (r.ok) {
                             const dataObj = normalizeData(await r.json());
-                            let foundId = Object.keys(dataObj).find(k => dataObj[k] && typeof dataObj[k] === 'object' && (dataObj[k].id_firebase === searchId || dataObj[k].id === searchId));
+                            let foundId = Object.keys(dataObj).find(k => {
+                                let item = dataObj[k];
+                                if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
+                                return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
+                            });
                             let dbShifts = foundId ? dataObj[foundId] : {};
 
                             if (dbShifts[docId]) {
@@ -549,7 +553,7 @@
                             let fatItem = Number(parseFloat(d.valor_pago || 0).toFixed(2));
                             let isTaxa = String(d.descricao).toUpperCase().includes('TAXA') || String(d.tipo).toUpperCase() === 'HOS';
                             
-                            // Regra da Grazielly (Só ela pontua taxa)
+                            // Regra da Grazielly
                             let isGrazielly = (agrupamentoPaciente[pac].pName.toUpperCase().includes('GRAZIELLY')) || (agrupamentoPaciente[pac].eName.toUpperCase().includes('GRAZIELLY'));
                             let isCortado = isTaxa && !isGrazielly;
                             
@@ -608,14 +612,14 @@
                 document.getElementById('kpiTotalTratamento').innerText = `R$ ${valorTratamento.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
                 if (htmlTratamentosLista === '') {
-                    htmlTratamentosLista = `<tr><td colspan="2"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com repasse gerado neste período.</div></td></tr>`;
+                    htmlTratamentosLista = `<tr><td colspan="2"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com lucro para repasse neste mês.</div></td></tr>`;
                 }
                 document.getElementById('tablePacientesTrat').innerHTML = htmlTratamentosLista;
 
                 // ------------------------------------------------
                 // 3. TOTAL GERAL E FINALIZAÇÃO
                 // ------------------------------------------------
-                let valorParticular = 0; // Preparado para o futuro
+                let valorParticular = 0; // Mockado até integrar módulo particular
                 let totalGeral = valorPlantao + valorTratamento + valorParticular;
                 document.getElementById('kpiTotalGeral').innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
