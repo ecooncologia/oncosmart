@@ -63,10 +63,6 @@
         .bg-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         .bg-gray { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
-        .bg-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; } 
-        
-        .prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
-        .encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
         
         .row-parent { cursor: pointer; background-color: #fff; transition: background 0.2s; }
         .row-parent:hover { background-color: #f9fafb; }
@@ -227,9 +223,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // VARIÁVEIS GLOBAIS E BASE
-        // ==========================================
         let excelData = []; 
         let doctorList = []; 
         let currentShiftTab = 'eco'; 
@@ -238,7 +231,7 @@
         let pacientesDb = {};
         let patListToPrint = []; 
 
-        const IMPOSTO_TAXA = 0.1233; // 12,33%
+        const IMPOSTO_TAXA = 0.1233;
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
         const generatePatientId = (name) => {
@@ -279,13 +272,8 @@
             return str;
         }
 
-        // ==========================================
-        // MOTOR DE CÁLCULO DE REPASSE (A ORIGEM)
-        // ==========================================
         function getComissaoInfo(pName, eName) {
-            let percP = 0;
-            let percE = 0;
-            
+            let percP = 0; let percE = 0;
             const grupoMama = [
                 'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
                 'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
@@ -293,7 +281,6 @@
                 'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO',
                 'MAIKOL'
             ];
-
             const isSpecial = (name) => {
                 if(!name) return false;
                 let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -306,9 +293,30 @@
             return { percP, percE, totalPerc: percP + percE };
         }
 
-        // ==========================================
-        // INICIALIZAÇÃO DA TELA (DOM LOAD)
-        // ==========================================
+        function getHolidays(y) { 
+            const pad = n => String(n).padStart(2,'0');
+            const h = { 
+                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
+                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
+                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
+            }; 
+            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
+            I = I - 30*Math.floor((I/30)); 
+            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
+            J = J - 7*Math.floor(J/7); 
+            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
+            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
+            const add = (baseDate, days) => { 
+                const r = new Date(baseDate.getTime()); 
+                r.setDate(r.getDate() + days); 
+                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
+            }; 
+            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
+            return h; 
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
             const now = new Date(); 
@@ -337,9 +345,6 @@
             fetchBotData();       
         });
 
-        // ==========================================
-        // FUNÇÕES DE INTERFACE E EVENTOS
-        // ==========================================
         function openTab(t){ 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -380,9 +385,6 @@
             }
         }
 
-        // ==========================================
-        // REQUISIÇÕES DE DADOS (API / BD)
-        // ==========================================
         async function loadDoctors() { 
             try { 
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
@@ -807,7 +809,7 @@
         }
 
         // ==========================================
-        // RENDER - ESCALA DE PLANTÃO (AGORA SÓ VALORES R$)
+        // RENDER - ESCALA DE PLANTÃO (BLINDADO)
         // ==========================================
         async function renderRepasseTable() { 
             const curY = parseInt(document.getElementById('selYearPlantao').value); 
@@ -820,14 +822,16 @@
             const endpoint = currentShiftTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentShiftTab}`;
 
             try { 
-                const r = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS }); 
+                // Adicionado ?t= para evitar que o cache do navegador prenda dados velhos
+                const r = await fetch(`${API_BASE_URL}${endpoint}?t=${Date.now()}`, { headers: API_HEADERS }); 
                 const allScales = normalizeData(await r.json());
                 
-                // Busca robusta de ID (Firebase key vs property ID)
-                let foundId = Object.keys(allScales).find(k => 
-                    allScales[k] && typeof allScales[k] === 'object' && 
-                    (allScales[k].id_firebase === searchId || allScales[k].id === searchId || k === searchId)
-                );
+                let foundId = Object.keys(allScales).find(k => {
+                    let item = allScales[k];
+                    if(typeof item === 'string') { try { item = JSON.parse(item); allScales[k] = item; } catch(e){} }
+                    return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
+                });
+                
                 shifts = foundId ? allScales[foundId] : {}; 
             } catch(e) { shifts = {}; } 
 
@@ -870,7 +874,8 @@
                     } 
                     userTotal += money; 
                     
-                    row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${money || ''}</td>`; 
+                    // Exibe o Dinheiro
+                    row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}" style="color:#0369a1; font-weight:bold;">${money > 0 ? money : ''}</td>`; 
                 } 
                 grandTotal += userTotal; 
                 row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
@@ -882,9 +887,6 @@
             document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
         }
 
-        // ==========================================
-        // 🖨️ EXPORTAÇÃO PDF DA ESCALA
-        // ==========================================
         function generatePlantaoPDF() { 
             const curY = parseInt(document.getElementById('selYearPlantao').value); 
             const curM = parseInt(document.getElementById('selMonthPlantao').value); 
@@ -942,7 +944,7 @@
                     userTotal += money; 
                     
                     const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
+                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money > 0 ? money : ''}</td>`; 
                 } 
                 if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
                     totalGeral += userTotal; 
