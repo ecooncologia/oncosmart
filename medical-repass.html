@@ -45,7 +45,7 @@
         .btn-danger-block:hover { background: #b91c1c; }
         
         .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .card-stat { background: white; flex: 1; min-width: 180px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat { background: white; flex: 1; min-width: 170px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 10px; text-transform: uppercase; font-weight: 800; }
         .card-stat h2 { margin: 0; color: #1f2937; font-size: 20px; }
         .card-stat.imposto { border-left-color: #ef4444; }
@@ -100,7 +100,7 @@
 
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="openTab('plantao')">Escala Plantão</button>
-            <button class="tab-btn" onclick="openTab('unimed')">Repasse Unimed</button>
+            <button class="tab-btn" onclick="openTab('unimed')">Repasse Inteligente</button>
         </div>
 
         <div id="tab-plantao" class="tab-content active">
@@ -197,7 +197,7 @@
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn-print" onclick="generateUnimedPDF()">
-                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                        <i class="fas fa-file-pdf"></i> Exportar Auditoria
                     </button>
                 </div>
             </div>
@@ -280,7 +280,7 @@
         }
 
         // ==========================================
-        // MOTOR DE CÁLCULO DE REPASSE
+        // MOTOR DE CÁLCULO DE REPASSE (A ORIGEM)
         // ==========================================
         function getComissaoInfo(pName, eName) {
             let percP = 0;
@@ -306,34 +306,8 @@
             return { percP, percE, totalPerc: percP + percE };
         }
 
-        function getHolidays(y) { 
-            const pad = n => String(n).padStart(2,'0');
-            const h = { 
-                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
-                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
-                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
-            }; 
-            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
-            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
-            I = I - 30*Math.floor((I/30)); 
-            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
-            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
-            J = J - 7*Math.floor(J/7); 
-            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
-            
-            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
-            const add = (baseDate, days) => { 
-                const r = new Date(baseDate.getTime()); 
-                r.setDate(r.getDate() + days); 
-                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
-            }; 
-            
-            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
-            return h; 
-        }
-
         // ==========================================
-        // INICIALIZAÇÃO DA TELA
+        // INICIALIZAÇÃO DA TELA (DOM LOAD)
         // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
@@ -463,7 +437,6 @@
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
                     let custoDb = row.custo_informado || extras.custo_informado || 0;
-
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
@@ -593,9 +566,8 @@
                 if (filterPatient && key !== filterPatient) keep = false;
                 if (filterRepasseDoc && (pObj.pId !== filterRepasseDoc && pObj.eId !== filterRepasseDoc)) keep = false; 
                 
-                if(!keep) {
-                    delete patientsTableObj[key];
-                } else {
+                if(!keep) delete patientsTableObj[key];
+                else {
                     sumUnimedGlobal += pObj.fatPaciente;
                     sumImpostoGlobal += pObj.impostoPaciente;
                     sumCustoGlobal += pObj.custoPaciente;
@@ -718,7 +690,7 @@
         }
 
         // ==========================================
-        // 🖨️ EXPORTAÇÃO PDF
+        // 🖨️ EXPORTAÇÃO PDF DA AUDITORIA
         // ==========================================
         function generateUnimedPDF() {
             if (patListToPrint.length === 0) return alert("Não há dados para exportar.");
@@ -834,74 +806,9 @@
             win.document.close();
         }
 
-        function generatePlantaoPDF() { 
-            const curY = parseInt(document.getElementById('selYearPlantao').value); 
-            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
-            const filterDoc = document.getElementById('filterDoctorPlantao').value;
-            const win = window.open('', '_blank'); 
-            const periodStr = `${months[curM]} de ${curY}`; 
-            
-            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; 
-            let pdfTitle = "Relatório de Plantão - Eco Oncologia";
-            
-            if (currentShiftTab === 'vita_quimio') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Plantão - Hospital Vita (Quimio)"; } 
-            else if (currentShiftTab === 'vita_sobreaviso') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Plantão - Hospital Vita (Sobreaviso)"; } 
-            else if (currentShiftTab === 'cirurgioes') { LOGO_URL = "https://imgur.com/maJNHKc.png"; pdfTitle = "Relatório de Plantão - Cirurgiões"; }
-
-            const holidays = getHolidays(curY); 
-            const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
-            
-            let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
-            for (let i = 1; i <= daysInMonth; i++) { 
-                const d = new Date(curY, curM, i, 12, 0, 0); 
-                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
-                const isHol = !!holidays[isoDateStr]; 
-                const isWk = d.getDay()===0||d.getDay()===6; 
-                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                const color = isHol ? '#DC2626' : '#333'; 
-                thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
-            } 
-            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL</th></tr>'; 
-            
-            let tbody = ''; 
-            let totalGeral = 0; 
-            
-            Object.entries(doctors).filter(([,d]) => {
-                if (d.plantao !== 'sim') return false;
-                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
-                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
-                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
-                return false;
-            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=> (a[1].nome||'').localeCompare(b[1].nome||''))
-            .forEach(([id, doc]) => { 
-                let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
-                for (let i = 1; i <= daysInMonth; i++) { 
-                    const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
-                    const d = new Date(curY, curM, i, 12, 0, 0); 
-                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                    const isHol = !!holidays[isoDateStr]; 
-                    const isWk = d.getDay()===0||d.getDay()===6; 
-                    let money = 0; 
-                    if(val && val !== 'S') { 
-                        hasValue = true; 
-                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
-                        if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
-                    } 
-                    userTotal += money; 
-                    const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
-                } 
-                if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
-                    totalGeral += userTotal; 
-                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
-                } 
-            }); 
-            
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
-            win.document.write(html); 
-            win.document.close(); 
-        }
-
+        // ==========================================
+        // RENDER - ESCALA DE PLANTÃO (AGORA SÓ VALORES R$)
+        // ==========================================
         async function renderRepasseTable() { 
             const curY = parseInt(document.getElementById('selYearPlantao').value); 
             const curM = parseInt(document.getElementById('selMonthPlantao').value); 
@@ -916,7 +823,7 @@
                 const r = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS }); 
                 const allScales = normalizeData(await r.json());
                 
-                // Busca de ID robusta: procura na chave, no id_firebase ou no id.
+                // Busca robusta de ID (Firebase key vs property ID)
                 let foundId = Object.keys(allScales).find(k => 
                     allScales[k] && typeof allScales[k] === 'object' && 
                     (allScales[k].id_firebase === searchId || allScales[k].id === searchId || k === searchId)
@@ -955,6 +862,7 @@
                     const isWk = d.getDay()===0||d.getDay()===6; 
                     const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                     const isHol = !!holidays[isoDateStr]; 
+                    
                     let money = 0; 
                     if(val && val !== 'S') { 
                         if (val === 'M/T') countShifts += 2; else countShifts += 1; 
@@ -962,13 +870,7 @@
                     } 
                     userTotal += money; 
                     
-                    let txtColor = '#333';
-                    if (val === 'M') txtColor = '#92400E';
-                    if (val === 'T') txtColor = '#6B21A8';
-                    if (val === 'M/T') txtColor = '#9D174D';
-                    if (val === 'S') txtColor = '#0369A1';
-                    
-                    row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}" style="color:${txtColor}; font-weight:bold;">${val}</td>`; 
+                    row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${money || ''}</td>`; 
                 } 
                 grandTotal += userTotal; 
                 row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
@@ -978,6 +880,79 @@
             if (b === '') b = `<tr><td colspan="${days+3}" style="text-align:center; padding:20px; color:#6b7280;">Nenhuma escala encontrada para este filtro.</td></tr>`;
             document.querySelector('#repTable tbody').innerHTML = b; 
             document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
+        }
+
+        // ==========================================
+        // 🖨️ EXPORTAÇÃO PDF DA ESCALA
+        // ==========================================
+        function generatePlantaoPDF() { 
+            const curY = parseInt(document.getElementById('selYearPlantao').value); 
+            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
+            const filterDoc = document.getElementById('filterDoctorPlantao').value;
+            const win = window.open('', '_blank'); 
+            const periodStr = `${months[curM]} de ${curY}`; 
+            
+            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; 
+            let pdfTitle = "Relatório Financeiro de Plantões - Eco Oncologia";
+            
+            if (currentShiftTab === 'vita_quimio') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório Financeiro de Plantões - Hospital Vita (Quimio)"; } 
+            else if (currentShiftTab === 'vita_sobreaviso') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório Financeiro de Plantões - Hospital Vita (Sobreaviso)"; } 
+            else if (currentShiftTab === 'cirurgioes') { LOGO_URL = "https://imgur.com/maJNHKc.png"; pdfTitle = "Relatório Financeiro de Plantões - Cirurgiões"; }
+
+            const holidays = getHolidays(curY); 
+            const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
+            
+            let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
+            for (let i = 1; i <= daysInMonth; i++) { 
+                const d = new Date(curY, curM, i, 12, 0, 0); 
+                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
+                const isHol = !!holidays[isoDateStr]; 
+                const isWk = d.getDay()===0||d.getDay()===6; 
+                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                const color = isHol ? '#DC2626' : '#333'; 
+                thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
+            } 
+            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL (R$)</th></tr>'; 
+            
+            let tbody = ''; 
+            let totalGeral = 0; 
+            
+            Object.entries(doctors).filter(([,d]) => {
+                if (d.plantao !== 'sim') return false;
+                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
+                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
+                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
+                return false;
+            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
+            .forEach(([id, doc]) => { 
+                let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
+                for (let i = 1; i <= daysInMonth; i++) { 
+                    const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
+                    const d = new Date(curY, curM, i, 12, 0, 0); 
+                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                    const isHol = !!holidays[isoDateStr]; 
+                    const isWk = d.getDay()===0||d.getDay()===6; 
+                    
+                    let money = 0; 
+                    if(val && val !== 'S') { 
+                        hasValue = true; 
+                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
+                        if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
+                    } 
+                    userTotal += money; 
+                    
+                    const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
+                } 
+                if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
+                    totalGeral += userTotal; 
+                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
+                } 
+            }); 
+            
+            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
+            win.document.write(html); 
+            win.document.close(); 
         }
     </script>
 </body>
