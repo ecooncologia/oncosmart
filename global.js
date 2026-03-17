@@ -25,7 +25,7 @@ const APP_PAGES = [
     { id: 'pacientes', label: 'Pacientes', file: 'pacientes.html', perm: 'pacientes' },
     { id: 'shifts', label: 'Plantão', file: 'shifts.html', perm: 'plantao' },
     { id: 'repass', label: 'Repasse', file: 'medical-repass.html', perm: 'repasse' },
-    { id: 'repass', label: 'Dashboard Repasse', file: 'medical-repass.html', perm: 'repasse_dash' },
+    { id: 'repass', label: 'Dashboard Repasse', file: 'dashboard-repasse.html', perm: 'repass_dash' },
     { id: 'stenci', label: 'Stenci', file: 'stenci.html', perm: 'stenci' },
     { id: 'selos', label: 'Selos', file: 'selos.html', perm: 'selos' },
     { id: 'eventos', label: 'Eventos', file: 'eventos.html', perm: 'eventos' },
