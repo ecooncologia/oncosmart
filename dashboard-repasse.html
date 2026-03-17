@@ -16,10 +16,8 @@
     <style>
         body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
         
-        /* TELA INTEIRA (100% WIDTH) COM PADDING DE RESPIRO */
         .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
         
-        /* Controles do Topo */
         .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
@@ -31,9 +29,6 @@
         .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-print:hover { background: #374151; transform: translateY(-2px); }
 
-        /* ========================================================
-           DESIGN MODERNO "FORA DO ESQUADRO" COM CORES SUAVES
-           ======================================================== */
         .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -42,41 +37,35 @@
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 15px; font-weight: 500; text-transform: uppercase; }
         .dash-header-title i { color: #00995D; }
         
-        /* Logo Oculta na Tela (Só aparece na Impressão) */
         .print-logo { display: none; height: 65px; object-fit: contain; }
 
-        /* Grid de KPIs - Quebrado (Fora do esquadro) */
         .kpi-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; margin-bottom: 25px; }
         
         .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         
-        /* Fundos Coloridos Suaves */
         .kpi-card.total { background: #e9e0f2; }
         .kpi-card.plantao { background: #d0e9f3; }
         .kpi-card.tratamento { background: #bceec8; }
         .kpi-card.particular { background: #fdebc3; }
 
         .kpi-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; position: relative;}
-        .kpi-title { font-size: 12px; font-weight: 800; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-title { font-size: 12px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: rgba(255,255,255,0.7); }
         
-        /* Cores dos Ícones */
         .kpi-card.total .kpi-icon { color: #7e22ce; }
         .kpi-card.plantao .kpi-icon { color: #0284c7; }
         .kpi-card.tratamento .kpi-icon { color: #059669; }
         .kpi-card.particular .kpi-icon { color: #d97706; }
 
-        /* Valores Massiveis - Sobrepondo */
         .kpi-value { font-size: 36px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; white-space: nowrap; }
         .kpi-card.total .kpi-value { color: #7e22ce; }
 
-        /* Ajuste do Subtexto colado ao valor */
         .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; z-index: 2; position: relative; margin-top: auto;}
         .kpi-subtext span { color: #111827; font-weight: 700; }
 
-        /* Blocos de Detalhamento - Flexível */
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        /* Blocos Menores Empilhados */
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-bottom: 25px;}
         .details-column { display: flex; flex-direction: column; gap: 20px; }
         .details-column.c1 { background: #fefeff; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
         .details-column.c2 { background: #fdfdfe; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
@@ -85,7 +74,9 @@
         .detail-header { background: #ffffff; padding: 18px 22px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .detail-header i { font-size: 16px; }
         
-        /* Tabela Bonita */
+        /* O Bloco Gigante de Pacientes agora fica sozinho e largo embaixo */
+        .giant-list-card { margin-top: 20px; }
+
         .modern-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         .modern-table th { background: #f9fafb; color: #6b7280; font-weight: 700; padding: 12px 22px; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 1;}
         .modern-table td { padding: 14px 22px; border-bottom: 1px solid #f3f4f6; color: #374151; font-weight: 600; }
@@ -95,7 +86,6 @@
         .empty-state { padding: 40px 20px; text-align: center; color: #9ca3af; font-size: 14px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .empty-state i { font-size: 36px; color: #e5e7eb; }
 
-        /* Tabela Resumo Menor */
         .summary-table { width: 100%; font-size: 14px; }
         .summary-table td { padding: 16px 22px; border-bottom: 1px dashed #e5e7eb; }
         .summary-table tr:last-child td { border-bottom: none; }
@@ -103,23 +93,28 @@
         .summary-val { color: #111827; font-weight: 800; text-align: right; }
 
         .list-container { max-height: 500px; overflow-y: auto; }
-
-        /* Em Breve Banner */
+        
+        /* Banner amarelo */
         .coming-soon { background: #fefce8; border: 1px dashed #fcd34d; padding: 15px; text-align: center; color: #b45309; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* Impressão - Regras de Paisagem e Ocultação */
+        /* Impressão - A mágica para não cortar nada */
         @media print {
-            body { background: white; -webkit-print-color-adjust: exact; }
+            body { background: white; -webkit-print-color-adjust: exact; margin: 0; padding: 0;}
             .controls, #global-header, #global-nav { display: none !important; }
             .modern-dashboard { display: block !important; animation: none; }
-            .container { padding: 0; max-width: 100%; }
+            .container { padding: 0; margin: 0; max-width: 100%; width: 100%; }
             .print-logo { display: block; margin-bottom: 10px; }
             .dash-header { align-items: flex-end; border-bottom: 3px solid #00995D; padding-bottom: 15px; margin-bottom: 20px; }
             .kpi-card { box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; }
             .detail-card { box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; }
             .list-container { max-height: none; overflow: visible; }
-            .details-grid { grid-template-columns: 1fr 1fr !important; }
-            @page { size: landscape; margin: 12mm; }
+            
+            /* Ajuste fino para encaixar no PDF sem cortar as bordas laterais */
+            .details-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; width: 100%; margin: 0;}
+            .kpi-row { gap: 10px; margin-bottom: 15px;}
+            .details-column { gap: 10px; padding: 5px; border: none; }
+            
+            @page { size: landscape; margin: 10mm; }
         }
 
         @media (max-width: 1024px) {
@@ -189,7 +184,7 @@
                         <div class="kpi-icon"><i class="fas fa-hospital"></i></div>
                     </div>
                     <p class="kpi-value" id="kpiTotalPlantao">R$ 0,00</p>
-                    <div class="kpi-subtext">Total de turnos: <span id="kpiPlantTurnos">0</span></div>
+                    <div class="kpi-subtext">Turnos cumpridos: <span id="kpiPlantTurnos">0</span></div>
                 </div>
 
                 <div class="kpi-card particular">
@@ -205,7 +200,6 @@
             <div class="details-grid">
                 
                 <div class="details-column c1">
-                    
                     <div class="detail-card">
                         <div class="detail-header" style="color: #0284c7;">
                             <i class="fas fa-user-md" style="color: #0ea5e9;"></i> Resumo de Sala Médica (Plantões)
@@ -219,28 +213,6 @@
                                 <tr>
                                     <td class="summary-label">Valor Apurado na Escala</td>
                                     <td class="summary-val" id="detPlantValor" style="color: #0284c7;">R$ 0,00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="detail-card">
-                        <div class="detail-header" style="color: #059669;">
-                            <i class="fas fa-chart-pie" style="color: #10b981;"></i> Resumo Analítico - Tratamentos
-                        </div>
-                        <table class="summary-table">
-                            <tbody>
-                                <tr>
-                                    <td class="summary-label">Volume Total de Pacientes</td>
-                                    <td class="summary-val" id="detTratPac">0</td>
-                                </tr>
-                                <tr>
-                                    <td class="summary-label">Volume Total de Atendimentos (Itens)</td>
-                                    <td class="summary-val" id="detTratItens">0</td>
-                                </tr>
-                                <tr>
-                                    <td class="summary-label">Repasse Apurado</td>
-                                    <td class="summary-val" id="detTratValor" style="color: #059669;">R$ 0,00</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -269,65 +241,81 @@
                             Incluir na descrição o nome completo do profissional.
                         </div>
                     </div>
-
                 </div>
 
                 <div class="details-column c2">
-                    
-                    <div class="detail-card" style="flex: 1;">
+                    <div class="detail-card">
                         <div class="detail-header" style="color: #059669;">
-                            <i class="fas fa-list-check" style="color: #10b981;"></i> Relação de Pacientes Pagos (Tratamentos)
+                            <i class="fas fa-chart-pie" style="color: #10b981;"></i> Resumo Analítico - Tratamentos
                         </div>
-                        <div class="list-container">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 25%;">Data(s) Atend.</th>
-                                        <th style="width: 75%;">Nome do Paciente</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablePacientesTrat">
-                                    <tr>
-                                        <td colspan="2">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox"></i>
-                                                Selecione um médico para visualizar os dados.
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <table class="summary-table">
+                            <tbody>
+                                <tr>
+                                    <td class="summary-label">Volume Total de Pacientes</td>
+                                    <td class="summary-val" id="detTratPac">0</td>
+                                </tr>
+                                <tr>
+                                    <td class="summary-label">Volume Total de Atendimentos (Itens)</td>
+                                    <td class="summary-val" id="detTratItens">0</td>
+                                </tr>
+                                <tr>
+                                    <td class="summary-label">Repasse Apurado</td>
+                                    <td class="summary-val" id="detTratValor" style="color: #059669;">R$ 0,00</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                     <div class="detail-card">
                         <div class="detail-header" style="color: #b45309;">
                             <i class="fas fa-exclamation-circle" style="color: #f59e0b;"></i> Relação de Pendências
                         </div>
-                        <div class="list-container">
+                        <div class="list-container" style="max-height: 180px;">
                             <table class="modern-table">
                                 <thead><tr><th style="width:25%;">Data</th><th>Paciente / Pendência</th></tr></thead>
                                 <tbody>
-                                    <tr><td colspan="2"><div class="empty-state"><i class="fas fa-check-circle" style="color:#10b981;"></i>Nenhuma pendência registrada.</div></td></tr>
+                                    <tr><td colspan="2"><div class="empty-state" style="padding:15px;"><i class="fas fa-check-circle" style="color:#10b981; font-size:20px;"></i>Nenhuma pendência.</div></td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-
                 </div>
-
             </div>
+
+            <div class="detail-card giant-list-card">
+                <div class="detail-header" style="color: #059669;">
+                    <i class="fas fa-list-check" style="color: #10b981;"></i> Relação de Pacientes Pagos (Tratamentos)
+                </div>
+                <div class="list-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Data(s) Atend.</th>
+                                <th style="width: 80%;">Nome do Paciente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablePacientesTrat">
+                            <tr>
+                                <td colspan="2">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        Selecione um médico para visualizar os dados.
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // VARIÁVEIS GLOBAIS E BASE
-        // ==========================================
         let doctors = {};
         let pacientesDb = {};
 
-        const IMPOSTO_TAXA = 0.1233; // 12,33% Fixo
+        const IMPOSTO_TAXA = 0.1233; 
         const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 
         function normalizeData(apiData) {
@@ -345,7 +333,25 @@
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
 
-        // Lógica Exata de Repasse (Maikol / Grupo Mama = Encaminhador Especial 37.5%)
+        function parseCurrency(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return parseFloat(val.toFixed(2));
+            let s = String(val).replace(/[^\d.,-]/g, '');
+            if (s.includes(',') && s.includes('.')) {
+                let lastDot = s.lastIndexOf('.');
+                let lastComma = s.lastIndexOf(',');
+                if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.');
+                else s = s.replace(/,/g, '');
+            } else if (s.includes(',')) {
+                s = s.replace(',', '.');
+            } else if (s.includes('.')) {
+                let parts = s.split('.');
+                if (parts[parts.length - 1].length === 3) s = s.replace(/\./g, '');
+            }
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : parseFloat(num.toFixed(2));
+        }
+
         function getComissaoInfo(pName, eName) {
             let percP = 0; let percE = 0;
             const grupoMama = [
@@ -389,7 +395,6 @@
             return h; 
         }
 
-        // Blindagem contra datas inválidas no JSON ou Object
         function normalizeDate(d) {
             if (!d) return "";
             if (typeof d === 'number') {
@@ -415,14 +420,11 @@
             return str;
         }
 
-        // ==========================================
-        // INICIALIZAÇÃO DA TELA E LISTENERS
-        // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('dashboard-repasse', 'Painel de Honorários');
             const now = new Date(); 
             const curY = now.getFullYear(); 
-            let curM = now.getMonth() - 1; // Foco automático no mês anterior
+            let curM = now.getMonth() - 1; 
             if (curM < 0) { curM = 11; }
             
             const elYear = document.getElementById('dashSelectYear'); 
@@ -433,7 +435,6 @@
             months.forEach((m, i) => elMonth.add(new Option(m, i)));
             elMonth.value = curM;
 
-            // EVENT LISTENERS PARA ATUALIZAÇÃO AUTOMÁTICA
             document.getElementById('dashSelectDoctor').addEventListener('change', renderDashboard);
             document.getElementById('dashSelectMonth').addEventListener('change', renderDashboard);
             document.getElementById('dashSelectYear').addEventListener('change', renderDashboard);
@@ -463,9 +464,6 @@
             } catch(e) {}
         }
 
-        // ==========================================
-        // MOTOR PRINCIPAL DO DASHBOARD
-        // ==========================================
         async function renderDashboard() {
             const docId = document.getElementById('dashSelectDoctor').value;
             const mo = parseInt(document.getElementById('dashSelectMonth').value);
@@ -476,47 +474,41 @@
                 return;
             }
 
-            // Ativa UI com Loading
             document.getElementById('modernDashboard').style.display = 'block';
             
-            // Segurança: Se os elementos existirem, reseta visualmente
-            const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento'];
+            // Setup Loading State
+            const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart'];
             elsToReset.forEach(id => {
                 let el = document.getElementById(id);
-                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:30px;"></i>';
+                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:25px;"></i>';
             });
             
             let tbPac = document.getElementById('tablePacientesTrat');
             if (tbPac) tbPac.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin fa-2x" style="color:#00995D;"></i></td></tr>';
 
             const doctor = doctors[docId];
-            document.getElementById('lblDocName').innerText = doctor.nome.toUpperCase();
+            const doctorName = doctor.nome.toUpperCase();
+            document.getElementById('lblDocName').innerText = doctorName;
             document.getElementById('lblPeriod').innerText = `${months[mo]} ${yr}`.toUpperCase();
             
             const compStr = `${String(mo+1).padStart(2,'0')}/${yr}`;
 
             try {
                 // ------------------------------------------------
-                // 1. SALA MÉDICA (Plantões - Soma os 4 locais)
+                // 1. SALA MÉDICA (Plantões)
                 // ------------------------------------------------
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
-                
-                const shiftTabs = [
-                    { url: '/escala_mensal', tab: 'eco' },
-                    { url: '/escala_mensal_vita_quimio', tab: 'vita_quimio' },
-                    { url: '/escala_mensal_vita_sobreaviso', tab: 'vita_sobreaviso' },
-                    { url: '/escala_mensal_cirurgioes', tab: 'cirurgioes' }
-                ];
-                
+                const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
                 const holidays = getHolidays(yr);
                 const daysInMonth = new Date(yr, mo+1, 0).getDate();
 
-                for (let ep of shiftTabs) {
+                for (let ep of endpoints) {
                     try {
-                        let searchId = ep.tab === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${ep.tab}`;
+                        let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
+                        let searchId = tabName === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${tabName}`;
                         
-                        const r = await fetch(`${API_BASE_URL}${ep.url}?t=${Date.now()}`, { headers: API_HEADERS });
+                        const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (r.ok) {
                             const dataObj = normalizeData(await r.json());
                             let foundId = Object.keys(dataObj).find(k => {
@@ -524,7 +516,6 @@
                                 if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
                                 return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
                             });
-                            
                             let dbShifts = {};
                             if (foundId) {
                                 dbShifts = typeof dataObj[foundId] === 'string' ? JSON.parse(dataObj[foundId]) : dataObj[foundId];
@@ -549,12 +540,11 @@
                                 }
                             }
                         }
-                    } catch(e) { console.error("Erro ao puxar tab", ep.tab, e); }
+                    } catch(e) {}
                 }
 
-                // Injeta na UI do Plantão
-                let elPlantTurnos = document.getElementById('kpiPlantTurnos');
-                if(elPlantTurnos) elPlantTurnos.innerText = turnosPlantao;
+                let elKpiPlantTurnos = document.getElementById('kpiPlantTurnos');
+                if(elKpiPlantTurnos) elKpiPlantTurnos.innerText = turnosPlantao;
                 
                 let elDetPlantTurnos = document.getElementById('detPlantTurnos');
                 if(elDetPlantTurnos) elDetPlantTurnos.innerText = turnosPlantao;
@@ -566,7 +556,7 @@
                 if(elKpiTotalPlantao) elKpiTotalPlantao.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
                 // ------------------------------------------------
-                // 2. TRATAMENTO (Repasse Inteligente)
+                // 2. TRATAMENTO (Repasse Unimed)
                 // ------------------------------------------------
                 let pacientesTratCount = new Set();
                 let totalAtendimentosTrat = 0;
@@ -592,7 +582,6 @@
                             eId = patDb.encaminhador_id;
                         }
                         
-                        // O médico está vinculado a este paciente?
                         if (pId === docId || eId === docId) {
                             if (!agrupamentoPaciente[pac]) {
                                 agrupamentoPaciente[pac] = {
@@ -607,7 +596,6 @@
                             let fatItem = Number(parseFloat(d.valor_pago || 0).toFixed(2));
                             let isTaxa = String(d.descricao || '').toUpperCase().includes('TAXA') || String(d.tipo || '').toUpperCase() === 'HOS';
                             
-                            // Regra da Grazielly
                             let isGrazielly = (agrupamentoPaciente[pac].pName.toUpperCase().includes('GRAZIELLY')) || (agrupamentoPaciente[pac].eName.toUpperCase().includes('GRAZIELLY'));
                             let isCortado = isTaxa && !isGrazielly;
                             
@@ -617,7 +605,6 @@
                                 let custoDb = Number(parseFloat(d.custo_informado || ext.custo_informado || 0).toFixed(2));
                                 
                                 let lucroItem = fatItem - impItem - custoDb;
-                                // Só repassa se o lucro do item não for negativo
                                 if (lucroItem > 0) {
                                     agrupamentoPaciente[pac].fatTotal += fatItem;
                                     agrupamentoPaciente[pac].impTotal += impItem;
@@ -657,7 +644,6 @@
 
                 } catch(e) {}
 
-                // Injeta na UI de Tratamento
                 let elKpiTratPac = document.getElementById('kpiTratPac');
                 if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
                 
@@ -679,10 +665,53 @@
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
                 if(elTablePacientesTrat) elTablePacientesTrat.innerHTML = htmlTratamentosLista;
 
+
                 // ------------------------------------------------
-                // 3. TOTAL GERAL (SOMA TUDO)
+                // 3. CONSULTAS PARTICULARES (Novo Integrado!)
                 // ------------------------------------------------
-                let valorParticular = 0; // Preparado para o futuro
+                let valorParticular = 0;
+                let atendimentosParticular = 0;
+
+                try {
+                    const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
+                    if (resSales.ok) {
+                        const vendasData = normalizeData(await resSales.json());
+                        
+                        // Filtra as Vendas
+                        Object.values(vendasData).forEach(v => {
+                            // Tem que ser particular, não liminar
+                            const isLiminar = (v.tipo_registro === 'liminar' || v.forma_pagamento === 'Liminar');
+                            if (isLiminar) return;
+
+                            // Bate o Médico?
+                            if (v.medico && v.medico.toUpperCase() === doctorName) {
+                                // Bate o Mês e o Ano?
+                                const datePart = (v.data || '').split('-');
+                                if (datePart.length >= 2) {
+                                    const vYr = parseInt(datePart[0]);
+                                    const vMo = parseInt(datePart[1]) - 1; // Array de meses começa em 0
+                                    
+                                    if (vYr === yr && vMo === mo) {
+                                        atendimentosParticular++;
+                                        // Pega o valor líquido cobrado na consulta (pode usar valor_pago se for melhor)
+                                        valorParticular += parseCurrency(v.valor_final);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch(e) { console.error("Erro vendas:", e); }
+
+                let elKpiPartAtend = document.getElementById('kpiPartAtend');
+                if(elKpiPartAtend) elKpiPartAtend.innerText = atendimentosParticular;
+                
+                let elKpiTotalPart = document.getElementById('kpiTotalPart');
+                if(elKpiTotalPart) elKpiTotalPart.innerText = `R$ ${valorParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+
+                // ------------------------------------------------
+                // 4. TOTAL GERAL (SOMA TUDO)
+                // ------------------------------------------------
                 let totalGeral = valorPlantao + valorTratamento + valorParticular;
                 
                 let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
