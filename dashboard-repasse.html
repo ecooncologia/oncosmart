@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Repasse - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        
+        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
+        .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        
+        .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
+        .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
+        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
+        
+        .btn-primary { background: #00995D; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s;}
+        .btn-primary:hover { background: #007a4a; }
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s;}
+        .btn-print:hover { background: #374151; }
+
+        /* ========================================================
+           CSS ESPECÍFICO DO DASHBOARD DE HONORÁRIOS (CLONE DA IMAGEM)
+           ======================================================== */
+        .hdash-wrapper { background: #dfe7df; border: 3px solid #2e4d3a; padding: 15px; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; display: none; }
+        .hdash-header { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 10px; padding-bottom: 10px; }
+        .hdash-header img { position: absolute; left: 0; height: 60px; mix-blend-mode: multiply; }
+        .hdash-header h1 { color: #2e4d3a; font-size: 26px; letter-spacing: 1px; margin: 0; display: flex; align-items: center; gap: 10px; }
+        .hdash-info-bar { background: #d2e0d3; border: 2px solid #2e4d3a; display: flex; justify-content: space-between; padding: 6px 20px; font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #2e4d3a; }
+        
+        .hdash-grid { display: grid; grid-template-columns: 1fr 1fr 1.3fr 1fr; gap: 12px; }
+        .hdash-box { border: 2px solid #2e4d3a; background: #fff; display: flex; flex-direction: column; }
+        .hdash-box-title { background: #e6efe6; text-align: center; font-weight: 800; padding: 8px; border-bottom: 2px solid #2e4d3a; font-size: 15px; color: #2e4d3a; }
+        
+        .hdash-sub { border: 1px solid #d1d5db; margin: 8px; background: #f9fafb; padding-bottom: 8px; }
+        .hdash-sub-title { font-size: 11px; font-weight: bold; color: #4b5563; text-align: center; border-bottom: 1px solid #d1d5db; padding: 4px; margin-bottom: 6px; }
+        .hdash-row { display: flex; justify-content: space-around; text-align: center; font-size: 13px; font-weight: 800; color: #1f2937; }
+        .hdash-row div { display: flex; flex-direction: column; gap: 4px; }
+        .hdash-val { font-size: 14px; font-weight: normal; color: #000; }
+        .hdash-val-money { font-size: 14px; font-weight: bold; color: #1f2937; }
+
+        .hdash-total-box { grid-column: span 2; display: flex; border: 2px solid #2e4d3a; background: #fff; align-items: stretch; }
+        .hdash-total-lbl { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: #2e4d3a; letter-spacing: 1px; }
+        .hdash-total-val { background: #c5d4cd; padding: 0 30px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; border-left: 2px solid #2e4d3a; color: #2e4d3a; }
+
+        .hdash-list-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 11px; font-weight: bold; color: #4b5563; }
+        .hdash-list-table th { padding: 4px; font-size: 11px; border-bottom: 1px solid #d1d5db; }
+        .hdash-list-table td { padding: 4px; font-weight: normal; color: #1f2937; border-bottom: 1px dashed #e5e7eb; }
+
+        .hdash-footer-box { border: 2px solid #2e4d3a; background: #fbe6e6; margin-top: 12px; display: flex; flex-direction: column; }
+        .hdash-footer-cols { display: flex; justify-content: space-around; padding: 8px; font-weight: bold; font-size: 13px; border-bottom: 1px solid #fca5a5; }
+        .hdash-footer-cols div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .hdash-footer-text { text-align: center; font-size: 10px; font-weight: bold; padding: 6px; color: #7f1d1d; line-height: 1.3; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #dashboardReportPanel, #dashboardReportPanel * { visibility: visible; }
+            #dashboardReportPanel { position: absolute; left: 0; top: 0; width: 100%; border: none !important; padding: 0; margin: 0; }
+            .hdash-wrapper { border: none !important; padding: 0; }
+            @page { size: landscape; margin: 10mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="controls">
+            <div class="controls-group">
+                <div class="input-group" style="width: 250px;">
+                    <label class="label-title">Selecione o Médico</label>
+                    <select id="dashSelectDoctor" class="input-field"></select>
+                </div>
+                <div class="input-group" style="width: 140px;">
+                    <label class="label-title">Mês</label>
+                    <select id="dashSelectMonth" class="input-field"></select>
+                </div>
+                <div class="input-group" style="width: 100px;">
+                    <label class="label-title">Ano</label>
+                    <select id="dashSelectYear" class="input-field"></select>
+                </div>
+                <button class="btn-primary" style="height: 38px; margin-bottom: 0;" onclick="renderDashboardHon()">
+                    <i class="fas fa-sync"></i> Gerar Relatório
+                </button>
+            </div>
+            <button class="btn-print" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir Painel
+            </button>
+        </div>
+
+        <div id="dashboardReportPanel" class="hdash-wrapper">
+            <div class="hdash-header">
+                <img src="https://imgur.com/nWWyEBG.png" alt="Logo Eco">
+                <h1>RELATÓRIO DE HONORÁRIO MÉDICO <i class="fas fa-stethoscope" style="font-size:20px;"></i></h1>
+            </div>
+            
+            <div class="hdash-info-bar">
+                <div>Médico(a): &nbsp;&nbsp; <span id="honDocName" style="color:#000;">SELECIONE UM MÉDICO</span></div>
+                <div>Mês: &nbsp;&nbsp; <span id="honMonthName" style="color:#000;">-</span></div>
+            </div>
+
+            <div class="hdash-grid">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="hdash-box">
+                        <div class="hdash-box-title">CONSULTA - PARTICULAR</div>
+                        <div class="hdash-sub">
+                            <div class="hdash-sub-title">DADOS DE ATENDIMENTO</div>
+                            <div class="hdash-row"><div>ATENDIMENTOS <span class="hdash-val" id="honPartAtend">0</span></div></div>
+                        </div>
+                        <div class="hdash-sub">
+                            <div class="hdash-sub-title">HONORÁRIOS</div>
+                            <div class="hdash-row"><div>VALORES <span class="hdash-val-money" id="honPartValor">0</span></div></div>
+                        </div>
+                    </div>
+
+                    <div class="hdash-box" style="flex: 1;">
+                        <div class="hdash-box-title">TRATAMENTO (UNIMED)</div>
+                        <div class="hdash-sub">
+                            <div class="hdash-sub-title">DADOS DE ATENDIMENTO</div>
+                            <div class="hdash-row">
+                                <div>PACIENTES <span class="hdash-val" id="honTratPac">0</span></div>
+                                <div>ATENDIMENTOS <span class="hdash-val" id="honTratAtend">0</span></div>
+                            </div>
+                        </div>
+                        <div class="hdash-sub">
+                            <div class="hdash-sub-title">HONORÁRIOS (LUCRO)</div>
+                            <div class="hdash-row">
+                                <div>PARTICULAR <span class="hdash-val-money">0</span></div>
+                                <div>CONVÊNIO <span class="hdash-val-money" id="honTratConv">R$ 0,00</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="hdash-box">
+                        <div class="hdash-box-title">SALA MÉDICA</div>
+                        <div class="hdash-sub">
+                            <div class="hdash-sub-title">PLANTÕES ATENDIDOS</div>
+                            <div class="hdash-row"><div>TURNOS <span class="hdash-val" id="honPlantTurnos">0</span></div></div>
+                        </div>
+                        <div class="hdash-sub">
+                            <div class="hdash-sub-title">HONORÁRIOS</div>
+                            <div class="hdash-row"><div>VALORES <span class="hdash-val-money" id="honPlantValor">R$ 0,00</span></div></div>
+                        </div>
+                    </div>
+
+                    <div class="hdash-box" style="flex: 1;">
+                        <div class="hdash-box-title">PACIENTES X ATENDIMENTOS</div>
+                        <div style="flex: 1; display:flex; align-items:flex-end; justify-content:space-around; padding-bottom: 10px; font-weight:bold; font-size:12px;">
+                            <span>0</span><span>0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hdash-total-box" style="grid-column: 1 / 3; margin-top: -4px;">
+                    <div class="hdash-total-lbl">TOTAL HONORÁRIOS</div>
+                    <div class="hdash-total-val" id="honTotalGeral">R$ 0,00</div>
+                </div>
+
+                <div class="hdash-box hdash-footer-box" style="grid-column: 1 / 3;">
+                    <div class="hdash-box-title" style="background:transparent; border-bottom:none;">CONSULTA - CONVÊNIO (PRÉDIO)</div>
+                    <div class="hdash-footer-cols">
+                        <div>QUANTIDADE <span style="font-weight:normal;">0</span></div>
+                        <div>VALORES <span style="font-weight:normal;">0</span></div>
+                    </div>
+                    <div class="hdash-footer-text">
+                        NOTA FISCAL DEVE SER EMITIDA PELO MÉDICO E ENVIADA PARA O E-MAIL repasse@ecomedicalcenter.com.br, COM AS SEGUINTES INFORMAÇÕES:<br>
+                        BF SERVICOS MEDICOS E EMPREENDIMENTOS IMOBILIARIOS LTDA - CNPJ: 33.743.664/0001-08 - Rua Goiás, 70 - CEP: 80.620-061.<br>
+                        Incluir na descrição dos serviços da Nota Fiscal o seu nome completo, para facilitar a identificação da razão social no sistema.
+                    </div>
+                </div>
+
+                <div class="hdash-box" style="grid-column: 3; grid-row: 1 / 5;">
+                    <div class="hdash-box-title">RELAÇÃO DE PACIENTES PAGOS</div>
+                    
+                    <div style="padding: 10px; display:flex; flex-direction:column; height: 100%;">
+                        <div style="text-align:center; font-weight:bold; font-size:12px; color:#4b5563; margin-bottom:5px;">CONSULTAS</div>
+                        <table class="hdash-list-table" style="margin-bottom: 20px;">
+                            <thead><tr><th>DATA</th><th>PACIENTE</th></tr></thead>
+                            <tbody><tr><td>NENHUM</td><td>NENHUM</td></tr></tbody>
+                        </table>
+
+                        <div style="text-align:center; font-weight:bold; font-size:12px; color:#4b5563; margin-bottom:5px;">TRATAMENTOS</div>
+                        <table class="hdash-list-table">
+                            <thead><tr><th>DATA</th><th>PACIENTE</th></tr></thead>
+                            <tbody id="honListaTratamentos">
+                                <tr><td>-</td><td>-</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="hdash-box" style="grid-column: 4; grid-row: 1 / 5;">
+                    <div class="hdash-box-title">RELAÇÃO DE PENDÊNCIAS</div>
+                    <div style="padding: 10px;">
+                        <table class="hdash-list-table">
+                            <thead><tr><th>DATA</th><th>PACIENTE</th></tr></thead>
+                            <tbody><tr><td>NENHUM</td><td>NENHUM</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let doctors = {};
+        let pacientesDb = {};
+
+        const IMPOSTO_TAXA = 0.1233; // 12,33%
+        const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+        function normalizeData(apiData) {
+            if (!apiData) return {}; 
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            }); 
+            return normalized;
+        }
+
+        const generatePatientId = (name) => {
+            return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        };
+
+        function getComissaoInfo(pName, eName) {
+            let percP = 0; let percE = 0;
+            const grupoMama = [
+                'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
+                'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
+                'FLAVIA KURODA', 'IRIS RABINOVICH', 'ISABELA MONTEIRO SOARES', 
+                'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO',
+                'MAIKOL'
+            ];
+            const isSpecial = (name) => {
+                if(!name) return false;
+                let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                return grupoMama.some(m => upper.includes(m));
+            };
+            if (pName) percP = 12.50; 
+            if (eName) percE = isSpecial(eName) ? 37.50 : 12.50; 
+            return { percP, percE, totalPerc: percP + percE };
+        }
+
+        function getHolidays(y) { 
+            const pad = n => String(n).padStart(2,'0');
+            const h = { 
+                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
+                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
+                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
+            }; 
+            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
+            I = I - 30*Math.floor((I/30)); 
+            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
+            J = J - 7*Math.floor(J/7); 
+            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
+            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
+            const add = (baseDate, days) => { 
+                const r = new Date(baseDate.getTime()); 
+                r.setDate(r.getDate() + days); 
+                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
+            }; 
+            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
+            return h; 
+        }
+
+        function normalizeDate(d) {
+            if (!d) return "";
+            if (typeof d === 'number') {
+                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
+                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
+            }
+            let str = String(d).trim();
+            if (str.includes('T')) str = str.split('T')[0];
+            if (str.includes('-')) {
+                let p = str.split('-');
+                if (p[0].length === 4) return p[2].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + p[0];
+                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+            }
+            if (str.includes('/')) {
+                let p = str.split('/');
+                if (parseInt(p[0], 10) <= 12 && parseInt(p[1], 10) > 12) {
+                    return p[1].padStart(2,'0') + '/' + p[0].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+                }
+                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+            }
+            return str;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('dashboard-repasse', 'Painel de Repasse');
+            const now = new Date(); 
+            const curY = now.getFullYear(); 
+            let curM = now.getMonth() - 1; // Foca no mês anterior por padrão
+            if (curM < 0) { curM = 11; }
+            
+            const elYear = document.getElementById('dashSelectYear'); 
+            for(let i = curY - 2; i <= curY + 2; i++) { elYear.add(new Option(i, i)); }
+            elYear.value = curY; 
+            
+            const elMonth = document.getElementById('dashSelectMonth');
+            months.forEach((m, i) => elMonth.add(new Option(m, i)));
+            elMonth.value = curM;
+
+            await loadDoctors();
+            await loadPacientesDb();
+        });
+
+        async function loadDoctors() { 
+            try { 
+                const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                doctors = normalizeData(await r.json()); 
+                
+                const dashSel = document.getElementById('dashSelectDoctor');
+                dashSel.innerHTML = '<option value="">-- Escolha um Médico --</option>';
+
+                Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
+                    dashSel.add(new Option(doc.nome, id));
+                });
+            } catch(e) {}
+        }
+
+        async function loadPacientesDb() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
+                if (res.ok) pacientesDb = normalizeData(await res.json());
+            } catch(e) {}
+        }
+
+        // ==========================================
+        // O MOTOR DO DASHBOARD (O CÁLCULO GERAL)
+        // ==========================================
+        async function renderDashboardHon() {
+            const docId = document.getElementById('dashSelectDoctor').value;
+            const mo = parseInt(document.getElementById('dashSelectMonth').value);
+            const yr = parseInt(document.getElementById('dashSelectYear').value);
+
+            if (!docId) {
+                alert("Por favor, selecione um médico para gerar o painel.");
+                document.getElementById('dashboardReportPanel').style.display = 'none';
+                return;
+            }
+
+            const doctor = doctors[docId];
+            document.getElementById('honDocName').innerText = doctor.nome.toUpperCase();
+            document.getElementById('honMonthName').innerText = months[mo].toUpperCase();
+            
+            const compStr = `${String(mo+1).padStart(2,'0')}/${yr}`;
+
+            const btn = document.querySelector('.controls .btn-primary');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando...';
+
+            try {
+                // ------------------------------------------------
+                // 1. SALA MÉDICA (Plantões - Soma os 4 locais)
+                // ------------------------------------------------
+                let turnosPlantao = 0;
+                let valorPlantao = 0;
+                const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
+                const holidays = getHolidays(yr);
+                const daysInMonth = new Date(yr, mo+1, 0).getDate();
+
+                for (let ep of endpoints) {
+                    try {
+                        let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
+                        let searchId = tabName === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${tabName}`;
+                        
+                        const r = await fetch(`${API_BASE_URL}${ep}`, { headers: API_HEADERS });
+                        if (r.ok) {
+                            const dataObj = normalizeData(await r.json());
+                            let foundId = Object.keys(dataObj).find(k => dataObj[k].id_firebase === searchId || dataObj[k].id === searchId || k === searchId);
+                            let dbShifts = foundId ? dataObj[foundId] : {};
+
+                            if (dbShifts[docId]) {
+                                for (let i = 1; i <= daysInMonth; i++) {
+                                    const val = dbShifts[docId][i];
+                                    const d = new Date(yr, mo, i, 12, 0, 0);
+                                    const isoDateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                                    const isHol = !!holidays[isoDateStr];
+                                    const isWk = d.getDay()===0||d.getDay()===6;
+                                    
+                                    if(val && val !== 'S') {
+                                        if (val === 'M/T') turnosPlantao += 2; else turnosPlantao += 1;
+                                        if (isWk || isHol) {
+                                            valorPlantao += (val === 'M/T' ? 900 : 450);
+                                        } else {
+                                            valorPlantao += (val === 'M/T' ? 1000 : 500);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                }
+
+                document.getElementById('honPlantTurnos').innerText = turnosPlantao;
+                document.getElementById('honPlantValor').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+                // ------------------------------------------------
+                // 2. TRATAMENTO (Repasse Inteligente)
+                // ------------------------------------------------
+                let pacientesTratCount = new Set();
+                let totalAtendimentosTrat = 0;
+                let valorTratamento = 0;
+                let htmlTratamentosLista = '';
+
+                try {
+                    const resU = await fetch(`${API_BASE_URL}/repasse_unimed`, {headers: API_HEADERS});
+                    let uData = resU.ok ? Object.values(normalizeData(await resU.json())).filter(r => r.competencia === compStr) : [];
+
+                    let agrupamentoPaciente = {};
+
+                    uData.forEach(d => {
+                        let pac = String(d.paciente).toUpperCase().trim();
+                        let patId = generatePatientId(pac);
+                        let patDb = pacientesDb[patId];
+                        
+                        let pId = null, eId = null;
+                        if (patDb) {
+                            pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
+                            eId = patDb.encaminhador_id;
+                        }
+                        
+                        // O médico está vinculado a este paciente?
+                        if (pId === docId || eId === docId) {
+                            if (!agrupamentoPaciente[pac]) {
+                                agrupamentoPaciente[pac] = {
+                                    fatTotal: 0, impTotal: 0, custoTotal: 0,
+                                    itemsDates: [],
+                                    pName: pId && doctors[pId] ? doctors[pId].nome : '',
+                                    eName: eId && doctors[eId] ? doctors[eId].nome : '',
+                                    pId: pId, eId: eId
+                                };
+                            }
+                            
+                            let fatItem = Number(parseFloat(d.valor_pago || 0).toFixed(2));
+                            let isTaxa = String(d.descricao).toUpperCase().includes('TAXA') || String(d.tipo).toUpperCase() === 'HOS';
+                            
+                            // Regra da Grazielly
+                            let isGrazielly = (agrupamentoPaciente[pac].pName.toUpperCase().includes('GRAZIELLY')) || (agrupamentoPaciente[pac].eName.toUpperCase().includes('GRAZIELLY'));
+                            let isCortado = isTaxa && !isGrazielly;
+                            
+                            if (!isCortado) {
+                                let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                                let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
+                                let custoDb = Number(parseFloat(d.custo_informado || ext.custo_informado || 0).toFixed(2));
+                                
+                                // Somente acumula se o item não der lucro negativo
+                                let lucroItem = fatItem - impItem - custoDb;
+                                if (lucroItem > 0) {
+                                    agrupamentoPaciente[pac].fatTotal += fatItem;
+                                    agrupamentoPaciente[pac].impTotal += impItem;
+                                    agrupamentoPaciente[pac].custoTotal += custoDb;
+                                }
+                                
+                                let dNorm = normalizeDate(d.data_atendimento);
+                                agrupamentoPaciente[pac].itemsDates.push(dNorm);
+                            }
+                        }
+                    });
+
+                    Object.keys(agrupamentoPaciente).sort().forEach(pac => {
+                        let calc = agrupamentoPaciente[pac];
+                        let lucroGlobal = calc.fatTotal - calc.impTotal - calc.custoTotal;
+                        
+                        if (lucroGlobal > 0) {
+                            const comissaoInfo = getComissaoInfo(calc.pName, calc.eName);
+                            let doctorPerc = 0;
+                            if (calc.pId === docId) doctorPerc += comissaoInfo.percP;
+                            if (calc.eId === docId) doctorPerc += comissaoInfo.percE;
+                            
+                            if (doctorPerc > 0) {
+                                let repasseDestePat = Number((lucroGlobal * (doctorPerc / 100)).toFixed(2));
+                                valorTratamento += repasseDestePat;
+                                pacientesTratCount.add(pac);
+                                totalAtendimentosTrat += calc.itemsDates.length;
+                                
+                                let uniqDates = [...new Set(calc.itemsDates)].join(', ');
+                                htmlTratamentosLista += `<tr><td>${uniqDates || compStr}</td><td>${pac}</td></tr>`;
+                            }
+                        }
+                    });
+
+                } catch(e) {}
+
+                document.getElementById('honTratPac').innerText = pacientesTratCount.size;
+                document.getElementById('honTratAtend').innerText = totalAtendimentosTrat;
+                document.getElementById('honTratConv').innerText = `R$ ${valorTratamento.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                if (htmlTratamentosLista === '') htmlTratamentosLista = '<tr><td>NENHUM</td><td>NENHUM</td></tr>';
+                document.getElementById('honListaTratamentos').innerHTML = htmlTratamentosLista;
+
+                // ------------------------------------------------
+                // 3. TOTAL GERAL
+                // ------------------------------------------------
+                let valorParticular = 0; // Mockado até ter a integração com a aba Particulares
+                let totalGeral = valorPlantao + valorTratamento + valorParticular;
+                document.getElementById('honTotalGeral').innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+                document.getElementById('dashboardReportPanel').style.display = 'block';
+
+            } catch (err) {
+                alert("Erro ao processar os dados: " + err.message);
+            } finally {
+                btn.innerHTML = '<i class="fas fa-sync"></i> Gerar Relatório';
+            }
+        }
+    </script>
+</body>
+</html>
