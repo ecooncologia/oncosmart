@@ -43,11 +43,13 @@
         .btn-danger-block:hover { background: #b91c1c; }
         
         .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; }
-        .card-stat h2 { margin: 0; color: #1f2937; font-size: 24px; }
+        .card-stat { background: white; flex: 1; min-width: 180px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 11px; text-transform: uppercase; }
+        .card-stat h2 { margin: 0; color: #1f2937; font-size: 20px; }
         .card-stat.warning { border-left-color: #f59e0b; }
         .card-stat.danger { border-left-color: #ef4444; }
+        .card-stat.info { border-left-color: #3b82f6; }
+        .card-stat.purple { border-left-color: #8b5cf6; }
 
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
@@ -59,7 +61,7 @@
         .bg-green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-red { background: #fee2e2; color: #991b1b; }
         .bg-gray { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
-        .bg-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; } /* Badge Repasse */
+        .bg-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; } 
         
         .row-parent { cursor: pointer; background-color: #fff; transition: background 0.2s; }
         .row-parent:hover { background-color: #f9fafb; }
@@ -152,6 +154,14 @@
                 <div class="card-stat danger">
                     <h5>Total em Repasse</h5>
                     <h2 id="dashRepasseTotal">R$ 0,00</h2>
+                </div>
+                <div class="card-stat info">
+                    <h5>Medicamentos Extraídos</h5>
+                    <h2 id="dashMedCount">0</h2>
+                </div>
+                <div class="card-stat purple">
+                    <h5>Divergências</h5>
+                    <h2 id="dashDivergences">0</h2>
                 </div>
             </div>
             
@@ -551,12 +561,14 @@
                     patientsTableObj[p].docRoles = roles.join(' e ');
                 }
                 
-                // CORTA A TAXA SE O MÉDICO NÃO FOR PRESCRITOR
+                // 🧠 A REGRA DA DRA. GRAZIELLY (Apenas ela ganha TAXA)
+                const isGrazielly = docDb && docDb.nome.toUpperCase().includes('GRAZIELLY');
                 const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
+                
                 let valorConsiderado = Number(d.valor.toFixed(2));
                 let isCortado = false;
 
-                if (isTaxa && !patientsTableObj[p].isPrescritor) { 
+                if (isTaxa && !isGrazielly) { 
                     valorConsiderado = 0; 
                     isCortado = true; 
                 }
@@ -628,6 +640,7 @@
                 document.getElementById('dashLucroTotal').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseTotal').innerText = "R$ 0,00";
                 document.getElementById('dashMedCount').innerText = "0";
+                document.getElementById('dashDivergences').innerText = "0"; 
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
                 return; 
             }
@@ -732,7 +745,7 @@
                             let dataPrevista = calcularDataRepasse(item.competencia);
                             let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
                             
-                            let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Médico não é Prescritor"' : '';
+                            let titleTooltip = item.isCortado ? 'title="TAXA não contabilizada: Paciente não está vinculado à Dra Grazielly"' : '';
                             let valorVisual = item.isCortado ? `<s style="color:#fca5a5;">R$ ${item.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</s> <br><span style="font-size:10px; color:#dc2626;">R$ 0,00</span>` : `R$ ${item.valorConsiderado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
                             
                             let matchIdx = -1;
