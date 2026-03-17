@@ -66,6 +66,7 @@
         .bg-gray { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
         .bg-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; } 
         
+        /* CAIXAS ORIGINAIS PARA REPASSE RESTAURADAS */
         .prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; display: block; margin-bottom: 3px; padding: 4px; font-size: 10px; font-weight: bold; border-radius: 4px; text-align: center;}
         .encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; display: block; padding: 4px; font-size: 10px; font-weight: bold; border-radius: 4px; text-align: center;}
         
@@ -257,6 +258,7 @@
             return normalized;
         }
 
+        // Blindagem Adicionada
         function normalizeDate(d) {
             if (!d) return "";
             if (typeof d === 'number') {
@@ -264,18 +266,20 @@
                 return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
             }
             let str = String(d).trim();
+            if (!str) return ""; 
+            
             if (str.includes('T')) str = str.split('T')[0];
             if (str.includes('-')) {
                 let p = str.split('-');
-                if (p[0].length === 4) return p[2].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + p[0];
-                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
             }
             if (str.includes('/')) {
                 let p = str.split('/');
-                if (parseInt(p[0], 10) <= 12 && parseInt(p[1], 10) > 12) {
-                    return p[1].padStart(2,'0') + '/' + p[0].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
+                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
                 }
-                return p[0].padStart(2,'0') + '/' + p[1].padStart(2,'0') + '/' + (p[2].length === 2 ? '20' + p[2] : p[2]);
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
             }
             return str;
         }
@@ -332,7 +336,7 @@
         }
 
         // ==========================================
-        // INICIALIZAÇÃO DA TELA (DOM LOAD)
+        // INICIALIZAÇÃO DA TELA
         // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
@@ -462,6 +466,8 @@
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
                     let custoDb = row.custo_informado || extras.custo_informado || 0;
+                    
+                    // Blindagem
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
@@ -626,13 +632,13 @@
                 let repassePacienteTotal = repasseP_val + repasseE_val;
                 sumRepasseGlobal += repassePacienteTotal;
 
-                // DESIGN ORIGINAL DOS NOMES RESTAURADO
+                // Nomes limpos
                 let docHtml = '';
                 if (pat.pName) docHtml += `<div style="font-size:11px; color:#be185d; font-weight:bold; margin-bottom:2px;"><i class="fas fa-stethoscope"></i> Presc: ${pat.pName}</div>`;
                 if (pat.eName) docHtml += `<div style="font-size:11px; color:#c2410c; font-weight:bold;"><i class="fas fa-share-square"></i> Encam: ${pat.eName}</div>`;
                 if (!docHtml) docHtml = `<div style="font-size:11px; color:#9ca3af; font-style:italic;">Sem médico vinculado</div>`;
 
-                // DESIGN ORIGINAL DAS CAIXAS LARANJA/ROSA RESTAURADO
+                // Badge de Repasse (Rosa e Laranja)
                 let repasseBadge = '';
                 if (pat.baseRepassePaciente <= 0) {
                     repasseBadge = `<span style="color:#9ca3af; font-size:11px; font-weight:bold;">Sem Lucro Base</span>`;
@@ -838,7 +844,7 @@
         }
 
         // ==========================================
-        // RENDER - ESCALA DE PLANTÃO (BLINDADO)
+        // RENDER - ESCALA DE PLANTÃO (BLINDADO COM GETHOLIDAYS)
         // ==========================================
         async function renderRepasseTable() { 
             const curY = parseInt(document.getElementById('selYearPlantao').value); 
