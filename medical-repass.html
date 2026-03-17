@@ -45,13 +45,14 @@
         .btn-danger-block:hover { background: #b91c1c; }
         
         .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .card-stat { background: white; flex: 1; min-width: 180px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat { background: white; flex: 1; min-width: 170px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-stat h5 { margin: 0 0 5px 0; color: #6b7280; font-size: 10px; text-transform: uppercase; font-weight: 800; }
         .card-stat h2 { margin: 0; color: #1f2937; font-size: 20px; }
         .card-stat.imposto { border-left-color: #ef4444; }
         .card-stat.custo { border-left-color: #f59e0b; }
         .card-stat.lucro { border-left-color: #10b981; }
         .card-stat.repasse { border-left-color: #8b5cf6; }
+        .card-stat.info { border-left-color: #3b82f6; }
 
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
@@ -147,6 +148,7 @@
         </div>
 
         <div id="tab-unimed" class="tab-content">
+            
             <div class="dashboard-cards">
                 <div class="card-stat">
                     <h5>Faturamento Unimed</h5>
@@ -167,6 +169,14 @@
                 <div class="card-stat repasse">
                     <h5>Repasse Médico Gerado</h5>
                     <h2 id="dashRepasseTotal" style="color:#7e22ce;">R$ 0,00</h2>
+                </div>
+                <div class="card-stat info">
+                    <h5>Medicamentos Extraídos</h5>
+                    <h2 id="dashMedCount" style="color:#3b82f6;">0</h2>
+                </div>
+                <div class="card-stat imposto">
+                    <h5>Divergências de Custo</h5>
+                    <h2 id="dashDivergences" style="color:#dc2626;">0</h2>
                 </div>
             </div>
             
@@ -307,7 +317,7 @@
         }
 
         // ==========================================
-        // INICIALIZAÇÃO DA TELA
+        // INICIALIZAÇÃO DA TELA (DOM LOAD)
         // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
@@ -437,7 +447,6 @@
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
                     let custoDb = row.custo_informado || extras.custo_informado || 0;
-
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
@@ -471,9 +480,7 @@
             const novoValor = parseFloat(strVal) || 0;
             
             const itemObj = excelData.find(d => d.id_firebase === id_firebase);
-            if (itemObj) {
-                itemObj.custo_informado = novoValor;
-            }
+            if (itemObj) itemObj.custo_informado = novoValor;
 
             try {
                 const resGet = await fetch(`${API_BASE_URL}/repasse_unimed`);
@@ -496,7 +503,7 @@
         }
 
         // ==========================================
-        // RENDERIZAÇÃO DA TABELA DO REPASSE INTELIGENTE
+        // RENDER - REPASSE UNIMED INTELIGENTE
         // ==========================================
         function renderAnalysisTable() {
             const filterPatient = document.getElementById('filterPatient').value;
@@ -510,6 +517,8 @@
             let sumCustoGlobal = 0;
             let sumLucroGlobal = 0;
             let sumRepasseGlobal = 0;
+            let itemsMedCount = 0;
+            let divergencesCount = 0; // Usado para pacientes com lucro zero ou negativo
 
             excelData.forEach(d => {
                 const p = d.paciente; 
@@ -557,6 +566,8 @@
                 patientsTableObj[p].lucroGlobalPaciente += lucroItem;
                 patientsTableObj[p].baseRepassePaciente += lucroRepasse;
                 
+                if (d.tipo === 'MED') itemsMedCount++;
+                
                 patientsTableObj[p].items.push({ 
                     ...d, fatItem, impItem, custoItem, lucroItem, isCortado 
                 });
@@ -569,13 +580,13 @@
                 if (filterPatient && key !== filterPatient) keep = false;
                 if (filterRepasseDoc && (pObj.pId !== filterRepasseDoc && pObj.eId !== filterRepasseDoc)) keep = false; 
                 
-                if(!keep) {
-                    delete patientsTableObj[key];
-                } else {
+                if(!keep) delete patientsTableObj[key];
+                else {
                     sumUnimedGlobal += pObj.fatPaciente;
                     sumImpostoGlobal += pObj.impostoPaciente;
                     sumCustoGlobal += pObj.custoPaciente;
                     sumLucroGlobal += pObj.lucroGlobalPaciente;
+                    if(pObj.lucroGlobalPaciente <= 0) divergencesCount++;
                 }
             });
             
@@ -587,6 +598,8 @@
                 document.getElementById('dashCustoTotal').innerText = "R$ 0,00";
                 document.getElementById('dashLucroTotal').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseTotal').innerText = "R$ 0,00";
+                document.getElementById('dashMedCount').innerText = "0";
+                document.getElementById('dashDivergences').innerText = "0";
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
                 return; 
             }
@@ -689,6 +702,8 @@
             document.getElementById('dashCustoTotal').innerText = sumCustoGlobal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashLucroTotal').innerText = sumLucroGlobal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashRepasseTotal').innerText = sumRepasseGlobal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
+            document.getElementById('dashMedCount').innerText = itemsMedCount;
+            document.getElementById('dashDivergences').innerText = divergencesCount;
             
             tbody.innerHTML = htmlBuffer;
         }
@@ -827,7 +842,6 @@
                 const r = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS }); 
                 const allScales = normalizeData(await r.json());
                 
-                // Busca de ID robusta: procura na chave, no id_firebase ou no id.
                 let foundId = Object.keys(allScales).find(k => 
                     allScales[k] && typeof allScales[k] === 'object' && 
                     (allScales[k].id_firebase === searchId || allScales[k].id === searchId || k === searchId)
@@ -873,7 +887,6 @@
                     } 
                     userTotal += money; 
                     
-                    // Colore as letras iguais ao shifts.html
                     let txtColor = '#333';
                     if (val === 'M') txtColor = '#92400E';
                     if (val === 'T') txtColor = '#6B21A8';
@@ -930,7 +943,7 @@
                 if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
                 if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
                 return false;
-            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=> (a[1].nome||'').localeCompare(b[1].nome||''))
+            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
             .forEach(([id, doc]) => { 
                 let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
                 for (let i = 1; i <= daysInMonth; i++) { 

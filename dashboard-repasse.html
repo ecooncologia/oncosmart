@@ -115,6 +115,7 @@
             .kpi-card { box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; }
             .detail-card { box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; }
             .list-container { max-height: none; overflow: visible; }
+            .details-grid { grid-template-columns: 1fr 1fr !important; }
             @page { size: landscape; margin: 12mm; }
         }
 
@@ -134,17 +135,17 @@
                     <label class="label-title">Selecione o Médico</label>
                     <select id="dashSelectDoctor" class="input-field" onchange="renderDashboard()"></select>
                 </div>
-                <div class="input-group" style="width: 160px;">
+                <div class="input-group" style="width: 150px;">
                     <label class="label-title">Mês de Referência</label>
                     <select id="dashSelectMonth" class="input-field" onchange="renderDashboard()"></select>
                 </div>
-                <div class="input-group" style="width: 120px;">
+                <div class="input-group" style="width: 110px;">
                     <label class="label-title">Ano</label>
                     <select id="dashSelectYear" class="input-field" onchange="renderDashboard()"></select>
                 </div>
             </div>
             <button class="btn-print" onclick="window.print()">
-                <i class="fas fa-print"></i> Imprimir Painel
+                <i class="fas fa-print"></i> Imprimir
             </button>
         </div>
 
@@ -153,13 +154,12 @@
             <div class="dash-header">
                 <div class="dash-header-title">
                     <img src="https://imgur.com/nWWyEBG.png" alt="Logo Eco" class="print-logo">
-                    <h1><i class="fas fa-file-invoice-dollar"></i> Relatório de Honorários</h1>
-                    <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Período: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
+                    <h1><i class="fas fa-file-invoice-dollar" style="color:#00995D;"></i> Relatório de Honorários</h1>
+                    <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;|&nbsp; Período: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
                 </div>
             </div>
 
             <div class="kpi-grid">
-                
                 <div class="kpi-card total">
                     <div class="kpi-header">
                         <span class="kpi-title">Total a Receber</span>
@@ -195,7 +195,6 @@
                     <p class="kpi-value" id="kpiTotalPart">R$ 0,00</p>
                     <div class="kpi-subtext">Atendimentos: <span>0</span></div>
                 </div>
-
             </div>
 
             <div class="details-grid">
@@ -209,11 +208,11 @@
                         <table class="summary-table">
                             <tbody>
                                 <tr>
-                                    <td class="summary-label">Volume Total de Pacientes</td>
+                                    <td class="summary-label">Volume Total de Pacientes (Tratamentos)</td>
                                     <td class="summary-val" id="detTratPac">0</td>
                                 </tr>
                                 <tr>
-                                    <td class="summary-label">Volume Total de Atendimentos (Itens/Aplicações)</td>
+                                    <td class="summary-label">Volume Total de Atendimentos/Itens</td>
                                     <td class="summary-val" id="detTratItens">0</td>
                                 </tr>
                             </tbody>
@@ -257,11 +256,9 @@
                             </table>
                         </div>
                     </div>
-
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                    
+                <div style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
                     <div class="detail-card" style="flex: 1;">
                         <div class="detail-header">
                             <i class="fas fa-list-check"></i> Relação de Pacientes Pagos (Tratamentos)
@@ -279,7 +276,7 @@
                                         <td colspan="2">
                                             <div class="empty-state">
                                                 <i class="fas fa-inbox"></i>
-                                                Selecione um médico para carregar.
+                                                Selecione um médico para visualizar.
                                             </div>
                                         </td>
                                     </tr>
@@ -287,20 +284,14 @@
                             </table>
                         </div>
                     </div>
-
                 </div>
-
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // VARIÁVEIS GLOBAIS
-        // ==========================================
         let doctors = {};
         let pacientesDb = {};
-
         const IMPOSTO_TAXA = 0.1233; // 12,33%
         const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 
@@ -385,14 +376,11 @@
             return str;
         }
 
-        // ==========================================
-        // INICIALIZAÇÃO E LISTENERS (AUTO-UPDATE)
-        // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('dashboard-repasse', 'Painel de Honorários');
             const now = new Date(); 
             const curY = now.getFullYear(); 
-            let curM = now.getMonth() - 1; // Foca no mês anterior por padrão (Repasse retroativo)
+            let curM = now.getMonth() - 1; // Foca no mês passado
             if (curM < 0) { curM = 11; }
             
             const elYear = document.getElementById('dashSelectYear'); 
@@ -403,7 +391,7 @@
             months.forEach((m, i) => elMonth.add(new Option(m, i)));
             elMonth.value = curM;
 
-            // MÁGICA: Listener que atualiza sozinho sem botão
+            // Auto Update Listeners
             document.getElementById('dashSelectDoctor').addEventListener('change', renderDashboard);
             document.getElementById('dashSelectMonth').addEventListener('change', renderDashboard);
             document.getElementById('dashSelectYear').addEventListener('change', renderDashboard);
@@ -418,7 +406,7 @@
                 doctors = normalizeData(await r.json()); 
                 
                 const dashSel = document.getElementById('dashSelectDoctor');
-                dashSel.innerHTML = '<option value="">-- Escolha um Médico --</option>';
+                dashSel.innerHTML = '<option value="">-- Selecione o Médico --</option>';
 
                 Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
                     dashSel.add(new Option(doc.nome, id));
@@ -434,7 +422,7 @@
         }
 
         // ==========================================
-        // O MOTOR DO DASHBOARD (CÁLCULO E RENDERIZAÇÃO)
+        // MOTOR PRINCIPAL DO DASHBOARD (AUTO-CALCULATE)
         // ==========================================
         async function renderDashboard() {
             const docId = document.getElementById('dashSelectDoctor').value;
@@ -446,12 +434,13 @@
                 return;
             }
 
-            // Exibe a tela principal e reseta campos pra "Carregando"
             document.getElementById('modernDashboard').style.display = 'block';
+            
+            // Set loading states
             document.getElementById('kpiTotalGeral').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             document.getElementById('kpiTotalPlantao').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             document.getElementById('kpiTotalTratamento').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            document.getElementById('tablePacientesTrat').innerHTML = '<tr><td colspan="2" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+            document.getElementById('tablePacientesTrat').innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin fa-2x" style="color:#00995D;"></i></td></tr>';
 
             const doctor = doctors[docId];
             document.getElementById('lblDocName').innerText = doctor.nome.toUpperCase();
@@ -508,7 +497,7 @@
                 document.getElementById('kpiTotalPlantao').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
                 // ------------------------------------------------
-                // 2. TRATAMENTO (Repasse Inteligente)
+                // 2. TRATAMENTOS (Repasse Inteligente)
                 // ------------------------------------------------
                 let pacientesTratCount = new Set();
                 let totalAtendimentosTrat = 0;
@@ -547,7 +536,6 @@
                             let fatItem = Number(parseFloat(d.valor_pago || 0).toFixed(2));
                             let isTaxa = String(d.descricao).toUpperCase().includes('TAXA') || String(d.tipo).toUpperCase() === 'HOS';
                             
-                            // Regra da Grazielly
                             let isGrazielly = (agrupamentoPaciente[pac].pName.toUpperCase().includes('GRAZIELLY')) || (agrupamentoPaciente[pac].eName.toUpperCase().includes('GRAZIELLY'));
                             let isCortado = isTaxa && !isGrazielly;
                             
@@ -556,7 +544,6 @@
                                 let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
                                 let custoDb = Number(parseFloat(d.custo_informado || ext.custo_informado || 0).toFixed(2));
                                 
-                                // Somente acumula se o item não der lucro negativo
                                 let lucroItem = fatItem - impItem - custoDb;
                                 if (lucroItem > 0) {
                                     agrupamentoPaciente[pac].fatTotal += fatItem;
@@ -611,12 +598,12 @@
                 // ------------------------------------------------
                 // 3. TOTAL GERAL (SOMA TUDO)
                 // ------------------------------------------------
-                let valorParticular = 0; // Mockado até integrar módulo particular
+                let valorParticular = 0; 
                 let totalGeral = valorPlantao + valorTratamento + valorParticular;
                 document.getElementById('kpiTotalGeral').innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
             } catch (err) {
-                console.error("Erro ao montar o painel: ", err);
+                alert("Erro ao processar os dados.");
             }
         }
     </script>
