@@ -38,6 +38,10 @@
         .bg-inactive { background: #e5e7eb; color: #4b5563; border: 1px solid #d1d5db; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
+        /* Novos Badges de Médico */
+        .badge.prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
+        .badge.encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
         /* Botões de Ação na Tabela */
         .actions-cell { display: flex; justify-content: center; gap: 8px; }
         .btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e5e7eb; background: white; color: #4b5563; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -90,6 +94,11 @@
                 <span id="syncIndicator" style="font-size: 12px; color: #6b7280; display: none;">
                     <i class="fas fa-sync-alt fa-spin"></i> Buscando dados Unimed...
                 </span>
+                
+                <button class="btn-primary" style="background:#3b82f6;" onclick="openBulkLinkModal()">
+                    <i class="fas fa-link"></i> Vincular em Massa
+                </button>
+
                 <button class="btn-primary" onclick="openAddModal()">
                     <i class="fas fa-user-plus"></i> Novo Paciente Manual
                 </button>
@@ -101,15 +110,16 @@
                 <table class="data-table" id="patientsTable">
                     <thead>
                         <tr>
-                            <th style="width: 30%">Nome do Paciente</th>
+                            <th style="width: 40px; text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAllPatients(this)"></th>
+                            <th style="width: 25%">Nome do Paciente</th>
                             <th style="width: 15%">Carteirinha</th>
-                            <th style="width: 15%; text-align: center;">Status</th>
-                            <th style="width: 25%">Médico Responsável</th>
+                            <th style="width: 10%; text-align: center;">Status</th>
+                            <th style="width: 30%">Médico(s) Vinculado(s)</th>
                             <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="5" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando pacientes...</td></tr>
+                        <tr><td colspan="6" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando pacientes...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -138,23 +148,32 @@
     </div>
 
     <div class="modal-overlay" id="linkModal">
-        <div class="modal-content">
+        <div class="modal-content" style="width: 450px;">
             <div class="modal-header">
-                <span>Vincular Médico</span>
+                <span id="linkModalTitle">Vincular Médicos</span>
                 <button class="modal-close" onclick="closeModals()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Paciente: <strong id="linkPatientName" style="color: #000;"></strong></p>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Paciente(s): <strong id="linkPatientName" style="color: #000; font-size: 14px;"></strong></p>
                 <input type="hidden" id="linkPatientId">
                 
-                <label class="form-label">Selecione o Médico Responsável</label>
-                <select id="linkDoctorSelect" class="form-select">
-                    <option value="">-- Selecione --</option>
-                </select>
+                <div style="background: #fdf2f8; border: 1px solid #fbcfe8; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                    <label class="form-label" style="color: #be185d; margin-bottom: 8px;"><i class="fas fa-stethoscope"></i> Médico Prescritor</label>
+                    <select id="linkPrescritorSelect" class="form-select" style="margin-bottom: 0; border-color: #fbcfe8;">
+                        <option value="">-- Nenhum --</option>
+                    </select>
+                </div>
+
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 8px;">
+                    <label class="form-label" style="color: #c2410c; margin-bottom: 8px;"><i class="fas fa-share-square"></i> Médico Encaminhador</label>
+                    <select id="linkEncaminhadorSelect" class="form-select" style="margin-bottom: 0; border-color: #fed7aa;">
+                        <option value="">-- Nenhum --</option>
+                    </select>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-sync" style="background: #9ca3af;" onclick="closeModals()">Cancelar</button>
-                <button class="btn-primary" onclick="saveDoctorLink()">Confirmar Vínculo</button>
+                <button class="btn-primary" id="btnSaveLink" onclick="saveDoctorLink()"><i class="fas fa-check"></i> Salvar Vínculos</button>
             </div>
         </div>
     </div>
@@ -182,8 +201,8 @@
     <script>
         let patients = {};
         let doctors = {};
+        let bulkLinkIds = []; // Controle dos vínculos em massa
 
-        // 🛡️ O Gerador de ID Blindado (Garante que nunca duplique)
         const generatePatientId = (name) => {
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
@@ -192,22 +211,26 @@
             initGlobal('pacientes', 'Gestão de Pacientes');
             await loadDoctors();
             await loadPatients();
-            
-            // 🚀 Sincronização Invisível (Auto-Sync) ao abrir a tela
             autoSyncUnimedPatients();
         });
 
         // ==========================================
-        // 1. CARREGAMENTO DE DADOS (READ)
+        // 1. CARREGAMENTO DE DADOS
         // ==========================================
         async function loadDoctors() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 if(res.ok) {
                     doctors = normalizeData(await res.json());
-                    const select = document.getElementById('linkDoctorSelect');
+                    const selPresc = document.getElementById('linkPrescritorSelect');
+                    const selEncam = document.getElementById('linkEncaminhadorSelect');
+                    
+                    selPresc.innerHTML = '<option value="">-- Nenhum --</option>';
+                    selEncam.innerHTML = '<option value="">-- Nenhum --</option>';
+
                     Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
-                        select.add(new Option(doc.nome, id));
+                        if (doc.prescritor === 'sim') selPresc.add(new Option(doc.nome, id));
+                        if (doc.encaminhador === 'sim') selEncam.add(new Option(doc.nome, id));
                     });
                 }
             } catch(e) {}
@@ -221,12 +244,12 @@
                 else patients = {};
                 renderTable();
             } catch(e) { 
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro ao conectar com o banco de pacientes.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Erro ao conectar com o banco de pacientes.</td></tr>';
             }
         }
 
         // ==========================================
-        // 2. SINCRONIZAÇÃO INVISÍVEL COM UNIMED (Busca a Carteirinha)
+        // 2. SINCRONIZAÇÃO INVISÍVEL
         // ==========================================
         async function autoSyncUnimedPatients() {
             const indicator = document.getElementById('syncIndicator');
@@ -246,47 +269,34 @@
                         const patId = generatePatientId(patName);
                         const carteirinhaRobo = row.carteirinha || '';
 
-                        // Cenário 1: Paciente não existe (Cadastro Novo)
                         if (!patients[patId]) {
                             const newPat = {
-                                id_firebase: patId,
-                                nome: patName,
-                                carteirinha: carteirinhaRobo,
-                                doctor_id: "",
-                                status: "ativo",
-                                data_criacao: new Date().toISOString()
+                                id_firebase: patId, nome: patName, carteirinha: carteirinhaRobo,
+                                doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", data_criacao: new Date().toISOString()
                             };
-                            
-                            await fetch(API_BASE_URL + '/pacientes', {
-                                method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat)
-                            });
-                            
+                            await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) });
                             patients[patId] = newPat;
                             dadosAtualizados = true;
                         } 
-                        // Cenário 2: Paciente existe, mas ainda não tinha a carteirinha salva
                         else if (!patients[patId].carteirinha && carteirinhaRobo) {
                             patients[patId].carteirinha = carteirinhaRobo;
-                            await fetch(API_BASE_URL + '/pacientes', {
-                                method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId])
-                            });
+                            await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) });
                             dadosAtualizados = true;
                         }
                     }
                 }
-
                 if(dadosAtualizados) renderTable();
-
-            } catch(e) {
-                console.error("Erro na auto-sincronização", e);
-            } finally {
-                indicator.style.display = 'none';
-            }
+            } catch(e) { } finally { indicator.style.display = 'none'; }
         }
 
         // ==========================================
-        // 3. RENDERIZAÇÃO DA TABELA
+        // 3. RENDERIZAÇÃO DA TABELA E CHECKBOXES
         // ==========================================
+        function toggleAllPatients(source) {
+            const checkboxes = document.querySelectorAll('.patient-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
         function renderTable() {
             const tbody = document.querySelector('#patientsTable tbody');
             const searchTerm = document.getElementById('searchPatient').value.toUpperCase();
@@ -297,34 +307,40 @@
 
             patArray.forEach(p => {
                 const isInactive = p.status === 'inativo';
-                const hasDoctor = p.doctor_id && p.doctor_id !== "";
+                const hasDoctor = p.prescritor_id || p.encaminhador_id || p.doctor_id;
                 const cartStr = p.carteirinha || '';
 
-                // Lógica de Filtro Duplo (Nome ou Carteirinha)
                 if (searchTerm && !p.nome.includes(searchTerm) && !cartStr.includes(searchTerm)) return;
-                
                 if (filterStatus === 'ativos' && isInactive) return;
                 if (filterStatus === 'inativo' && !isInactive) return;
                 if (filterStatus === 'novo' && (hasDoctor || isInactive)) return;
                 if (filterStatus === 'vinculado' && (!hasDoctor || isInactive)) return;
 
                 let statusBadge = '';
-                let doctorName = '';
+                let doctorNameHtml = '';
 
                 if (isInactive) {
                     statusBadge = `<span class="badge bg-inactive" title="Motivo: ${p.motivo_inativacao || 'Não informado'}"><i class="fas fa-ban"></i> Inativo</span>`;
-                    doctorName = `<span style="color:#9ca3af; text-decoration: line-through;">${hasDoctor && doctors[p.doctor_id] ? doctors[p.doctor_id].nome : 'Sem médico'}</span>`;
+                    doctorNameHtml = `<span style="color:#9ca3af; text-decoration: line-through;">Cadastro Inativo</span>`;
                 } else if (hasDoctor) {
                     statusBadge = `<span class="badge bg-linked"><i class="fas fa-check-circle"></i> Vinculado</span>`;
-                    doctorName = doctors[p.doctor_id] ? doctors[p.doctor_id].nome : 'Médico Excluído';
+                    
+                    let pName = p.prescritor_id && doctors[p.prescritor_id] ? doctors[p.prescritor_id].nome : null;
+                    let eName = p.encaminhador_id && doctors[p.encaminhador_id] ? doctors[p.encaminhador_id].nome : null;
+
+                    if (!pName && !eName && p.doctor_id && doctors[p.doctor_id]) {
+                        doctorNameHtml = `<span style="color:#6b7280; font-style:italic;"><i class="fas fa-history"></i> ${doctors[p.doctor_id].nome} (Vínculo Antigo - Favor Atualizar)</span>`;
+                    } else {
+                        if (pName) doctorNameHtml += `<div style="color:#be185d; font-weight:bold; font-size:12px; margin-bottom:5px;"><i class="fas fa-stethoscope"></i> Prescritor: ${pName}</div>`;
+                        if (eName) doctorNameHtml += `<div style="color:#c2410c; font-weight:bold; font-size:12px;"><i class="fas fa-share-square"></i> Encaminhador: ${eName}</div>`;
+                    }
                 } else {
                     statusBadge = `<span class="badge bg-new"><i class="fas fa-exclamation-circle"></i> Novo</span>`;
-                    doctorName = `<span style="color:#9ca3af; font-style:italic;">Aguardando vínculo...</span>`;
+                    doctorNameHtml = `<span style="color:#9ca3af; font-style:italic;">Aguardando vínculo...</span>`;
                 }
 
-                // Botões de Ação
                 let actionButtons = `
-                    <button class="btn-icon btn-icon-link" title="Vincular Médico" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.doctor_id || ''}')">
+                    <button class="btn-icon btn-icon-link" title="Vincular Médico" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.prescritor_id || ''}', '${p.encaminhador_id || ''}')">
                         <i class="fas fa-link"></i>
                     </button>
                     <button class="btn-icon btn-icon-edit" title="Editar Cadastro" onclick="openEditModal('${p.id_firebase}')">
@@ -346,43 +362,39 @@
                 `;
 
                 html += `<tr>
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="patient-checkbox" value="${p.id_firebase}">
+                    </td>
                     <td style="font-weight: bold; color: ${isInactive ? '#9ca3af' : '#1f2937'};">${p.nome}</td>
                     <td style="font-family: monospace; color: #4b5563;">${cartStr || '-'}</td>
                     <td style="text-align: center;">${statusBadge}</td>
-                    <td>${doctorName}</td>
+                    <td>${doctorNameHtml}</td>
                     <td><div class="actions-cell">${actionButtons}</div></td>
                 </tr>`;
             });
 
-            if (html === '') html = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: #6b7280;">Nenhum paciente encontrado neste filtro.</td></tr>';
+            if (html === '') html = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #6b7280;">Nenhum paciente encontrado neste filtro.</td></tr>';
             tbody.innerHTML = html;
         }
 
         function filterTable() { renderTable(); }
 
         // ==========================================
-        // 4. FUNÇÕES DE CRUD (CREATE, UPDATE, DELETE)
+        // 4. FUNÇÕES DE CRUD E MODAIS
         // ==========================================
-        function closeModals() {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
-        }
+        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
         // --- ADICIONAR / EDITAR PACIENTE ---
         function openAddModal() {
-            document.getElementById('editPatientId').value = '';
-            document.getElementById('patientNameInput').value = '';
-            document.getElementById('patientCarteirinhaInput').value = '';
-            document.getElementById('addEditModalTitle').innerText = 'Adicionar Novo Paciente';
+            document.getElementById('editPatientId').value = ''; document.getElementById('patientNameInput').value = '';
+            document.getElementById('patientCarteirinhaInput').value = ''; document.getElementById('addEditModalTitle').innerText = 'Adicionar Novo Paciente';
             document.getElementById('addEditModal').classList.add('active');
         }
 
         function openEditModal(id) {
-            const pat = patients[id];
-            if(!pat) return;
-            document.getElementById('editPatientId').value = id;
-            document.getElementById('patientNameInput').value = pat.nome;
-            document.getElementById('patientCarteirinhaInput').value = pat.carteirinha || '';
-            document.getElementById('addEditModalTitle').innerText = 'Editar Cadastro do Paciente';
+            const pat = patients[id]; if(!pat) return;
+            document.getElementById('editPatientId').value = id; document.getElementById('patientNameInput').value = pat.nome;
+            document.getElementById('patientCarteirinhaInput').value = pat.carteirinha || ''; document.getElementById('addEditModalTitle').innerText = 'Editar Cadastro do Paciente';
             document.getElementById('addEditModal').classList.add('active');
         }
 
@@ -394,104 +406,97 @@
             if (!nameInput) return alert('O nome é obrigatório!');
 
             if (idInput) {
-                // MODO EDIÇÃO
-                patients[idInput].nome = nameInput;
-                patients[idInput].carteirinha = cartInput;
-                try {
-                    await fetch(API_BASE_URL + '/pacientes', {
-                        method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[idInput])
-                    });
+                patients[idInput].nome = nameInput; patients[idInput].carteirinha = cartInput;
+                try { await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[idInput]) });
                 } catch(e) { alert("Erro ao editar."); }
             } else {
-                // MODO CRIAÇÃO
                 const newId = generatePatientId(nameInput);
                 if (patients[newId]) return alert('Este paciente já existe na base de dados!');
-
-                const newPat = {
-                    id_firebase: newId,
-                    nome: nameInput,
-                    carteirinha: cartInput,
-                    doctor_id: "",
-                    status: "ativo",
-                    data_criacao: new Date().toISOString()
-                };
-                
-                try {
-                    await fetch(API_BASE_URL + '/pacientes', {
-                        method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat)
-                    });
-                    patients[newId] = newPat;
+                const newPat = { id_firebase: newId, nome: nameInput, carteirinha: cartInput, doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", data_criacao: new Date().toISOString() };
+                try { await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) }); patients[newId] = newPat;
                 } catch(e) { alert("Erro ao criar."); }
             }
-
-            closeModals();
-            renderTable();
+            closeModals(); renderTable();
         }
 
-        // --- VINCULAR MÉDICO ---
-        function openLinkModal(id, name, currentDoctorId) {
-            document.getElementById('linkPatientId').value = id;
+        // --- VINCULAR MÉDICOS (INDIVIDUAL E MASSA) ---
+        function openLinkModal(id, name, prescritorId, encaminhadorId) {
+            bulkLinkIds = [id]; // Transforma o individual num array de 1
+            document.getElementById('linkModalTitle').innerText = 'Vincular Médicos';
             document.getElementById('linkPatientName').innerText = name;
-            document.getElementById('linkDoctorSelect').value = currentDoctorId;
+            document.getElementById('linkPrescritorSelect').value = prescritorId || '';
+            document.getElementById('linkEncaminhadorSelect').value = encaminhadorId || '';
+            document.getElementById('linkModal').classList.add('active');
+        }
+
+        function openBulkLinkModal() {
+            const checkboxes = document.querySelectorAll('.patient-checkbox:checked');
+            if (checkboxes.length === 0) return alert('Por favor, selecione pelo menos um paciente clicando nas caixinhas ao lado do nome.');
+            
+            bulkLinkIds = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById('linkModalTitle').innerText = 'Vincular em Massa';
+            document.getElementById('linkPatientName').innerText = `${bulkLinkIds.length} paciente(s) selecionado(s)`;
+            
+            document.getElementById('linkPrescritorSelect').value = '';
+            document.getElementById('linkEncaminhadorSelect').value = '';
             document.getElementById('linkModal').classList.add('active');
         }
 
         async function saveDoctorLink() {
-            const patId = document.getElementById('linkPatientId').value;
-            const docId = document.getElementById('linkDoctorSelect').value;
-            if (!patId) return;
-
-            patients[patId].doctor_id = docId; 
-            if(patients[patId].status === 'inativo') patients[patId].status = 'ativo';
-
-            try {
-                await fetch(API_BASE_URL + '/pacientes', {
-                    method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId])
-                });
-                closeModals();
-                renderTable();
-            } catch(e) { alert("Erro ao vincular médico."); }
-        }
-
-        // --- INATIVAR PACIENTE ---
-        function openInactivateModal(id, name) {
-            document.getElementById('inactivatePatientId').value = id;
-            document.getElementById('inactivatePatientName').innerText = name;
-            document.getElementById('inactivateReason').value = '';
-            document.getElementById('inactivateModal').classList.add('active');
-        }
-
-        async function saveInactivation() {
-            const patId = document.getElementById('inactivatePatientId').value;
-            const reason = document.getElementById('inactivateReason').value.trim();
-            if (!reason) return alert('O motivo da inativação é obrigatório!');
-
-            patients[patId].status = 'inativo';
-            patients[patId].motivo_inativacao = reason;
-
-            try {
-                await fetch(API_BASE_URL + '/pacientes', {
-                    method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId])
-                });
-                closeModals();
-                renderTable();
-            } catch(e) { alert("Erro ao inativar paciente."); }
-        }
-
-        // --- EXCLUIR PERMANENTEMENTE ---
-        async function deletePatient(id) {
-            if(!confirm("CUIDADO: Tem certeza que deseja EXCLUIR PERMANENTEMENTE este paciente?\n\nSe ele aparecer na Unimed novamente, será recriado do zero.")) return;
+            const pId = document.getElementById('linkPrescritorSelect').value;
+            const eId = document.getElementById('linkEncaminhadorSelect').value;
             
+            if (bulkLinkIds.length === 0) return;
+
+            const btnSave = document.getElementById('btnSaveLink');
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            btnSave.disabled = true;
+
+            const promises = bulkLinkIds.map(patId => {
+                patients[patId].prescritor_id = pId;
+                patients[patId].encaminhador_id = eId;
+                patients[patId].doctor_id = pId || eId || ""; 
+                if(patients[patId].status === 'inativo') patients[patId].status = 'ativo';
+
+                return fetch(API_BASE_URL + '/pacientes', {
+                    method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId])
+                });
+            });
+
             try {
-                await fetch(`${API_BASE_URL}/pacientes/${id}`, { method: 'DELETE', headers: API_HEADERS });
-                delete patients[id];
+                await Promise.all(promises);
+                closeModals();
+                if(document.getElementById('checkAll')) document.getElementById('checkAll').checked = false;
                 renderTable();
+                bulkLinkIds = [];
             } catch(e) { 
-                alert('Erro ao tentar excluir do banco.'); 
+                alert("Erro ao salvar vínculos."); 
+            } finally {
+                btnSave.innerHTML = '<i class="fas fa-check"></i> Salvar Vínculos';
+                btnSave.disabled = false;
             }
         }
 
-        // Utilitário
+        // --- INATIVAR / EXCLUIR ---
+        function openInactivateModal(id, name) {
+            document.getElementById('inactivatePatientId').value = id; document.getElementById('inactivatePatientName').innerText = name;
+            document.getElementById('inactivateReason').value = ''; document.getElementById('inactivateModal').classList.add('active');
+        }
+
+        async function saveInactivation() {
+            const patId = document.getElementById('inactivatePatientId').value; const reason = document.getElementById('inactivateReason').value.trim();
+            if (!reason) return alert('O motivo da inativação é obrigatório!');
+            patients[patId].status = 'inativo'; patients[patId].motivo_inativacao = reason;
+            try { await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) }); closeModals(); renderTable();
+            } catch(e) { alert("Erro ao inativar paciente."); }
+        }
+
+        async function deletePatient(id) {
+            if(!confirm("CUIDADO: Tem certeza que deseja EXCLUIR PERMANENTEMENTE este paciente?\n\nSe ele aparecer na Unimed novamente, será recriado do zero.")) return;
+            try { await fetch(`${API_BASE_URL}/pacientes/${id}`, { method: 'DELETE', headers: API_HEADERS }); delete patients[id]; renderTable();
+            } catch(e) { alert('Erro ao tentar excluir do banco.'); }
+        }
+
         function normalizeData(apiData) {
             if (!apiData) return {}; const normalized = {};
             Object.entries(apiData).forEach(([key, val]) => {

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Honorários - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
+        
+        .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; }
+        
+        /* Controles do Topo */
+        .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
+        .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .label-title { font-size: 11px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-field { padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; color: #374151; height: 42px; outline: none; transition: 0.2s; background: #f9fafb; cursor: pointer; }
+        .input-field:focus { border-color: #00995D; background: #fff; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
+        
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-print:hover { background: #374151; transform: translateY(-2px); }
+
+        .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e5e7eb; }
+        .dash-header-title h1 { margin: 0; font-size: 26px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+        .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 15px; font-weight: 500; text-transform: uppercase; }
+        .dash-header-title i { color: #00995D; }
+        
+        .print-logo { display: none; height: 65px; object-fit: contain; }
+
+        /* Grid de KPIs */
+        .kpi-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; margin-bottom: 25px; }
+        
+        .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        
+        .kpi-card.total { background: #e9e0f2; }
+        .kpi-card.plantao { background: #d0e9f3; }
+        .kpi-card.tratamento { background: #bceec8; }
+        .kpi-card.particular { background: #fdebc3; }
+
+        .kpi-header { display: flex; justify-content: space-between; align-items: center; }
+        .kpi-title { font-size: 12px; font-weight: 800; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: rgba(255,255,255,0.7); }
+        
+        .kpi-card.total .kpi-icon { color: #7e22ce; }
+        .kpi-card.plantao .kpi-icon { color: #0284c7; }
+        .kpi-card.tratamento .kpi-icon { color: #059669; }
+        .kpi-card.particular .kpi-icon { color: #d97706; }
+
+        .kpi-value { font-size: 34px; font-weight: 900; color: #111827; margin: 10px 0; text-align: center; white-space: nowrap; }
+        .kpi-card.total .kpi-value { color: #7e22ce; font-size: 38px; }
+
+        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; }
+        .kpi-subtext span { color: #111827; font-weight: 700; }
+
+        /* Blocos Menores Empilhados - Layout de 3 Colunas (Sem Pendências) */
+        .details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; margin-bottom: 25px; }
+        
+        .detail-card { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; overflow: hidden; display: flex; flex-direction: column; }
+        .detail-header { background: #ffffff; padding: 15px 20px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
+        .detail-header i { font-size: 16px; }
+        
+        /* Uso de Flex para Linhas em vez de Table (Evita cortes no PDF) */
+        .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px dashed #e5e7eb; font-size: 13px; }
+        .summary-row:last-child { border-bottom: none; }
+        .summary-label { color: #6b7280; font-weight: 600; }
+        .summary-val { color: #111827; font-weight: 800; text-align: right; }
+
+        .giant-list-card { margin-top: 20px; }
+
+        .modern-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .modern-table th { background: #f9fafb; color: #6b7280; font-weight: 700; padding: 12px 22px; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 1;}
+        .modern-table td { padding: 14px 22px; border-bottom: 1px solid #f3f4f6; color: #374151; font-weight: 600; }
+        .modern-table tr:last-child td { border-bottom: none; }
+        .modern-table tr:hover td { background: #f9fafb; }
+        
+        .empty-state { padding: 40px 20px; text-align: center; color: #9ca3af; font-size: 14px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .empty-state i { font-size: 36px; color: #e5e7eb; }
+
+        .list-container { max-height: 500px; overflow-y: auto; }
+        
+        /* Input para Convênio */
+        .manual-input { width: 100px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: right; font-weight: 700; font-size: 14px; color: #111827; outline: none; transition: 0.2s; }
+        .manual-input:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
+        .print-only { display: none; } /* Texto puro que vai aparecer no PDF no lugar do Input */
+
+        /* ========================================================
+           IMPRESSÃO - ENCAIXE PERFEITO 
+           ======================================================== */
+        @media print {
+            body { background: white; -webkit-print-color-adjust: exact; margin: 0; padding: 0;}
+            .controls, #global-header, #global-nav { display: none !important; }
+            .modern-dashboard { display: block !important; animation: none; }
+            .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+            
+            .print-logo { display: block; margin-bottom: 5px; height: 50px !important; }
+            .dash-header { align-items: flex-end; border-bottom: 3px solid #00995D; padding-bottom: 10px; margin-bottom: 15px; }
+            .dash-header-title h1 { font-size: 20px !important; }
+            .dash-header-title p { font-size: 12px !important; margin-top: 3px !important; }
+            
+            /* CARDS EM UMA ÚNICA LINHA PARA ECONOMIZAR ESPAÇO */
+            .kpi-row { display: flex !important; flex-wrap: nowrap !important; width: 100% !important; gap: 8px !important; margin-bottom: 15px !important; }
+            .kpi-card { flex: 1 !important; min-width: 0 !important; padding: 10px !important; box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; gap: 5px !important;}
+            .kpi-title { font-size: 9px !important; letter-spacing: 0px !important;}
+            .kpi-icon { width: 24px !important; height: 24px !important; font-size: 12px !important; border-radius: 6px !important;}
+            .kpi-value { font-size: 18px !important; margin: 5px 0 !important; }
+            .kpi-card.total .kpi-value { font-size: 20px !important; }
+            .kpi-subtext { font-size: 9px !important; }
+            
+            /* DIVISÃO EXATA DE 3 COLUNAS LADO A LADO */
+            .details-grid { display: flex !important; flex-direction: row !important; width: 100% !important; gap: 10px !important; margin-bottom: 0 !important;}
+            .detail-card { flex: 1 !important; box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; margin: 0 !important;}
+            .detail-header { padding: 8px 12px !important; font-size: 11px !important; }
+            
+            .summary-row { padding: 6px 10px !important; font-size: 10px !important; }
+            
+            /* MÁGICA DOS INPUTS: ESCONDE INPUT, MOSTRA TEXTO PURO */
+            .no-print { display: none !important; }
+            .print-only { display: inline-block !important; font-weight: 800; color: #111827; }
+            
+            /* A LISTA DE PACIENTES FORÇADA PARA UMA NOVA PÁGINA (PÁGINA 2) */
+            .giant-list-card { page-break-before: always !important; break-before: page !important; margin-top: 0 !important; border: none !important; box-shadow: none !important; }
+            .giant-list-card .detail-header { justify-content: center !important; font-size: 16px !important; border-bottom: 2px solid #00995D !important; margin-bottom: 10px; padding: 0 0 10px 0 !important; background: transparent !important;}
+            .list-container { max-height: none !important; overflow: visible !important; }
+            .modern-table th, .modern-table td { padding: 6px 12px !important; font-size: 10px !important; text-align: center !important;}
+            
+            @page { size: A4 landscape; margin: 10mm; }
+        }
+
+        @media (max-width: 1024px) {
+            .details-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="controls">
+            <div class="controls-group">
+                <div class="input-group" style="width: 320px;">
+                    <label class="label-title">Selecione o Médico</label>
+                    <select id="dashSelectDoctor" class="input-field"></select>
+                </div>
+                <div class="input-group" style="width: 150px;">
+                    <label class="label-title">Mês de Referência</label>
+                    <select id="dashSelectMonth" class="input-field"></select>
+                </div>
+                <div class="input-group" style="width: 110px;">
+                    <label class="label-title">Ano</label>
+                    <select id="dashSelectYear" class="input-field"></select>
+                </div>
+            </div>
+            <button class="btn-print" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir Painel
+            </button>
+        </div>
+
+        <div id="modernDashboard" class="modern-dashboard">
+            
+            <div class="dash-header">
+                <div class="dash-header-title">
+                    <img src="https://imgur.com/nWWyEBG.png" alt="Logo Eco" class="print-logo">
+                    <div>
+                        <h1><i class="fas fa-file-invoice-dollar"></i> Relatório de Honorários</h1>
+                        <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Período: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-row">
+                <div class="kpi-card total" style="flex: 2 1 300px;">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Total a Receber</span>
+                        <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
+                    </div>
+                    <p class="kpi-value" id="kpiTotalGeral">R$ 0,00</p>
+                    <div class="kpi-subtext">Consolidação de todos os módulos</div>
+                </div>
+
+                <div class="kpi-card tratamento">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Tratamentos (Repasse)</span>
+                        <div class="kpi-icon"><i class="fas fa-pills"></i></div>
+                    </div>
+                    <p class="kpi-value" id="kpiTotalTratamento">R$ 0,00</p>
+                    <div class="kpi-subtext">Pacientes Atendidos: <span id="kpiTratPac">0</span></div>
+                </div>
+            </div>
+
+            <div class="kpi-row">
+                <div class="kpi-card plantao" style="flex: 2 1 300px;">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Sala Médica (Plantões)</span>
+                        <div class="kpi-icon"><i class="fas fa-hospital"></i></div>
+                    </div>
+                    <p class="kpi-value" id="kpiTotalPlantao">R$ 0,00</p>
+                    <div class="kpi-subtext">Total de turnos: <span id="kpiPlantTurnos">0</span></div>
+                </div>
+
+                <div class="kpi-card particular">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Consultas Particulares</span>
+                        <div class="kpi-icon"><i class="fas fa-user-friends"></i></div>
+                    </div>
+                    <p class="kpi-value" id="kpiTotalPart">R$ 0,00</p>
+                    <div class="kpi-subtext">Atendimentos: <span id="kpiPartAtend">0</span></div>
+                </div>
+            </div>
+
+            <div class="details-grid">
+                
+                <div class="detail-card">
+                    <div class="detail-header" style="color: #0284c7;">
+                        <i class="fas fa-user-md" style="color: #0ea5e9;"></i> Resumo de Sala Médica (Plantões)
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Total de Turnos Cumpridos</span>
+                        <span class="summary-val" id="detPlantTurnos">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Valor Apurado na Escala</span>
+                        <span class="summary-val" id="detPlantValor" style="color: #0284c7;">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-header" style="color: #059669;">
+                        <i class="fas fa-chart-pie" style="color: #10b981;"></i> Resumo Analítico - Tratamentos
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Volume Total de Pacientes</span>
+                        <span class="summary-val" id="detTratPac">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Volume Total de Atendimentos</span>
+                        <span class="summary-val" id="detTratItens">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Repasse Apurado</span>
+                        <span class="summary-val" id="detTratValor" style="color: #059669;">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-header" style="color: #1f2937;">
+                        <i class="fas fa-building" style="color: #6b7280;"></i> Consultas - Convênio (Prédio)
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Quantidade de Consultas</span>
+                        <span class="summary-val">
+                            <span class="print-only" id="printConvQtd">0</span>
+                            <input type="number" id="inpConvQtd" value="0" min="0" class="manual-input no-print" oninput="document.getElementById('printConvQtd').innerText=this.value;">
+                        </span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Valor Apurado (R$)</span>
+                        <span class="summary-val">
+                            <span class="print-only" id="printConvValor">0.00</span>
+                            <input type="number" id="inpConvValor" value="0.00" min="0" step="0.01" class="manual-input no-print" oninput="document.getElementById('printConvValor').innerText=this.value;">
+                        </span>
+                    </div>
+                    <div style="padding: 12px; background: #fef2f2; color: #991b1b; font-size: 8px; font-weight: 700; text-align: center; border-top: 1px solid #fecaca; line-height: 1.4;">
+                        NOTA FISCAL DEVE SER EMITIDA P/ repasse@ecomedicalcenter.com.br<br>
+                        BF SERVICOS MEDICOS E EMPREENDIMENTOS IMOBILIARIOS LTDA - CNPJ: 33.743.664/0001-08<br>
+                        Incluir na descrição o nome completo do profissional.
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="detail-card giant-list-card">
+                <div class="detail-header" style="color: #059669; justify-content: center;">
+                    <i class="fas fa-list-check" style="color: #10b981;"></i> Relação de Pacientes Pagos (Tratamentos)
+                </div>
+                <div class="list-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%; text-align: center;">Data(s) Atend.</th>
+                                <th style="width: 75%; text-align: center;">Nome do Paciente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablePacientesTrat">
+                            <tr>
+                                <td colspan="2">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        Selecione um médico para visualizar os dados.
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let doctors = {};
+        let pacientesDb = {};
+
+        const IMPOSTO_TAXA = 0.1233; 
+        const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+
+        function normalizeData(apiData) {
+            if (!apiData) return {}; 
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            }); 
+            return normalized;
+        }
+
+        const generatePatientId = (name) => {
+            return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        };
+
+        function parseCurrency(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return parseFloat(val.toFixed(2));
+            let s = String(val).replace(/[^\d.,-]/g, '');
+            if (s.includes(',') && s.includes('.')) {
+                let lastDot = s.lastIndexOf('.');
+                let lastComma = s.lastIndexOf(',');
+                if (lastComma > lastDot) s = s.replace(/\./g, '').replace(',', '.');
+                else s = s.replace(/,/g, '');
+            } else if (s.includes(',')) {
+                s = s.replace(',', '.');
+            } else if (s.includes('.')) {
+                let parts = s.split('.');
+                if (parts[parts.length - 1].length === 3) s = s.replace(/\./g, '');
+            }
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : parseFloat(num.toFixed(2));
+        }
+
+        function getComissaoInfo(pName, eName) {
+            let percP = 0; let percE = 0;
+            const grupoMama = [
+                'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
+                'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
+                'FLAVIA KURODA', 'IRIS RABINOVICH', 'ISABELA MONTEIRO SOARES', 
+                'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO',
+                'MAIKOL'
+            ];
+            const isSpecial = (name) => {
+                if(!name) return false;
+                let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                return grupoMama.some(m => upper.includes(m));
+            };
+            if (pName) percP = 12.50; 
+            if (eName) percE = isSpecial(eName) ? 37.50 : 12.50; 
+            return { percP, percE, totalPerc: percP + percE };
+        }
+
+        function getHolidays(y) { 
+            const pad = n => String(n).padStart(2,'0');
+            const h = { 
+                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
+                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
+                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
+            }; 
+            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
+            I = I - 30*Math.floor((I/30)); 
+            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
+            J = J - 7*Math.floor(J/7); 
+            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
+            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
+            const add = (baseDate, days) => { 
+                const r = new Date(baseDate.getTime()); 
+                r.setDate(r.getDate() + days); 
+                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
+            }; 
+            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
+            return h; 
+        }
+
+        function normalizeDate(d) {
+            if (!d) return "";
+            if (typeof d === 'number') {
+                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
+                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
+            }
+            let str = String(d).trim();
+            if (!str) return ""; 
+            
+            if (str.includes('T')) str = str.split('T')[0];
+            if (str.includes('-')) {
+                let p = str.split('-');
+                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            if (str.includes('/')) {
+                let p = str.split('/');
+                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
+                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+                }
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            return str;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('dashboard-repasse', 'Painel de Honorários');
+            const now = new Date(); 
+            const curY = now.getFullYear(); 
+            let curM = now.getMonth() - 1; 
+            if (curM < 0) { curM = 11; }
+            
+            const elYear = document.getElementById('dashSelectYear'); 
+            for(let i = curY - 2; i <= curY + 2; i++) { elYear.add(new Option(i, i)); }
+            elYear.value = curY; 
+            
+            const elMonth = document.getElementById('dashSelectMonth');
+            months.forEach((m, i) => elMonth.add(new Option(m, i)));
+            elMonth.value = curM;
+
+            document.getElementById('dashSelectDoctor').addEventListener('change', renderDashboard);
+            document.getElementById('dashSelectMonth').addEventListener('change', renderDashboard);
+            document.getElementById('dashSelectYear').addEventListener('change', renderDashboard);
+
+            await loadDoctors();
+            await loadPacientesDb();
+        });
+
+        async function loadDoctors() { 
+            try { 
+                const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                doctors = normalizeData(await r.json()); 
+                
+                const dashSel = document.getElementById('dashSelectDoctor');
+                dashSel.innerHTML = '<option value="">-- Selecione o Médico --</option>';
+
+                Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
+                    dashSel.add(new Option(doc.nome, id));
+                });
+            } catch(e) {}
+        }
+
+        async function loadPacientesDb() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
+                if (res.ok) pacientesDb = normalizeData(await res.json());
+            } catch(e) {}
+        }
+
+        async function renderDashboard() {
+            const docId = document.getElementById('dashSelectDoctor').value;
+            const mo = parseInt(document.getElementById('dashSelectMonth').value);
+            const yr = parseInt(document.getElementById('dashSelectYear').value);
+
+            if (!docId) {
+                document.getElementById('modernDashboard').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('modernDashboard').style.display = 'block';
+            
+            // Reseta inputs manuais de convênio
+            document.getElementById('inpConvQtd').value = "0";
+            document.getElementById('inpConvValor').value = "0.00";
+            document.getElementById('printConvQtd').innerText = "0";
+            document.getElementById('printConvValor').innerText = "0.00";
+
+            // Setup Loading State
+            const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart'];
+            elsToReset.forEach(id => {
+                let el = document.getElementById(id);
+                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:25px;"></i>';
+            });
+            
+            let tbPac = document.getElementById('tablePacientesTrat');
+            if (tbPac) tbPac.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin fa-2x" style="color:#00995D;"></i></td></tr>';
+
+            const doctor = doctors[docId];
+            const doctorName = doctor.nome.toUpperCase();
+            document.getElementById('lblDocName').innerText = doctorName;
+            document.getElementById('lblPeriod').innerText = `${months[mo]} ${yr}`.toUpperCase();
+            
+            const compStr = `${String(mo+1).padStart(2,'0')}/${yr}`;
+
+            try {
+                // ------------------------------------------------
+                // 1. SALA MÉDICA (Plantões)
+                // ------------------------------------------------
+                let turnosPlantao = 0;
+                let valorPlantao = 0;
+                const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
+                const holidays = getHolidays(yr);
+                const daysInMonth = new Date(yr, mo+1, 0).getDate();
+
+                for (let ep of endpoints) {
+                    try {
+                        let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
+                        let searchId = tabName === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${tabName}`;
+                        
+                        const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
+                        if (r.ok) {
+                            const dataObj = normalizeData(await r.json());
+                            let foundId = Object.keys(dataObj).find(k => {
+                                let item = dataObj[k];
+                                if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
+                                return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
+                            });
+                            let dbShifts = {};
+                            if (foundId) {
+                                dbShifts = typeof dataObj[foundId] === 'string' ? JSON.parse(dataObj[foundId]) : dataObj[foundId];
+                            }
+
+                            if (dbShifts[docId]) {
+                                for (let i = 1; i <= daysInMonth; i++) {
+                                    const val = dbShifts[docId][i];
+                                    const d = new Date(yr, mo, i, 12, 0, 0);
+                                    const isoDateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                                    const isHol = !!holidays[isoDateStr];
+                                    const isWk = d.getDay()===0||d.getDay()===6;
+                                    
+                                    if(val && val !== 'S') {
+                                        if (val === 'M/T') turnosPlantao += 2; else turnosPlantao += 1;
+                                        if (isWk || isHol) {
+                                            valorPlantao += (val === 'M/T' ? 900 : 450);
+                                        } else {
+                                            valorPlantao += (val === 'M/T' ? 1000 : 500);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                }
+
+                let elKpiPlantTurnos = document.getElementById('kpiPlantTurnos');
+                if(elKpiPlantTurnos) elKpiPlantTurnos.innerText = turnosPlantao;
+                
+                let elDetPlantTurnos = document.getElementById('detPlantTurnos');
+                if(elDetPlantTurnos) elDetPlantTurnos.innerText = turnosPlantao;
+                
+                let elDetPlantValor = document.getElementById('detPlantValor');
+                if(elDetPlantValor) elDetPlantValor.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                let elKpiTotalPlantao = document.getElementById('kpiTotalPlantao');
+                if(elKpiTotalPlantao) elKpiTotalPlantao.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+                // ------------------------------------------------
+                // 2. TRATAMENTO (Repasse Unimed)
+                // ------------------------------------------------
+                let pacientesTratCount = new Set();
+                let totalAtendimentosTrat = 0;
+                let valorTratamento = 0;
+                let htmlTratamentosLista = '';
+
+                try {
+                    const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
+                    let uData = resU.ok ? Object.values(normalizeData(await resU.json())).filter(r => r.competencia === compStr) : [];
+
+                    let agrupamentoPaciente = {};
+
+                    uData.forEach(d => {
+                        let pac = String(d.paciente || '').toUpperCase().trim();
+                        if(!pac) return;
+                        
+                        let patId = generatePatientId(pac);
+                        let patDb = pacientesDb[patId];
+                        
+                        let pId = null, eId = null;
+                        if (patDb) {
+                            pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
+                            eId = patDb.encaminhador_id;
+                        }
+                        
+                        if (pId === docId || eId === docId) {
+                            if (!agrupamentoPaciente[pac]) {
+                                agrupamentoPaciente[pac] = {
+                                    fatTotal: 0, impTotal: 0, custoTotal: 0,
+                                    itemsDates: [],
+                                    pName: pId && doctors[pId] ? doctors[pId].nome : '',
+                                    eName: eId && doctors[eId] ? doctors[eId].nome : '',
+                                    pId: pId, eId: eId
+                                };
+                            }
+                            
+                            let fatItem = Number(parseFloat(d.valor_pago || 0).toFixed(2));
+                            let isTaxa = String(d.descricao || '').toUpperCase().includes('TAXA') || String(d.tipo || '').toUpperCase() === 'HOS';
+                            
+                            let isGrazielly = (agrupamentoPaciente[pac].pName.toUpperCase().includes('GRAZIELLY')) || (agrupamentoPaciente[pac].eName.toUpperCase().includes('GRAZIELLY'));
+                            let isCortado = isTaxa && !isGrazielly;
+                            
+                            if (!isCortado) {
+                                let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                                let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
+                                let custoDb = Number(parseFloat(d.custo_informado || ext.custo_informado || 0).toFixed(2));
+                                
+                                let lucroItem = fatItem - impItem - custoDb;
+                                
+                                // O SEGREDO DOS ATENDIMENTOS: Só conta a data se o lucro for positivo
+                                if (lucroItem > 0) {
+                                    agrupamentoPaciente[pac].fatTotal += fatItem;
+                                    agrupamentoPaciente[pac].impTotal += impItem;
+                                    agrupamentoPaciente[pac].custoTotal += custoDb;
+                                    
+                                    let dNorm = normalizeDate(d.data_atendimento);
+                                    if(dNorm) agrupamentoPaciente[pac].itemsDates.push(dNorm);
+                                }
+                            }
+                        }
+                    });
+
+                    Object.keys(agrupamentoPaciente).sort().forEach(pac => {
+                        let calc = agrupamentoPaciente[pac];
+                        let lucroGlobal = calc.fatTotal - calc.impTotal - calc.custoTotal;
+                        
+                        if (lucroGlobal > 0) {
+                            const comissaoInfo = getComissaoInfo(calc.pName, calc.eName);
+                            let doctorPerc = 0;
+                            if (calc.pId === docId) doctorPerc += comissaoInfo.percP;
+                            if (calc.eId === docId) doctorPerc += comissaoInfo.percE;
+                            
+                            if (doctorPerc > 0) {
+                                let repasseDestePat = Number((lucroGlobal * (doctorPerc / 100)).toFixed(2));
+                                valorTratamento += repasseDestePat;
+                                pacientesTratCount.add(pac);
+                                
+                                // Remove datas repetidas do mesmo paciente (Atendimentos Únicos Válidos)
+                                let uniqDates = [...new Set(calc.itemsDates)];
+                                totalAtendimentosTrat += uniqDates.length;
+                                
+                                let datesStr = uniqDates.join(', ');
+                                htmlTratamentosLista += `<tr>
+                                    <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compStr}</td>
+                                    <td style="font-weight: 600; text-align:center;">${pac}</td>
+                                </tr>`;
+                            }
+                        }
+                    });
+
+                } catch(e) {}
+
+                let elKpiTratPac = document.getElementById('kpiTratPac');
+                if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
+                
+                let elDetTratPac = document.getElementById('detTratPac');
+                if(elDetTratPac) elDetTratPac.innerText = pacientesTratCount.size;
+                
+                let elDetTratItens = document.getElementById('detTratItens');
+                if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
+                
+                let elDetTratValor = document.getElementById('detTratValor');
+                if(elDetTratValor) elDetTratValor.innerText = `R$ ${valorTratamento.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                let elKpiTotalTratamento = document.getElementById('kpiTotalTratamento');
+                if(elKpiTotalTratamento) elKpiTotalTratamento.innerText = `R$ ${valorTratamento.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                if (htmlTratamentosLista === '') {
+                    htmlTratamentosLista = `<tr><td colspan="2"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com lucro para repasse neste mês.</div></td></tr>`;
+                }
+                let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
+                if(elTablePacientesTrat) elTablePacientesTrat.innerHTML = htmlTratamentosLista;
+
+                // ------------------------------------------------
+                // 3. CONSULTAS PARTICULARES
+                // ------------------------------------------------
+                let valorParticular = 0;
+                let atendimentosParticular = 0;
+
+                try {
+                    const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
+                    if (resSales.ok) {
+                        const vendasData = normalizeData(await resSales.json());
+                        
+                        Object.values(vendasData).forEach(v => {
+                            const isLiminar = (v.tipo_registro === 'liminar' || v.forma_pagamento === 'Liminar');
+                            if (isLiminar) return;
+
+                            if (v.medico && v.medico.toUpperCase() === doctorName) {
+                                const datePart = (v.data || '').split('-');
+                                if (datePart.length >= 2) {
+                                    const vYr = parseInt(datePart[0]);
+                                    const vMo = parseInt(datePart[1]) - 1; 
+                                    
+                                    if (vYr === yr && vMo === mo) {
+                                        atendimentosParticular++;
+                                        valorParticular += parseCurrency(v.valor_final);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch(e) { console.error("Erro vendas:", e); }
+
+                let elKpiPartAtend = document.getElementById('kpiPartAtend');
+                if(elKpiPartAtend) elKpiPartAtend.innerText = atendimentosParticular;
+                
+                let elKpiTotalPart = document.getElementById('kpiTotalPart');
+                if(elKpiTotalPart) elKpiTotalPart.innerText = `R$ ${valorParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+                // ------------------------------------------------
+                // 4. TOTAL GERAL (APENAS O SISTÊMICO)
+                // ------------------------------------------------
+                let totalGeral = valorPlantao + valorTratamento + valorParticular;
+                
+                let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
+                if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+            } catch (err) {
+                console.error("Erro ao montar o painel: ", err);
+            }
+        }
+    </script>
+</body>
+</html>
