@@ -15,9 +15,11 @@
 
     <style>
         body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
-        .container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
         
-        /* Controles do Topo (Mantidos) */
+        /* TELA INTEIRA (100% WIDTH) COM PADDING DE RESPIRO */
+        .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
+        
+        /* Controles do Topo */
         .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
@@ -30,7 +32,7 @@
         .btn-print:hover { background: #374151; transform: translateY(-2px); }
 
         /* ========================================================
-           DESIGN MODERNO "FORA DO ESQUADRO"
+           DESIGN MODERNO "FORA DO ESQUADRO" COM CORES SUAVES
            ======================================================== */
         .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
@@ -49,10 +51,7 @@
         .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         
-        /* Bordas Coloridas Ocultas */
-        .kpi-card::before { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 4px; display:none; }
-        
-        /* Fundos Coloridos Suaves (Novo!) */
+        /* Fundos Coloridos Suaves */
         .kpi-card.total { background: #e9e0f2; }
         .kpi-card.plantao { background: #d0e9f3; }
         .kpi-card.tratamento { background: #bceec8; }
@@ -239,7 +238,7 @@
                                     <td class="summary-val" id="detTratPac">0</td>
                                 </tr>
                                 <tr>
-                                    <td class="summary-label">Volume Total de Itens (Itens)</td>
+                                    <td class="summary-label">Volume Total de Atendimentos (Itens)</td>
                                     <td class="summary-val" id="detTratItens">0</td>
                                 </tr>
                                 <tr>
@@ -393,7 +392,7 @@
             return h; 
         }
 
-        // Blindagem contra datas undefined no split
+        // Blindagem contra datas inválidas no JSON ou Object
         function normalizeDate(d) {
             if (!d) return "";
             if (typeof d === 'number') {
@@ -401,7 +400,7 @@
                 return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
             }
             let str = String(d).trim();
-            if (!str) return ""; // Segurança extra
+            if (!str) return ""; 
             
             if (str.includes('T')) str = str.split('T')[0];
             if (str.includes('-')) {
@@ -420,7 +419,7 @@
         }
 
         // ==========================================
-        // INICIALIZAÇÃO DA TELA
+        // INICIALIZAÇÃO DA TELA E LISTENERS
         // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('dashboard-repasse', 'Painel de Honorários');
@@ -482,10 +481,16 @@
 
             // Ativa UI com Loading
             document.getElementById('modernDashboard').style.display = 'block';
-            document.getElementById('kpiTotalGeral').innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>';
-            document.getElementById('kpiTotalPlantao').innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>';
-            document.getElementById('kpiTotalTratamento').innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>';
-            document.getElementById('tablePacientesTrat').innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin fa-2x" style="color:#00995D;"></i></td></tr>';
+            
+            // Segurança: Se os elementos existirem, reseta visualmente
+            const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento'];
+            elsToReset.forEach(id => {
+                let el = document.getElementById(id);
+                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>';
+            });
+            
+            let tbPac = document.getElementById('tablePacientesTrat');
+            if (tbPac) tbPac.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin fa-2x" style="color:#00995D;"></i></td></tr>';
 
             const doctor = doctors[docId];
             document.getElementById('lblDocName').innerText = doctor.nome.toUpperCase();
@@ -495,7 +500,7 @@
 
             try {
                 // ------------------------------------------------
-                // 1. SALA MÉDICA (Plantões) - Consolidando as 4 Abas
+                // 1. SALA MÉDICA (Plantões - Soma os 4 locais)
                 // ------------------------------------------------
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
@@ -508,10 +513,14 @@
                         let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
                         let searchId = tabName === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${tabName}`;
                         
-                        const r = await fetch(`${API_BASE_URL}${ep}?t=${versaoApp}`, { headers: API_HEADERS });
+                        const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (r.ok) {
                             const dataObj = normalizeData(await r.json());
-                            let foundId = Object.keys(dataObj).find(k => dataObj[k] && typeof dataObj[k] === 'object' && (dataObj[k].id_firebase === searchId || dataObj[k].id === searchId || k === searchId));
+                            let foundId = Object.keys(dataObj).find(k => {
+                                let item = dataObj[k];
+                                if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
+                                return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
+                            });
                             let dbShifts = foundId ? dataObj[foundId] : {};
 
                             if (dbShifts[docId]) {
@@ -536,18 +545,18 @@
                     } catch(e) {}
                 }
 
-                // Blindagem extra para DOM antes de atualizar
+                // Proteção para não dar erro se não achar o elemento (Variavel corrigida)
                 let elPlantTurnos = document.getElementById('kpiPlantTurnos');
                 if(elPlantTurnos) elPlantTurnos.innerText = turnosPlantao;
                 
                 let elDetPlantTurnos = document.getElementById('detPlantTurnos');
-                if(elDetPlantTurnos) elDetTurnos.innerText = turnosPlantao;
+                if(elDetPlantTurnos) elDetPlantTurnos.innerText = turnosPlantao;
                 
                 let elDetPlantValor = document.getElementById('detPlantValor');
                 if(elDetPlantValor) elDetPlantValor.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
-                let elKpiTotalPlantao = document.getElementById('kpiTotalPlantao');
-                if(elKpiTotalPlantao) elKpiTotalPlantao.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                let elKpiPlantao = document.getElementById('kpiTotalPlantao');
+                if(elKpiPlantao) elKpiPlantao.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
                 // ------------------------------------------------
                 // 2. TRATAMENTO (Repasse Inteligente)
@@ -566,6 +575,7 @@
                     uData.forEach(d => {
                         let pac = String(d.paciente || '').toUpperCase().trim();
                         if(!pac) return;
+                        
                         let patId = generatePatientId(pac);
                         let patDb = pacientesDb[patId];
                         
@@ -662,10 +672,11 @@
                 if(elTablePacientesTrat) elTablePacientesTrat.innerHTML = htmlTratamentosLista;
 
                 // ------------------------------------------------
-                // 3. TOTAL GERAL
+                // 3. TOTAL GERAL (SOMA TUDO)
                 // ------------------------------------------------
-                let valorParticular = 0; // Mockado
+                let valorParticular = 0; // Mockado até integrar módulo particular
                 let totalGeral = valorPlantao + valorTratamento + valorParticular;
+                
                 let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
                 if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
