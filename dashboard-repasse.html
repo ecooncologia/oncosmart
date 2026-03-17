@@ -41,7 +41,7 @@
 
         .kpi-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; margin-bottom: 25px; }
         
-        .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
+        .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         
         .kpi-card.total { background: #e9e0f2; }
@@ -49,8 +49,8 @@
         .kpi-card.tratamento { background: #bceec8; }
         .kpi-card.particular { background: #fdebc3; }
 
-        .kpi-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; position: relative;}
-        .kpi-title { font-size: 12px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-header { display: flex; justify-content: space-between; align-items: center; }
+        .kpi-title { font-size: 12px; font-weight: 800; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: rgba(255,255,255,0.7); }
         
         .kpi-card.total .kpi-icon { color: #7e22ce; }
@@ -58,10 +58,11 @@
         .kpi-card.tratamento .kpi-icon { color: #059669; }
         .kpi-card.particular .kpi-icon { color: #d97706; }
 
-        .kpi-value { font-size: 36px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; white-space: nowrap; }
-        .kpi-card.total .kpi-value { color: #7e22ce; }
+        /* Substituído o absolute por normal flex flow para não sobrepor */
+        .kpi-value { font-size: 34px; font-weight: 900; color: #111827; margin: 10px 0; text-align: center; white-space: nowrap; }
+        .kpi-card.total .kpi-value { color: #7e22ce; font-size: 38px; }
 
-        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; z-index: 2; position: relative; margin-top: auto;}
+        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; }
         .kpi-subtext span { color: #111827; font-weight: 700; }
 
         /* Blocos Menores Empilhados */
@@ -74,7 +75,6 @@
         .detail-header { background: #ffffff; padding: 18px 22px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .detail-header i { font-size: 16px; }
         
-        /* O Bloco Gigante de Pacientes agora fica sozinho e largo embaixo */
         .giant-list-card { margin-top: 20px; }
 
         .modern-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
@@ -87,34 +87,46 @@
         .empty-state i { font-size: 36px; color: #e5e7eb; }
 
         .summary-table { width: 100%; font-size: 14px; }
-        .summary-table td { padding: 16px 22px; border-bottom: 1px dashed #e5e7eb; }
+        .summary-table td { padding: 16px 22px; border-bottom: 1px dashed #e5e7eb; vertical-align: middle; }
         .summary-table tr:last-child td { border-bottom: none; }
         .summary-label { color: #6b7280; font-weight: 600; }
         .summary-val { color: #111827; font-weight: 800; text-align: right; }
 
         .list-container { max-height: 500px; overflow-y: auto; }
         
-        /* Banner amarelo */
-        .coming-soon { background: #fefce8; border: 1px dashed #fcd34d; padding: 15px; text-align: center; color: #b45309; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* Input para Convênio */
+        .manual-input { width: 100px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: right; font-weight: 700; font-size: 14px; color: #111827; outline: none; transition: 0.2s; }
+        .manual-input:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
 
-        /* Impressão - A mágica para não cortar nada */
+        /* Impressão - Layout Blindado e Escondendo as Bordas do Input */
         @media print {
             body { background: white; -webkit-print-color-adjust: exact; margin: 0; padding: 0;}
             .controls, #global-header, #global-nav { display: none !important; }
             .modern-dashboard { display: block !important; animation: none; }
-            .container { padding: 0; margin: 0; max-width: 100%; width: 100%; }
+            
+            /* Ajuste de Container para 100% sem padding lateral que empurra pra fora */
+            .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important;}
+            
             .print-logo { display: block; margin-bottom: 10px; }
             .dash-header { align-items: flex-end; border-bottom: 3px solid #00995D; padding-bottom: 15px; margin-bottom: 20px; }
-            .kpi-card { box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; }
-            .detail-card { box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; }
-            .list-container { max-height: none; overflow: visible; }
             
-            /* Ajuste fino para encaixar no PDF sem cortar as bordas laterais */
-            .details-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; width: 100%; margin: 0;}
-            .kpi-row { gap: 10px; margin-bottom: 15px;}
-            .details-column { gap: 10px; padding: 5px; border: none; }
+            /* Forçar as colunas a dividirem 50/50 na folha A4 */
+            .details-grid { display: flex !important; width: 100% !important; gap: 15px !important; margin-bottom: 15px !important;}
+            .details-column { flex: 1 !important; width: 48% !important; gap: 15px !important; padding: 0 !important; border: none !important;}
             
-            @page { size: landscape; margin: 10mm; }
+            /* KPIs alinhados */
+            .kpi-row { display: flex !important; flex-wrap: nowrap !important; width: 100% !important; gap: 10px !important; margin-bottom: 15px !important;}
+            .kpi-card { flex: 1 !important; min-width: 0 !important; padding: 12px !important; box-shadow: none !important; border: 1px solid #e5e7eb !important; break-inside: avoid; }
+            .kpi-value { font-size: 20px !important; margin: 5px 0 !important; }
+            
+            .detail-card { box-shadow: none !important; border: 1px solid #e5e7eb !important; break-inside: avoid; }
+            .list-container { max-height: none !important; overflow: visible !important; }
+            
+            /* Transformar input em texto puro na impressão */
+            .manual-input { border: none !important; background: transparent !important; box-shadow: none !important; padding: 0 !important; width: auto !important; }
+            .manual-input::-webkit-inner-spin-button, .manual-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+            
+            @page { size: A4 landscape; margin: 12mm; }
         }
 
         @media (max-width: 1024px) {
@@ -158,7 +170,7 @@
             </div>
 
             <div class="kpi-row">
-                <div class="kpi-card total" style="flex: 2 1 300px;">
+                <div class="kpi-card total">
                     <div class="kpi-header">
                         <span class="kpi-title">Total a Receber</span>
                         <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
@@ -178,7 +190,7 @@
             </div>
 
             <div class="kpi-row">
-                <div class="kpi-card plantao" style="flex: 2 1 300px;">
+                <div class="kpi-card plantao">
                     <div class="kpi-header">
                         <span class="kpi-title">Sala Médica (Plantões)</span>
                         <div class="kpi-icon"><i class="fas fa-hospital"></i></div>
@@ -219,32 +231,6 @@
                     </div>
 
                     <div class="detail-card">
-                        <div class="detail-header" style="color: #1f2937;">
-                            <i class="fas fa-building" style="color: #6b7280;"></i> Consultas - Convênio (Prédio)
-                        </div>
-                        <div class="coming-soon">Integração com o Módulo em Breve</div>
-                        <table class="summary-table" style="opacity: 0.5;">
-                            <tbody>
-                                <tr>
-                                    <td class="summary-label">Quantidade de Consultas</td>
-                                    <td class="summary-val">0</td>
-                                </tr>
-                                <tr>
-                                    <td class="summary-label">Valor Apurado</td>
-                                    <td class="summary-val">R$ 0,00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div style="padding: 15px; background: #fef2f2; color: #991b1b; font-size: 10px; font-weight: 700; text-align: center; border-top: 1px solid #fecaca; line-height: 1.4;">
-                            NOTA FISCAL DEVE SER EMITIDA PELO MÉDICO E ENVIADA PARA repasse@ecomedicalcenter.com.br<br>
-                            BF SERVICOS MEDICOS E EMPREENDIMENTOS IMOBILIARIOS LTDA - CNPJ: 33.743.664/0001-08<br>
-                            Incluir na descrição o nome completo do profissional.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="details-column c2">
-                    <div class="detail-card">
                         <div class="detail-header" style="color: #059669;">
                             <i class="fas fa-chart-pie" style="color: #10b981;"></i> Resumo Analítico - Tratamentos
                         </div>
@@ -267,10 +253,39 @@
                     </div>
 
                     <div class="detail-card">
+                        <div class="detail-header" style="color: #1f2937;">
+                            <i class="fas fa-building" style="color: #6b7280;"></i> Consultas - Convênio (Prédio)
+                        </div>
+                        <table class="summary-table">
+                            <tbody>
+                                <tr>
+                                    <td class="summary-label">Quantidade de Consultas</td>
+                                    <td class="summary-val">
+                                        <input type="number" id="inpConvQtd" value="0" min="0" class="manual-input">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="summary-label">Valor Apurado (R$)</td>
+                                    <td class="summary-val">
+                                        <input type="number" id="inpConvValor" value="0.00" min="0" step="0.01" class="manual-input" oninput="updateTotalGeral()">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="padding: 15px; background: #fef2f2; color: #991b1b; font-size: 10px; font-weight: 700; text-align: center; border-top: 1px solid #fecaca; line-height: 1.4;">
+                            NOTA FISCAL DEVE SER EMITIDA PELO MÉDICO E ENVIADA PARA repasse@ecomedicalcenter.com.br<br>
+                            BF SERVICOS MEDICOS E EMPREENDIMENTOS IMOBILIARIOS LTDA - CNPJ: 33.743.664/0001-08<br>
+                            Incluir na descrição o nome completo do profissional.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="details-column c2">
+                    <div class="detail-card" style="flex: 1;">
                         <div class="detail-header" style="color: #b45309;">
                             <i class="fas fa-exclamation-circle" style="color: #f59e0b;"></i> Relação de Pendências
                         </div>
-                        <div class="list-container" style="max-height: 180px;">
+                        <div class="list-container" style="max-height: 400px;">
                             <table class="modern-table">
                                 <thead><tr><th style="width:25%;">Data</th><th>Paciente / Pendência</th></tr></thead>
                                 <tbody>
@@ -314,6 +329,7 @@
     <script>
         let doctors = {};
         let pacientesDb = {};
+        window.baseTotalGeral = 0; // Armazena a soma das 3 colunas base para o input manual funcionar
 
         const IMPOSTO_TAXA = 0.1233; 
         const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
@@ -464,6 +480,13 @@
             } catch(e) {}
         }
 
+        // Adiciona valor do Convênio Prédio dinamicamente
+        function updateTotalGeral() {
+            let conv = parseFloat(document.getElementById('inpConvValor').value) || 0;
+            let total = window.baseTotalGeral + conv;
+            document.getElementById('kpiTotalGeral').innerText = `R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        }
+
         async function renderDashboard() {
             const docId = document.getElementById('dashSelectDoctor').value;
             const mo = parseInt(document.getElementById('dashSelectMonth').value);
@@ -476,6 +499,11 @@
 
             document.getElementById('modernDashboard').style.display = 'block';
             
+            // Reseta inputs manuais
+            document.getElementById('inpConvQtd').value = "0";
+            document.getElementById('inpConvValor').value = "0.00";
+            window.baseTotalGeral = 0;
+
             // Setup Loading State
             const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart'];
             elsToReset.forEach(id => {
@@ -677,23 +705,18 @@
                     if (resSales.ok) {
                         const vendasData = normalizeData(await resSales.json());
                         
-                        // Filtra as Vendas
                         Object.values(vendasData).forEach(v => {
-                            // Tem que ser particular, não liminar
                             const isLiminar = (v.tipo_registro === 'liminar' || v.forma_pagamento === 'Liminar');
                             if (isLiminar) return;
 
-                            // Bate o Médico?
                             if (v.medico && v.medico.toUpperCase() === doctorName) {
-                                // Bate o Mês e o Ano?
                                 const datePart = (v.data || '').split('-');
                                 if (datePart.length >= 2) {
                                     const vYr = parseInt(datePart[0]);
-                                    const vMo = parseInt(datePart[1]) - 1; // Array de meses começa em 0
+                                    const vMo = parseInt(datePart[1]) - 1; 
                                     
                                     if (vYr === yr && vMo === mo) {
                                         atendimentosParticular++;
-                                        // Pega o valor líquido cobrado na consulta (pode usar valor_pago se for melhor)
                                         valorParticular += parseCurrency(v.valor_final);
                                     }
                                 }
@@ -710,12 +733,10 @@
 
 
                 // ------------------------------------------------
-                // 4. TOTAL GERAL (SOMA TUDO)
+                // 4. TOTAL GERAL
                 // ------------------------------------------------
-                let totalGeral = valorPlantao + valorTratamento + valorParticular;
-                
-                let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
-                if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                window.baseTotalGeral = valorPlantao + valorTratamento + valorParticular;
+                updateTotalGeral(); // Chama a função que insere na tela já somando os campos manuais que estiverem lá
 
             } catch (err) {
                 console.error("Erro ao montar o painel: ", err);
