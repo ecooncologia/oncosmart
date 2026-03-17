@@ -36,11 +36,6 @@
         .bg-new { background: #fef08a; color: #854d0e; border: 1px solid #fde047; animation: pulse 2s infinite; }
         .bg-linked { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .bg-inactive { background: #e5e7eb; color: #4b5563; border: 1px solid #d1d5db; }
-        
-        /* Novos Badges de Médico */
-        .badge.prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
-        .badge.encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
-
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         /* Botões de Ação na Tabela */
@@ -108,8 +103,8 @@
                         <tr>
                             <th style="width: 30%">Nome do Paciente</th>
                             <th style="width: 15%">Carteirinha</th>
-                            <th style="width: 15%; text-align: center;">Status</th>
-                            <th style="width: 25%">Médico Responsável</th>
+                            <th style="width: 10%; text-align: center;">Status</th>
+                            <th style="width: 30%">Médico(s) Vinculado(s)</th>
                             <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
@@ -143,23 +138,34 @@
     </div>
 
     <div class="modal-overlay" id="linkModal">
-        <div class="modal-content">
+        <div class="modal-content" style="width: 450px;">
             <div class="modal-header">
-                <span>Vincular Médico</span>
+                <span>Vincular Médicos</span>
                 <button class="modal-close" onclick="closeModals()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Paciente: <strong id="linkPatientName" style="color: #000;"></strong></p>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Paciente: <strong id="linkPatientName" style="color: #000; font-size: 14px;"></strong></p>
                 <input type="hidden" id="linkPatientId">
                 
-                <label class="form-label">Selecione o Médico Responsável</label>
-                <select id="linkDoctorSelect" class="form-select">
-                    <option value="">-- Selecione --</option>
-                </select>
+                <div style="background: #fdf2f8; border: 1px solid #fbcfe8; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                    <label class="form-label" style="color: #be185d; margin-bottom: 8px;"><i class="fas fa-stethoscope"></i> Médico Prescritor</label>
+                    <select id="linkPrescritorSelect" class="form-select" style="margin-bottom: 0; border-color: #fbcfe8;">
+                        <option value="">-- Nenhum --</option>
+                    </select>
+                    <small style="color: #9d174d; font-size: 10px; display: block; margin-top: 4px;">* Lista os médicos com a flag Prescritor ativa.</small>
+                </div>
+
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 8px;">
+                    <label class="form-label" style="color: #c2410c; margin-bottom: 8px;"><i class="fas fa-share-square"></i> Médico Encaminhador</label>
+                    <select id="linkEncaminhadorSelect" class="form-select" style="margin-bottom: 0; border-color: #fed7aa;">
+                        <option value="">-- Nenhum --</option>
+                    </select>
+                    <small style="color: #9a3412; font-size: 10px; display: block; margin-top: 4px;">* Lista os médicos com a flag Encaminhador ativa.</small>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-sync" style="background: #9ca3af;" onclick="closeModals()">Cancelar</button>
-                <button class="btn-primary" onclick="saveDoctorLink()">Confirmar Vínculo</button>
+                <button class="btn-primary" onclick="saveDoctorLink()"><i class="fas fa-check"></i> Salvar Vínculos</button>
             </div>
         </div>
     </div>
@@ -203,23 +209,28 @@
         });
 
         // ==========================================
-        // 1. CARREGAMENTO DE DADOS (READ)
+        // 1. CARREGAMENTO DE DADOS E POPULAÇÃO DOS SELECTS
         // ==========================================
         async function loadDoctors() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 if(res.ok) {
                     doctors = normalizeData(await res.json());
-                    const select = document.getElementById('linkDoctorSelect');
+                    const selPresc = document.getElementById('linkPrescritorSelect');
+                    const selEncam = document.getElementById('linkEncaminhadorSelect');
                     
-                    // Ordena e popula o dropdown mostrando os papéis (Prescritor / Encaminhador)
+                    // Limpa as listas (preservando o Nenhum)
+                    selPresc.innerHTML = '<option value="">-- Nenhum --</option>';
+                    selEncam.innerHTML = '<option value="">-- Nenhum --</option>';
+
+                    // Popula as "tabelinhas" de acordo com as flags do médico
                     Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
-                        let roles = [];
-                        if (doc.prescritor === 'sim') roles.push('Prescritor');
-                        if (doc.encaminhador === 'sim') roles.push('Encaminhador');
-                        
-                        let roleText = roles.length > 0 ? ` [${roles.join(' / ')}]` : '';
-                        select.add(new Option(doc.nome + roleText, id));
+                        if (doc.prescritor === 'sim') {
+                            selPresc.add(new Option(doc.nome, id));
+                        }
+                        if (doc.encaminhador === 'sim') {
+                            selEncam.add(new Option(doc.nome, id));
+                        }
                     });
                 }
             } catch(e) {}
@@ -264,7 +275,9 @@
                                 id_firebase: patId,
                                 nome: patName,
                                 carteirinha: carteirinhaRobo,
-                                doctor_id: "",
+                                doctor_id: "", // Mantemos pro legado
+                                prescritor_id: "",
+                                encaminhador_id: "",
                                 status: "ativo",
                                 data_criacao: new Date().toISOString()
                             };
@@ -297,7 +310,7 @@
         }
 
         // ==========================================
-        // 3. RENDERIZAÇÃO DA TABELA
+        // 3. RENDERIZAÇÃO DA TABELA (COM DUPLO VÍNCULO)
         // ==========================================
         function renderTable() {
             const tbody = document.querySelector('#patientsTable tbody');
@@ -309,7 +322,10 @@
 
             patArray.forEach(p => {
                 const isInactive = p.status === 'inativo';
-                const hasDoctor = p.doctor_id && p.doctor_id !== "";
+                
+                // Checa se o paciente tem qualquer tipo de vínculo médico (novo formato ou legado)
+                const hasDoctor = p.prescritor_id || p.encaminhador_id || p.doctor_id;
+                
                 const cartStr = p.carteirinha || '';
 
                 // Lógica de Filtro Duplo (Nome ou Carteirinha)
@@ -325,27 +341,25 @@
 
                 if (isInactive) {
                     statusBadge = `<span class="badge bg-inactive" title="Motivo: ${p.motivo_inativacao || 'Não informado'}"><i class="fas fa-ban"></i> Inativo</span>`;
-                    doctorNameHtml = `<span style="color:#9ca3af; text-decoration: line-through;">${hasDoctor && doctors[p.doctor_id] ? doctors[p.doctor_id].nome : 'Sem médico'}</span>`;
+                    doctorNameHtml = `<span style="color:#9ca3af; text-decoration: line-through;">Cadastro Inativo</span>`;
                 } else if (hasDoctor) {
                     statusBadge = `<span class="badge bg-linked"><i class="fas fa-check-circle"></i> Vinculado</span>`;
                     
-                    const doc = doctors[p.doctor_id];
-                    if (doc) {
-                        doctorNameHtml = `<span style="font-weight:bold; color:#00855B;"><i class="fas fa-user-md"></i> ${doc.nome}</span>`;
-                        
-                        let rolesHtml = '';
-                        if (doc.prescritor === 'sim') {
-                            rolesHtml += '<span class="badge prescritor" style="margin-right:4px;">Prescritor</span>';
-                        }
-                        if (doc.encaminhador === 'sim') {
-                            rolesHtml += '<span class="badge encaminhador">Encaminhador</span>';
-                        }
-                        
-                        if (rolesHtml) {
-                            doctorNameHtml += `<div style="margin-top:5px;">${rolesHtml}</div>`;
-                        }
+                    // Busca os nomes baseados nos novos IDs de Prescritor e Encaminhador
+                    let pName = p.prescritor_id && doctors[p.prescritor_id] ? doctors[p.prescritor_id].nome : null;
+                    let eName = p.encaminhador_id && doctors[p.encaminhador_id] ? doctors[p.encaminhador_id].nome : null;
+
+                    // Fallback para o legado (Caso o paciente tenha sido vinculado no sistema antigo e ainda não foi atualizado)
+                    if (!pName && !eName && p.doctor_id && doctors[p.doctor_id]) {
+                        doctorNameHtml = `<span style="color:#6b7280; font-style:italic;"><i class="fas fa-history"></i> ${doctors[p.doctor_id].nome} (Vínculo Antigo - Favor Atualizar)</span>`;
                     } else {
-                        doctorNameHtml = 'Médico Excluído';
+                        // Constrói os bloquinhos do Prescritor e Encaminhador
+                        if (pName) {
+                            doctorNameHtml += `<div style="color:#be185d; font-weight:bold; font-size:12px; margin-bottom:5px;"><i class="fas fa-stethoscope"></i> Prescritor: ${pName}</div>`;
+                        }
+                        if (eName) {
+                            doctorNameHtml += `<div style="color:#c2410c; font-weight:bold; font-size:12px;"><i class="fas fa-share-square"></i> Encaminhador: ${eName}</div>`;
+                        }
                     }
                     
                 } else {
@@ -355,7 +369,7 @@
 
                 // Botões de Ação
                 let actionButtons = `
-                    <button class="btn-icon btn-icon-link" title="Vincular Médico" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.doctor_id || ''}')">
+                    <button class="btn-icon btn-icon-link" title="Vincular Médico" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.prescritor_id || ''}', '${p.encaminhador_id || ''}')">
                         <i class="fas fa-link"></i>
                     </button>
                     <button class="btn-icon btn-icon-edit" title="Editar Cadastro" onclick="openEditModal('${p.id_firebase}')">
@@ -392,7 +406,7 @@
         function filterTable() { renderTable(); }
 
         // ==========================================
-        // 4. FUNÇÕES DE CRUD (CREATE, UPDATE, DELETE)
+        // 4. FUNÇÕES DE CRUD E MODAIS
         // ==========================================
         function closeModals() {
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
@@ -443,6 +457,8 @@
                     nome: nameInput,
                     carteirinha: cartInput,
                     doctor_id: "",
+                    prescritor_id: "",
+                    encaminhador_id: "",
                     status: "ativo",
                     data_criacao: new Date().toISOString()
                 };
@@ -459,20 +475,33 @@
             renderTable();
         }
 
-        // --- VINCULAR MÉDICO ---
-        function openLinkModal(id, name, currentDoctorId) {
+        // --- VINCULAR MÉDICOS (DUPLO VÍNCULO) ---
+        function openLinkModal(id, name, prescritorId, encaminhadorId) {
             document.getElementById('linkPatientId').value = id;
             document.getElementById('linkPatientName').innerText = name;
-            document.getElementById('linkDoctorSelect').value = currentDoctorId;
+            
+            // Seta os selects com as informações (ou vazio se não tiver)
+            document.getElementById('linkPrescritorSelect').value = prescritorId || '';
+            document.getElementById('linkEncaminhadorSelect').value = encaminhadorId || '';
+            
             document.getElementById('linkModal').classList.add('active');
         }
 
         async function saveDoctorLink() {
             const patId = document.getElementById('linkPatientId').value;
-            const docId = document.getElementById('linkDoctorSelect').value;
+            const pId = document.getElementById('linkPrescritorSelect').value;
+            const eId = document.getElementById('linkEncaminhadorSelect').value;
+            
             if (!patId) return;
 
-            patients[patId].doctor_id = docId; 
+            // Atualiza os novos campos
+            patients[patId].prescritor_id = pId;
+            patients[patId].encaminhador_id = eId;
+            
+            // Para manter o sistema antigo sem quebrar, se houver um prescritor, a gente replica no doctor_id principal
+            // Se não, joga o encaminhador. Se nenhum dos dois, limpa.
+            patients[patId].doctor_id = pId || eId || ""; 
+
             if(patients[patId].status === 'inativo') patients[patId].status = 'ativo';
 
             try {
@@ -481,7 +510,7 @@
                 });
                 closeModals();
                 renderTable();
-            } catch(e) { alert("Erro ao vincular médico."); }
+            } catch(e) { alert("Erro ao salvar vínculos."); }
         }
 
         // --- INATIVAR PACIENTE ---
