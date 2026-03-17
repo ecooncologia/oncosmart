@@ -198,9 +198,14 @@
                         </select>
                     </div>
                     
-                    <div class="input-group" style="width: 220px;">
-                        <label class="label-title"><i class="fas fa-database" style="color:#10b981;"></i> Subir Planilha Interna</label>
-                        <input type="file" id="importPlanilhaNicolas" class="input-field" accept=".xlsx, .xls" style="padding: 6px; cursor:pointer;" onchange="importarPlanilhaNicolas(event)">
+                    <div class="input-group" style="width: 260px;">
+                        <label class="label-title"><i class="fas fa-database" style="color:#10b981;"></i> Planilha Interna</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="file" id="importPlanilhaNicolas" class="input-field" accept=".xlsx, .xls" style="padding: 6px; cursor:pointer; width: 80%;" onchange="importarPlanilhaNicolas(event)">
+                            <button class="btn-danger-block" style="width: 20%; height: 38px; padding: 0;" onclick="deletePlanilhaInternaMes()" title="Excluir Dados da Planilha deste Mês do Banco">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
@@ -208,7 +213,7 @@
                         <i class="fas fa-file-pdf"></i> Exportar PDF
                     </button>
                     <button class="btn-danger-block" onclick="deleteSelected()">
-                        <i class="fas fa-trash-alt"></i> Excluir
+                        <i class="fas fa-trash-alt"></i> Excluir Seleção
                     </button>
                 </div>
             </div>
@@ -464,7 +469,9 @@
                         selRepasse.add(new Option(doc.nome, id));
                     });
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error("Erro ao carregar médicos:", e);
+            }
         }
 
         async function loadPacientesDb() {
@@ -556,7 +563,6 @@
                     const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     let headerRowIndex = -1;
                     
-                    // Ajuste fino no Scanner: Procura o Nome e Dados
                     for (let i = 0; i < Math.min(rawData.length, 30); i++) {
                         const rowStr = JSON.stringify(rawData[i]).toUpperCase();
                         if ((rowStr.includes("NOME") || rowStr.includes("PACIENTE")) && 
@@ -571,7 +577,7 @@
                         : XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
                     
                     let novosRegistros = [];
-                    let contadorID = 1; // Contador sequencial para garantir IDs únicos, porém fixos por arquivo
+                    let contadorID = 1; 
                     
                     finalData.forEach(row => {
                         let paciente = '', dataAplic = '', medicamento = 'ITEM DIVERSO', valor = 0;
@@ -610,10 +616,8 @@
                             }
                         }
 
-                        // Se encontrou as 3 chaves, salva a linha (mesmo que o lucro seja zero)
                         if (paciente && dataAplic && foundValor) {
                             novosRegistros.push({
-                                // ⚠️ ID DETERMINÍSTICO E SEQUENCIAL: Sem random, impossível duplicar se mandar o mesmo arquivo
                                 id_firebase: `int_${cleanStr(competenciaAlvo)}_${cleanStr(paciente).substring(0,10)}_${contadorID++}`,
                                 competencia: competenciaAlvo,
                                 paciente: paciente,
@@ -625,7 +629,7 @@
                     });
 
                     if (novosRegistros.length === 0) {
-                        alert("Nenhum dado válido encontrado! Verifique se as colunas da planilha têm os nomes corretos (NOME, DATA ATEND., LUCRO).");
+                        alert("Nenhum dado válido encontrado! Verifique se as colunas da planilha têm os nomes corretos.");
                         document.getElementById('importPlanilhaNicolas').value = ''; 
                         return;
                     }
@@ -634,7 +638,6 @@
                     const tbody = document.querySelector('#dataTable tbody'); 
                     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;"><i class="fas fa-broom fa-spin" style="font-size:20px; color:#f59e0b;"></i><br><br>Limpando dados antigos do mês e salvando ${novosRegistros.length} novos itens...</td></tr>`;
 
-                    // 1. WIPE: Apaga os dados antigos daquela competência antes de gravar
                     try {
                         const resAntigos = await fetch(`${API_BASE_URL}/planilha_interna`, { headers: API_HEADERS });
                         if (resAntigos.ok) {
@@ -646,7 +649,6 @@
                         }
                     } catch(e) { console.log("Erro ao limpar dados antigos."); }
 
-                    // 2. REPLACE: Insere os novos dados
                     let inseridos = 0;
                     for(const item of novosRegistros) {
                         try {
@@ -661,7 +663,7 @@
                         alert(`Sucesso! Importação refeita. ${inseridos} itens salvos no banco para o mês ${competenciaAlvo}.`);
                     } else {
                         alert("Falha na conexão com a API. Os dados serão mostrados temporariamente na tela.");
-                        nicolasDataDb = nicolasDataDb.filter(r => r.competencia !== competenciaAlvo); // Remove da tela os antigos
+                        nicolasDataDb = nicolasDataDb.filter(r => r.competencia !== competenciaAlvo); 
                         nicolasDataDb = nicolasDataDb.concat(novosRegistros); 
                     }
 
@@ -673,6 +675,42 @@
                 }
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // ==========================================
+        // EXCLUIR PLANILHA INTERNA DO BANCO
+        // ==========================================
+        async function deletePlanilhaInternaMes() {
+            const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
+            const anoSelecionado = document.getElementById('selYearUnimed').value;
+            const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
+
+            if (nicolasDataDb.length === 0) {
+                return alert(`Não há dados da Planilha Interna salvos para o mês ${competenciaAlvo}.`);
+            }
+
+            if (!confirm(`CUIDADO: Tem certeza que deseja excluir TODOS os ${nicolasDataDb.length} registros da Planilha Interna do mês ${competenciaAlvo}?\n\nIsso afetará o banco de dados de todos os usuários.`)) {
+                return;
+            }
+
+            const tbody = document.querySelector('#dataTable tbody'); 
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;"><i class="fas fa-trash-alt fa-spin" style="font-size:20px; color:#ef4444;"></i><br><br>Excluindo dados da Planilha Interna de ${competenciaAlvo}...</td></tr>`;
+
+            let excluidos = 0;
+            for (const item of nicolasDataDb) {
+                try {
+                    await fetch(`${API_BASE_URL}/planilha_interna/${item.id_firebase}`, {
+                        method: 'DELETE',
+                        headers: API_HEADERS
+                    });
+                    excluidos++;
+                } catch (e) {
+                    console.error("Erro ao excluir", item.id_firebase, e);
+                }
+            }
+
+            alert(`${excluidos} registros excluídos com sucesso do mês ${competenciaAlvo}!`);
+            fetchBotData(); 
         }
 
         // ==========================================
@@ -692,7 +730,6 @@
             let itemsMedCount = 0; 
             let divergencesCount = 0;
 
-            // 1. DADOS DA UNIMED
             excelData.forEach(d => {
                 if (excludedPatients.has(d.paciente)) return; 
                 
@@ -720,7 +757,6 @@
                     }
                 }
                 
-                // A REGRA DA DRA. GRAZIELLY
                 const isGrazielly = (patientsTableObj[p].pName && patientsTableObj[p].pName.toUpperCase().includes('GRAZIELLY')) || 
                                     (patientsTableObj[p].eName && patientsTableObj[p].eName.toUpperCase().includes('GRAZIELLY'));
                 
@@ -740,7 +776,6 @@
                 patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            // 2. DADOS DA PLANILHA INTERNA (LUCRO)
             let nicolasAgrupado = {};
             nicolasDataDb.forEach(nic => {
                 const pac = nic.paciente;
@@ -817,7 +852,6 @@
                 if (lucroApurado > 0.05) cls = 'bg-green'; 
                 if (lucroApurado < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
-                // CALCULA O REPASSE FINANCEIRO SOBRE O LUCRO (TRAVADO EM 2 CASAS DECIMAIS)
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 let valorRepasse = 0;
                 
@@ -1162,7 +1196,6 @@
                 doctorList = Object.entries(doctors).filter(([,d]) => d.plantao==='sim').sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).map(([id,d]) => ({id, nome: d.nome}));
                 updateRepassDoctorDropdown();
 
-                // Popula o Filtro de Médicos do Repasse também!
                 const selRepasse = document.getElementById('filterRepasseDoctor');
                 Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
                     selRepasse.add(new Option(doc.nome, id));
@@ -1258,73 +1291,6 @@
             }); 
             document.querySelector('#repTable tbody').innerHTML = b; 
             document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
-        }
-
-        function generatePDF() { 
-            const curY = parseInt(document.getElementById('selYearPlantao').value); 
-            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
-            const win = window.open('', '_blank'); 
-            const periodStr = `${months[curM]} de ${curY}`; 
-            
-            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; 
-            let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
-            
-            if (currentShiftTab === 'vita_quimio') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Quimio)"; } 
-            else if (currentShiftTab === 'vita_sobreaviso') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Sobreaviso)"; } 
-            else if (currentShiftTab === 'cirurgioes') { LOGO_URL = "https://imgur.com/maJNHKc.png"; pdfTitle = "Relatório de Repasse Médico - Cirurgiões"; }
-
-            const holidays = getHolidays(curY); 
-            const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
-            
-            let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
-            for (let i = 1; i <= daysInMonth; i++) { 
-                const d = new Date(curY, curM, i, 12, 0, 0); 
-                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
-                const isHol = !!holidays[isoDateStr]; 
-                const isWk = d.getDay()===0||d.getDay()===6; 
-                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                const color = isHol ? '#DC2626' : '#333'; 
-                thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
-            } 
-            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL</th></tr>'; 
-            
-            let tbody = ''; 
-            let totalGeral = 0; 
-            
-            Object.entries(doctors).filter(([,d]) => {
-                if (d.plantao !== 'sim') return false;
-                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
-                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
-                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
-                return false;
-            }).filter(([id, d]) => document.getElementById('filterDoctor') && (document.getElementById('filterDoctor').value === "" || id === document.getElementById('filterDoctor').value)).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
-            .forEach(([id, doc]) => { 
-                let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
-                for (let i = 1; i <= daysInMonth; i++) { 
-                    const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
-                    const d = new Date(curY, curM, i, 12, 0, 0); 
-                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                    const isHol = !!holidays[isoDateStr]; 
-                    const isWk = d.getDay()===0||d.getDay()===6; 
-                    let money = 0; 
-                    if(val && val !== 'S') { 
-                        hasValue = true; 
-                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
-                        if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
-                    } 
-                    userTotal += money; 
-                    const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
-                } 
-                if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
-                    totalGeral += userTotal; 
-                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
-                } 
-            }); 
-            
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
-            win.document.write(html); 
-            win.document.close(); 
         }
     </script>
 </body>
