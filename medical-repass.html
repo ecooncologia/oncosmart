@@ -239,6 +239,9 @@
     </div>
 
     <script>
+        // ==========================================
+        // VARIÁVEIS GLOBAIS
+        // ==========================================
         let excelData = []; 
         let nicolasDataDb = []; 
         let excludedPatients = new Set();
@@ -251,48 +254,30 @@
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
+        // ==========================================
+        // FUNÇÕES BASE E UTILITÁRIAS
+        // ==========================================
         const generatePatientId = (name) => {
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
 
         const cleanStr = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
-        // ==========================================
-        // LÓGICA FINANCEIRA DE REPASSE (O MOTOR DE CÁLCULO)
-        // ==========================================
-        function getComissaoInfo(pName, eName) {
-            let percP = 0;
-            let percE = 0;
-            
-            const grupoMama = [
-                'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
-                'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
-                'FLAVIA KURODA', 'IRIS RABINOVICH', 'ISABELA MONTEIRO SOARES', 
-                'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO'
-            ];
-
-            const isSpecial = (name) => {
-                if(!name) return false;
-                let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                return upper.includes('MAIKOL') || grupoMama.some(m => upper.includes(m));
-            };
-
-            // Regra do Prescritor
-            if (pName) {
-                // Prescritor sempre ganha 12.50% de acordo com a regra.
-                percP = 12.50; 
-            }
-
-            // Regra do Encaminhador
-            if (eName) {
-                if (isSpecial(eName)) {
-                    percE = 37.50; // Maikol e Grupo da Mama ganham 37.5% como Encaminhadores
-                } else {
-                    percE = 12.50; // Outros ganham 12.5% como Encaminhadores
+        function normalizeData(apiData) {
+            if (!apiData) return {}; 
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
+                    try { 
+                        normalized[key] = JSON.parse(val); 
+                    } catch(e) { 
+                        normalized[key] = val; 
+                    }
+                } else { 
+                    normalized[key] = val; 
                 }
-            }
-
-            return { percP, percE, totalPerc: percP + percE };
+            }); 
+            return normalized;
         }
 
         function normalizeDate(d) {
@@ -318,6 +303,55 @@
             return str;
         }
 
+        function calcularDataRepasse(comp) {
+            if (!comp) return "-";
+            const parts = comp.split('/');
+            if (parts.length !== 2) return "-";
+            let month = parseInt(parts[0], 10);
+            let year = parseInt(parts[1], 10);
+            let runDate = new Date(year, month, 1, 12, 0, 0); 
+            runDate.setDate(runDate.getDate() + 40); 
+            return String(runDate.getDate()).padStart(2,'0') + '/' + String(runDate.getMonth()+1).padStart(2,'0') + '/' + runDate.getFullYear();
+        }
+
+        // ==========================================
+        // MOTOR DE CÁLCULO DE REPASSE
+        // ==========================================
+        function getComissaoInfo(pName, eName) {
+            let percP = 0;
+            let percE = 0;
+            
+            const grupoMama = [
+                'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
+                'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
+                'FLAVIA KURODA', 'IRIS RABINOVICH', 'ISABELA MONTEIRO SOARES', 
+                'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO'
+            ];
+
+            const isSpecial = (name) => {
+                if(!name) return false;
+                let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                return upper.includes('MAIKOL') || grupoMama.some(m => upper.includes(m));
+            };
+
+            if (pName) {
+                percP = 12.50; 
+            }
+
+            if (eName) {
+                if (isSpecial(eName)) {
+                    percE = 37.50; 
+                } else {
+                    percE = 12.50; 
+                }
+            }
+
+            return { percP, percE, totalPerc: percP + percE };
+        }
+
+        // ==========================================
+        // INICIALIZAÇÃO DA TELA (DOM LOAD)
+        // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('repass', 'Repasse Médico');
             const now = new Date(); 
@@ -330,7 +364,6 @@
                 el.value = curY; 
             });
             
-            // Carrega Unimed focada no Mês Passado
             const elPlantao = document.getElementById('selMonthPlantao');
             months.forEach((m, i) => elPlantao.add(new Option(m, i)));
             elPlantao.value = curM;
@@ -347,11 +380,96 @@
             fetchBotData();       
         });
 
+        // ==========================================
+        // FUNÇÕES DE INTERFACE (UI/UX)
+        // ==========================================
         function openTab(t){ 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${t}`).classList.add('active');
             event.target.classList.add('active');
+        }
+
+        function toggleLevel1(id, btn) { 
+            document.getElementById(`L1-${id}`).classList.toggle('expanded'); 
+            btn.classList.toggle('rotate'); 
+        }
+
+        function toggleAll(source) {
+            const checkboxes = document.getElementsByName('rowCheck');
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = source.checked;
+            }
+        }
+
+        function deleteSelected() { 
+            const c = document.getElementsByName('rowCheck'); 
+            let count = 0; 
+            for(let i=0; i<c.length; i++) { 
+                if(c[i].checked) { excludedPatients.add(c[i].value); count++; } 
+            } 
+            if (count > 0) { renderAnalysisTable(); document.getElementById('checkAll').checked = false; } 
+            else { alert("Selecione um paciente."); } 
+        }
+        
+        function deleteRow(paciente) { 
+            if(confirm("Excluir " + paciente + "?")) { 
+                excludedPatients.add(paciente); 
+                renderAnalysisTable(); 
+            } 
+        }
+
+        function switchShiftTab(tabId, element) { 
+            currentShiftTab = tabId; 
+            document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active')); 
+            element.classList.add('active'); 
+            updateRepassDoctorDropdown(); 
+            renderRepasseTable(); 
+        }
+
+        function updateFilters() {
+            let pats = new Set([...excelData.map(d => d.paciente)]);
+            const sel = document.getElementById('filterPatient'); 
+            sel.innerHTML = '<option value="">Todos</option>'; 
+            Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
+        }
+
+        function updateRepassDoctorDropdown() {
+            const sel = document.getElementById('filterDoctor');
+            if(!sel) return; 
+            sel.innerHTML = '<option value="">Todos</option>';
+            doctorList.forEach(doc => {
+                const dData = doctors[doc.id];
+                if (currentShiftTab === 'eco' && (!dData.eco || dData.eco === 'sim')) sel.add(new Option(doc.nome, doc.id));
+                if (currentShiftTab.startsWith('vita') && dData.vita === 'sim') sel.add(new Option(doc.nome, doc.id));
+                if (currentShiftTab === 'cirurgioes' && dData.cirurgiao === 'sim') sel.add(new Option(doc.nome, doc.id));
+            });
+        }
+
+        // ==========================================
+        // REQUISIÇÕES DE DADOS (API / BD)
+        // ==========================================
+        async function loadDoctors() { 
+            try { 
+                const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                doctors = normalizeData(await r.json()); 
+                doctorList = Object.entries(doctors)
+                    .filter(([,d]) => d.plantao==='sim')
+                    .sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''))
+                    .map(([id,d]) => ({id, nome: d.nome}));
+                
+                updateRepassDoctorDropdown();
+
+                const selRepasse = document.getElementById('filterRepasseDoctor');
+                if (selRepasse) {
+                    selRepasse.innerHTML = '<option value="">Todos os Médicos</option>';
+                    Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
+                        selRepasse.add(new Option(doc.nome, id));
+                    });
+                }
+            } catch(e) {
+                console.error("Erro ao carregar médicos:", e);
+            }
         }
 
         async function loadPacientesDb() {
@@ -418,6 +536,9 @@
             }
         }
 
+        // ==========================================
+        // IMPORTAÇÃO DA PLANILHA INTERNA
+        // ==========================================
         function importarPlanilhaNicolas(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -447,7 +568,6 @@
                             let kUp = k.toUpperCase().trim();
                             if (kUp === 'PACIENTE') paciente = String(row[k]).toUpperCase().trim();
                             else if (kUp.includes('APLICA') || kUp.includes('DATA')) dataAplic = normalizeDate(row[k]);
-                            // ATUALIZADO: Captura o LUCRO da Planilha
                             else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL') || kUp.includes('LUCRO')) {
                                 let v = row[k];
                                 if (typeof v === 'number') valor = v;
@@ -510,33 +630,8 @@
             reader.readAsArrayBuffer(file);
         }
 
-        function calcularDataRepasse(comp) {
-            if (!comp) return "-";
-            const parts = comp.split('/');
-            if (parts.length !== 2) return "-";
-            let month = parseInt(parts[0], 10);
-            let year = parseInt(parts[1], 10);
-            let runDate = new Date(year, month, 1, 12, 0, 0); 
-            runDate.setDate(runDate.getDate() + 40); 
-            return String(runDate.getDate()).padStart(2,'0') + '/' + String(runDate.getMonth()+1).padStart(2,'0') + '/' + runDate.getFullYear();
-        }
-
-        function updateFilters() {
-            let pats = new Set([...excelData.map(d => d.paciente)]);
-            const sel = document.getElementById('filterPatient'); 
-            sel.innerHTML = '<option value="">Todos</option>'; 
-            Array.from(pats).sort().forEach(p => sel.add(new Option(p, p)));
-        }
-
-        function toggleAll(source) {
-            const checkboxes = document.getElementsByName('rowCheck');
-            for (let i = 0; i < checkboxes.length; i++) {
-                checkboxes[i].checked = source.checked;
-            }
-        }
-
         // ==========================================
-        // RENDERIZAÇÃO DA TABELA PRINCIPAL
+        // RENDERIZAÇÃO DA TABELA DO REPASSE
         // ==========================================
         function renderAnalysisTable() {
             const filterPatient = document.getElementById('filterPatient').value;
@@ -552,6 +647,7 @@
             let itemsMedCount = 0; 
             let divergencesCount = 0;
 
+            // 1. DADOS DA UNIMED
             excelData.forEach(d => {
                 if (excludedPatients.has(d.paciente)) return; 
                 
@@ -567,7 +663,6 @@
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
                 
-                // LÓGICA DE VÍNCULO CORRETA (Baseada no Paciente, não no perfil global do médico)
                 if (patDb) {
                     patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
                     patientsTableObj[p].eId = patDb.encaminhador_id;
@@ -580,7 +675,6 @@
                     }
                 }
                 
-                // A REGRA DA DRA. GRAZIELLY (Corta a TAXA se ela NÃO for Prescritora nem Encaminhadora)
                 const isGrazielly = (patientsTableObj[p].pName && patientsTableObj[p].pName.toUpperCase().includes('GRAZIELLY')) || 
                                     (patientsTableObj[p].eName && patientsTableObj[p].eName.toUpperCase().includes('GRAZIELLY'));
                 
@@ -600,7 +694,7 @@
                 patientsTableObj[p].items.push({ ...d, valorConsiderado, isCortado });
             });
 
-            // Lendo a Planilha Interna (Que contém o LUCRO)
+            // 2. DADOS DA PLANILHA INTERNA (LUCRO)
             let nicolasAgrupado = {};
             nicolasDataDb.forEach(nic => {
                 const pac = nic.paciente;
@@ -643,8 +737,6 @@
                 
                 if (filterPatient && key !== filterPatient) keep = false;
                 if (filterAuditoria === 'cruzados' && !nicolasAgrupado[key]) keep = false; 
-                
-                // Se filtrar por um médico, mostra se ele for Prescritor OU Encaminhador
                 if (filterRepasseDoc && (pObj.pId !== filterRepasseDoc && pObj.eId !== filterRepasseDoc)) keep = false; 
                 
                 if(!keep) {
@@ -672,26 +764,26 @@
             
             patListToPrint.forEach((pat, idx) => {
                 const faturamentoUnimed = pat.totalU;
-                const lucroApurado = pat.totalW; // A Planilha Interna É O LUCRO!
+                const lucroApurado = pat.totalW; 
                 sumLucro = Number((sumLucro + lucroApurado).toFixed(2));
                 
-                // CALCULA O REPASSE FINANCEIRO SOBRE A PLANILHA INTERNA (LUCRO)
+                let cls = 'bg-gray'; 
+                if (lucroApurado > 0.05) cls = 'bg-green'; 
+                if (lucroApurado < -0.05) { cls = 'bg-red'; divergencesCount++; }
+
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 let valorRepasse = 0;
                 
-                // Só repassa se o Lucro da Planilha Interna for positivo
                 if (lucroApurado > 0 && comissaoInfo.totalPerc > 0) {
                     valorRepasse = Number((lucroApurado * (comissaoInfo.totalPerc / 100)).toFixed(2));
                 }
                 sumRepasse = Number((sumRepasse + valorRepasse).toFixed(2));
 
-                // Construção visual dos Médicos
                 let docHtml = '';
                 if (pat.pName) docHtml += `<div style="font-size:11px; color:#be185d; font-weight:bold; margin-bottom:2px;"><i class="fas fa-stethoscope"></i> Prescritor: ${pat.pName}</div>`;
                 if (pat.eName) docHtml += `<div style="font-size:11px; color:#c2410c; font-weight:bold;"><i class="fas fa-share-square"></i> Encaminhador: ${pat.eName}</div>`;
                 if (!docHtml) docHtml = `<span style="color:#9ca3af; font-style:italic;">Sem médico vinculado</span>`;
 
-                // Badge do Repasse
                 let repasseBadge = '';
                 if (lucroApurado <= 0) {
                     repasseBadge = `<span style="color:#9ca3af; font-size:11px; font-weight:bold;">Sem Lucro</span>`;
@@ -747,7 +839,6 @@
 
                 sortedDates.forEach(dDate => {
                     let group = dateGroups[dDate];
-                    
                     let diaUnimedTotal = 0;
                     let diaLucroPlanilha = 0;
                     
@@ -785,9 +876,7 @@
                                     return uDesc.includes(nDesc) || nDesc.includes(uDesc);
                                 });
 
-                                if (matchIdx === -1 && unimedToRender.length === 1 && nicolasToRender.length === 1) {
-                                    matchIdx = 0;
-                                }
+                                if (matchIdx === -1 && unimedToRender.length === 1 && nicolasToRender.length === 1) matchIdx = 0;
 
                                 if (matchIdx !== -1) {
                                     let vP = nicolasToRender[matchIdx].valor;
@@ -852,7 +941,7 @@
         }
 
         // ==========================================
-        // 🖨️ EXPORTAÇÃO PDF DO REPASSE UNIMED
+        // 🖨️ EXPORTAÇÃO PDF DO REPASSE
         // ==========================================
         function generateUnimedPDF() {
             if (patListToPrint.length === 0) {
@@ -910,9 +999,9 @@
 
             patListToPrint.forEach(pat => {
                 const lucro = pat.totalW;
-                
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 let valorRepasse = 0;
+                
                 if(lucro > 0) valorRepasse = Number((lucro * (comissaoInfo.totalPerc / 100)).toFixed(2));
 
                 let rolesStr = '';
@@ -1015,21 +1104,163 @@
             win.document.close();
         }
 
-        function normalizeData(apiData) {
-            if (!apiData) return {}; 
-            const normalized = {};
-            Object.entries(apiData).forEach(([key, val]) => {
-                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
-                    try { 
-                        normalized[key] = JSON.parse(val); 
-                    } catch(e) { 
-                        normalized[key] = val; 
-                    }
-                } else { 
-                    normalized[key] = val; 
-                }
+        // ==========================================
+        // CARREGAMENTO DA PÁGINA (ESCALA PLANTÃO)
+        // ==========================================
+        async function renderRepasseTable() { 
+            const curY = parseInt(document.getElementById('selYearPlantao').value); 
+            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
+            const filterDoc = document.getElementById('filterDoctor').value; 
+            const moStr = String(curM+1).padStart(2,'0'); 
+            const baseSearchId = `${curY}-${moStr}`; 
+            const searchId = currentShiftTab === 'eco' ? baseSearchId : `${baseSearchId}-${currentShiftTab}`;
+            const endpoint = currentShiftTab === 'eco' ? '/escala_mensal' : `/escala_mensal_${currentShiftTab}`;
+
+            try { 
+                const r = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS }); 
+                const allScales = normalizeData(await r.json());
+                let foundId = Object.keys(allScales).find(k => allScales[k].id_firebase === searchId || allScales[k].id === searchId || k === searchId);
+                shifts = foundId ? allScales[foundId] : {}; 
+            } catch(e) { shifts = {}; } 
+
+            const days = new Date(curY, curM+1, 0).getDate(); 
+            const holidays = getHolidays(curY); 
+            let grandTotal = 0; 
+            
+            let h = '<tr><th class="th-fixa">Médico</th>'; 
+            for (let i = 1; i <= days; i++) { 
+                const d = new Date(curY, curM, i, 12, 0, 0); 
+                const isWk = d.getDay()===0||d.getDay()===6; 
+                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                const isHol = !!holidays[isoDateStr]; 
+                h += `<th class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${i}</th>`; 
+            } 
+            h += '<th class="th-total">Qtd</th><th class="th-total">Total (R$)</th></tr>'; 
+            document.querySelector('#repTable thead').innerHTML = h; 
+            
+            let b = ''; 
+            Object.entries(doctors).filter(([,d]) => {
+                if (d.plantao !== 'sim') return false;
+                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
+                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
+                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
+                return false;
+            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=> (a[1].nome||'').localeCompare(b[1].nome||''))
+            .forEach(([id, doc]) => { 
+                let userTotal = 0; let countShifts = 0; let row = `<tr><td class="col-fixa">${doc.nome}</td>`; 
+                for (let i = 1; i <= days; i++) { 
+                    const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
+                    const d = new Date(curY, curM, i, 12, 0, 0); 
+                    const isWk = d.getDay()===0||d.getDay()===6; 
+                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                    const isHol = !!holidays[isoDateStr]; 
+                    let money = 0; 
+                    if(val && val !== 'S') { 
+                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
+                        if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
+                    } 
+                    userTotal += money; 
+                    row += `<td class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${money || ''}</td>`; 
+                } 
+                grandTotal += userTotal; 
+                row += `<td class="td-total" style="background:#f0f0f0;font-weight:bold">${countShifts}</td><td class="td-total" style="background:#dcfce7;font-weight:bold;color:#166534">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
+                if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
-            return normalized;
+            document.querySelector('#repTable tbody').innerHTML = b; 
+            document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
+        }
+
+        function generatePDF() { 
+            const curY = parseInt(document.getElementById('selYearPlantao').value); 
+            const curM = parseInt(document.getElementById('selMonthPlantao').value); 
+            const win = window.open('', '_blank'); 
+            const periodStr = `${months[curM]} de ${curY}`; 
+            
+            let LOGO_URL = "https://imgur.com/nWWyEBG.png"; 
+            let pdfTitle = "Relatório de Repasse Médico - Eco Oncologia";
+            
+            if (currentShiftTab === 'vita_quimio') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Quimio)"; } 
+            else if (currentShiftTab === 'vita_sobreaviso') { LOGO_URL = "https://i.imgur.com/m9NWY03.png"; pdfTitle = "Relatório de Repasse Médico - Hospital Vita (Sobreaviso)"; } 
+            else if (currentShiftTab === 'cirurgioes') { LOGO_URL = "https://imgur.com/maJNHKc.png"; pdfTitle = "Relatório de Repasse Médico - Cirurgiões"; }
+
+            const holidays = getHolidays(curY); 
+            const daysInMonth = new Date(curY, curM+1, 0).getDate(); 
+            
+            let thead = '<tr><th style="text-align:left; width:200px;">MÉDICO</th>'; 
+            for (let i = 1; i <= daysInMonth; i++) { 
+                const d = new Date(curY, curM, i, 12, 0, 0); 
+                const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; 
+                const isHol = !!holidays[isoDateStr]; 
+                const isWk = d.getDay()===0||d.getDay()===6; 
+                const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                const color = isHol ? '#DC2626' : '#333'; 
+                thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
+            } 
+            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL</th></tr>'; 
+            
+            let tbody = ''; 
+            let totalGeral = 0; 
+            
+            Object.entries(doctors).filter(([,d]) => {
+                if (d.plantao !== 'sim') return false;
+                if (currentShiftTab === 'eco' && (!d.eco || d.eco === 'sim')) return true; 
+                if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
+                if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
+                return false;
+            }).filter(([id, d]) => document.getElementById('filterDoctor') && (document.getElementById('filterDoctor').value === "" || id === document.getElementById('filterDoctor').value)).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
+            .forEach(([id, doc]) => { 
+                let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
+                for (let i = 1; i <= daysInMonth; i++) { 
+                    const val = (shifts[id] && shifts[id][i]) ? shifts[id][i] : ''; 
+                    const d = new Date(curY, curM, i, 12, 0, 0); 
+                    const isoDateStr = `${curY}-${String(curM+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                    const isHol = !!holidays[isoDateStr]; 
+                    const isWk = d.getDay()===0||d.getDay()===6; 
+                    let money = 0; 
+                    if(val && val !== 'S') { 
+                        hasValue = true; 
+                        if (val === 'M/T') countShifts += 2; else countShifts += 1; 
+                        if (isWk || isHol) { if (val === 'M/T') money = 900; else money = 450; } else { if (val === 'M/T') money = 1000; else money = 500; } 
+                    } 
+                    userTotal += money; 
+                    const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
+                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money || ''}</td>`; 
+                } 
+                if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
+                    totalGeral += userTotal; 
+                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
+                } 
+            }); 
+            
+            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
+            win.document.write(html); 
+            win.document.close(); 
+        }
+
+        function getHolidays(y) { 
+            const pad = n => String(n).padStart(2,'0');
+            const h = { 
+                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
+                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
+                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
+            }; 
+            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
+            I = I - 30*Math.floor((I/30)); 
+            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
+            J = J - 7*Math.floor(J/7); 
+            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
+            
+            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
+            const add = (baseDate, days) => { 
+                const r = new Date(baseDate.getTime()); 
+                r.setDate(r.getDate() + days); 
+                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
+            }; 
+            
+            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
+            return h; 
         }
     </script>
 </body>
