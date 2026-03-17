@@ -16,8 +16,10 @@
     <style>
         body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
         
+        /* TELA INTEIRA (100% WIDTH) COM PADDING DE RESPIRO */
         .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
         
+        /* Controles do Topo */
         .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
@@ -29,6 +31,9 @@
         .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-print:hover { background: #374151; transform: translateY(-2px); }
 
+        /* ========================================================
+           DESIGN MODERNO "FORA DO ESQUADRO" COM CORES SUAVES
+           ======================================================== */
         .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -37,36 +42,41 @@
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 15px; font-weight: 500; text-transform: uppercase; }
         .dash-header-title i { color: #00995D; }
         
+        /* Logo Oculta na Tela (Só aparece na Impressão) */
         .print-logo { display: none; height: 65px; object-fit: contain; }
 
+        /* Grid de KPIs - Quebrado (Fora do esquadro) */
         .kpi-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; margin-bottom: 25px; }
         
-        .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
+        .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         
+        /* Fundos Coloridos Suaves */
         .kpi-card.total { background: #e9e0f2; }
         .kpi-card.plantao { background: #d0e9f3; }
         .kpi-card.tratamento { background: #bceec8; }
         .kpi-card.particular { background: #fdebc3; }
 
-        .kpi-header { display: flex; justify-content: space-between; align-items: center; }
-        .kpi-title { font-size: 12px; font-weight: 800; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; position: relative;}
+        .kpi-title { font-size: 12px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: rgba(255,255,255,0.7); }
         
+        /* Cores dos Ícones */
         .kpi-card.total .kpi-icon { color: #7e22ce; }
         .kpi-card.plantao .kpi-icon { color: #0284c7; }
         .kpi-card.tratamento .kpi-icon { color: #059669; }
         .kpi-card.particular .kpi-icon { color: #d97706; }
 
-        /* Substituído o absolute por normal flex flow para não sobrepor */
-        .kpi-value { font-size: 34px; font-weight: 900; color: #111827; margin: 10px 0; text-align: center; white-space: nowrap; }
-        .kpi-card.total .kpi-value { color: #7e22ce; font-size: 38px; }
+        /* Valores Massiveis - Sobrepondo */
+        .kpi-value { font-size: 36px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; white-space: nowrap; }
+        .kpi-card.total .kpi-value { color: #7e22ce; }
 
-        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; }
+        /* Ajuste do Subtexto colado ao valor */
+        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; z-index: 2; position: relative; margin-top: auto;}
         .kpi-subtext span { color: #111827; font-weight: 700; }
 
-        /* Blocos Menores Empilhados */
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-bottom: 25px;}
+        /* Blocos de Detalhamento - Flexível */
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .details-column { display: flex; flex-direction: column; gap: 20px; }
         .details-column.c1 { background: #fefeff; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
         .details-column.c2 { background: #fdfdfe; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
@@ -75,8 +85,7 @@
         .detail-header { background: #ffffff; padding: 18px 22px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .detail-header i { font-size: 16px; }
         
-        .giant-list-card { margin-top: 20px; }
-
+        /* Tabela Bonita */
         .modern-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         .modern-table th { background: #f9fafb; color: #6b7280; font-weight: 700; padding: 12px 22px; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 1;}
         .modern-table td { padding: 14px 22px; border-bottom: 1px solid #f3f4f6; color: #374151; font-weight: 600; }
@@ -86,6 +95,10 @@
         .empty-state { padding: 40px 20px; text-align: center; color: #9ca3af; font-size: 14px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .empty-state i { font-size: 36px; color: #e5e7eb; }
 
+        .pending-row td { color: #d97706; }
+        .pending-row td:first-child { border-left: 3px solid #f59e0b; }
+
+        /* Tabela Resumo Menor */
         .summary-table { width: 100%; font-size: 14px; }
         .summary-table td { padding: 16px 22px; border-bottom: 1px dashed #e5e7eb; vertical-align: middle; }
         .summary-table tr:last-child td { border-bottom: none; }
@@ -170,7 +183,7 @@
             </div>
 
             <div class="kpi-row">
-                <div class="kpi-card total">
+                <div class="kpi-card total" style="flex: 2 1 300px;">
                     <div class="kpi-header">
                         <span class="kpi-title">Total a Receber</span>
                         <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
@@ -190,13 +203,13 @@
             </div>
 
             <div class="kpi-row">
-                <div class="kpi-card plantao">
+                <div class="kpi-card plantao" style="flex: 2 1 300px;">
                     <div class="kpi-header">
                         <span class="kpi-title">Sala Médica (Plantões)</span>
                         <div class="kpi-icon"><i class="fas fa-hospital"></i></div>
                     </div>
                     <p class="kpi-value" id="kpiTotalPlantao">R$ 0,00</p>
-                    <div class="kpi-subtext">Turnos cumpridos: <span id="kpiPlantTurnos">0</span></div>
+                    <div class="kpi-subtext">Total de turnos: <span id="kpiPlantTurnos">0</span></div>
                 </div>
 
                 <div class="kpi-card particular">
@@ -267,7 +280,7 @@
                                 <tr>
                                     <td class="summary-label">Valor Apurado (R$)</td>
                                     <td class="summary-val">
-                                        <input type="number" id="inpConvValor" value="0.00" min="0" step="0.01" class="manual-input" oninput="updateTotalGeral()">
+                                        <input type="number" id="inpConvValor" value="0.00" min="0" step="0.01" class="manual-input">
                                     </td>
                                 </tr>
                             </tbody>
@@ -329,7 +342,6 @@
     <script>
         let doctors = {};
         let pacientesDb = {};
-        window.baseTotalGeral = 0; // Armazena a soma das 3 colunas base para o input manual funcionar
 
         const IMPOSTO_TAXA = 0.1233; 
         const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
@@ -480,13 +492,6 @@
             } catch(e) {}
         }
 
-        // Adiciona valor do Convênio Prédio dinamicamente
-        function updateTotalGeral() {
-            let conv = parseFloat(document.getElementById('inpConvValor').value) || 0;
-            let total = window.baseTotalGeral + conv;
-            document.getElementById('kpiTotalGeral').innerText = `R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
-        }
-
         async function renderDashboard() {
             const docId = document.getElementById('dashSelectDoctor').value;
             const mo = parseInt(document.getElementById('dashSelectMonth').value);
@@ -499,10 +504,9 @@
 
             document.getElementById('modernDashboard').style.display = 'block';
             
-            // Reseta inputs manuais
+            // Reseta inputs manuais (Sem chamar função de update)
             document.getElementById('inpConvQtd').value = "0";
             document.getElementById('inpConvValor').value = "0.00";
-            window.baseTotalGeral = 0;
 
             // Setup Loading State
             const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart'];
@@ -695,7 +699,7 @@
 
 
                 // ------------------------------------------------
-                // 3. CONSULTAS PARTICULARES (Novo Integrado!)
+                // 3. CONSULTAS PARTICULARES
                 // ------------------------------------------------
                 let valorParticular = 0;
                 let atendimentosParticular = 0;
@@ -735,8 +739,11 @@
                 // ------------------------------------------------
                 // 4. TOTAL GERAL
                 // ------------------------------------------------
-                window.baseTotalGeral = valorPlantao + valorTratamento + valorParticular;
-                updateTotalGeral(); // Chama a função que insere na tela já somando os campos manuais que estiverem lá
+                // Como não usamos os campos manuais para o cálculo geral mais, ele soma apenas o padrão
+                let totalGeral = valorPlantao + valorTratamento + valorParticular;
+                
+                let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
+                if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
             } catch (err) {
                 console.error("Erro ao montar o painel: ", err);
