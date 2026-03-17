@@ -532,9 +532,9 @@
         }
 
         // ==========================================
-        // IMPORTAÇÃO DA PLANILHA INTERNA COM ROBUSTEZ EXTREMA
+        // IMPORTAÇÃO DA PLANILHA INTERNA COM WIPE & REPLACE (100% BLINDADO CONTRA DUPLICAÇÕES)
         // ==========================================
-        function importarPlanilhaNicolas(e) {
+        async function importarPlanilhaNicolas(e) {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -553,14 +553,14 @@
                     
                     const worksheet = workbook.Sheets[sheetName];
                     
-                    // Visão Raio-X: Procura onde o cabeçalho realmente começa (Pula títulos soltos na linha 1)
                     const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     let headerRowIndex = -1;
                     
-                    for (let i = 0; i < Math.min(rawData.length, 20); i++) {
+                    // Ajuste fino no Scanner: Procura o Nome e Dados
+                    for (let i = 0; i < Math.min(rawData.length, 30); i++) {
                         const rowStr = JSON.stringify(rawData[i]).toUpperCase();
                         if ((rowStr.includes("NOME") || rowStr.includes("PACIENTE")) && 
-                            (rowStr.includes("VALOR") || rowStr.includes("TOTAL") || rowStr.includes("LUCRO") || rowStr.includes("LIQUIDO") || rowStr.includes("LÍQUIDO"))) {
+                            (rowStr.includes("DATA") || rowStr.includes("VALOR") || rowStr.includes("TOTAL") || rowStr.includes("LUCRO"))) {
                             headerRowIndex = i;
                             break;
                         }
@@ -571,6 +571,7 @@
                         : XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
                     
                     let novosRegistros = [];
+                    let contadorID = 1; // Contador sequencial para garantir IDs únicos, porém fixos por arquivo
                     
                     finalData.forEach(row => {
                         let paciente = '', dataAplic = '', medicamento = 'ITEM DIVERSO', valor = 0;
@@ -585,10 +586,10 @@
                             if (kUp === 'PACIENTE' || kUp === 'NOME' || kUp.includes('NOME DO PACIENTE')) {
                                 paciente = String(vOriginal).toUpperCase().trim();
                             }
-                            else if (kUp.includes('APLICA') || kUp.includes('DATA')) {
+                            else if (kUp === 'DATA ATEND.' || kUp === 'DATA ATENDIMENTO' || kUp.includes('APLICA') || kUp === 'DATA') {
                                 dataAplic = normalizeDate(vOriginal);
                             }
-                            else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL') || kUp.includes('LUCRO') || kUp.includes('LÍQUIDO') || kUp.includes('LIQUIDO')) {
+                            else if (kUp === 'VALOR' || kUp === 'REPASSE' || kUp === 'LUCRO' || kUp === 'TOTAL' || kUp.includes('LIQUIDO') || kUp.includes('LÍQUIDO')) {
                                 foundValor = true;
                                 if (typeof vOriginal === 'number') {
                                     valor = vOriginal;
@@ -609,10 +610,11 @@
                             }
                         }
 
-                        // Agora não ignora se o valor for R$ 0,00, desde que a coluna exista
+                        // Se encontrou as 3 chaves, salva a linha (mesmo que o lucro seja zero)
                         if (paciente && dataAplic && foundValor) {
                             novosRegistros.push({
-                                id_firebase: `int_${cleanStr(competenciaAlvo)}_${cleanStr(paciente).substring(0,10)}_${cleanStr(dataAplic)}_${cleanStr(medicamento).substring(0,10)}_${Math.floor(Math.random()*10000)}`,
+                                // ⚠️ ID DETERMINÍSTICO E SEQUENCIAL: Sem random, impossível duplicar se mandar o mesmo arquivo
+                                id_firebase: `int_${cleanStr(competenciaAlvo)}_${cleanStr(paciente).substring(0,10)}_${contadorID++}`,
                                 competencia: competenciaAlvo,
                                 paciente: paciente,
                                 data_atendimento: dataAplic,
@@ -622,10 +624,29 @@
                         }
                     });
 
+                    if (novosRegistros.length === 0) {
+                        alert("Nenhum dado válido encontrado! Verifique se as colunas da planilha têm os nomes corretos (NOME, DATA ATEND., LUCRO).");
+                        document.getElementById('importPlanilhaNicolas').value = ''; 
+                        return;
+                    }
+
                     document.getElementById('importPlanilhaNicolas').value = ''; 
                     const tbody = document.querySelector('#dataTable tbody'); 
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;"><i class="fas fa-cloud-upload-alt fa-spin" style="font-size:20px; color:#10b981;"></i><br><br>Salvando ${novosRegistros.length} itens no Banco de Dados para todos os usuários...</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;"><i class="fas fa-broom fa-spin" style="font-size:20px; color:#f59e0b;"></i><br><br>Limpando dados antigos do mês e salvando ${novosRegistros.length} novos itens...</td></tr>`;
 
+                    // 1. WIPE: Apaga os dados antigos daquela competência antes de gravar
+                    try {
+                        const resAntigos = await fetch(`${API_BASE_URL}/planilha_interna`, { headers: API_HEADERS });
+                        if (resAntigos.ok) {
+                            const todosAntigos = Object.values(normalizeData(await resAntigos.json()));
+                            const paraDeletar = todosAntigos.filter(r => r.competencia === competenciaAlvo);
+                            for (const item of paraDeletar) {
+                                await fetch(`${API_BASE_URL}/planilha_interna/${item.id_firebase}`, { method: 'DELETE', headers: API_HEADERS });
+                            }
+                        }
+                    } catch(e) { console.log("Erro ao limpar dados antigos."); }
+
+                    // 2. REPLACE: Insere os novos dados
                     let inseridos = 0;
                     for(const item of novosRegistros) {
                         try {
@@ -636,16 +657,18 @@
                         } catch(err) { break; }
                     }
 
-                    if (inseridos > 0) alert(`Sucesso! ${inseridos} itens salvos no banco.`);
-                    else {
-                        alert("Não foi possível salvar no banco. Utilizando os dados temporariamente na tela.");
+                    if (inseridos > 0) {
+                        alert(`Sucesso! Importação refeita. ${inseridos} itens salvos no banco para o mês ${competenciaAlvo}.`);
+                    } else {
+                        alert("Falha na conexão com a API. Os dados serão mostrados temporariamente na tela.");
+                        nicolasDataDb = nicolasDataDb.filter(r => r.competencia !== competenciaAlvo); // Remove da tela os antigos
                         nicolasDataDb = nicolasDataDb.concat(novosRegistros); 
                     }
 
                     fetchBotData();
                     
                 } catch(err) {
-                    alert('Erro ao ler a planilha: ' + err.message);
+                    alert('Erro crítico ao ler a planilha: ' + err.message);
                     fetchBotData();
                 }
             };
@@ -697,6 +720,7 @@
                     }
                 }
                 
+                // A REGRA DA DRA. GRAZIELLY
                 const isGrazielly = (patientsTableObj[p].pName && patientsTableObj[p].pName.toUpperCase().includes('GRAZIELLY')) || 
                                     (patientsTableObj[p].eName && patientsTableObj[p].eName.toUpperCase().includes('GRAZIELLY'));
                 
@@ -793,6 +817,7 @@
                 if (lucroApurado > 0.05) cls = 'bg-green'; 
                 if (lucroApurado < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
+                // CALCULA O REPASSE FINANCEIRO SOBRE O LUCRO (TRAVADO EM 2 CASAS DECIMAIS)
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 let valorRepasse = 0;
                 
