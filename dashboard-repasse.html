@@ -16,7 +16,7 @@
     <style>
         body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
         
-        /* TELA INTEIRA (100% WIDTH) COM PADDING DE RESPIRO */
+        /* TELA INTEIRA COM PADDING DE RESPIRO */
         .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
         
         /* Controles do Topo */
@@ -52,13 +52,13 @@
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         
         /* Fundos Coloridos Suaves */
-        .kpi-card.total { background: #e9e0f2; }
-        .kpi-card.plantao { background: #d0e9f3; }
-        .kpi-card.tratamento { background: #bceec8; }
-        .kpi-card.particular { background: #fdebc3; }
+        .kpi-card.total { background: #f3e8ff; } /* Roxo suave */
+        .kpi-card.plantao { background: #e0f2fe; } /* Azul suave */
+        .kpi-card.tratamento { background: #dcfce7; } /* Verde suave */
+        .kpi-card.particular { background: #fef3c7; } /* Laranja suave */
 
         .kpi-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; position: relative;}
-        .kpi-title { font-size: 12px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-title { font-size: 12px; font-weight: 800; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: rgba(255,255,255,0.7); }
         
         /* Cores dos Ícones */
@@ -67,18 +67,17 @@
         .kpi-card.tratamento .kpi-icon { color: #059669; }
         .kpi-card.particular .kpi-icon { color: #d97706; }
 
-        /* Valores Massiveis - Sobrepondo */
-        .kpi-value { font-size: 36px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; }
-        .kpi-card.total .kpi-value { color: #7e22ce; }
+        /* Valores - Sobrepondo com cores vibrantes */
+        .kpi-value { font-size: 34px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; white-space: nowrap;}
+        .kpi-card.total .kpi-value { color: #7e22ce; font-size: 40px; }
+        .kpi-card.plantao .kpi-value { color: #0284c7; }
+        .kpi-card.tratamento .kpi-value { color: #059669; }
 
-        .kpi-subtext { font-size: 12px; color: #9ca3af; font-weight: 600; display: flex; justify-content: space-between; z-index: 2; position: relative;}
-        .kpi-subtext span { color: #4b5563; }
+        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: space-between; z-index: 2; position: relative;}
 
         /* Blocos de Detalhamento - Flexível */
         .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .details-column { display: flex; flex-direction: column; gap: 20px; }
-        .details-column.c1 { background: #fefeff; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
-        .details-column.c2 { background: #fdfdfe; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
         
         .detail-card { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; overflow: hidden; display: flex; flex-direction: column; }
         .detail-header { background: #ffffff; padding: 18px 22px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
@@ -181,7 +180,7 @@
                         <div class="kpi-icon"><i class="fas fa-pills"></i></div>
                     </div>
                     <p class="kpi-value" id="kpiTotalTratamento">R$ 0,00</p>
-                    <div class="kpi-subtext">Pacientes: <span id="kpiTratPac">0</span></div>
+                    <div class="kpi-subtext">Pacientes Atendidos: <span id="kpiTratPac">0</span></div>
                 </div>
             </div>
 
@@ -192,7 +191,7 @@
                         <div class="kpi-icon"><i class="fas fa-hospital"></i></div>
                     </div>
                     <p class="kpi-value" id="kpiTotalPlantao">R$ 0,00</p>
-                    <div class="kpi-subtext">Turnos cumpridos: <span id="kpiPlantTurnos">0</span></div>
+                    <div class="kpi-subtext">Total de turnos: <span id="kpiPlantTurnos">0</span></div>
                 </div>
 
                 <div class="kpi-card particular">
@@ -207,7 +206,7 @@
 
             <div class="details-grid">
                 
-                <div class="details-column c1">
+                <div class="details-column">
                     
                     <div class="detail-card">
                         <div class="detail-header">
@@ -238,7 +237,7 @@
                                     <td class="summary-val" id="detTratPac">0</td>
                                 </tr>
                                 <tr>
-                                    <td class="summary-label">Volume Total de Atendimentos (Itens)</td>
+                                    <td class="summary-label">Volume Total de Atendimentos (Itens/Aplicações)</td>
                                     <td class="summary-val" id="detTratItens">0</td>
                                 </tr>
                                 <tr>
@@ -275,7 +274,7 @@
 
                 </div>
 
-                <div class="details-column c2">
+                <div class="details-column">
                     
                     <div class="detail-card" style="flex: 1;">
                         <div class="detail-header">
@@ -348,7 +347,6 @@
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
 
-        // Lógica Exata de Repasse (Maikol / Grupo Mama = Encaminhador Especial 37.5%)
         function getComissaoInfo(pName, eName) {
             let percP = 0; let percE = 0;
             const grupoMama = [
@@ -521,7 +519,11 @@
                                 if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
                                 return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
                             });
-                            let dbShifts = foundId ? dataObj[foundId] : {};
+                            
+                            let dbShifts = {};
+                            if (foundId) {
+                                dbShifts = typeof dataObj[foundId] === 'string' ? JSON.parse(dataObj[foundId]) : dataObj[foundId];
+                            }
 
                             if (dbShifts[docId]) {
                                 for (let i = 1; i <= daysInMonth; i++) {
@@ -545,7 +547,7 @@
                     } catch(e) {}
                 }
 
-                // Proteção para não dar erro se não achar o elemento (Variavel corrigida)
+                // Proteção para não dar erro se não achar o elemento - Agora Variável Correta!
                 let elPlantTurnos = document.getElementById('kpiPlantTurnos');
                 if(elPlantTurnos) elPlantTurnos.innerText = turnosPlantao;
                 
@@ -555,8 +557,8 @@
                 let elDetPlantValor = document.getElementById('detPlantValor');
                 if(elDetPlantValor) elDetPlantValor.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
-                let elKpiPlantao = document.getElementById('kpiTotalPlantao');
-                if(elKpiPlantao) elKpiPlantao.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                let elKpiTotalPlantao = document.getElementById('kpiTotalPlantao');
+                if(elKpiTotalPlantao) elKpiTotalPlantao.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
                 // ------------------------------------------------
                 // 2. TRATAMENTO (Repasse Inteligente)
@@ -567,7 +569,7 @@
                 let htmlTratamentosLista = '';
 
                 try {
-                    const resU = await fetch(`${API_BASE_URL}/repasse_unimed`, {headers: API_HEADERS});
+                    const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                     let uData = resU.ok ? Object.values(normalizeData(await resU.json())).filter(r => r.competencia === compStr) : [];
 
                     let agrupamentoPaciente = {};
@@ -575,7 +577,6 @@
                     uData.forEach(d => {
                         let pac = String(d.paciente || '').toUpperCase().trim();
                         if(!pac) return;
-                        
                         let patId = generatePatientId(pac);
                         let patDb = pacientesDb[patId];
                         
