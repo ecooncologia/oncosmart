@@ -16,10 +16,8 @@
     <style>
         body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
         
-        /* TELA INTEIRA (100% WIDTH) COM PADDING DE RESPIRO */
         .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
         
-        /* Controles do Topo */
         .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
@@ -31,52 +29,43 @@
         .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-print:hover { background: #374151; transform: translateY(-2px); }
 
-        /* ========================================================
-           DESIGN MODERNO "FORA DO ESQUADRO" COM CORES SUAVES
-           ======================================================== */
         .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e5e7eb; }
         .dash-header-title h1 { margin: 0; font-size: 26px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 15px; font-weight: 500; text-transform: uppercase; }
         .dash-header-title i { color: #00995D; }
         
-        /* Logo Oculta na Tela (Só aparece na Impressão) */
         .print-logo { display: none; height: 65px; object-fit: contain; }
 
-        /* Grid de KPIs - Quebrado (Fora do esquadro) */
         .kpi-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; margin-bottom: 25px; }
         
-        .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
+        .kpi-card { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; transition: 0.3s; flex: 1 1 200px; min-width: 180px; }
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         
-        /* Fundos Coloridos Suaves */
         .kpi-card.total { background: #e9e0f2; }
         .kpi-card.plantao { background: #d0e9f3; }
         .kpi-card.tratamento { background: #bceec8; }
         .kpi-card.particular { background: #fdebc3; }
 
-        .kpi-header { display: flex; justify-content: space-between; align-items: center; z-index: 2; position: relative;}
-        .kpi-title { font-size: 12px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-header { display: flex; justify-content: space-between; align-items: center; }
+        .kpi-title { font-size: 12px; font-weight: 800; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
         .kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: rgba(255,255,255,0.7); }
         
-        /* Cores dos Ícones */
         .kpi-card.total .kpi-icon { color: #7e22ce; }
         .kpi-card.plantao .kpi-icon { color: #0284c7; }
         .kpi-card.tratamento .kpi-icon { color: #059669; }
         .kpi-card.particular .kpi-icon { color: #d97706; }
 
-        /* Valores Massiveis - Sobrepondo */
-        .kpi-value { font-size: 36px; font-weight: 900; color: #111827; margin: 0; line-height: 1.2; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; text-align: center; white-space: nowrap; }
-        .kpi-card.total .kpi-value { color: #7e22ce; }
+        .kpi-value { font-size: 34px; font-weight: 900; color: #111827; margin: 10px 0; text-align: center; white-space: nowrap; }
+        .kpi-card.total .kpi-value { color: #7e22ce; font-size: 38px; }
 
-        /* Ajuste do Subtexto colado ao valor */
-        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; z-index: 2; position: relative; margin-top: auto;}
+        .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; }
         .kpi-subtext span { color: #111827; font-weight: 700; }
 
-        /* Blocos de Detalhamento - Flexível */
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        /* Blocos Menores Empilhados */
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-bottom: 25px;}
         .details-column { display: flex; flex-direction: column; gap: 20px; }
         .details-column.c1 { background: #fefeff; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
         .details-column.c2 { background: #fdfdfe; border-radius: 16px; padding: 10px; border: 1px solid rgba(0,0,0,0.02);}
@@ -85,7 +74,8 @@
         .detail-header { background: #ffffff; padding: 18px 22px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .detail-header i { font-size: 16px; }
         
-        /* Tabela Bonita */
+        .giant-list-card { margin-top: 20px; }
+
         .modern-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         .modern-table th { background: #f9fafb; color: #6b7280; font-weight: 700; padding: 12px 22px; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 1;}
         .modern-table td { padding: 14px 22px; border-bottom: 1px solid #f3f4f6; color: #374151; font-weight: 600; }
@@ -95,10 +85,6 @@
         .empty-state { padding: 40px 20px; text-align: center; color: #9ca3af; font-size: 14px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .empty-state i { font-size: 36px; color: #e5e7eb; }
 
-        .pending-row td { color: #d97706; }
-        .pending-row td:first-child { border-left: 3px solid #f59e0b; }
-
-        /* Tabela Resumo Menor */
         .summary-table { width: 100%; font-size: 14px; }
         .summary-table td { padding: 16px 22px; border-bottom: 1px dashed #e5e7eb; vertical-align: middle; }
         .summary-table tr:last-child td { border-bottom: none; }
@@ -111,28 +97,32 @@
         .manual-input { width: 100px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: right; font-weight: 700; font-size: 14px; color: #111827; outline: none; transition: 0.2s; }
         .manual-input:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
 
-        /* Impressão - Layout Blindado e Escondendo as Bordas do Input */
+        /* ========================================================
+           IMPRESSÃO - A MÁGICA PARA NÃO CORTAR E JOGAR A LISTA PRA BAIXO
+           ======================================================== */
         @media print {
             body { background: white; -webkit-print-color-adjust: exact; margin: 0; padding: 0;}
             .controls, #global-header, #global-nav { display: none !important; }
             .modern-dashboard { display: block !important; animation: none; }
             
-            /* Ajuste de Container para 100% sem padding lateral que empurra pra fora */
             .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important;}
             
             .print-logo { display: block; margin-bottom: 10px; }
             .dash-header { align-items: flex-end; border-bottom: 3px solid #00995D; padding-bottom: 15px; margin-bottom: 20px; }
-            
-            /* Forçar as colunas a dividirem 50/50 na folha A4 */
-            .details-grid { display: flex !important; width: 100% !important; gap: 15px !important; margin-bottom: 15px !important;}
-            .details-column { flex: 1 !important; width: 48% !important; gap: 15px !important; padding: 0 !important; border: none !important;}
             
             /* KPIs alinhados */
             .kpi-row { display: flex !important; flex-wrap: nowrap !important; width: 100% !important; gap: 10px !important; margin-bottom: 15px !important;}
             .kpi-card { flex: 1 !important; min-width: 0 !important; padding: 12px !important; box-shadow: none !important; border: 1px solid #e5e7eb !important; break-inside: avoid; }
             .kpi-value { font-size: 20px !important; margin: 5px 0 !important; }
             
+            /* Forçar as colunas de detalhes a dividirem 50/50 e não quebrarem pra baixo sozinhas */
+            .details-grid { display: flex !important; flex-direction: row !important; width: 100% !important; gap: 15px !important; margin-bottom: 15px !important;}
+            .details-column { flex: 1 !important; width: 48% !important; gap: 15px !important; padding: 0 !important; border: none !important;}
+            
             .detail-card { box-shadow: none !important; border: 1px solid #e5e7eb !important; break-inside: avoid; }
+            
+            /* A LISTA DE PACIENTES FORÇADA PARA UMA NOVA PÁGINA */
+            .giant-list-card { page-break-before: always; margin-top: 0 !important; }
             .list-container { max-height: none !important; overflow: visible !important; }
             
             /* Transformar input em texto puro na impressão */
@@ -264,7 +254,9 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
 
+                <div class="details-column c2">
                     <div class="detail-card">
                         <div class="detail-header" style="color: #1f2937;">
                             <i class="fas fa-building" style="color: #6b7280;"></i> Consultas - Convênio (Prédio)
@@ -291,14 +283,12 @@
                             Incluir na descrição o nome completo do profissional.
                         </div>
                     </div>
-                </div>
 
-                <div class="details-column c2">
                     <div class="detail-card" style="flex: 1;">
                         <div class="detail-header" style="color: #b45309;">
                             <i class="fas fa-exclamation-circle" style="color: #f59e0b;"></i> Relação de Pendências
                         </div>
-                        <div class="list-container" style="max-height: 400px;">
+                        <div class="list-container" style="max-height: 180px;">
                             <table class="modern-table">
                                 <thead><tr><th style="width:25%;">Data</th><th>Paciente / Pendência</th></tr></thead>
                                 <tbody>
@@ -504,10 +494,6 @@
 
             document.getElementById('modernDashboard').style.display = 'block';
             
-            // Reseta inputs manuais (Sem chamar função de update)
-            document.getElementById('inpConvQtd').value = "0";
-            document.getElementById('inpConvValor').value = "0.00";
-
             // Setup Loading State
             const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart'];
             elsToReset.forEach(id => {
@@ -737,9 +723,9 @@
 
 
                 // ------------------------------------------------
-                // 4. TOTAL GERAL
+                // 4. TOTAL GERAL (APENAS O SISTÊMICO)
                 // ------------------------------------------------
-                // Como não usamos os campos manuais para o cálculo geral mais, ele soma apenas o padrão
+                // O Convênio Prédio não entra aqui, já que a nota é por fora.
                 let totalGeral = valorPlantao + valorTratamento + valorParticular;
                 
                 let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
