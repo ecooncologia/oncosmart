@@ -521,6 +521,13 @@
         // ==========================================
         // RENDERIZAÇÃO DA TABELA PRINCIPAL
         // ==========================================
+        function toggleAll(source) {
+            const checkboxes = document.getElementsByName('rowCheck');
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = source.checked;
+            }
+        }
+
         function renderAnalysisTable() {
             const filterPatient = document.getElementById('filterPatient').value;
             const filterAuditoria = document.getElementById('filterAuditoria').value;
@@ -545,7 +552,9 @@
                 
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
-                const docId = patDb ? patDb.doctor_id : null;
+                
+                // Suporte para o banco com vínculo duplo
+                const docId = patDb ? (patDb.prescritor_id || patDb.encaminhador_id || patDb.doctor_id) : null;
                 const docDb = docId && doctors[docId] ? doctors[docId] : null;
                 
                 patientsTableObj[p].docId = docId;
@@ -597,7 +606,7 @@
                 if (!patientsTableObj[pacName]) {
                     const patId = generatePatientId(pacName);
                     const patDb = pacientesDb[patId];
-                    const docId = patDb ? patDb.doctor_id : null;
+                    const docId = patDb ? (patDb.prescritor_id || patDb.encaminhador_id || patDb.doctor_id) : null;
                     const docDb = docId && doctors[docId] ? doctors[docId] : null;
 
                     let isPresc = false; let isEncam = false; let roles = [];
@@ -650,19 +659,19 @@
             
             patListToPrint.forEach((pat, idx) => {
                 const lucroBruto = Number((pat.totalU - pat.totalW).toFixed(2)); 
-                sumLucro += lucroBruto;
+                sumLucro = Number((sumLucro + lucroBruto).toFixed(2));
                 
                 let cls = 'bg-gray'; 
                 if (lucroBruto > 0.05) cls = 'bg-green'; 
                 if (lucroBruto < -0.05) { cls = 'bg-red'; divergencesCount++; }
 
-                // CALCULA O REPASSE FINANCEIRO DO PACIENTE
+                // CALCULA O REPASSE FINANCEIRO DO PACIENTE (TRAVA DECIMAL)
                 const comissaoInfo = getComissaoInfo(pat.docName, pat.isPrescritor, pat.isEncaminhador);
                 let valorRepasse = 0;
                 if (lucroBruto > 0 && comissaoInfo.totalPerc > 0) {
-                    valorRepasse = lucroBruto * (comissaoInfo.totalPerc / 100);
+                    valorRepasse = Number((lucroBruto * (comissaoInfo.totalPerc / 100)).toFixed(2));
                 }
-                sumRepasse += valorRepasse;
+                sumRepasse = Number((sumRepasse + valorRepasse).toFixed(2));
 
                 // Montagem dos Badges Visuais
                 let rolesHtml = '';
@@ -801,8 +810,8 @@
                             </tr>`;
                         });
                         
-                        let diaLucro = diaUnimedTotal - diaNicTotal;
-                        let diaRepasseVal = diaLucro > 0 ? diaLucro * (comissaoInfo.totalPerc / 100) : 0;
+                        let diaLucro = Number((diaUnimedTotal - diaNicTotal).toFixed(2));
+                        let diaRepasseVal = diaLucro > 0 ? Number((diaLucro * (comissaoInfo.totalPerc / 100)).toFixed(2)) : 0;
 
                         htmlBuffer += `<tr style="background:#e0f2fe; border-top: 2px solid #bae6fd;">
                             <td colspan="5" style="text-align:right; font-weight:bold; color:#0369a1; padding: 12px;">SUBTOTAL DO DIA (${dDate}):</td>
@@ -889,7 +898,7 @@
                 
                 const comissaoInfo = getComissaoInfo(pat.docName, pat.isPrescritor, pat.isEncaminhador);
                 let valorRepasse = 0;
-                if(lucro > 0) valorRepasse = lucro * (comissaoInfo.totalPerc / 100);
+                if(lucro > 0) valorRepasse = Number((lucro * (comissaoInfo.totalPerc / 100)).toFixed(2));
 
                 html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
                     <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${pat.docName} - ${pat.docRoles}</span></td>
@@ -989,7 +998,6 @@
 
         // Funções Base Plantão...
         function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
-        function toggleAll(source) { const c = document.getElementsByName('rowCheck'); for(let i=0; i<c.length; i++) c[i].checked = source.checked; }
         
         function deleteSelected() { 
             const c = document.getElementsByName('rowCheck'); 
