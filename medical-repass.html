@@ -240,7 +240,7 @@
 
     <script>
         // ==========================================
-        // VARIÁVEIS GLOBAIS
+        // VARIÁVEIS GLOBAIS E BASE
         // ==========================================
         let excelData = []; 
         let nicolasDataDb = []; 
@@ -254,9 +254,6 @@
 
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-        // ==========================================
-        // FUNÇÕES BASE E UTILITÁRIAS
-        // ==========================================
         const generatePatientId = (name) => {
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
@@ -467,9 +464,7 @@
                         selRepasse.add(new Option(doc.nome, id));
                     });
                 }
-            } catch(e) {
-                console.error("Erro ao carregar médicos:", e);
-            }
+            } catch(e) {}
         }
 
         async function loadPacientesDb() {
@@ -537,7 +532,7 @@
         }
 
         // ==========================================
-        // IMPORTAÇÃO DA PLANILHA INTERNA
+        // IMPORTAÇÃO DA PLANILHA INTERNA COM ROBUSTEZ EXTREMA
         // ==========================================
         function importarPlanilhaNicolas(e) {
             const file = e.target.files[0];
@@ -553,26 +548,52 @@
                     const data = new Uint8Array(evt.target.result);
                     const workbook = XLSX.read(data, {type: 'array'});
                     
-                    let sheetName = workbook.SheetNames.find(n => n.toUpperCase() === "GERAL");
+                    let sheetName = workbook.SheetNames.find(n => n.toUpperCase().includes("GERAL"));
                     if (!sheetName) sheetName = workbook.SheetNames[0]; 
                     
                     const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: true});
+                    
+                    // Visão Raio-X: Procura onde o cabeçalho realmente começa (Pula títulos soltos na linha 1)
+                    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    let headerRowIndex = -1;
+                    
+                    for (let i = 0; i < Math.min(rawData.length, 20); i++) {
+                        const rowStr = JSON.stringify(rawData[i]).toUpperCase();
+                        if ((rowStr.includes("NOME") || rowStr.includes("PACIENTE")) && 
+                            (rowStr.includes("VALOR") || rowStr.includes("TOTAL") || rowStr.includes("LUCRO") || rowStr.includes("LIQUIDO") || rowStr.includes("LÍQUIDO"))) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    const finalData = headerRowIndex !== -1 
+                        ? XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex, raw: false, defval: "" })
+                        : XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
                     
                     let novosRegistros = [];
                     
-                    jsonData.forEach(row => {
+                    finalData.forEach(row => {
                         let paciente = '', dataAplic = '', medicamento = 'ITEM DIVERSO', valor = 0;
+                        let foundValor = false;
                         
                         for (let k in row) {
                             let kUp = k.toUpperCase().trim();
-                            if (kUp === 'PACIENTE') paciente = String(row[k]).toUpperCase().trim();
-                            else if (kUp.includes('APLICA') || kUp.includes('DATA')) dataAplic = normalizeDate(row[k]);
-                            else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL') || kUp.includes('LUCRO')) {
-                                let v = row[k];
-                                if (typeof v === 'number') valor = v;
-                                else if (typeof v === 'string') {
-                                    let s = v.replace(/R\$\s?/ig, '').trim();
+                            let vOriginal = row[k];
+                            
+                            if (vOriginal === undefined || vOriginal === null || vOriginal === "") continue;
+
+                            if (kUp === 'PACIENTE' || kUp === 'NOME' || kUp.includes('NOME DO PACIENTE')) {
+                                paciente = String(vOriginal).toUpperCase().trim();
+                            }
+                            else if (kUp.includes('APLICA') || kUp.includes('DATA')) {
+                                dataAplic = normalizeDate(vOriginal);
+                            }
+                            else if (kUp.includes('VALOR') || kUp.includes('REPASSE') || kUp.includes('PAGO') || kUp.includes('TOTAL') || kUp.includes('LUCRO') || kUp.includes('LÍQUIDO') || kUp.includes('LIQUIDO')) {
+                                foundValor = true;
+                                if (typeof vOriginal === 'number') {
+                                    valor = vOriginal;
+                                } else if (typeof vOriginal === 'string') {
+                                    let s = String(vOriginal).replace(/R\$\s?/ig, '').trim();
                                     if (s.includes('.') && s.includes(',')) {
                                         let lastDot = s.lastIndexOf('.');
                                         let lastComma = s.lastIndexOf(',');
@@ -584,13 +605,14 @@
                                 }
                             }
                             else if (kUp.includes('MEDICAMENTO') || kUp.includes('PRODUTO') || kUp.includes('DESCRI') || kUp.includes('ITEM') || kUp.includes('TIPO')) {
-                                medicamento = String(row[k]).toUpperCase().trim();
+                                medicamento = String(vOriginal).toUpperCase().trim();
                             }
                         }
 
-                        if (paciente && dataAplic && valor !== 0) {
+                        // Agora não ignora se o valor for R$ 0,00, desde que a coluna exista
+                        if (paciente && dataAplic && foundValor) {
                             novosRegistros.push({
-                                id_firebase: `int_${cleanStr(competenciaAlvo)}_${cleanStr(paciente).substring(0,10)}_${cleanStr(dataAplic)}_${cleanStr(medicamento).substring(0,10)}_${Math.floor(Math.random()*1000)}`,
+                                id_firebase: `int_${cleanStr(competenciaAlvo)}_${cleanStr(paciente).substring(0,10)}_${cleanStr(dataAplic)}_${cleanStr(medicamento).substring(0,10)}_${Math.floor(Math.random()*10000)}`,
                                 competencia: competenciaAlvo,
                                 paciente: paciente,
                                 data_atendimento: dataAplic,
@@ -937,11 +959,12 @@
             document.getElementById('dashLucroTotal').innerText = sumLucro.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashRepasseTotal').innerText = sumRepasse.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             document.getElementById('dashMedCount').innerText = itemsMedCount;
+            document.getElementById('dashDivergences').innerText = divergencesCount; 
             tbody.innerHTML = htmlBuffer;
         }
 
         // ==========================================
-        // 🖨️ EXPORTAÇÃO PDF DO REPASSE
+        // 🖨️ EXPORTAÇÃO PDF DO REPASSE UNIMED
         // ==========================================
         function generateUnimedPDF() {
             if (patListToPrint.length === 0) {
@@ -1104,9 +1127,51 @@
             win.document.close();
         }
 
-        // ==========================================
-        // CARREGAMENTO DA PÁGINA (ESCALA PLANTÃO)
-        // ==========================================
+        // Funções Base Plantão...
+        function toggleLevel1(id, btn) { document.getElementById(`L1-${id}`).classList.toggle('expanded'); btn.classList.toggle('rotate'); }
+        
+        async function loadDoctors() { 
+            try { 
+                const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                doctors = normalizeData(await r.json()); 
+                doctorList = Object.entries(doctors).filter(([,d]) => d.plantao==='sim').sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).map(([id,d]) => ({id, nome: d.nome}));
+                updateRepassDoctorDropdown();
+
+                // Popula o Filtro de Médicos do Repasse também!
+                const selRepasse = document.getElementById('filterRepasseDoctor');
+                Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
+                    selRepasse.add(new Option(doc.nome, id));
+                });
+
+            } catch(e) {}
+        }
+
+        function getHolidays(y) { 
+            const pad = n => String(n).padStart(2,'0');
+            const h = { 
+                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
+                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
+                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
+            }; 
+            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
+            I = I - 30*Math.floor((I/30)); 
+            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
+            J = J - 7*Math.floor(J/7); 
+            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
+            
+            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
+            const add = (baseDate, days) => { 
+                const r = new Date(baseDate.getTime()); 
+                r.setDate(r.getDate() + days); 
+                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
+            }; 
+            
+            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
+            return h; 
+        }
+
         async function renderRepasseTable() { 
             const curY = parseInt(document.getElementById('selYearPlantao').value); 
             const curM = parseInt(document.getElementById('selMonthPlantao').value); 
@@ -1235,32 +1300,6 @@
             const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
             win.document.write(html); 
             win.document.close(); 
-        }
-
-        function getHolidays(y) { 
-            const pad = n => String(n).padStart(2,'0');
-            const h = { 
-                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
-                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
-                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
-            }; 
-            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
-            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
-            I = I - 30*Math.floor((I/30)); 
-            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
-            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
-            J = J - 7*Math.floor(J/7); 
-            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
-            
-            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
-            const add = (baseDate, days) => { 
-                const r = new Date(baseDate.getTime()); 
-                r.setDate(r.getDate() + days); 
-                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
-            }; 
-            
-            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
-            return h; 
         }
     </script>
 </body>
