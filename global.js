@@ -32,6 +32,7 @@ const APP_PAGES = [
     { id: 'atas', label: 'Mural de ATAs', file: 'atas.html', perm: 'atas' },
     { id: 'tuss', label: 'Tabela TUSS', file: 'tuss.html', perm: 'tuss' },
     { id: 'kanban', label: 'Trello', file: 'kanban.html', perm: 'kanban' },
+    { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood' },
     { id: 'admin', label: 'Admin', file: 'admin.html', perm: 'admin' }
 ];
 
