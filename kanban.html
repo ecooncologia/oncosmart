@@ -31,7 +31,7 @@
         .dash-header-title h1 { margin: 0; font-size: 24px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
         
-        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn-action { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; }
         .btn-action:hover { background: #e5e7eb; }
         .btn-add { background: #00995D; color: white; border: none; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); }
@@ -39,10 +39,15 @@
         .btn-perm { background: #3b82f6; color: white; border: none; }
         .btn-perm:hover { background: #2563eb; color: white; }
 
+        /* Fotinhas de Permissão (Avatares) */
+        .members-faces { display: flex; align-items: center; margin-right: 10px; }
+        .member-face { width: 34px; height: 34px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; border: 2px solid #fff; margin-left: -12px; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .member-face:first-child { margin-left: 0; }
+
         /* ========================================================
-           BOARD KANBAN (CENTRALIZADO E FLEXÍVEL)
+           BOARD KANBAN (CENTRALIZADO)
            ======================================================== */
-        .kanban-wrapper { flex: 1; overflow-x: auto; overflow-y: hidden; display: flex; justify-content: center; /* Centraliza as colunas */ }
+        .kanban-wrapper { flex: 1; overflow-x: auto; overflow-y: hidden; display: flex; justify-content: center; }
         .kanban-board { display: inline-flex; gap: 20px; padding-bottom: 20px; align-items: flex-start; margin: 0 auto; height: 100%;}
         
         .kanban-column { background: #f3f4f6; border-radius: 12px; width: 320px; min-width: 320px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; transition: background 0.2s; }
@@ -54,7 +59,6 @@
 
         .column-body { padding: 15px; overflow-y: auto; flex: 1; min-height: 150px; display: flex; flex-direction: column; gap: 12px; }
         
-        /* O Cartão (Task) */
         .kanban-card { background: white; padding: 16px; border-radius: 10px; cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; transition: 0.2s; position: relative; display: flex; flex-direction: column; gap: 10px;}
         .kanban-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-color: #d1d5db; transform: translateY(-2px); }
         .kanban-card:active { cursor: grabbing; transform: scale(0.98); opacity: 0.8; box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
@@ -75,7 +79,7 @@
         .card-date { font-size: 11px; color: #6b7280; font-weight: 600; display: flex; align-items: center; gap: 4px; }
         .card-date.atrasado { color: #dc2626; background: #fee2e2; padding: 2px 6px; border-radius: 4px;}
         
-        .card-user { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #00995D; color: white; font-size: 10px; font-weight: bold; text-transform: uppercase; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5e7eb; }
+        .card-user { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #00995D; color: white; font-size: 10px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5e7eb; }
 
         .btn-edit-card { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; opacity: 0; padding: 4px;}
         .kanban-card:hover .btn-edit-card { opacity: 1; }
@@ -112,7 +116,7 @@
         .btn-save { background: #00995D; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; margin-left: auto;}
         .btn-save:hover { background: #007a4a; }
 
-        /* Estilos do Checklist */
+        /* Checklist */
         .checklist-container { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; background: #f9fafb;}
         .checklist-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; font-weight: bold; color: #4b5563;}
         .progress-bar { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
@@ -132,7 +136,6 @@
         .perm-user-name { font-weight: 600; color: #1f2937; font-size: 14px; }
         .perm-select { padding: 6px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 12px; outline: none;}
 
-        /* Scrollbars */
         .kanban-wrapper::-webkit-scrollbar { height: 10px; }
         .kanban-wrapper::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         .kanban-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -158,6 +161,8 @@
             </div>
             
             <div class="header-actions" id="boardActions" style="display: none;">
+                <div id="boardMembersFaces" class="members-faces"></div>
+
                 <button class="btn-action btn-perm" onclick="openPermissionsModal()">
                     <i class="fas fa-users"></i> Permissões
                 </button>
@@ -186,7 +191,7 @@
                 <h3 id="taskModalTitle"><i class="fas fa-tasks"></i> Nova Tarefa</h3>
                 <button class="btn-close" onclick="closeModal('taskModal')"><i class="fas fa-times"></i></button>
             </div>
-            <form onsubmit="saveTask(event)">
+            <form id="taskForm" onsubmit="saveTask(event)">
                 <input type="hidden" id="taskId">
                 <div class="modal-body">
                     <div class="form-group">
@@ -326,13 +331,25 @@
             return normalized;
         }
 
-        // Tenta pegar o usuário logado
         function getLoggedUserName() {
             try {
                 let uStr = localStorage.getItem('ecoUser');
                 if(uStr) return JSON.parse(uStr).nome || "Sistema";
             } catch(e) {}
             return "Sistema";
+        }
+
+        // FUNÇÃO DE CONEXÃO DIRETA COM O BANCO (FIRMWARE REAL)
+        async function apiFetch(endpoint, method = 'GET', bodyObj = null) {
+            let options = { method, headers: API_HEADERS };
+            if (bodyObj) options.body = JSON.stringify(bodyObj);
+            
+            const url = method === 'GET' ? `${API_BASE_URL}${endpoint}?t=${Date.now()}` : `${API_BASE_URL}${endpoint}`;
+            const res = await fetch(url, options);
+            
+            if (!res.ok) throw new Error("Status " + res.status);
+            if (method === 'GET') return normalizeData(await res.json());
+            return await res.json();
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -343,18 +360,12 @@
             await loadBaseData();
         });
 
-        // ==========================================
-        // CARREGAMENTO DE DADOS (API + Fallback Local)
-        // ==========================================
         async function loadUsers() {
             try {
-                const r = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
-                if (r.ok) {
-                    const data = await r.json();
-                    allUsers = Object.values(data).map(u => u.nome).filter(n => n);
-                }
+                const data = await apiFetch('/usuarios');
+                allUsers = Object.values(data).map(u => u.nome).filter(n => n);
             } catch(e) {
-                allUsers = ["Maikol", "Felipe", "Recepção", "Faturamento"]; // Mock de segurança
+                allUsers = ["Maikol", "Felipe", "Recepção", "Faturamento"]; 
             }
             
             const sel = document.getElementById('taskUser');
@@ -362,71 +373,22 @@
             allUsers.forEach(n => sel.add(new Option(n, n)));
         }
 
-        // Função segura que tenta a API, se falhar, usa o LocalStorage do navegador (Para não quebrar a tela do usuário)
-        async function safeFetch(endpoint, method = 'GET', bodyObj = null) {
-            const localKey = 'local_kanban_' + endpoint.replace('/', '');
-            
-            try {
-                let options = { method, headers: API_HEADERS };
-                if (bodyObj) options.body = JSON.stringify(bodyObj);
-                
-                const url = method === 'GET' ? `${API_BASE_URL}${endpoint}?t=${Date.now()}` : `${API_BASE_URL}${endpoint}`;
-                const res = await fetch(url, options);
-                
-                if (res.ok) {
-                    if (method === 'GET') {
-                        const data = await res.json();
-                        localStorage.setItem(localKey, JSON.stringify(data)); // Guarda backup
-                        return normalizeData(data);
-                    }
-                    return true;
-                }
-                throw new Error("Status " + res.status);
-            } catch(e) {
-                console.warn(`Aviso: API ${endpoint} falhou. Usando Modo Offline/Local.`, e);
-                
-                // MODO OFFLINE / FALLBACK
-                if (method === 'GET') {
-                    let localData = localStorage.getItem(localKey);
-                    return localData ? normalizeData(JSON.parse(localData)) : {};
-                } else {
-                    // Simula salvamento no LocalStorage para o usuário não ficar travado
-                    let localData = localStorage.getItem(localKey) ? JSON.parse(localStorage.getItem(localKey)) : {};
-                    if (method === 'POST' || method === 'PUT') {
-                        let id = bodyObj.id_firebase || bodyObj.id || 'id_' + Date.now();
-                        bodyObj.id_firebase = id;
-                        localData[id] = JSON.stringify(bodyObj);
-                    } else if (method === 'DELETE') {
-                        const parts = endpoint.split('/');
-                        const idToDel = parts[parts.length-1];
-                        delete localData[idToDel];
-                        localStorage.setItem('local_kanban_' + parts[1], JSON.stringify(localData));
-                        return true;
-                    }
-                    localStorage.setItem(localKey, JSON.stringify(localData));
-                    return true;
-                }
-            }
-        }
-
         async function loadBaseData() {
-            boards = await safeFetch(API_BOARDS);
-            tasks = await safeFetch(API_TASKS);
+            try { boards = await apiFetch(API_BOARDS); } catch(e) { boards = {}; }
+            try { tasks = await apiFetch(API_TASKS); } catch(e) { tasks = {}; }
             
-            // Se não houver quadros, cria um padrão
             if (Object.keys(boards).length === 0) {
                 const defaultBoard = {
-                    id_firebase: 'board_default', nome: 'Quadro Principal', criado_por: loggedUser,
+                    id_firebase: 'board_' + Date.now(), nome: 'Quadro Principal', criado_por: loggedUser,
                     membros: {},
                     colunas: [ {id: 'col_1', nome: 'A Fazer'}, {id: 'col_2', nome: 'Em Andamento'}, {id: 'col_3', nome: 'Concluído'} ]
                 };
-                await safeFetch(API_BOARDS, 'POST', defaultBoard);
-                boards = { 'board_default': defaultBoard };
+                try { await apiFetch(API_BOARDS, 'POST', defaultBoard); } catch(e) {}
+                boards = { [defaultBoard.id_firebase]: defaultBoard };
             }
             
             renderBoardsTabs();
             
-            // Seleciona o primeiro quadro visível
             const visibleBoards = getVisibleBoards();
             if (visibleBoards.length > 0) selectBoard(visibleBoards[0].id_firebase);
             else document.getElementById('kanbanBoard').innerHTML = '<div style="margin:auto; padding:50px; text-align:center;">Você não tem acesso a nenhum quadro.</div>';
@@ -437,9 +399,9 @@
         // ==========================================
         function getVisibleBoards() {
             return Object.values(boards).filter(b => {
-                if (b.criado_por === loggedUser) return true; // Dono
-                if (b.membros && b.membros[loggedUser]) return true; // Convidado
-                return false; // Se a API de usuários indicar que é ADMIN, poderia retornar true geral.
+                if (b.criado_por === loggedUser) return true;
+                if (b.membros && b.membros[loggedUser] && b.membros[loggedUser] !== 'none') return true;
+                return false; 
             });
         }
 
@@ -451,9 +413,16 @@
             return false;
         }
 
+        // Geração das Fotinhas (Iniciais)
+        function getInitials(name) {
+            if(!name) return 'U';
+            const parts = name.trim().split(' ');
+            if(parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].substring(0,2).toUpperCase();
+        }
+
         function renderBoardsTabs() {
             const container = document.getElementById('boardTabs');
-            // Mantém o botão de "Novo Quadro"
             const btnNew = '<button class="btn-new-board" onclick="openBoardModal()"><i class="fas fa-plus"></i> Novo Quadro</button>';
             
             let html = '';
@@ -479,6 +448,23 @@
                 else el.style.display = canEdit ? 'flex' : 'none';
             });
             
+            // Popula os Avatares
+            const facesContainer = document.getElementById('boardMembersFaces');
+            let facesHtml = '';
+            
+            facesHtml += `<div class="member-face" title="Dono: ${b.criado_por}" style="background: #00995D; z-index:10;">${getInitials(b.criado_por)}</div>`;
+            
+            let zIndex = 9;
+            if (b.membros) {
+                Object.keys(b.membros).forEach(m => {
+                    if(b.membros[m] !== 'none') {
+                        const title = b.membros[m] === 'edit' ? 'Editor' : 'Visualizador';
+                        facesHtml += `<div class="member-face" title="${title}: ${m}" style="z-index:${zIndex--};">${getInitials(m)}</div>`;
+                    }
+                });
+            }
+            facesContainer.innerHTML = facesHtml;
+
             renderKanban();
         }
 
@@ -493,7 +479,7 @@
                 colunas: [ {id: 'col_1', nome: 'A Fazer'}, {id: 'col_2', nome: 'Em Andamento'}, {id: 'col_3', nome: 'Concluído'} ]
             };
             
-            await safeFetch(API_BOARDS, 'POST', newBoard);
+            try { await apiFetch(API_BOARDS, 'POST', newBoard); } catch(e) { alert("Erro ao criar: " + e.message); return; }
             closeModal('boardModal');
             await loadBaseData();
             selectBoard(newBoard.id_firebase);
@@ -509,7 +495,6 @@
             const b = boards[currentBoardId];
             if (!b || !b.colunas) return;
 
-            // Filtra as tarefas Deste Quadro
             const boardTasks = Object.entries(tasks).filter(([,t]) => t.quadro_id === currentBoardId);
 
             b.colunas.forEach(col => {
@@ -520,7 +505,6 @@
                 colDiv.className = 'kanban-column';
                 colDiv.setAttribute('data-colid', col.id);
                 
-                // Eventos de Drag & Drop da Coluna
                 if (canEditCurrentBoard()) {
                     colDiv.ondragover = allowDrop;
                     colDiv.ondrop = drop;
@@ -534,7 +518,7 @@
                 });
 
                 colDiv.innerHTML = `
-                    <div class="column-header" style="border-top-color: #00995D;">
+                    <div class="column-header">
                         <div class="column-title">${col.nome}</div>
                         <span class="column-count">${colTasks.length}</span>
                     </div>
@@ -542,13 +526,11 @@
                         ${cardsHtml}
                     </div>
                 `;
-                
                 boardEl.appendChild(colDiv);
             });
         }
 
         function generateCardHtml(id, t) {
-            // Checklist Progresso
             let metaHtml = '';
             if (t.checklist && t.checklist.length > 0) {
                 const doneCount = t.checklist.filter(c => c.concluido).length;
@@ -557,7 +539,6 @@
                 metaHtml += `<div class="meta-item ${doneClass}" title="Checklist"><i class="fas fa-check-square"></i> ${doneCount}/${total}</div>`;
             }
 
-            // Prazo
             let dateHtml = '';
             if(t.prazo) {
                 const prazoD = new Date(t.prazo + 'T12:00:00');
@@ -565,13 +546,6 @@
                 const isLate = prazoD < hoje;
                 const dataFmt = prazoD.toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
                 dateHtml = `<span class="card-date ${isLate ? 'atrasado' : ''}"><i class="far fa-clock"></i> ${dataFmt}</span>`;
-            }
-
-            // Usuário
-            let userInitials = "U";
-            if(t.responsavel) {
-                const p = t.responsavel.split(' ');
-                userInitials = p.length > 1 ? p[0][0] + p[1][0] : p[0].substring(0,2);
             }
 
             const canEdit = canEditCurrentBoard();
@@ -588,7 +562,7 @@
                     <div class="card-meta">${metaHtml}</div>
                     <div class="card-footer">
                         ${dateHtml}
-                        <div class="card-user" title="${t.responsavel}">${userInitials}</div>
+                        <div class="card-user" title="${t.responsavel}">${getInitials(t.responsavel)}</div>
                     </div>
                 </div>
             `;
@@ -631,7 +605,7 @@
             if(task && task.coluna_id !== newColId) {
                 task.coluna_id = newColId;
                 renderKanban(); // UI Optismistic
-                await safeFetch(`${API_TASKS}/${draggedTaskId}`, 'PUT', task);
+                try { await apiFetch(`${API_TASKS}/${draggedTaskId}`, 'PUT', task); } catch(err) { console.error(err); }
             }
             draggedTaskId = null;
         }
@@ -642,13 +616,16 @@
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+        function openBoardModal() { openModal('boardModal'); }
+        function openColumnModal() { openModal('columnModal'); }
+
         async function saveColumn(e) {
             e.preventDefault();
             const colName = document.getElementById('columnTitle').value;
             const b = boards[currentBoardId];
             b.colunas.push({ id: 'col_' + Date.now(), nome: colName });
             
-            await safeFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b);
+            try { await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b); } catch(err) { alert(err); return; }
             closeModal('columnModal');
             document.getElementById('columnTitle').value = '';
             renderKanban();
@@ -717,8 +694,6 @@
         async function saveTask(e) {
             e.preventDefault();
             const id = document.getElementById('taskId').value;
-            
-            // Limpa checklist vazio
             const cleanChecklist = currentChecklist.filter(c => c.texto.trim() !== '');
 
             const taskData = {
@@ -738,15 +713,16 @@
 
             try {
                 if (id && tasks[id]) {
-                    taskData.data_criacao = tasks[id].data_criacao; // Mantem data
-                    await safeFetch(`${API_TASKS}/${id}`, 'PUT', taskData);
+                    taskData.data_criacao = tasks[id].data_criacao; 
+                    await apiFetch(`${API_TASKS}/${id}`, 'PUT', taskData);
                 } else {
                     taskData.data_criacao = new Date().toISOString();
-                    await safeFetch(API_TASKS, 'POST', taskData);
+                    taskData.id_firebase = 'task_' + Date.now();
+                    await apiFetch(API_TASKS, 'POST', taskData);
                 }
                 
                 closeModal('taskModal');
-                tasks = await safeFetch(API_TASKS); // Recarrega tudo
+                tasks = await apiFetch(API_TASKS); 
                 renderKanban();
             } catch(err) { alert("Erro ao salvar tarefa: " + err.message); } 
             finally { btn.disabled = false; }
@@ -756,10 +732,12 @@
             const id = document.getElementById('taskId').value;
             if(!id || !confirm("Excluir esta tarefa permanentemente?")) return;
             
-            await safeFetch(`${API_TASKS}/${id}`, 'DELETE');
-            closeModal('taskModal');
-            tasks = await safeFetch(API_TASKS);
-            renderKanban();
+            try {
+                await apiFetch(`${API_TASKS}/${id}`, 'DELETE');
+                closeModal('taskModal');
+                tasks = await apiFetch(API_TASKS);
+                renderKanban();
+            } catch(err) { alert("Erro: " + err.message); }
         }
 
         // --- PERMISSÕES ---
@@ -771,7 +749,7 @@
             let html = '';
             
             allUsers.forEach(u => {
-                if(u === b.criado_por) return; // Dono não entra na lista editável
+                if(u === b.criado_por) return; 
                 
                 const currentRole = (b.membros && b.membros[u]) ? b.membros[u] : 'none';
                 html += `
@@ -792,7 +770,7 @@
 
         async function savePermissions() {
             const b = boards[currentBoardId];
-            b.membros = {}; // Reseta
+            b.membros = {}; 
             
             document.querySelectorAll('.perm-select').forEach(sel => {
                 if (sel.value !== 'none') {
@@ -800,12 +778,12 @@
                 }
             });
             
-            await safeFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b);
-            closeModal('permModal');
-            alert("Permissões atualizadas com sucesso!");
-            
-            // Recarrega permissões na tela
-            selectBoard(currentBoardId); 
+            try { 
+                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b); 
+                closeModal('permModal');
+                alert("Permissões atualizadas com sucesso!");
+                selectBoard(currentBoardId); 
+            } catch(e) { alert("Erro: " + e.message); }
         }
 
     </script>
