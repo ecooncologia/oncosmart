@@ -23,11 +23,11 @@
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
         .dash-header-title i { color: #f59e0b; }
 
-        /* Abas Estilo ONCO SMART */
-        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
-        .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-size: 14px; }
-        .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
-        .tab-btn:hover:not(.active) { color: #111827; }
+        /* Abas Estilo ONCO SMART (COM CORES SUAVES) */
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
+        .tab-btn { padding: 12px 24px; border: 1px solid #e5e7eb; border-bottom: none; background: #f8fafc; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
+        .tab-btn.active { color: #00995D; border-top: 4px solid #00995D; background: white; margin-bottom: -2px; padding-bottom: 14px; box-shadow: 0 -4px 6px -4px rgba(0,0,0,0.05);}
         
         .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
@@ -89,8 +89,8 @@
         .btn-danger { grid-column: span 2; background: #fef2f2; color: #ef4444; border: 1px dashed #fca5a5; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 6px;}
         .btn-danger:hover { background: #ef4444; color: white; border-style: solid;}
 
-        /* Imagem do Estoque */
-        .stock-image { width: calc(100% + 40px); height: 160px; object-fit: cover; margin: -20px -20px 10px -20px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;}
+        /* Imagem do Estoque - CORRIGIDA PARA CONTAIN */
+        .stock-image { width: calc(100% + 40px); height: 160px; object-fit: contain; margin: -20px -20px 10px -20px; background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 10px; box-sizing: border-box;}
         
         /* Controles de Estoque */
         .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f9fafb; padding: 10px 15px; border-radius: 8px; border: 1px solid #e5e7eb; }
@@ -105,7 +105,7 @@
         .btn-edit-item { flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;}
         .btn-edit-item:hover { background: #3b82f6; color: white; border-color: #3b82f6;}
         .btn-del-item { flex: 1; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;}
-        .btn-del-item:hover { background: #ef4444; color: white; }
+        .btn-del-item:hover { background: #ef4444; color: white; border-style: solid;}
 
         .empty-state { grid-column: 1 / -1; padding: 60px 20px; text-align: center; color: #9ca3af; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 15px; background: white; border-radius: 16px; border: 1px dashed #d1d5db;}
         .empty-state i { font-size: 48px; color: #e5e7eb; }
@@ -131,7 +131,6 @@
         .cat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: white; transition: 0.2s;}
         .cat-list-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .cat-list-info { font-weight: 600; color: #374151; display: flex; align-items: center; gap: 10px;}
-        .cat-list-info i { color: #00995D; }
         .cat-list-actions button { background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px; transition: 0.2s;}
         .cat-list-actions .btn-ed { color: #3b82f6; margin-right: 5px;}
         .cat-list-actions .btn-ed:hover { color: #2563eb; }
@@ -153,12 +152,56 @@
         </div>
 
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="openTab('pedidos_ativos')"><i class="fas fa-bell"></i> Pedidos Ativos</button>
+            <button class="tab-btn active" onclick="openTab('estoque_itens')"><i class="fas fa-boxes"></i> Estoque & Cardápio</button>
+            <button class="tab-btn" onclick="openTab('pedidos_ativos')"><i class="fas fa-bell"></i> Pedidos Ativos</button>
             <button class="tab-btn" onclick="openTab('historico_pedidos')"><i class="fas fa-history"></i> Histórico</button>
-            <button class="tab-btn" onclick="openTab('estoque_itens')"><i class="fas fa-boxes"></i> Estoque & Cardápio</button>
         </div>
 
-        <div id="tab-pedidos_ativos" class="tab-content active">
+        <div id="tab-estoque_itens" class="tab-content active">
+            
+            <div class="controls">
+                <input type="hidden" id="editItemId">
+                <div class="controls-group">
+                    <div class="input-group" style="flex: 2;">
+                        <label class="label-title">Nome do Item</label>
+                        <input type="text" id="newItemName" class="input-field" placeholder="Ex: Bolacha Maria">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label class="label-title">Categoria</label>
+                        <select id="newItemCategory" class="input-field">
+                            </select>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label class="label-title">Qtd. Inicial</label>
+                        <input type="number" id="newItemStock" class="input-field" value="10" min="0">
+                    </div>
+                    <div class="input-group" style="flex: 2;">
+                        <label class="label-title">Detalhes (Opcional)</label>
+                        <input type="text" id="newItemDesc" class="input-field" placeholder="Ex: Sem açúcar, Diet...">
+                    </div>
+                    <div class="input-group" style="flex: 2;">
+                        <label class="label-title">URL da Imagem PNG/JPG (Opcional)</label>
+                        <input type="text" id="newItemImage" class="input-field" placeholder="Link da imagem na web...">
+                    </div>
+                    
+                    <button class="btn-action" onclick="openCategoryModal()" title="Gerenciar Categorias de Alimentos" style="margin-left: auto;">
+                        <i class="fas fa-tags"></i> Categorias
+                    </button>
+                    <button class="btn-add" id="btnSaveItem" onclick="saveInventoryItem()">
+                        <i class="fas fa-plus"></i> Cadastrar
+                    </button>
+                    <button class="btn-cancel" id="btnCancelEdit" onclick="cancelEdit()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+
+            <div id="inventoryContainer">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Carregando estoque...</div>
+            </div>
+        </div>
+
+        <div id="tab-pedidos_ativos" class="tab-content">
             
             <div class="controls">
                 <div class="controls-group">
@@ -193,50 +236,6 @@
             </div>
         </div>
 
-        <div id="tab-estoque_itens" class="tab-content">
-            
-            <div class="controls">
-                <input type="hidden" id="editItemId">
-                <div class="controls-group">
-                    <div class="input-group" style="flex: 2;">
-                        <label class="label-title">Nome do Item</label>
-                        <input type="text" id="newItemName" class="input-field" placeholder="Ex: Sopa de Legumes">
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label class="label-title">Categoria</label>
-                        <select id="newItemCategory" class="input-field">
-                            </select>
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label class="label-title">Qtd. Inicial</label>
-                        <input type="number" id="newItemStock" class="input-field" value="10" min="0">
-                    </div>
-                    <div class="input-group" style="flex: 2;">
-                        <label class="label-title">Detalhes (Opcional)</label>
-                        <input type="text" id="newItemDesc" class="input-field" placeholder="Ex: Sem sal, Integral...">
-                    </div>
-                    <div class="input-group" style="flex: 2;">
-                        <label class="label-title">URL da Imagem PNG/JPG (Opcional)</label>
-                        <input type="text" id="newItemImage" class="input-field" placeholder="Link da imagem na web...">
-                    </div>
-                    
-                    <button class="btn-action" onclick="openCategoryModal()" title="Gerenciar Categorias de Alimentos" style="margin-left: auto;">
-                        <i class="fas fa-tags"></i> Categorias
-                    </button>
-                    <button class="btn-add" id="btnSaveItem" onclick="saveInventoryItem()">
-                        <i class="fas fa-plus"></i> Cadastrar
-                    </button>
-                    <button class="btn-cancel" id="btnCancelEdit" onclick="cancelEdit()">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                </div>
-            </div>
-
-            <div id="inventoryContainer">
-                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Carregando estoque...</div>
-            </div>
-        </div>
-
     </div>
 
     <div class="modal-overlay" id="categoryModal">
@@ -247,7 +246,20 @@
             </div>
             <div class="modal-body">
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="newCatName" class="input-field" placeholder="Nome da nova categoria..." style="flex: 1;">
+                    <input type="text" id="newCatName" class="input-field" placeholder="Nome da nova categoria..." style="flex: 2;">
+                    
+                    <select id="newCatIcon" class="input-field" style="flex: 1; padding: 0 10px;">
+                        <option value="fas fa-cookie">🍪 Biscoitos/Snacks</option>
+                        <option value="fas fa-mug-hot">☕ Quentes/Café</option>
+                        <option value="fas fa-glass-water">🥤 Frios/Sucos</option>
+                        <option value="fas fa-apple-alt">🍎 Frutas</option>
+                        <option value="fas fa-bread-slice">🍞 Pães</option>
+                        <option value="fas fa-hamburger">🍔 Lanches</option>
+                        <option value="fas fa-candy-cane">🍬 Doces</option>
+                        <option value="fas fa-utensils">🍲 Refeições</option>
+                        <option value="fas fa-box" selected>📦 Outros/Geral</option>
+                    </select>
+
                     <button class="btn-add" style="height: 42px;" onclick="addCategory()">Adicionar</button>
                 </div>
                 
@@ -263,7 +275,7 @@
         // ==========================================
         const API_ONCOFOOD_ORDERS = '/oncofood_pedidos';
         const API_ONCOFOOD_STOCK = '/oncofood_estoque';
-        const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; // Novo endpoint para gerir as categorias
+        const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; 
         
         let loggedUser = "Sistema";
         let activeOrders = {};
@@ -290,7 +302,6 @@
             return "Sistema";
         }
 
-        // Função de Comunicação com a API
         async function apiFetch(endpoint, method = 'GET', bodyObj = null) {
             let options = { method, headers: API_HEADERS };
             if (bodyObj) options.body = JSON.stringify(bodyObj);
@@ -307,9 +318,9 @@
             initGlobal('oncofood', 'Copa & Nutrição');
             loggedUser = getLoggedUserName();
             
-            await loadCategories(); // Carrega as categorias PRIMEIRO
-            await loadInventory();  // Depois o estoque
-            await loadOrders();     // Por fim os pedidos
+            await loadCategories(); 
+            await loadInventory();  
+            await loadOrders();     
         });
 
         function openTab(tabId) { 
@@ -329,12 +340,12 @@
             try {
                 const data = await apiFetch(API_ONCOFOOD_CATEGORIES);
                 if (Object.keys(data).length === 0) {
-                    // Popular default se estiver vazio
                     const defaults = [
                         { nome: 'Refeições', icone: 'fas fa-utensils', cor: '#f59e0b' },
                         { nome: 'Lanches', icone: 'fas fa-hamburger', cor: '#8b5cf6' },
                         { nome: 'Sobremesas', icone: 'fas fa-apple-alt', cor: '#ec4899' },
                         { nome: 'Bebidas', icone: 'fas fa-wine-glass-alt', cor: '#3b82f6' },
+                        { nome: 'Biscoitos', icone: 'fas fa-cookie', cor: '#d97706' },
                         { nome: 'Insumos', icone: 'fas fa-cubes', cor: '#9ca3af' }
                     ];
                     
@@ -348,11 +359,9 @@
                     foodCategories = data;
                 }
             } catch(e) {
-                console.error("Aviso categorias", e);
                 foodCategories = {};
             }
 
-            // Atualiza o Select do Formulário Principal
             const sel = document.getElementById('newItemCategory');
             sel.innerHTML = '';
             Object.values(foodCategories).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(c => {
@@ -384,19 +393,20 @@
 
         async function addCategory() {
             const nameInput = document.getElementById('newCatName');
+            const iconSelect = document.getElementById('newCatIcon');
             const nome = nameInput.value.trim();
+            const icone = iconSelect.value;
+            
             if(!nome) return;
 
             const id = 'cat_' + Date.now();
             
-            // Sorteia cor e icone para a nova categoria
             const palette = ['#0ea5e9', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b', '#10b981'];
-            const icons = ['fas fa-tag', 'fas fa-star', 'fas fa-bookmark', 'fas fa-shopping-bag'];
             
             const newCat = {
                 id_firebase: id,
                 nome: nome,
-                icone: icons[Math.floor(Math.random() * icons.length)],
+                icone: icone,
                 cor: palette[Math.floor(Math.random() * palette.length)]
             };
 
@@ -420,10 +430,8 @@
             cat.nome = newName.trim();
 
             try {
-                // 1. Atualiza a Categoria no BD
                 await apiFetch(`${API_ONCOFOOD_CATEGORIES}/${id}`, 'PUT', cat);
                 
-                // 2. MAGICA: Varre o estoque e atualiza a categoria de todos os itens antigos!
                 let itemsUpdated = 0;
                 for (let itemId in inventoryItems) {
                     if (inventoryItems[itemId].categoria === oldName) {
@@ -445,7 +453,6 @@
         async function deleteCategory(id) {
             const cat = foodCategories[id];
             
-            // Verificação de Segurança
             const hasItems = Object.values(inventoryItems).some(i => i.categoria === cat.nome);
             if (hasItems) {
                 alert(`Não é possível excluir. Existem itens cadastrados na categoria '${cat.nome}'.\nPor favor, exclua ou edite a categoria desses itens antes de continuar.`);
@@ -553,7 +560,6 @@
             document.getElementById('editItemId').value = '';
             document.getElementById('newItemName').value = '';
             
-            // Pega o primeiro item da lista de categorias pro reset
             const firstCat = Object.values(foodCategories)[0];
             if(firstCat) document.getElementById('newItemCategory').value = firstCat.nome;
             
@@ -613,12 +619,12 @@
             });
 
             let html = '';
+            
+            // Fallback para a imagem caso a URL esteja quebrada ou vazia
             const fallbackImg = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=200&fit=crop";
 
-            // Puxa as infos reais da Categoria no Banco
             Object.keys(grouped).sort().forEach(catName => {
                 
-                // Procura a categoria nos dados pra pegar icone e cor
                 const catObj = Object.values(foodCategories).find(c => c.nome === catName) || { icone: 'fas fa-box', cor: '#9ca3af'};
                 
                 html += `<div class="category-header"><i class="${catObj.icone}" style="color:${catObj.cor}"></i> ${catName}</div>`;
