@@ -684,7 +684,7 @@
             const key = document.getElementById('modalPermUserId').value; 
             const user = allUsersData[key];
             const newPerms = { admin: user.permissoes.admin };
-            const fields = ['dashboard', 'helpdesk', 'helpdesk_admin', 'helpdesk_dash', 'transporte', 'enfermagem', 'indicadores_enf', 'medicos', 'pacientes', 'plantao', 'orcamentos', 'consultas', 'repasse', 'dashboard-repasse', 'procedimentos', 'selos', 'stenci', 'eventos', 'atas','tuss'];
+            const fields = ['dashboard', 'helpdesk', 'helpdesk_admin', 'helpdesk_dash', 'transporte', 'enfermagem', 'indicadores_enf', 'medicos', 'pacientes', 'plantao', 'orcamentos', 'consultas', 'repass', 'dashboard-repasse', 'procedimentos', 'selos', 'stenci', 'eventos', 'atas','tuss'];
             fields.forEach(f => { const el = document.getElementById('p_' + f); if(el) newPerms[f] = el.checked; });
             user.permissoes = newPerms;
             // BLINDADO
