@@ -53,17 +53,18 @@ body { font-family: 'Segoe UI', 'Roboto', sans-serif; background-color: var(--bg
 .logout-btn { background: transparent; border: none; color: var(--text-light); cursor: pointer; padding: 8px; margin-left: 5px; }
 .logout-btn:hover { color: var(--danger); transform: scale(1.1); }
 
-/* --- NAVEGAÇÃO --- */
+/* --- NAVEGAÇÃO (Ajustada para Quebrar Linha) --- */
 .nav-scroller { 
     margin-bottom: 20px; 
-    width: 100%;
+    /* Removemos o overflow-x para permitir que os itens desçam */
 }
 
 .nav-tabs { 
     display: flex; 
     gap: 10px; 
+    /* AQUI ESTÁ A MUDANÇA: Wrap joga para baixo */
     flex-wrap: wrap; 
-    justify-content: center; 
+    justify-content: center; /* Centraliza os botões */
 }
 
 .nav-tab { 
@@ -77,12 +78,12 @@ body { font-family: 'Segoe UI', 'Roboto', sans-serif; background-color: var(--bg
     color: var(--text-light); 
     transition: all 0.2s ease; 
     box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
-    white-space: nowrap; 
+    white-space: nowrap; /* Impede que o texto quebre DENTRO do botão */
 }
 .nav-tab:hover { background: #fff; color: var(--primary); transform: translateY(-1px); }
 .nav-tab.active { background: var(--secondary); color: white; box-shadow: 0 4px 10px rgba(32, 52, 61, 0.3); }
 
-/* UTILITÁRIOS COMUNS */
+/* UTILITÁRIOS COMUNS (Originais) */
 .card { background: white; padding: 25px; border-radius: 16px; box-shadow: var(--card-shadow); margin-bottom: 20px; }
 .card-header { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #EDF2F7; }
 .form-control { width: 100%; padding: 12px 15px; border: 1px solid var(--input-border); background: var(--input-bg); border-radius: 10px; font-size: 14px; color: var(--text-dark); outline: none; }
@@ -99,60 +100,4 @@ table { width: 100%; border-collapse: collapse; min-width: 800px; }
 thead th { text-align: left; padding: 15px; background: #F9FAFB; color: var(--text-light); font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #eee; }
 tbody td { padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: var(--text-dark); vertical-align: middle; }
 
-
-/* =======================================================
-   📱 RESPONSIVIDADE GLOBAL DO SISTEMA (CELULARES)
-   ======================================================= */
-@media (max-width: 768px) {
-    
-    /* 1. Reduz o espaçamento inútil nas bordas da tela */
-    .container { padding: 10px 15px !important; }
-
-    /* 2. Cabeçalho Superior (Logo, Título e Foto) */
-    .header { flex-direction: column !important; text-align: center; gap: 10px; padding: 15px !important; height: auto !important; }
-    .header-logo img { height: 45px !important; margin: 0 auto; }
-    .header-center { position: static; transform: none; margin: 10px 0; }
-    .header-center h1 { font-size: 20px !important; }
-    .header-center p { font-size: 12px !important; }
-    .user-profile { width: 100%; justify-content: center; margin-top: 5px; }
-
-    /* 3. Menu de Navegação (Deslizável pro lado) */
-    .nav-scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -15px; padding: 0 15px; }
-    .nav-tabs { flex-wrap: nowrap !important; justify-content: flex-start; padding-bottom: 10px; }
-    .nav-tab { padding: 8px 15px; font-size: 13px; }
-    .nav-scroller::-webkit-scrollbar { display: none; } /* Esconde a barra no celular */
-
-    /* 4. Cabeçalho das Páginas Internas (Dashboards e Kanban) */
-    .dash-header { flex-direction: column !important; text-align: center; gap: 15px; padding: 15px !important; }
-    .dash-header-title { display: flex; flex-direction: column; align-items: center; text-align: center; }
-    .header-actions { justify-content: center; width: 100%; flex-wrap: wrap; }
-
-    /* 5. Controles e Filtros (Tudo empilhado em 1 coluna) */
-    .controls { flex-direction: column !important; align-items: stretch !important; padding: 15px !important; gap: 15px !important; }
-    .controls-group { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 10px !important; }
-    .input-group { width: 100% !important; max-width: 100% !important; min-width: 100% !important; }
-    .btn-print, .btn-add, .btn-action, .btn-cancel { width: 100%; justify-content: center; }
-
-    /* 6. Grids e Cards (Um embaixo do outro) */
-    .details-grid, .kpi-row, .grid-container, .kpi-grid-master, .dashboard-cards { 
-        grid-template-columns: 1fr !important; 
-        flex-direction: column !important; 
-    }
-    .details-column { width: 100% !important; }
-    .kpi-card, .card-stat { width: 100% !important; min-width: 100% !important; }
-    
-    /* 7. Tabelas Grandes (Criar scroll horizontal para não amassar) */
-    .table-responsive, .list-container, .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
-    .modern-table, table { min-width: 600px; } 
-    
-    /* 8. Kanban (Ajuste do Board) */
-    .kanban-wrapper { margin: 0 -15px; padding: 0 15px; justify-content: flex-start !important;}
-    .kanban-board { padding-bottom: 30px; }
-    .kanban-column { width: 280px !important; min-width: 280px !important; } 
-    
-    /* 9. Modais (Pop-ups ocupando a tela toda) */
-    .modal-content { width: 95% !important; max-height: 95vh !important; margin: 10px; }
-    .form-row { flex-direction: column !important; gap: 10px !important; }
-    .modal-footer { flex-direction: column; gap: 10px; }
-    .modal-footer button { width: 100%; margin-left: 0 !important;}
-}
+@media (max-width: 768px) { .container { padding: 15px; } .header { flex-direction: column; gap: 15px; } .header-center { position: static; transform: none; } }
