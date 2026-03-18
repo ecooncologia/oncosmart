@@ -32,16 +32,21 @@
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
         
         .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .btn-action { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; }
+        .btn-action { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 40px; transition: 0.2s; }
         .btn-action:hover { background: #e5e7eb; }
+        
+        /* Botão Vermelho de Excluir Quadro */
+        .btn-danger-action { background: #fef2f2 !important; color: #ef4444 !important; border: 1px solid #fecaca !important; }
+        .btn-danger-action:hover { background: #ef4444 !important; color: white !important; }
+
         .btn-add { background: #00995D; color: white; border: none; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); }
         .btn-add:hover { background: #007a4a; box-shadow: 0 6px 10px rgba(0, 153, 93, 0.3); color: white; }
         .btn-perm { background: #3b82f6; color: white; border: none; }
         .btn-perm:hover { background: #2563eb; color: white; }
 
-        /* Fotinhas de Permissão (Avatares) */
+        /* Fotinhas de Permissão (Avatares) com Overflow Hidden para Imagem não vazar */
         .members-faces { display: flex; align-items: center; margin-right: 10px; }
-        .member-face { width: 34px; height: 34px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; border: 2px solid #fff; margin-left: -12px; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .member-face { width: 34px; height: 34px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; border: 2px solid #fff; margin-left: -12px; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; padding: 0;}
         .member-face:first-child { margin-left: 0; }
 
         /* ========================================================
@@ -55,7 +60,11 @@
 
         .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e5e7eb; border-top: 4px solid #9ca3af;}
         .column-title { font-weight: 800; font-size: 14px; color: #1f2937; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
+        
+        .column-actions { display: flex; align-items: center; gap: 8px; }
         .column-count { background: #e5e7eb; color: #4b5563; font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+        .btn-del-col { background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; padding: 0 4px; font-size: 14px;}
+        .btn-del-col:hover { color: #ef4444; }
 
         .column-body { padding: 15px; overflow-y: auto; flex: 1; min-height: 150px; display: flex; flex-direction: column; gap: 12px; }
         
@@ -81,7 +90,7 @@
         .card-date { font-size: 11px; color: #6b7280; font-weight: 600; display: flex; align-items: center; gap: 4px; }
         .card-date.atrasado { color: #dc2626; background: #fee2e2; padding: 2px 6px; border-radius: 4px;}
         
-        .card-user { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #00995D; color: white; font-size: 10px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5e7eb; }
+        .card-user { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #00995D; color: white; font-size: 10px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5e7eb; overflow: hidden; padding: 0;}
 
         .btn-edit-card { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; opacity: 0; padding: 4px;}
         .kanban-card:hover .btn-edit-card { opacity: 1; }
@@ -170,6 +179,9 @@
                 </button>
                 <button class="btn-action" onclick="openColumnModal()">
                     <i class="fas fa-layer-group"></i> Nova Coluna
+                </button>
+                <button class="btn-action btn-danger-action" id="btnDeleteBoard" onclick="deleteBoard()" style="display:none;">
+                    <i class="fas fa-trash"></i> Excluir Quadro
                 </button>
                 <button class="btn-action btn-add" onclick="openTaskModal()">
                     <i class="fas fa-plus"></i> Nova Tarefa
@@ -314,6 +326,7 @@
         const API_TASKS = '/tarefas_kanban';
         
         let allUsers = [];
+        let userPhotos = {}; // Mapeamento de Fotos dos Usuários (Para Avatares)
         let loggedUser = "Sistema";
         
         let boards = {};
@@ -366,6 +379,13 @@
             try {
                 const data = await apiFetch('/usuarios');
                 allUsers = Object.values(data).map(u => u.nome).filter(n => n);
+                
+                // Salva a foto de todos os usuários cadastrados
+                Object.values(data).forEach(u => {
+                    if (u.nome) {
+                        userPhotos[u.nome] = u.photo || u.foto || null;
+                    }
+                });
             } catch(e) {
                 allUsers = ["Maikol", "Felipe", "Recepção", "Faturamento"]; 
             }
@@ -420,8 +440,23 @@
             return false;
         }
 
-        function getInitials(name) {
-            if(!name) return 'U';
+        // FUNÇÃO NOVA: Gera as Fotos em vez de Iniciais
+        function getAvatarHtml(name) {
+            if (!name) return 'U';
+            
+            let photoUrl = userPhotos[name];
+            
+            // Prioridade para o cache local se for o próprio usuário logado
+            if (name === loggedUser) {
+                const localPhoto = localStorage.getItem('ecoUserPhoto');
+                if (localPhoto && localPhoto.length > 50) photoUrl = localPhoto;
+            }
+            
+            if (photoUrl) {
+                return `<img src="${photoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            }
+            
+            // Fallback para Iniciais se não tiver foto
             const parts = name.trim().split(' ');
             if(parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
             return parts[0].substring(0,2).toUpperCase();
@@ -448,30 +483,48 @@
             document.getElementById('currentBoardTitle').innerText = b.nome;
             document.getElementById('boardActions').style.display = 'flex';
             
+            const isOwner = b.criado_por === loggedUser;
             const canEdit = canEditCurrentBoard();
-            document.querySelectorAll('.btn-add, .btn-perm, .btn-action').forEach(el => {
-                if (el.innerText.includes('Permissões')) el.style.display = (b.criado_por === loggedUser) ? 'flex' : 'none';
-                else el.style.display = canEdit ? 'flex' : 'none';
+            
+            // Mostra botões dependendo da permissão (Apenas dono exclui quadro e edita permissões)
+            document.getElementById('btnDeleteBoard').style.display = isOwner ? 'flex' : 'none';
+            document.querySelector('.btn-perm').style.display = isOwner ? 'flex' : 'none';
+            
+            document.querySelectorAll('.btn-add, .btn-action:not(.btn-perm):not(.btn-danger-action)').forEach(el => {
+                el.style.display = canEdit ? 'flex' : 'none';
             });
             
-            // Popula os Avatares
+            // Popula os Avatares Reais
             const facesContainer = document.getElementById('boardMembersFaces');
             let facesHtml = '';
             
-            facesHtml += `<div class="member-face" title="Dono: ${b.criado_por}" style="background: #00995D; z-index:10;">${getInitials(b.criado_por)}</div>`;
+            facesHtml += `<div class="member-face" title="Dono: ${b.criado_por}" style="background: #00995D; z-index:10;">${getAvatarHtml(b.criado_por)}</div>`;
             
             let zIndex = 9;
             if (b.membros) {
                 Object.keys(b.membros).forEach(m => {
                     if(b.membros[m] !== 'none') {
                         const title = b.membros[m] === 'edit' ? 'Editor' : 'Visualizador';
-                        facesHtml += `<div class="member-face" title="${title}: ${m}" style="z-index:${zIndex--};">${getInitials(m)}</div>`;
+                        facesHtml += `<div class="member-face" title="${title}: ${m}" style="z-index:${zIndex--};">${getAvatarHtml(m)}</div>`;
                     }
                 });
             }
             facesContainer.innerHTML = facesHtml;
 
             renderKanban();
+        }
+
+        // ==========================================
+        // EXCLUIR QUADRO (APENAS DONO)
+        // ==========================================
+        async function deleteBoard() {
+            if(!confirm("ATENÇÃO: Tem certeza que deseja excluir este quadro INTEIRO?\nTodas as configurações e colunas serão perdidas para sempre.")) return;
+            try {
+                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'DELETE');
+                delete boards[currentBoardId];
+                currentBoardId = null;
+                await loadBaseData(); 
+            } catch(e) { alert("Erro ao excluir: " + e.message); }
         }
 
         async function saveBoard(e) {
@@ -507,6 +560,7 @@
             if (!b || !b.colunas) return;
 
             const boardTasks = Object.entries(tasks).filter(([,t]) => t.quadro_id === currentBoardId);
+            const canEdit = canEditCurrentBoard();
 
             b.colunas.forEach(col => {
                 const colTasks = boardTasks.filter(([,t]) => t.coluna_id === col.id)
@@ -516,7 +570,7 @@
                 colDiv.className = 'kanban-column';
                 colDiv.setAttribute('data-colid', col.id);
                 
-                if (canEditCurrentBoard()) {
+                if (canEdit) {
                     colDiv.ondragover = allowDrop;
                     colDiv.ondrop = drop;
                     colDiv.ondragenter = dragEnter;
@@ -528,7 +582,7 @@
                     cardsHtml += generateCardHtml(taskId, t);
                 });
 
-                // INTELIGÊNCIA DE CORES: Se a coluna veio do banco sem cor, tenta adivinhar pelo nome
+                // INTELIGÊNCIA DE CORES: Para os quadros antigos do banco que não tem cor cadastrada
                 let colColor = col.cor;
                 let colIcon = col.icone;
 
@@ -551,10 +605,16 @@
                     }
                 }
 
+                // Botão de Excluir Coluna
+                const deleteColBtn = canEdit ? `<button class="btn-del-col" onclick="deleteColumn('${col.id}')" title="Excluir Coluna"><i class="fas fa-trash"></i></button>` : '';
+
                 colDiv.innerHTML = `
                     <div class="column-header" style="border-top-color: ${colColor}; border-top-width: 4px; border-top-style: solid;">
                         <div class="column-title"><i class="${colIcon}" style="color: ${colColor};"></i> ${col.nome}</div>
-                        <span class="column-count">${colTasks.length}</span>
+                        <div class="column-actions">
+                            <span class="column-count">${colTasks.length}</span>
+                            ${deleteColBtn}
+                        </div>
                     </div>
                     <div class="column-body" id="colbody-${col.id}">
                         ${cardsHtml}
@@ -562,6 +622,19 @@
                 `;
                 boardEl.appendChild(colDiv);
             });
+        }
+
+        // ==========================================
+        // EXCLUIR COLUNA
+        // ==========================================
+        async function deleteColumn(colId) {
+            if(!confirm("Tem certeza que deseja excluir esta coluna?\nAs tarefas que estão nela perderão seu status atual no quadro.")) return;
+            const b = boards[currentBoardId];
+            b.colunas = b.colunas.filter(c => c.id !== colId);
+            try { 
+                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b); 
+                renderKanban();
+            } catch(err) { alert(err); }
         }
 
         function generateCardHtml(id, t) {
@@ -608,14 +681,14 @@
                     
                     <div class="card-footer">
                         ${dateHtml}
-                        <div class="card-user" title="${t.responsavel}">${getInitials(t.responsavel)}</div>
+                        <div class="card-user" title="${t.responsavel}">${getAvatarHtml(t.responsavel)}</div>
                     </div>
                 </div>
             `;
         }
 
         // ==========================================
-        // CHECKLIST DIRETAMENTE DO CARTÃO (MÁGICA)
+        // CHECKLIST DIRETAMENTE DO CARTÃO
         // ==========================================
         async function toggleCheckOnCard(taskId, checkIdx, event) {
             event.stopPropagation(); 
@@ -824,7 +897,10 @@
                 const currentRole = (b.membros && b.membros[u]) ? b.membros[u] : 'none';
                 html += `
                     <div class="perm-user-row">
-                        <span class="perm-user-name"><i class="fas fa-user-circle" style="color:#9ca3af; margin-right:5px;"></i> ${u}</span>
+                        <span class="perm-user-name" style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:24px; height:24px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; overflow:hidden;">${getAvatarHtml(u)}</div>
+                            ${u}
+                        </span>
                         <select class="perm-select" data-user="${u}">
                             <option value="none" ${currentRole === 'none' ? 'selected' : ''}>Sem Acesso</option>
                             <option value="view" ${currentRole === 'view' ? 'selected' : ''}>Pode Visualizar</option>
