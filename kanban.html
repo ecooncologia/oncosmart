@@ -53,7 +53,7 @@
         .kanban-column { background: #f3f4f6; border-radius: 12px; width: 320px; min-width: 320px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; transition: background 0.2s; }
         .kanban-column.drag-over { background: #e0f2fe; border: 2px dashed #0284c7; }
 
-        .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e5e7eb; border-top: 4px solid #9ca3af;}
+        .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e5e7eb; }
         .column-title { font-weight: 800; font-size: 14px; color: #1f2937; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
         .column-count { background: #e5e7eb; color: #4b5563; font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
 
@@ -71,10 +71,12 @@
         
         .card-title { font-size: 14px; font-weight: 700; color: #111827; margin: 0; line-height: 1.4; word-wrap: break-word;}
         
-        .card-meta { display: flex; gap: 12px; font-size: 11px; color: #6b7280; font-weight: 600;}
-        .meta-item { display: flex; align-items: center; gap: 4px; }
-        .meta-item.check-done { color: #10b981; }
-        
+        /* Checklist direto no card */
+        .card-checklist-preview { margin-top: 5px; border-top: 1px dashed #e5e7eb; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;}
+        .card-check-item { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; }
+        .card-check-item input[type="checkbox"] { margin: 0; cursor: pointer; accent-color: #00995D; width: 14px; height: 14px; flex-shrink: 0;}
+        .card-check-item span { line-height: 1.2; word-wrap: break-word; }
+
         .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e5e7eb; padding-top: 10px; margin-top: 5px; }
         .card-date { font-size: 11px; color: #6b7280; font-weight: 600; display: flex; align-items: center; gap: 4px; }
         .card-date.atrasado { color: #dc2626; background: #fee2e2; padding: 2px 6px; border-radius: 4px;}
@@ -189,7 +191,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="taskModalTitle"><i class="fas fa-tasks"></i> Nova Tarefa</h3>
-                <button class="btn-close" onclick="closeModal('taskModal')"><i class="fas fa-times"></i></button>
+                <button class="btn-close" type="button" onclick="closeModal('taskModal')"><i class="fas fa-times"></i></button>
             </div>
             <form id="taskForm" onsubmit="saveTask(event)">
                 <input type="hidden" id="taskId">
@@ -251,7 +253,7 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3><i class="fas fa-chalkboard"></i> Criar Novo Quadro</h3>
-                <button class="btn-close" onclick="closeModal('boardModal')"><i class="fas fa-times"></i></button>
+                <button class="btn-close" type="button" onclick="closeModal('boardModal')"><i class="fas fa-times"></i></button>
             </div>
             <form onsubmit="saveBoard(event)">
                 <div class="modal-body">
@@ -271,7 +273,7 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3><i class="fas fa-layer-group"></i> Adicionar Coluna</h3>
-                <button class="btn-close" onclick="closeModal('columnModal')"><i class="fas fa-times"></i></button>
+                <button class="btn-close" type="button" onclick="closeModal('columnModal')"><i class="fas fa-times"></i></button>
             </div>
             <form onsubmit="saveColumn(event)">
                 <div class="modal-body">
@@ -291,7 +293,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-users"></i> Permissões do Quadro</h3>
-                <button class="btn-close" onclick="closeModal('permModal')"><i class="fas fa-times"></i></button>
+                <button class="btn-close" type="button" onclick="closeModal('permModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <p style="font-size: 13px; color: #6b7280; margin-top:0;">Dono do Quadro: <strong id="permOwner" style="color:#111827;"></strong><br>Defina quem pode acessar ou editar este quadro.</p>
@@ -339,7 +341,7 @@
             return "Sistema";
         }
 
-        // FUNÇÃO DE CONEXÃO DIRETA COM O BANCO (FIRMWARE REAL)
+        // CONEXÃO COM A API
         async function apiFetch(endpoint, method = 'GET', bodyObj = null) {
             let options = { method, headers: API_HEADERS };
             if (bodyObj) options.body = JSON.stringify(bodyObj);
@@ -378,10 +380,16 @@
             try { tasks = await apiFetch(API_TASKS); } catch(e) { tasks = {}; }
             
             if (Object.keys(boards).length === 0) {
+                // Criação do Quadro Padrão com as cores e ícones clássicos restaurados!
                 const defaultBoard = {
                     id_firebase: 'board_' + Date.now(), nome: 'Quadro Principal', criado_por: loggedUser,
                     membros: {},
-                    colunas: [ {id: 'col_1', nome: 'A Fazer'}, {id: 'col_2', nome: 'Em Andamento'}, {id: 'col_3', nome: 'Concluído'} ]
+                    colunas: [ 
+                        {id: 'col_1', nome: 'A Fazer', icone: 'fas fa-list-ul', cor: '#9ca3af'}, 
+                        {id: 'col_2', nome: 'Em Andamento', icone: 'fas fa-spinner fa-spin', cor: '#3b82f6'}, 
+                        {id: 'col_3', nome: 'Revisão / Bloqueada', icone: 'fas fa-exclamation-circle', cor: '#f59e0b'},
+                        {id: 'col_4', nome: 'Concluído', icone: 'fas fa-check-circle', cor: '#10b981'}
+                    ]
                 };
                 try { await apiFetch(API_BOARDS, 'POST', defaultBoard); } catch(e) {}
                 boards = { [defaultBoard.id_firebase]: defaultBoard };
@@ -413,7 +421,6 @@
             return false;
         }
 
-        // Geração das Fotinhas (Iniciais)
         function getInitials(name) {
             if(!name) return 'U';
             const parts = name.trim().split(' ');
@@ -476,7 +483,12 @@
                 nome: title,
                 criado_por: loggedUser,
                 membros: {},
-                colunas: [ {id: 'col_1', nome: 'A Fazer'}, {id: 'col_2', nome: 'Em Andamento'}, {id: 'col_3', nome: 'Concluído'} ]
+                colunas: [ 
+                    {id: 'col_1', nome: 'A Fazer', icone: 'fas fa-list-ul', cor: '#9ca3af'}, 
+                    {id: 'col_2', nome: 'Em Andamento', icone: 'fas fa-spinner fa-spin', cor: '#3b82f6'}, 
+                    {id: 'col_3', nome: 'Revisão / Bloqueada', icone: 'fas fa-exclamation-circle', cor: '#f59e0b'},
+                    {id: 'col_4', nome: 'Concluído', icone: 'fas fa-check-circle', cor: '#10b981'}
+                ]
             };
             
             try { await apiFetch(API_BOARDS, 'POST', newBoard); } catch(e) { alert("Erro ao criar: " + e.message); return; }
@@ -486,7 +498,7 @@
         }
 
         // ==========================================
-        // RENDER DO KANBAN DINÂMICO
+        // RENDER DO KANBAN DINÂMICO E CARTÕES
         // ==========================================
         function renderKanban() {
             const boardEl = document.getElementById('kanbanBoard');
@@ -517,9 +529,13 @@
                     cardsHtml += generateCardHtml(taskId, t);
                 });
 
+                // Recupera a cor e ícone ou usa o padrão
+                const colColor = col.cor || '#9ca3af';
+                const colIcon = col.icone || 'fas fa-layer-group';
+
                 colDiv.innerHTML = `
-                    <div class="column-header">
-                        <div class="column-title">${col.nome}</div>
+                    <div class="column-header" style="border-top-color: ${colColor};">
+                        <div class="column-title"><i class="${colIcon}" style="color: ${colColor};"></i> ${col.nome}</div>
                         <span class="column-count">${colTasks.length}</span>
                     </div>
                     <div class="column-body" id="colbody-${col.id}">
@@ -531,12 +547,23 @@
         }
 
         function generateCardHtml(id, t) {
-            let metaHtml = '';
+            let checklistHtml = '';
+            
+            // Renderiza as caixinhas de checklist dentro do card
             if (t.checklist && t.checklist.length > 0) {
-                const doneCount = t.checklist.filter(c => c.concluido).length;
-                const total = t.checklist.length;
-                const doneClass = doneCount === total ? 'check-done' : '';
-                metaHtml += `<div class="meta-item ${doneClass}" title="Checklist"><i class="fas fa-check-square"></i> ${doneCount}/${total}</div>`;
+                checklistHtml = '<div class="card-checklist-preview">';
+                t.checklist.forEach((item, idx) => {
+                    const isChecked = item.concluido ? 'checked' : '';
+                    const textStyle = item.concluido ? 'text-decoration: line-through; color: #9ca3af;' : 'color: #4b5563; font-weight: 600;';
+                    
+                    checklistHtml += `
+                        <label class="card-check-item">
+                            <input type="checkbox" ${isChecked} onmousedown="event.stopPropagation()" onclick="toggleCheckOnCard('${id}', ${idx}, event)">
+                            <span style="${textStyle}">${item.texto}</span>
+                        </label>
+                    `;
+                });
+                checklistHtml += '</div>';
             }
 
             let dateHtml = '';
@@ -559,7 +586,9 @@
                     </div>
                     <h4 class="card-title">${t.titulo}</h4>
                     ${editBtn}
-                    <div class="card-meta">${metaHtml}</div>
+                    
+                    ${checklistHtml}
+                    
                     <div class="card-footer">
                         ${dateHtml}
                         <div class="card-user" title="${t.responsavel}">${getInitials(t.responsavel)}</div>
@@ -567,6 +596,27 @@
                 </div>
             `;
         }
+
+        // ==========================================
+        // CHECKLIST DIRETAMENTE DO CARTÃO (MÁGICA)
+        // ==========================================
+        async function toggleCheckOnCard(taskId, checkIdx, event) {
+            event.stopPropagation(); // Impede de abrir o modal ou arrastar ao clicar na caixa
+            const task = tasks[taskId];
+            if(!task) return;
+            
+            // Inverte o status do item clicado
+            task.checklist[checkIdx].concluido = event.target.checked;
+            
+            renderKanban(); // Atualiza a tela de imediato
+            
+            try { 
+                await apiFetch(`${API_TASKS}/${taskId}`, 'PUT', task); 
+            } catch(e) { 
+                console.error(e); 
+            }
+        }
+
 
         // ==========================================
         // DRAG AND DROP
@@ -623,7 +673,17 @@
             e.preventDefault();
             const colName = document.getElementById('columnTitle').value;
             const b = boards[currentBoardId];
-            b.colunas.push({ id: 'col_' + Date.now(), nome: colName });
+            
+            // Cores e Icones rotativos para novas colunas
+            const stylePalette = [
+                { icone: 'fas fa-star', cor: '#8b5cf6' },
+                { icone: 'fas fa-flag', cor: '#ec4899' },
+                { icone: 'fas fa-bookmark', cor: '#14b8a6' },
+                { icone: 'fas fa-tag', cor: '#f43f5e' }
+            ];
+            const safeStyle = stylePalette[b.colunas.length % stylePalette.length];
+
+            b.colunas.push({ id: 'col_' + Date.now(), nome: colName, icone: safeStyle.icone, cor: safeStyle.cor });
             
             try { await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b); } catch(err) { alert(err); return; }
             closeModal('columnModal');
@@ -631,7 +691,7 @@
             renderKanban();
         }
 
-        // --- CHECKLIST LOGIC ---
+        // --- CHECKLIST DENTRO DO MODAL ---
         let currentChecklist = [];
 
         function renderChecklistUI() {
@@ -643,7 +703,7 @@
                 html += `
                     <div class="check-item ${item.concluido ? 'done' : ''}">
                         <input type="checkbox" ${item.concluido ? 'checked' : ''} onchange="toggleCheck(${idx})">
-                        <input type="text" value="${item.texto}" oninput="updateCheckText(${idx}, this.value)">
+                        <input type="text" value="${item.texto}" placeholder="Digite a tarefa..." oninput="updateCheckText(${idx}, this.value)">
                         <button type="button" class="btn-del-check" onclick="delCheck(${idx})"><i class="fas fa-times"></i></button>
                     </div>
                 `;
