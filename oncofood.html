@@ -44,6 +44,10 @@
         
         .btn-add { background: #00995D; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); white-space: nowrap;}
         .btn-add:hover { background: #007a4a; transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0, 153, 93, 0.3); }
+        
+        .btn-action { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; }
+        .btn-action:hover { background: #e5e7eb; }
+
         .btn-cancel { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: none; gap: 8px; align-items: center; height: 42px; transition: 0.2s; }
         .btn-cancel:hover { background: #ef4444; color: white; }
 
@@ -85,13 +89,6 @@
         .btn-danger { grid-column: span 2; background: #fef2f2; color: #ef4444; border: 1px dashed #fca5a5; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 6px;}
         .btn-danger:hover { background: #ef4444; color: white; border-style: solid;}
 
-        /* Cores Vibrantes por Categoria no Card de Estoque */
-        .cat-Refeições { border-top: 5px solid #f59e0b; }
-        .cat-Lanches { border-top: 5px solid #8b5cf6; }
-        .cat-Sobremesas { border-top: 5px solid #ec4899; }
-        .cat-Bebidas { border-top: 5px solid #3b82f6; }
-        .cat-Insumos { border-top: 5px solid #9ca3af; }
-
         /* Imagem do Estoque */
         .stock-image { width: calc(100% + 40px); height: 160px; object-fit: cover; margin: -20px -20px 10px -20px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;}
         
@@ -115,11 +112,31 @@
 
         /* Categorias do Estoque */
         .category-header { font-size: 18px; font-weight: 800; color: #1f2937; margin: 30px 0 15px 0; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;}
-        .cat-icon-Refeições { color: #f59e0b; }
-        .cat-icon-Lanches { color: #8b5cf6; }
-        .cat-icon-Sobremesas { color: #ec4899; }
-        .cat-icon-Bebidas { color: #3b82f6; }
-        .cat-icon-Insumos { color: #9ca3af; }
+        
+        /* Modais */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s;}
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        
+        .modal-content { background: white; padding: 0; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); transform: scale(0.95); transition: 0.3s; overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;}
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; flex-shrink: 0;}
+        .modal-header h3 { margin: 0; font-size: 18px; color: #111827; display: flex; align-items: center; gap: 10px; }
+        .btn-close { background: none; border: none; font-size: 20px; color: #9ca3af; cursor: pointer; transition: 0.2s; }
+        .btn-close:hover { color: #ef4444; }
+        
+        .modal-body { padding: 20px 25px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        
+        /* Lista de Categorias no Modal */
+        .cat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: white; transition: 0.2s;}
+        .cat-list-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .cat-list-info { font-weight: 600; color: #374151; display: flex; align-items: center; gap: 10px;}
+        .cat-list-info i { color: #00995D; }
+        .cat-list-actions button { background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px; transition: 0.2s;}
+        .cat-list-actions .btn-ed { color: #3b82f6; margin-right: 5px;}
+        .cat-list-actions .btn-ed:hover { color: #2563eb; }
+        .cat-list-actions .btn-dl { color: #ef4444; }
+        .cat-list-actions .btn-dl:hover { color: #dc2626; }
 
     </style>
 </head>
@@ -188,12 +205,7 @@
                     <div class="input-group" style="flex: 1;">
                         <label class="label-title">Categoria</label>
                         <select id="newItemCategory" class="input-field">
-                            <option value="Refeições">Refeições / Sopas</option>
-                            <option value="Lanches">Lanches / Sanduíches</option>
-                            <option value="Sobremesas">Frutas / Sobremesas</option>
-                            <option value="Bebidas">Bebidas</option>
-                            <option value="Insumos">Insumos (Apenas Estoque)</option>
-                        </select>
+                            </select>
                     </div>
                     <div class="input-group" style="flex: 1;">
                         <label class="label-title">Qtd. Inicial</label>
@@ -207,6 +219,10 @@
                         <label class="label-title">URL da Imagem PNG/JPG (Opcional)</label>
                         <input type="text" id="newItemImage" class="input-field" placeholder="Link da imagem na web...">
                     </div>
+                    
+                    <button class="btn-action" onclick="openCategoryModal()" title="Gerenciar Categorias de Alimentos" style="margin-left: auto;">
+                        <i class="fas fa-tags"></i> Categorias
+                    </button>
                     <button class="btn-add" id="btnSaveItem" onclick="saveInventoryItem()">
                         <i class="fas fa-plus"></i> Cadastrar
                     </button>
@@ -223,17 +239,37 @@
 
     </div>
 
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-tags"></i> Gerenciar Categorias</h3>
+                <button class="btn-close" type="button" onclick="closeModal('categoryModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="newCatName" class="input-field" placeholder="Nome da nova categoria..." style="flex: 1;">
+                    <button class="btn-add" style="height: 42px;" onclick="addCategory()">Adicionar</button>
+                </div>
+                
+                <div id="categoriesList" style="margin-top: 10px; border-top: 1px dashed #e5e7eb; padding-top: 15px;">
+                    </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==========================================
         // VARIÁVEIS GLOBAIS E INICIALIZAÇÃO
         // ==========================================
         const API_ONCOFOOD_ORDERS = '/oncofood_pedidos';
         const API_ONCOFOOD_STOCK = '/oncofood_estoque';
+        const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; // Novo endpoint para gerir as categorias
         
         let loggedUser = "Sistema";
         let activeOrders = {};
         let historyOrders = {};
         let inventoryItems = {};
+        let foodCategories = {};
 
         function normalizeData(apiData) {
             if (!apiData) return {}; 
@@ -271,8 +307,9 @@
             initGlobal('oncofood', 'Copa & Nutrição');
             loggedUser = getLoggedUserName();
             
-            await loadInventory(); 
-            await loadOrders();
+            await loadCategories(); // Carrega as categorias PRIMEIRO
+            await loadInventory();  // Depois o estoque
+            await loadOrders();     // Por fim os pedidos
         });
 
         function openTab(tabId) { 
@@ -282,6 +319,148 @@
             event.currentTarget.classList.add('active');
         }
 
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        // ==========================================
+        // GERENCIAMENTO DE CATEGORIAS
+        // ==========================================
+        async function loadCategories() {
+            try {
+                const data = await apiFetch(API_ONCOFOOD_CATEGORIES);
+                if (Object.keys(data).length === 0) {
+                    // Popular default se estiver vazio
+                    const defaults = [
+                        { nome: 'Refeições', icone: 'fas fa-utensils', cor: '#f59e0b' },
+                        { nome: 'Lanches', icone: 'fas fa-hamburger', cor: '#8b5cf6' },
+                        { nome: 'Sobremesas', icone: 'fas fa-apple-alt', cor: '#ec4899' },
+                        { nome: 'Bebidas', icone: 'fas fa-wine-glass-alt', cor: '#3b82f6' },
+                        { nome: 'Insumos', icone: 'fas fa-cubes', cor: '#9ca3af' }
+                    ];
+                    
+                    for (let d of defaults) {
+                        let newId = 'cat_' + Date.now() + Math.floor(Math.random()*1000);
+                        await apiFetch(API_ONCOFOOD_CATEGORIES, 'POST', { id_firebase: newId, ...d });
+                    }
+                    const newData = await apiFetch(API_ONCOFOOD_CATEGORIES);
+                    foodCategories = newData;
+                } else {
+                    foodCategories = data;
+                }
+            } catch(e) {
+                console.error("Aviso categorias", e);
+                foodCategories = {};
+            }
+
+            // Atualiza o Select do Formulário Principal
+            const sel = document.getElementById('newItemCategory');
+            sel.innerHTML = '';
+            Object.values(foodCategories).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(c => {
+                sel.add(new Option(c.nome, c.nome));
+            });
+        }
+
+        function openCategoryModal() {
+            renderCategoryList();
+            openModal('categoryModal');
+        }
+
+        function renderCategoryList() {
+            const listEl = document.getElementById('categoriesList');
+            let html = '';
+            Object.values(foodCategories).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(c => {
+                html += `
+                    <div class="cat-list-item">
+                        <div class="cat-list-info"><i class="${c.icone || 'fas fa-tag'}" style="color:${c.cor || '#00995D'}"></i> ${c.nome}</div>
+                        <div class="cat-list-actions">
+                            <button class="btn-ed" onclick="editCategory('${c.id_firebase}')" title="Editar Nome"><i class="fas fa-pen"></i></button>
+                            <button class="btn-dl" onclick="deleteCategory('${c.id_firebase}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        async function addCategory() {
+            const nameInput = document.getElementById('newCatName');
+            const nome = nameInput.value.trim();
+            if(!nome) return;
+
+            const id = 'cat_' + Date.now();
+            
+            // Sorteia cor e icone para a nova categoria
+            const palette = ['#0ea5e9', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b', '#10b981'];
+            const icons = ['fas fa-tag', 'fas fa-star', 'fas fa-bookmark', 'fas fa-shopping-bag'];
+            
+            const newCat = {
+                id_firebase: id,
+                nome: nome,
+                icone: icons[Math.floor(Math.random() * icons.length)],
+                cor: palette[Math.floor(Math.random() * palette.length)]
+            };
+
+            try {
+                await apiFetch(API_ONCOFOOD_CATEGORIES, 'POST', newCat);
+                nameInput.value = '';
+                await loadCategories();
+                renderCategoryList();
+            } catch(e) { alert("Erro: " + e.message); }
+        }
+
+        async function editCategory(id) {
+            const cat = foodCategories[id];
+            if(!cat) return;
+
+            const oldName = cat.nome;
+            const newName = prompt("Digite o novo nome para esta categoria:", oldName);
+            
+            if(!newName || newName.trim() === '' || newName === oldName) return;
+
+            cat.nome = newName.trim();
+
+            try {
+                // 1. Atualiza a Categoria no BD
+                await apiFetch(`${API_ONCOFOOD_CATEGORIES}/${id}`, 'PUT', cat);
+                
+                // 2. MAGICA: Varre o estoque e atualiza a categoria de todos os itens antigos!
+                let itemsUpdated = 0;
+                for (let itemId in inventoryItems) {
+                    if (inventoryItems[itemId].categoria === oldName) {
+                        inventoryItems[itemId].categoria = cat.nome;
+                        await apiFetch(`${API_ONCOFOOD_STOCK}/${itemId}`, 'PUT', inventoryItems[itemId]);
+                        itemsUpdated++;
+                    }
+                }
+                
+                await loadCategories();
+                await loadInventory(); 
+                renderCategoryList();
+                
+                if(itemsUpdated > 0) alert(`Categoria atualizada e ${itemsUpdated} itens foram movidos automaticamente para o novo nome.`);
+                
+            } catch(e) { alert("Erro ao editar: " + e.message); }
+        }
+
+        async function deleteCategory(id) {
+            const cat = foodCategories[id];
+            
+            // Verificação de Segurança
+            const hasItems = Object.values(inventoryItems).some(i => i.categoria === cat.nome);
+            if (hasItems) {
+                alert(`Não é possível excluir. Existem itens cadastrados na categoria '${cat.nome}'.\nPor favor, exclua ou edite a categoria desses itens antes de continuar.`);
+                return;
+            }
+
+            if(!confirm(`Tem certeza que deseja excluir a categoria '${cat.nome}'?`)) return;
+
+            try {
+                await apiFetch(`${API_ONCOFOOD_CATEGORIES}/${id}`, 'DELETE');
+                await loadCategories();
+                renderCategoryList();
+            } catch(e) { alert("Erro ao excluir: " + e.message); }
+        }
+
         // ==========================================
         // LÓGICA DO ESTOQUE E CARDÁPIO
         // ==========================================
@@ -289,7 +468,6 @@
             try { 
                 inventoryItems = await apiFetch(API_ONCOFOOD_STOCK); 
             } catch(e) { 
-                console.warn("Nenhum item de estoque encontrado.", e);
                 inventoryItems = {}; 
             }
             renderInventory();
@@ -324,7 +502,7 @@
                 categoria: cat,
                 estoque: estoque,
                 descricao: desc,
-                imagem: img, // Se vazio, usa o fallback na hora de renderizar
+                imagem: img, 
                 criado_por: loggedUser
             };
 
@@ -335,12 +513,10 @@
 
             try {
                 if (id && inventoryItems[id]) {
-                    // Atualização
                     itemData.id_firebase = id;
-                    itemData.data_criacao = inventoryItems[id].data_criacao; // Mantém a data original
+                    itemData.data_criacao = inventoryItems[id].data_criacao; 
                     await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'PUT', itemData);
                 } else {
-                    // Criação
                     itemData.id_firebase = 'item_' + Date.now();
                     itemData.data_criacao = new Date().toISOString();
                     await apiFetch(API_ONCOFOOD_STOCK, 'POST', itemData);
@@ -370,14 +546,17 @@
             document.getElementById('btnSaveItem').innerHTML = '<i class="fas fa-sync"></i> Atualizar Item';
             document.getElementById('btnCancelEdit').style.display = 'inline-flex';
 
-            // Rola a tela para o topo suavemente
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelEdit() {
             document.getElementById('editItemId').value = '';
             document.getElementById('newItemName').value = '';
-            document.getElementById('newItemCategory').value = 'Refeições';
+            
+            // Pega o primeiro item da lista de categorias pro reset
+            const firstCat = Object.values(foodCategories)[0];
+            if(firstCat) document.getElementById('newItemCategory').value = firstCat.nome;
+            
             document.getElementById('newItemStock').value = '10';
             document.getElementById('newItemDesc').value = '';
             document.getElementById('newItemImage').value = '';
@@ -434,29 +613,23 @@
             });
 
             let html = '';
-            
-            const categoryIcons = {
-                'Refeições': 'fas fa-utensils',
-                'Lanches': 'fas fa-hamburger',
-                'Sobremesas': 'fas fa-apple-alt',
-                'Bebidas': 'fas fa-wine-glass-alt',
-                'Insumos': 'fas fa-cubes'
-            };
-
-            // Imagem Padrão caso não tenha URL
             const fallbackImg = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=200&fit=crop";
 
-            Object.keys(grouped).sort().forEach(cat => {
-                const icon = categoryIcons[cat] || 'fas fa-box';
-                html += `<div class="category-header cat-icon-${cat}"><i class="${icon}"></i> ${cat}</div>`;
+            // Puxa as infos reais da Categoria no Banco
+            Object.keys(grouped).sort().forEach(catName => {
+                
+                // Procura a categoria nos dados pra pegar icone e cor
+                const catObj = Object.values(foodCategories).find(c => c.nome === catName) || { icone: 'fas fa-box', cor: '#9ca3af'};
+                
+                html += `<div class="category-header"><i class="${catObj.icone}" style="color:${catObj.cor}"></i> ${catName}</div>`;
                 html += `<div class="grid-container">`;
                 
-                grouped[cat].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(item => {
+                grouped[catName].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(item => {
                     const isLow = item.estoque <= 3 ? 'low' : '';
                     const imgSrc = item.imagem || fallbackImg;
 
                     html += `
-                        <div class="card cat-${cat}">
+                        <div class="card" style="border-top: 5px solid ${catObj.cor};">
                             <img src="${imgSrc}" class="stock-image" onerror="this.src='${fallbackImg}'" alt="${item.nome}">
                             <h3 style="margin:0; font-size:18px; color:#111827; font-weight:800;">${item.nome}</h3>
                             <p style="margin:0; font-size:12px; color:#6b7280; min-height: 18px;">${item.descricao || 'Sem detalhes adic.'}</p>
