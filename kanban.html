@@ -53,7 +53,7 @@
         .kanban-column { background: #f3f4f6; border-radius: 12px; width: 320px; min-width: 320px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; transition: background 0.2s; }
         .kanban-column.drag-over { background: #e0f2fe; border: 2px dashed #0284c7; }
 
-        .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e5e7eb; }
+        .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e5e7eb; border-top: 4px solid #9ca3af;}
         .column-title { font-weight: 800; font-size: 14px; color: #1f2937; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
         .column-count { background: #e5e7eb; color: #4b5563; font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
 
@@ -380,7 +380,6 @@
             try { tasks = await apiFetch(API_TASKS); } catch(e) { tasks = {}; }
             
             if (Object.keys(boards).length === 0) {
-                // Criação do Quadro Padrão com as cores e ícones clássicos restaurados!
                 const defaultBoard = {
                     id_firebase: 'board_' + Date.now(), nome: 'Quadro Principal', criado_por: loggedUser,
                     membros: {},
@@ -529,12 +528,31 @@
                     cardsHtml += generateCardHtml(taskId, t);
                 });
 
-                // Recupera a cor e ícone ou usa o padrão
-                const colColor = col.cor || '#9ca3af';
-                const colIcon = col.icone || 'fas fa-layer-group';
+                // INTELIGÊNCIA DE CORES: Se a coluna veio do banco sem cor, tenta adivinhar pelo nome
+                let colColor = col.cor;
+                let colIcon = col.icone;
+
+                if (!colColor || !colIcon) {
+                    const n = col.nome.toLowerCase();
+                    if (n.includes('fazer') || n.includes('pendente')) { colColor = '#9ca3af'; colIcon = 'fas fa-list-ul'; }
+                    else if (n.includes('andamento') || n.includes('fazendo')) { colColor = '#3b82f6'; colIcon = 'fas fa-spinner fa-spin'; }
+                    else if (n.includes('revis') || n.includes('bloquead')) { colColor = '#f59e0b'; colIcon = 'fas fa-exclamation-circle'; }
+                    else if (n.includes('conclu') || n.includes('pronto')) { colColor = '#10b981'; colIcon = 'fas fa-check-circle'; }
+                    else {
+                        const palette = [
+                            { icone: 'fas fa-star', cor: '#8b5cf6' },
+                            { icone: 'fas fa-flag', cor: '#ec4899' },
+                            { icone: 'fas fa-bookmark', cor: '#14b8a6' },
+                            { icone: 'fas fa-tag', cor: '#f43f5e' }
+                        ];
+                        const hash = col.nome.length % palette.length;
+                        colColor = palette[hash].cor;
+                        colIcon = palette[hash].icone;
+                    }
+                }
 
                 colDiv.innerHTML = `
-                    <div class="column-header" style="border-top-color: ${colColor};">
+                    <div class="column-header" style="border-top-color: ${colColor}; border-top-width: 4px; border-top-style: solid;">
                         <div class="column-title"><i class="${colIcon}" style="color: ${colColor};"></i> ${col.nome}</div>
                         <span class="column-count">${colTasks.length}</span>
                     </div>
@@ -549,7 +567,6 @@
         function generateCardHtml(id, t) {
             let checklistHtml = '';
             
-            // Renderiza as caixinhas de checklist dentro do card
             if (t.checklist && t.checklist.length > 0) {
                 checklistHtml = '<div class="card-checklist-preview">';
                 t.checklist.forEach((item, idx) => {
@@ -601,22 +618,16 @@
         // CHECKLIST DIRETAMENTE DO CARTÃO (MÁGICA)
         // ==========================================
         async function toggleCheckOnCard(taskId, checkIdx, event) {
-            event.stopPropagation(); // Impede de abrir o modal ou arrastar ao clicar na caixa
+            event.stopPropagation(); 
             const task = tasks[taskId];
             if(!task) return;
             
-            // Inverte o status do item clicado
             task.checklist[checkIdx].concluido = event.target.checked;
+            renderKanban(); 
             
-            renderKanban(); // Atualiza a tela de imediato
-            
-            try { 
-                await apiFetch(`${API_TASKS}/${taskId}`, 'PUT', task); 
-            } catch(e) { 
-                console.error(e); 
-            }
+            try { await apiFetch(`${API_TASKS}/${taskId}`, 'PUT', task); } 
+            catch(e) { console.error(e); }
         }
-
 
         // ==========================================
         // DRAG AND DROP
@@ -654,7 +665,7 @@
 
             if(task && task.coluna_id !== newColId) {
                 task.coluna_id = newColId;
-                renderKanban(); // UI Optismistic
+                renderKanban(); 
                 try { await apiFetch(`${API_TASKS}/${draggedTaskId}`, 'PUT', task); } catch(err) { console.error(err); }
             }
             draggedTaskId = null;
@@ -674,7 +685,6 @@
             const colName = document.getElementById('columnTitle').value;
             const b = boards[currentBoardId];
             
-            // Cores e Icones rotativos para novas colunas
             const stylePalette = [
                 { icone: 'fas fa-star', cor: '#8b5cf6' },
                 { icone: 'fas fa-flag', cor: '#ec4899' },
