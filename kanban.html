@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban de Tarefas - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; overflow-x: hidden; }
+        
+        .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Cabeçalho da Página Kanban */
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f9fafb; flex-shrink: 0;}
+        .dash-header-title h1 { margin: 0; font-size: 24px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+        .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
+        .dash-header-title i { color: #00995D; }
+        
+        .btn-add { background: #00995D; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); }
+        .btn-add:hover { background: #007a4a; transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0, 153, 93, 0.3); }
+
+        /* ========================================================
+           BOARD KANBAN (TRELLO STYLE)
+           ======================================================== */
+        .kanban-board { display: flex; gap: 20px; flex: 1; overflow-x: auto; overflow-y: hidden; padding-bottom: 20px; align-items: flex-start; scroll-behavior: smooth;}
+        
+        .kanban-column { background: #f3f4f6; border-radius: 12px; width: 320px; min-width: 320px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; transition: background 0.2s; }
+        .kanban-column.drag-over { background: #e0f2fe; border: 2px dashed #0284c7; } /* Efeito ao arrastar por cima */
+
+        /* Cores dos Cabeçalhos das Colunas */
+        .col-todo .column-header { border-top: 4px solid #9ca3af; }
+        .col-progress .column-header { border-top: 4px solid #3b82f6; }
+        .col-review .column-header { border-top: 4px solid #f59e0b; }
+        .col-done .column-header { border-top: 4px solid #10b981; }
+
+        .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e5e7eb; }
+        .column-title { font-weight: 800; font-size: 14px; color: #1f2937; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
+        .column-count { background: #e5e7eb; color: #4b5563; font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+
+        .column-body { padding: 15px; overflow-y: auto; flex: 1; min-height: 150px; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* O Cartão (Task) */
+        .kanban-card { background: white; padding: 16px; border-radius: 10px; cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; transition: 0.2s; position: relative; display: flex; flex-direction: column; gap: 10px;}
+        .kanban-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-color: #d1d5db; transform: translateY(-2px); }
+        .kanban-card:active { cursor: grabbing; transform: scale(0.98); opacity: 0.8; box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+        
+        .card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-alta { background: #fee2e2; color: #b91c1c; }
+        .badge-media { background: #fef3c7; color: #d97706; }
+        .badge-baixa { background: #e0f2fe; color: #0369a1; }
+        
+        .card-title { font-size: 14px; font-weight: 700; color: #111827; margin: 0; line-height: 1.4; word-wrap: break-word;}
+        
+        .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e5e7eb; padding-top: 10px; margin-top: 5px; }
+        .card-date { font-size: 11px; color: #6b7280; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .card-date.atrasado { color: #dc2626; }
+        
+        .card-user { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #00995D; color: white; font-size: 10px; font-weight: bold; text-transform: uppercase; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5e7eb; }
+
+        .btn-edit-card { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; opacity: 0; padding: 4px;}
+        .kanban-card:hover .btn-edit-card { opacity: 1; }
+        .btn-edit-card:hover { color: #00995D; }
+
+        /* ========================================================
+           MODAL DE TAREFAS
+           ======================================================== */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s;}
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        
+        .modal-content { background: white; padding: 0; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); transform: scale(0.95); transition: 0.3s; overflow: hidden;}
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; }
+        .modal-header h3 { margin: 0; font-size: 18px; color: #111827; display: flex; align-items: center; gap: 10px; }
+        .btn-close { background: none; border: none; font-size: 20px; color: #9ca3af; cursor: pointer; transition: 0.2s; }
+        .btn-close:hover { color: #ef4444; }
+        
+        .modal-body { padding: 25px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { font-size: 12px; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control { padding: 12px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; color: #1f2937; transition: 0.2s; background: #fff; width: 100%; box-sizing: border-box; }
+        .form-control:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); outline: none; }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+        
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
+
+        .modal-footer { padding: 20px 25px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+        .btn-danger { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: none; }
+        .btn-danger:hover { background: #ef4444; color: white; }
+        .btn-save { background: #00995D; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; margin-left: auto;}
+        .btn-save:hover { background: #007a4a; }
+
+        /* Scrollbar estilizado para o Board */
+        .kanban-board::-webkit-scrollbar { height: 10px; }
+        .kanban-board::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .kanban-board::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .kanban-board::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .column-body::-webkit-scrollbar { width: 6px; }
+        .column-body::-webkit-scrollbar-track { background: transparent; }
+        .column-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header"></div>
+        <div id="global-nav"></div>
+
+        <div class="dash-header">
+            <div class="dash-header-title">
+                <h1><i class="fas fa-columns"></i> Kanban de Tarefas</h1>
+                <p>Gerencie o fluxo de trabalho e pendências da equipe</p>
+            </div>
+            <button class="btn-add" onclick="openModal()">
+                <i class="fas fa-plus"></i> Nova Tarefa
+            </button>
+        </div>
+
+        <div class="kanban-board">
+            
+            <div class="kanban-column col-todo" data-status="todo" ondragover="allowDrop(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <div class="column-header">
+                    <div class="column-title"><i class="fas fa-list-ul" style="color: #6b7280;"></i> A Fazer</div>
+                    <span class="column-count" id="count-todo">0</span>
+                </div>
+                <div class="column-body" id="col-todo">
+                    </div>
+            </div>
+
+            <div class="kanban-column col-progress" data-status="in_progress" ondragover="allowDrop(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <div class="column-header">
+                    <div class="column-title"><i class="fas fa-spinner fa-spin" style="color: #3b82f6;"></i> Em Andamento</div>
+                    <span class="column-count" id="count-in_progress">0</span>
+                </div>
+                <div class="column-body" id="col-in_progress">
+                </div>
+            </div>
+
+            <div class="kanban-column col-review" data-status="review" ondragover="allowDrop(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <div class="column-header">
+                    <div class="column-title"><i class="fas fa-exclamation-circle" style="color: #f59e0b;"></i> Revisão / Bloqueada</div>
+                    <span class="column-count" id="count-review">0</span>
+                </div>
+                <div class="column-body" id="col-review">
+                </div>
+            </div>
+
+            <div class="kanban-column col-done" data-status="done" ondragover="allowDrop(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <div class="column-header">
+                    <div class="column-title"><i class="fas fa-check-circle" style="color: #10b981;"></i> Concluído</div>
+                    <span class="column-count" id="count-done">0</span>
+                </div>
+                <div class="column-body" id="col-done">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle"><i class="fas fa-tasks"></i> Nova Tarefa</h3>
+                <button class="btn-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="taskForm" onsubmit="saveTask(event)">
+                <input type="hidden" id="taskId">
+                
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Título da Tarefa</label>
+                        <input type="text" id="taskTitle" class="form-control" placeholder="Ex: Emitir NF Unimed..." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Descrição (Opcional)</label>
+                        <textarea id="taskDesc" class="form-control" placeholder="Detalhes da tarefa..."></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="taskStatus" class="form-control">
+                                <option value="todo">A Fazer</option>
+                                <option value="in_progress">Em Andamento</option>
+                                <option value="review">Revisão / Bloqueada</option>
+                                <option value="done">Concluído</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Prioridade</label>
+                            <select id="taskPriority" class="form-control">
+                                <option value="baixa">Baixa</option>
+                                <option value="media" selected>Média</option>
+                                <option value="alta">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Responsável</label>
+                            <select id="taskUser" class="form-control" required>
+                                <option value="">Selecione...</option>
+                                </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Data Limite (Prazo)</label>
+                            <input type="date" id="taskDeadline" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="btnDeleteTask" class="btn-danger" onclick="deleteTask()"><i class="fas fa-trash"></i> Excluir</button>
+                    <button type="submit" class="btn-save" id="btnSaveTask"><i class="fas fa-save"></i> Salvar Tarefa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // VARIÁVEIS GLOBAIS E INICIALIZAÇÃO
+        // ==========================================
+        let tasks = {};
+        let usersList = [];
+        let draggedTaskId = null;
+
+        // O nome do nó no Firebase que salvaremos as tarefas
+        const KANBAN_ENDPOINT = '/tarefas_kanban'; 
+
+        function normalizeData(apiData) {
+            if (!apiData) return {}; 
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            }); 
+            return normalized;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('kanban', 'Kanban de Tarefas');
+            
+            // Popula os responsáveis usando a lista de usuários do sistema (Ou médicos, se preferir)
+            await loadUsersForDropdown();
+            
+            // Carrega as tarefas do banco
+            await loadTasks();
+        });
+
+        // ==========================================
+        // CARREGAMENTO DE DADOS (API)
+        // ==========================================
+        async function loadUsersForDropdown() {
+            try {
+                // Vou puxar a lista de usuários para atribuir as tarefas
+                const r = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
+                if (r.ok) {
+                    const allUsers = await r.json();
+                    const sel = document.getElementById('taskUser');
+                    
+                    Object.values(allUsers).forEach(u => {
+                        if(u.nome) {
+                            sel.add(new Option(u.nome, u.nome));
+                        }
+                    });
+                }
+            } catch(e) {
+                console.error("Erro ao carregar usuários:", e);
+                // Fallback básico caso dê erro na leitura de usuários
+                const sel = document.getElementById('taskUser');
+                sel.add(new Option("Maikol", "Maikol"));
+                sel.add(new Option("Felipe", "Felipe"));
+                sel.add(new Option("Recepção", "Recepção"));
+                sel.add(new Option("Faturamento", "Faturamento"));
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const res = await fetch(`${API_BASE_URL}${KANBAN_ENDPOINT}?t=${Date.now()}`, { headers: API_HEADERS });
+                if (res.ok) {
+                    tasks = normalizeData(await res.json());
+                } else {
+                    tasks = {};
+                }
+                renderBoard();
+            } catch(e) {
+                console.error("Aviso: Nenhuma tarefa encontrada ou erro na API.", e);
+                tasks = {};
+                renderBoard();
+            }
+        }
+
+        // ==========================================
+        // RENDERIZAÇÃO DO QUADRO (BOARD)
+        // ==========================================
+        function renderBoard() {
+            // Limpa as colunas
+            document.getElementById('col-todo').innerHTML = '';
+            document.getElementById('col-in_progress').innerHTML = '';
+            document.getElementById('col-review').innerHTML = '';
+            document.getElementById('col-done').innerHTML = '';
+            
+            // Contadores
+            let counts = { todo: 0, in_progress: 0, review: 0, done: 0 };
+
+            // Se não tiver tarefas
+            if(Object.keys(tasks).length === 0) {
+                document.getElementById('count-todo').innerText = 0;
+                document.getElementById('count-in_progress').innerText = 0;
+                document.getElementById('count-review').innerText = 0;
+                document.getElementById('count-done').innerText = 0;
+                return;
+            }
+
+            // Ordena tarefas (as mais recentes no topo)
+            const sortedTasks = Object.entries(tasks).sort((a,b) => {
+                const dateA = new Date(a[1].data_criacao || 0).getTime();
+                const dateB = new Date(b[1].data_criacao || 0).getTime();
+                return dateB - dateA;
+            });
+
+            sortedTasks.forEach(([id, t]) => {
+                // Proteção contra lixo no banco
+                if(!t || !t.titulo) return;
+
+                const status = t.status || 'todo';
+                if(counts[status] !== undefined) counts[status]++;
+
+                // Verifica Prazo (Atrasado)
+                let dateHtml = '';
+                if(t.prazo) {
+                    const prazoDate = new Date(t.prazo + 'T12:00:00');
+                    const hoje = new Date();
+                    today.setHours(0,0,0,0);
+                    
+                    let dataFormatada = prazoDate.toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
+                    
+                    if (status !== 'done' && prazoDate < hoje) {
+                        dateHtml = `<span class="card-date atrasado" title="Atrasado!"><i class="far fa-clock"></i> ${dataFormatada}</span>`;
+                    } else {
+                        dateHtml = `<span class="card-date"><i class="far fa-clock"></i> ${dataFormatada}</span>`;
+                    }
+                }
+
+                // Criação das Iniciais do Usuário (Avatar Fake)
+                let userInitials = "U";
+                if(t.responsavel) {
+                    const parts = t.responsavel.split(' ');
+                    if(parts.length > 1) userInitials = parts[0][0] + parts[1][0];
+                    else userInitials = parts[0].substring(0,2);
+                }
+
+                // Html do Cartão
+                const card = document.createElement('div');
+                card.className = 'kanban-card';
+                card.draggable = true;
+                card.id = id;
+                
+                // Eventos de Drag and Drop
+                card.ondragstart = dragStart;
+
+                card.innerHTML = `
+                    <div class="card-badges">
+                        <span class="badge badge-${t.prioridade || 'media'}">${t.prioridade || 'Média'}</span>
+                    </div>
+                    <h4 class="card-title">${t.titulo}</h4>
+                    <button class="btn-edit-card" onclick="editTask('${id}')" title="Editar Tarefa"><i class="fas fa-pen"></i></button>
+                    
+                    <div class="card-footer">
+                        ${dateHtml}
+                        <div class="card-user" title="Responsável: ${t.responsavel}">${userInitials}</div>
+                    </div>
+                `;
+
+                // Adiciona na coluna correta
+                const colEl = document.getElementById(`col-${status}`);
+                if(colEl) colEl.appendChild(card);
+            });
+
+            // Atualiza os contadores no HTML
+            document.getElementById('count-todo').innerText = counts.todo;
+            document.getElementById('count-in_progress').innerText = counts.in_progress;
+            document.getElementById('count-review').innerText = counts.review;
+            document.getElementById('count-done').innerText = counts.done;
+        }
+
+        // ==========================================
+        // DRAG AND DROP LÓGICA (A Mágica)
+        // ==========================================
+        function dragStart(e) {
+            draggedTaskId = e.target.id;
+            // Efeito visual no card arrastado
+            setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
+        }
+
+        function allowDrop(e) {
+            e.preventDefault(); // Permite que o item seja solto aqui
+        }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            // Adiciona classe de highlight na coluna quando o card passa por cima
+            const col = e.target.closest('.kanban-column');
+            if(col) col.classList.add('drag-over');
+        }
+
+        function dragLeave(e) {
+            const col = e.target.closest('.kanban-column');
+            if(col) col.classList.remove('drag-over');
+        }
+
+        async function drop(e) {
+            e.preventDefault();
+            
+            // Remove highlight de todas as colunas
+            document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+            
+            const col = e.target.closest('.kanban-column');
+            if(!col || !draggedTaskId) return;
+
+            const newStatus = col.getAttribute('data-status');
+            const task = tasks[draggedTaskId];
+
+            // Restaura opacidade do card
+            const cardEl = document.getElementById(draggedTaskId);
+            if(cardEl) cardEl.style.opacity = '1';
+
+            // Se o status mudou, atualiza e salva
+            if(task && task.status !== newStatus) {
+                task.status = newStatus;
+                
+                // Atualiza a tela imediatamente (Optimistic UI Update)
+                renderBoard();
+                
+                // Salva no banco invisivelmente
+                try {
+                    await fetch(`${API_BASE_URL}${KANBAN_ENDPOINT}/${draggedTaskId}`, {
+                        method: 'PUT',
+                        headers: API_HEADERS,
+                        body: JSON.stringify(task)
+                    });
+                } catch(err) {
+                    console.error("Erro ao salvar o drop:", err);
+                    alert("Erro de conexão ao mover a tarefa.");
+                    // Reverte se der erro (Ideal)
+                }
+            }
+            draggedTaskId = null;
+        }
+
+        // ==========================================
+        // MODAL E CRUD (CRIAR, EDITAR, EXCLUIR)
+        // ==========================================
+        function openModal() {
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskId').value = '';
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-tasks"></i> Nova Tarefa';
+            document.getElementById('btnDeleteTask').style.display = 'none';
+            document.getElementById('btnSaveTask').innerHTML = '<i class="fas fa-save"></i> Criar Tarefa';
+            
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.remove('active');
+        }
+
+        function editTask(id) {
+            const t = tasks[id];
+            if(!t) return;
+
+            document.getElementById('taskId').value = id;
+            document.getElementById('taskTitle').value = t.titulo || '';
+            document.getElementById('taskDesc').value = t.descricao || '';
+            document.getElementById('taskStatus').value = t.status || 'todo';
+            document.getElementById('taskPriority').value = t.prioridade || 'media';
+            document.getElementById('taskUser').value = t.responsavel || '';
+            document.getElementById('taskDeadline').value = t.prazo || '';
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-pen"></i> Editar Tarefa';
+            document.getElementById('btnDeleteTask').style.display = 'block';
+            document.getElementById('btnSaveTask').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
+
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        async function saveTask(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskId').value;
+            
+            // Pega o usuário logado que criou a tarefa (como fizemos no sales)
+            let loggedUser = "Sistema";
+            try {
+                let uStr = localStorage.getItem('ecoUser');
+                if(uStr) loggedUser = JSON.parse(uStr).nome || "Sistema";
+            } catch(e) {}
+
+            const taskData = {
+                titulo: document.getElementById('taskTitle').value,
+                descricao: document.getElementById('taskDesc').value,
+                status: document.getElementById('taskStatus').value,
+                prioridade: document.getElementById('taskPriority').value,
+                responsavel: document.getElementById('taskUser').value,
+                prazo: document.getElementById('taskDeadline').value,
+                criado_por: loggedUser,
+                data_criacao: new Date().toISOString()
+            };
+
+            const btn = document.getElementById('btnSaveTask');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            btn.disabled = true;
+
+            try {
+                const method = id ? 'PUT' : 'POST';
+                const url = id ? `${API_BASE_URL}${KANBAN_ENDPOINT}/${id}` : `${API_BASE_URL}${KANBAN_ENDPOINT}`;
+                
+                // Se for edição, mantém a data de criação original
+                if(id && tasks[id]) {
+                    taskData.data_criacao = tasks[id].data_criacao;
+                }
+
+                await fetch(url, {
+                    method: method,
+                    headers: API_HEADERS,
+                    body: JSON.stringify(taskData)
+                });
+
+                closeModal();
+                await loadTasks(); // Recarrega os dados fresquinhos do banco
+                
+            } catch(err) {
+                alert("Erro ao salvar tarefa: " + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteTask() {
+            const id = document.getElementById('taskId').value;
+            if(!id) return;
+
+            if(confirm("Tem certeza que deseja excluir esta tarefa?")) {
+                const btn = document.getElementById('btnDeleteTask');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+                
+                try {
+                    await fetch(`${API_BASE_URL}${KANBAN_ENDPOINT}/${id}`, {
+                        method: 'DELETE',
+                        headers: API_HEADERS
+                    });
+                    
+                    closeModal();
+                    await loadTasks();
+                    
+                } catch(err) {
+                    alert("Erro ao excluir: " + err.message);
+                    btn.innerHTML = '<i class="fas fa-trash"></i> Excluir';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
