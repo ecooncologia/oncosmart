@@ -89,6 +89,13 @@
         .btn-danger { grid-column: span 2; background: #fef2f2; color: #ef4444; border: 1px dashed #fca5a5; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 6px;}
         .btn-danger:hover { background: #ef4444; color: white; border-style: solid;}
 
+        /* Cores Vibrantes por Categoria no Card de Estoque */
+        .cat-Refeições { border-top: 5px solid #f59e0b; }
+        .cat-Lanches { border-top: 5px solid #8b5cf6; }
+        .cat-Sobremesas { border-top: 5px solid #ec4899; }
+        .cat-Bebidas { border-top: 5px solid #3b82f6; }
+        .cat-Insumos { border-top: 5px solid #9ca3af; }
+
         /* Imagem do Estoque - CORRIGIDA PARA CONTAIN */
         .stock-image { width: calc(100% + 40px); height: 160px; object-fit: contain; margin: -20px -20px 10px -20px; background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 10px; box-sizing: border-box;}
         
@@ -97,9 +104,12 @@
         .stock-val { font-size: 20px; font-weight: 900; color: #00995D; }
         .stock-val.low { color: #ef4444; }
         
-        .qty-actions { display: flex; align-items: center; gap: 8px; }
+        .qty-actions { display: flex; align-items: center; gap: 4px; }
         .btn-qty { width: 32px; height: 32px; border-radius: 8px; background: white; border: 1px solid #d1d5db; color: #374151; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-qty:hover { background: #00995D; color: white; border-color: #00995D;}
+        
+        .btn-qty-manual { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; margin-left: 6px; }
+        .btn-qty-manual:hover { background: #0284c7; color: white; border-color: #0284c7; }
 
         .card-stock-actions { display: flex; gap: 10px; }
         .btn-edit-item { flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;}
@@ -131,6 +141,7 @@
         .cat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: white; transition: 0.2s;}
         .cat-list-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .cat-list-info { font-weight: 600; color: #374151; display: flex; align-items: center; gap: 10px;}
+        .cat-list-info i { color: #00995D; }
         .cat-list-actions button { background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px; transition: 0.2s;}
         .cat-list-actions .btn-ed { color: #3b82f6; margin-right: 5px;}
         .cat-list-actions .btn-ed:hover { color: #2563eb; }
@@ -571,6 +582,7 @@
             document.getElementById('btnCancelEdit').style.display = 'none';
         }
 
+        // Função do + e - tradicional
         async function updateStock(id, amount) {
             const item = inventoryItems[id];
             if (!item) return;
@@ -592,6 +604,26 @@
             } catch(e) {
                 console.error("Erro ao salvar estoque", e);
             }
+        }
+
+        // NOVA FUNÇÃO: Adicionar grande quantidade manualmente via prompt
+        async function addManualStock(id) {
+            const item = inventoryItems[id];
+            if (!item) return;
+
+            const val = prompt(`Entrada de Estoque: ${item.nome}\n\nQuantas unidades chegaram? (Digite um número)\n*Dica: Digite um número com o sinal de menos (-) na frente para fazer uma redução manual rápida.`);
+            
+            if (val === null || val.trim() === "") return; 
+            
+            const amount = parseInt(val);
+            if (isNaN(amount)) {
+                alert("Por favor, digite um número inteiro válido.");
+                return;
+            }
+
+            if (amount === 0) return;
+
+            await updateStock(id, amount);
         }
 
         async function deleteInventoryItem(id) {
@@ -620,7 +652,6 @@
 
             let html = '';
             
-            // Fallback para a imagem caso a URL esteja quebrada ou vazia
             const fallbackImg = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=200&fit=crop";
 
             Object.keys(grouped).sort().forEach(catName => {
@@ -646,6 +677,8 @@
                                     <button class="btn-qty" onclick="updateStock('${item.id_firebase}', -1)"><i class="fas fa-minus"></i></button>
                                     <span class="stock-val ${isLow}" id="stock-val-${item.id_firebase}">${item.estoque}</span>
                                     <button class="btn-qty" onclick="updateStock('${item.id_firebase}', 1)"><i class="fas fa-plus"></i></button>
+                                    
+                                    <button class="btn-qty btn-qty-manual" onclick="addManualStock('${item.id_firebase}')" title="Entrada Manual Rápida"><i class="fas fa-dolly"></i></button>
                                 </div>
                             </div>
                             
