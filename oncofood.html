@@ -21,7 +21,7 @@
         .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f9fafb; flex-shrink: 0;}
         .dash-header-title h1 { margin: 0; font-size: 24px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
-        .dash-header-title i { color: #00995D; }
+        .dash-header-title i { color: #f59e0b; }
 
         /* Abas Estilo ONCO SMART */
         .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
@@ -44,9 +44,11 @@
         
         .btn-add { background: #00995D; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); white-space: nowrap;}
         .btn-add:hover { background: #007a4a; transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0, 153, 93, 0.3); }
+        .btn-cancel { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: none; gap: 8px; align-items: center; height: 42px; transition: 0.2s; }
+        .btn-cancel:hover { background: #ef4444; color: white; }
 
         /* Grid de Pedidos e Estoque */
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         
         /* Cards Modernos */
         .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; position: relative; overflow: hidden;}
@@ -66,13 +68,13 @@
         .st-delivered { background: #dcfce7; color: #10b981; }
 
         /* Lista de Itens do Pedido */
-        .order-items { flex: 1; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #4b5563; font-weight: 500; }
-        .order-items div { display: flex; align-items: center; gap: 8px; }
-        .order-items i { color: #00995D; font-size: 10px; }
+        .order-items { flex: 1; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #4b5563; font-weight: 600; }
+        .order-items div { display: flex; align-items: center; gap: 8px; padding: 8px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;}
+        .order-items i { color: #f59e0b; font-size: 14px; }
 
         /* Ações do Card de Pedido */
         .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
-        .btn-status { padding: 8px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; background: white; color: #4b5563;}
+        .btn-status { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; background: white; color: #4b5563;}
         .btn-status:hover { background: #f3f4f6; }
         
         .btn-status.action-pending:hover, .btn-status.action-pending.active { background: #fee2e2; border-color: #fca5a5; color: #b91c1c;}
@@ -80,27 +82,44 @@
         .btn-status.action-ready:hover, .btn-status.action-ready.active { background: #e0f2fe; border-color: #7dd3fc; color: #0284c7;}
         .btn-status.action-delivered:hover, .btn-status.action-delivered.active { background: #dcfce7; border-color: #86efac; color: #10b981;}
         
-        .btn-danger { grid-column: span 2; background: #fef2f2; color: #ef4444; border: 1px dashed #fca5a5; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 11px; }
+        .btn-danger { grid-column: span 2; background: #fef2f2; color: #ef4444; border: 1px dashed #fca5a5; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 6px;}
         .btn-danger:hover { background: #ef4444; color: white; border-style: solid;}
 
+        /* Cores Vibrantes por Categoria no Card de Estoque */
+        .cat-Refeições { border-top: 5px solid #f59e0b; }
+        .cat-Lanches { border-top: 5px solid #8b5cf6; }
+        .cat-Sobremesas { border-top: 5px solid #ec4899; }
+        .cat-Bebidas { border-top: 5px solid #3b82f6; }
+        .cat-Insumos { border-top: 5px solid #9ca3af; }
+
         /* Imagem do Estoque */
-        .stock-image { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; background: #f3f4f6; }
+        .stock-image { width: calc(100% + 40px); height: 160px; object-fit: cover; margin: -20px -20px 10px -20px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;}
         
         /* Controles de Estoque */
-        .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f9fafb; padding: 10px 15px; border-radius: 8px; border: 1px solid #e5e7eb; }
         .stock-val { font-size: 20px; font-weight: 900; color: #00995D; }
         .stock-val.low { color: #ef4444; }
         
-        .qty-actions { display: flex; align-items: center; gap: 5px; }
-        .btn-qty { width: 32px; height: 32px; border-radius: 8px; border: none; background: white; border: 1px solid #d1d5db; color: #374151; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .qty-actions { display: flex; align-items: center; gap: 8px; }
+        .btn-qty { width: 32px; height: 32px; border-radius: 8px; background: white; border: 1px solid #d1d5db; color: #374151; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-qty:hover { background: #00995D; color: white; border-color: #00995D;}
+
+        .card-stock-actions { display: flex; gap: 10px; }
+        .btn-edit-item { flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;}
+        .btn-edit-item:hover { background: #3b82f6; color: white; border-color: #3b82f6;}
+        .btn-del-item { flex: 1; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;}
+        .btn-del-item:hover { background: #ef4444; color: white; }
 
         .empty-state { grid-column: 1 / -1; padding: 60px 20px; text-align: center; color: #9ca3af; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 15px; background: white; border-radius: 16px; border: 1px dashed #d1d5db;}
         .empty-state i { font-size: 48px; color: #e5e7eb; }
 
         /* Categorias do Estoque */
         .category-header { font-size: 18px; font-weight: 800; color: #1f2937; margin: 30px 0 15px 0; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;}
-        .category-header i { color: #00995D; }
+        .cat-icon-Refeições { color: #f59e0b; }
+        .cat-icon-Lanches { color: #8b5cf6; }
+        .cat-icon-Sobremesas { color: #ec4899; }
+        .cat-icon-Bebidas { color: #3b82f6; }
+        .cat-icon-Insumos { color: #9ca3af; }
 
     </style>
 </head>
@@ -119,7 +138,7 @@
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="openTab('pedidos_ativos')"><i class="fas fa-bell"></i> Pedidos Ativos</button>
             <button class="tab-btn" onclick="openTab('historico_pedidos')"><i class="fas fa-history"></i> Histórico</button>
-            <button class="tab-btn" onclick="openTab('estoque_itens')"><i class="fas fa-boxes"></i> Estoque</button>
+            <button class="tab-btn" onclick="openTab('estoque_itens')"><i class="fas fa-boxes"></i> Estoque & Cardápio</button>
         </div>
 
         <div id="tab-pedidos_ativos" class="tab-content active">
@@ -160,6 +179,7 @@
         <div id="tab-estoque_itens" class="tab-content">
             
             <div class="controls">
+                <input type="hidden" id="editItemId">
                 <div class="controls-group">
                     <div class="input-group" style="flex: 2;">
                         <label class="label-title">Nome do Item</label>
@@ -180,11 +200,18 @@
                         <input type="number" id="newItemStock" class="input-field" value="10" min="0">
                     </div>
                     <div class="input-group" style="flex: 2;">
-                        <label class="label-title">Detalhes / Ingredientes</label>
+                        <label class="label-title">Detalhes (Opcional)</label>
                         <input type="text" id="newItemDesc" class="input-field" placeholder="Ex: Sem sal, Integral...">
                     </div>
-                    <button class="btn-add" onclick="createInventoryItem()">
+                    <div class="input-group" style="flex: 2;">
+                        <label class="label-title">URL da Imagem PNG/JPG (Opcional)</label>
+                        <input type="text" id="newItemImage" class="input-field" placeholder="Link da imagem na web...">
+                    </div>
+                    <button class="btn-add" id="btnSaveItem" onclick="saveInventoryItem()">
                         <i class="fas fa-plus"></i> Cadastrar
+                    </button>
+                    <button class="btn-cancel" id="btnCancelEdit" onclick="cancelEdit()">
+                        <i class="fas fa-times"></i> Cancelar
                     </button>
                 </div>
             </div>
@@ -244,7 +271,7 @@
             initGlobal('oncofood', 'Copa & Nutrição');
             loggedUser = getLoggedUserName();
             
-            await loadInventory(); // Carrega o estoque primeiro para popular o select de pedidos
+            await loadInventory(); 
             await loadOrders();
         });
 
@@ -273,7 +300,6 @@
             const sel = document.getElementById('orderItem');
             sel.innerHTML = '<option value="">-- Selecione o que deseja pedir --</option>';
             
-            // Agrupa itens para o Select, omitindo 'Insumos' que não vão para pacientes
             Object.values(inventoryItems)
                 .filter(i => i.categoria !== 'Insumos')
                 .sort((a,b) => a.nome.localeCompare(b.nome))
@@ -283,44 +309,81 @@
                 });
         }
 
-        async function createInventoryItem() {
+        async function saveInventoryItem() {
+            const id = document.getElementById('editItemId').value;
             const nome = document.getElementById('newItemName').value.trim();
             const cat = document.getElementById('newItemCategory').value;
             const estoque = parseInt(document.getElementById('newItemStock').value) || 0;
             const desc = document.getElementById('newItemDesc').value.trim();
+            const img = document.getElementById('newItemImage').value.trim();
 
             if (!nome) return alert("Por favor, preencha o nome do item.");
 
-            const newItem = {
-                id_firebase: 'item_' + Date.now(),
+            const itemData = {
                 nome: nome,
                 categoria: cat,
                 estoque: estoque,
                 descricao: desc,
-                criado_por: loggedUser,
-                data_criacao: new Date().toISOString()
+                imagem: img, // Se vazio, usa o fallback na hora de renderizar
+                criado_por: loggedUser
             };
 
-            const btn = event.currentTarget;
+            const btn = document.getElementById('btnSaveItem');
             const originalHtml = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             btn.disabled = true;
 
             try {
-                await apiFetch(API_ONCOFOOD_STOCK, 'POST', newItem);
+                if (id && inventoryItems[id]) {
+                    // Atualização
+                    itemData.id_firebase = id;
+                    itemData.data_criacao = inventoryItems[id].data_criacao; // Mantém a data original
+                    await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'PUT', itemData);
+                } else {
+                    // Criação
+                    itemData.id_firebase = 'item_' + Date.now();
+                    itemData.data_criacao = new Date().toISOString();
+                    await apiFetch(API_ONCOFOOD_STOCK, 'POST', itemData);
+                }
                 
-                // Limpa os campos
-                document.getElementById('newItemName').value = '';
-                document.getElementById('newItemDesc').value = '';
-                document.getElementById('newItemStock').value = '10';
-                
+                cancelEdit();
                 await loadInventory();
             } catch (err) {
-                alert("Erro ao cadastrar item: " + err.message);
+                alert("Erro ao salvar item: " + err.message);
             } finally {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
             }
+        }
+
+        function editInventoryItem(id) {
+            const item = inventoryItems[id];
+            if(!item) return;
+
+            document.getElementById('editItemId').value = id;
+            document.getElementById('newItemName').value = item.nome;
+            document.getElementById('newItemCategory').value = item.categoria;
+            document.getElementById('newItemStock').value = item.estoque;
+            document.getElementById('newItemDesc').value = item.descricao || '';
+            document.getElementById('newItemImage').value = item.imagem || '';
+
+            document.getElementById('btnSaveItem').innerHTML = '<i class="fas fa-sync"></i> Atualizar Item';
+            document.getElementById('btnCancelEdit').style.display = 'inline-flex';
+
+            // Rola a tela para o topo suavemente
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            document.getElementById('editItemId').value = '';
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemCategory').value = 'Refeições';
+            document.getElementById('newItemStock').value = '10';
+            document.getElementById('newItemDesc').value = '';
+            document.getElementById('newItemImage').value = '';
+
+            document.getElementById('btnSaveItem').innerHTML = '<i class="fas fa-plus"></i> Cadastrar';
+            document.getElementById('btnCancelEdit').style.display = 'none';
         }
 
         async function updateStock(id, amount) {
@@ -328,11 +391,10 @@
             if (!item) return;
 
             let newStock = item.estoque + amount;
-            if (newStock < 0) newStock = 0; // Não permite estoque negativo
+            if (newStock < 0) newStock = 0; 
 
             item.estoque = newStock;
             
-            // Atualiza UI Imediatamente (Optimistic Update)
             const el = document.getElementById(`stock-val-${id}`);
             if(el) {
                 el.innerText = newStock;
@@ -341,7 +403,7 @@
 
             try {
                 await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'PUT', item);
-                populateOrderSelect(); // Atualiza os esgotados no select
+                populateOrderSelect(); 
             } catch(e) {
                 console.error("Erro ao salvar estoque", e);
             }
@@ -365,7 +427,6 @@
                 return;
             }
 
-            // Agrupa por Categoria
             const grouped = {};
             Object.values(inventoryItems).forEach(i => {
                 if (!grouped[i.categoria]) grouped[i.categoria] = [];
@@ -378,24 +439,30 @@
                 'Refeições': 'fas fa-utensils',
                 'Lanches': 'fas fa-hamburger',
                 'Sobremesas': 'fas fa-apple-alt',
-                'Bebidas': 'fas fa-coffee',
+                'Bebidas': 'fas fa-wine-glass-alt',
                 'Insumos': 'fas fa-cubes'
             };
 
+            // Imagem Padrão caso não tenha URL
+            const fallbackImg = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=200&fit=crop";
+
             Object.keys(grouped).sort().forEach(cat => {
                 const icon = categoryIcons[cat] || 'fas fa-box';
-                html += `<div class="category-header"><i class="${icon}"></i> ${cat}</div>`;
+                html += `<div class="category-header cat-icon-${cat}"><i class="${icon}"></i> ${cat}</div>`;
                 html += `<div class="grid-container">`;
                 
                 grouped[cat].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(item => {
                     const isLow = item.estoque <= 3 ? 'low' : '';
+                    const imgSrc = item.imagem || fallbackImg;
+
                     html += `
-                        <div class="card">
-                            <h3 style="margin:0; font-size:16px; color:#111827; font-weight:800;">${item.nome}</h3>
+                        <div class="card cat-${cat}">
+                            <img src="${imgSrc}" class="stock-image" onerror="this.src='${fallbackImg}'" alt="${item.nome}">
+                            <h3 style="margin:0; font-size:18px; color:#111827; font-weight:800;">${item.nome}</h3>
                             <p style="margin:0; font-size:12px; color:#6b7280; min-height: 18px;">${item.descricao || 'Sem detalhes adic.'}</p>
                             
                             <div class="stock-controls">
-                                <span style="font-size:12px; font-weight:700; color:#4b5563;">QTD DISPONÍVEL:</span>
+                                <span style="font-size:12px; font-weight:700; color:#4b5563;">ESTOQUE:</span>
                                 <div class="qty-actions">
                                     <button class="btn-qty" onclick="updateStock('${item.id_firebase}', -1)"><i class="fas fa-minus"></i></button>
                                     <span class="stock-val ${isLow}" id="stock-val-${item.id_firebase}">${item.estoque}</span>
@@ -403,8 +470,9 @@
                                 </div>
                             </div>
                             
-                            <div style="text-align:right;">
-                                <button class="btn-danger" style="width: auto; padding: 6px 12px; display:inline-block;" onclick="deleteInventoryItem('${item.id_firebase}')">Excluir Item</button>
+                            <div class="card-stock-actions">
+                                <button class="btn-edit-item" onclick="editInventoryItem('${item.id_firebase}')"><i class="fas fa-pen"></i> Editar</button>
+                                <button class="btn-del-item" onclick="deleteInventoryItem('${item.id_firebase}')"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     `;
@@ -453,7 +521,7 @@
                 id_firebase: 'pedido_' + Date.now(),
                 paciente: pac,
                 leito: box || 'Não inf.',
-                itens: [{ id: itemId, nome: itemObj.nome, qtd: 1 }], // Suporte futuro para múltiplos itens
+                itens: [{ id: itemId, nome: itemObj.nome, qtd: 1 }], 
                 status: 'pending',
                 solicitado_por: loggedUser,
                 data_solicitacao: new Date().toISOString()
@@ -465,13 +533,9 @@
             btn.disabled = true;
 
             try {
-                // Salva o pedido
                 await apiFetch(API_ONCOFOOD_ORDERS, 'POST', newOrder);
-                
-                // Dá baixa automática de 1 unidade no estoque
                 await updateStock(itemId, -1);
                 
-                // Limpa tela
                 document.getElementById('orderPatient').value = '';
                 document.getElementById('orderBox').value = '';
                 document.getElementById('orderItem').value = '';
@@ -494,14 +558,14 @@
 
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'PUT', order);
-                await loadOrders(); // Recarrega para mover as coisas se foi 'delivered'
+                await loadOrders(); 
             } catch(e) {
                 alert("Erro ao atualizar status: " + e.message);
             }
         }
 
         async function deleteOrder(id) {
-            if (!confirm("Tem certeza que deseja excluir este pedido?\nEle desaparecerá da tela da Copa.")) return;
+            if (!confirm("Tem certeza que deseja cancelar e excluir este pedido?")) return;
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'DELETE');
                 await loadOrders();
@@ -537,7 +601,7 @@
             
             let itemsHtml = '';
             (o.itens || []).forEach(it => {
-                itemsHtml += `<div><i class="fas fa-chevron-right"></i> ${it.qtd}x ${it.nome}</div>`;
+                itemsHtml += `<div><i class="fas fa-utensils"></i> 1x ${it.nome}</div>`;
             });
 
             let actionsHtml = '';
@@ -566,7 +630,7 @@
             }
 
             return `
-                <div class="card">
+                <div class="card" style="border-top: 4px solid #00995D;">
                     <div class="card-header">
                         <div class="patient-info">
                             <h3>${o.paciente}</h3>
@@ -588,10 +652,8 @@
         }
 
         function renderOrders() {
-            // ATIVOS
             const activeContainer = document.getElementById('activeOrdersGrid');
             const activeArr = Object.values(activeOrders).sort((a,b) => {
-                // Ordena por prioridade de status e depois por data
                 const statusWeight = { 'pending': 1, 'preparing': 2, 'ready': 3 };
                 const wA = statusWeight[a.status] || 9;
                 const wB = statusWeight[b.status] || 9;
@@ -605,14 +667,12 @@
                 activeContainer.innerHTML = activeArr.map(o => generateOrderCard(o, false)).join('');
             }
 
-            // HISTÓRICO
             const historyContainer = document.getElementById('historyOrdersGrid');
             const historyArr = Object.values(historyOrders).sort((a,b) => new Date(b.data_atualizacao) - new Date(a.data_atualizacao));
 
             if (historyArr.length === 0) {
                 historyContainer.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i> Nenhum histórico de pedidos finalizados.</div>';
             } else {
-                // Mostra apenas os últimos 50 no histórico para não pesar a tela
                 historyContainer.innerHTML = historyArr.slice(0, 50).map(o => generateOrderCard(o, true)).join('');
             }
         }
