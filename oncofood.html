@@ -123,7 +123,7 @@
         /* Categorias do Estoque */
         .category-header { font-size: 18px; font-weight: 800; color: #1f2937; margin: 30px 0 15px 0; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;}
         
-        /* Modais */
+        /* Modais Globais */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s;}
         .modal-overlay.active { opacity: 1; visibility: visible; }
         
@@ -137,7 +137,13 @@
         
         .modal-body { padding: 20px 25px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
         
-        /* Lista de Categorias no Modal */
+        /* Pop-up Customizado do Sistema (EcoDialog) */
+        #ecoDialogModal .modal-content { max-width: 400px; text-align: center; padding: 30px 20px; }
+        #ecoDialogIcon { font-size: 48px; margin-bottom: 15px; }
+        #ecoDialogTitle { font-size: 20px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+        #ecoDialogText { font-size: 14px; color: #4b5563; margin-bottom: 20px; line-height: 1.5; }
+        #ecoDialogInput { margin-bottom: 20px; text-align: center; font-size: 18px; font-weight: bold; width: 100%; }
+        
         .cat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: white; transition: 0.2s;}
         .cat-list-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .cat-list-info { font-weight: 600; color: #374151; display: flex; align-items: center; gap: 10px;}
@@ -280,7 +286,90 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="ecoDialogModal" style="z-index: 10000;">
+        <div class="modal-content">
+            <div id="ecoDialogIcon"></div>
+            <h3 id="ecoDialogTitle">Título</h3>
+            <p id="ecoDialogText"></p>
+            
+            <input type="text" id="ecoDialogInput" class="input-field" style="display: none;">
+            
+            <div style="display: flex; gap: 10px; justify-content: center; width: 100%;">
+                <button id="ecoDialogCancel" class="btn-action" style="display: none; flex: 1; justify-content: center;">Cancelar</button>
+                <button id="ecoDialogConfirm" class="btn-add" style="flex: 1; justify-content: center;">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ==========================================
+        // MÓDULO DE POP-UPS MODERNOS (EcoDialog)
+        // ==========================================
+        const EcoDialog = {
+            open: function(options) {
+                return new Promise((resolve) => {
+                    const overlay = document.getElementById('ecoDialogModal');
+                    const titleEl = document.getElementById('ecoDialogTitle');
+                    const textEl = document.getElementById('ecoDialogText');
+                    const iconEl = document.getElementById('ecoDialogIcon');
+                    const inputEl = document.getElementById('ecoDialogInput');
+                    const btnCancel = document.getElementById('ecoDialogCancel');
+                    const btnConfirm = document.getElementById('ecoDialogConfirm');
+
+                    titleEl.innerText = options.title || 'Aviso';
+                    textEl.innerHTML = options.text || '';
+                    inputEl.value = options.defaultValue || '';
+                    inputEl.placeholder = options.placeholder || '';
+                    
+                    if (options.type === 'error') {
+                        iconEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i>';
+                        btnConfirm.style.backgroundColor = '#ef4444';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(239, 68, 68, 0.2)';
+                    } else if (options.type === 'warning') {
+                        iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>';
+                        btnConfirm.style.backgroundColor = '#f59e0b';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(245, 158, 11, 0.2)';
+                    } else if (options.type === 'success') {
+                        iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i>';
+                        btnConfirm.style.backgroundColor = '#00995D';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(0, 153, 93, 0.2)';
+                    } else {
+                        iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #3b82f6;"></i>';
+                        btnConfirm.style.backgroundColor = '#00995D';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(0, 153, 93, 0.2)';
+                    }
+
+                    inputEl.style.display = options.isPrompt ? 'block' : 'none';
+                    btnCancel.style.display = options.showCancel ? 'flex' : 'none';
+                    
+                    btnConfirm.innerText = options.confirmText || 'OK';
+                    btnCancel.innerText = options.cancelText || 'Cancelar';
+                    
+                    overlay.classList.add('active');
+                    if (options.isPrompt) inputEl.focus();
+
+                    btnConfirm.onclick = () => {
+                        overlay.classList.remove('active');
+                        resolve(options.isPrompt ? inputEl.value : true);
+                    };
+
+                    btnCancel.onclick = () => {
+                        overlay.classList.remove('active');
+                        resolve(options.isPrompt ? null : false);
+                    };
+                });
+            },
+            alert: function(text, title = 'Aviso', type = 'info') {
+                return this.open({ text, title, type, showCancel: false });
+            },
+            confirm: function(text, title = 'Confirmação', type = 'warning', confirmText = 'Sim') {
+                return this.open({ text, title, type, showCancel: true, confirmText });
+            },
+            prompt: function(text, title = 'Entrada de Dados', defaultValue = '', placeholder = '') {
+                return this.open({ text, title, type: 'info', showCancel: true, isPrompt: true, defaultValue, placeholder, confirmText: 'Confirmar' });
+            }
+        };
+
         // ==========================================
         // VARIÁVEIS GLOBAIS E INICIALIZAÇÃO
         // ==========================================
@@ -426,7 +515,7 @@
                 nameInput.value = '';
                 await loadCategories();
                 renderCategoryList();
-            } catch(e) { alert("Erro: " + e.message); }
+            } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
         async function editCategory(id) {
@@ -434,9 +523,9 @@
             if(!cat) return;
 
             const oldName = cat.nome;
-            const newName = prompt("Digite o novo nome para esta categoria:", oldName);
+            const newName = await EcoDialog.prompt("Digite o novo nome para esta categoria:", "Renomear Categoria", oldName);
             
-            if(!newName || newName.trim() === '' || newName === oldName) return;
+            if(newName === null || newName.trim() === '' || newName === oldName) return;
 
             cat.nome = newName.trim();
 
@@ -456,9 +545,9 @@
                 await loadInventory(); 
                 renderCategoryList();
                 
-                if(itemsUpdated > 0) alert(`Categoria atualizada e ${itemsUpdated} itens foram movidos automaticamente para o novo nome.`);
+                if(itemsUpdated > 0) await EcoDialog.alert(`Categoria atualizada e ${itemsUpdated} itens foram movidos automaticamente para o novo nome.`, "Sucesso", "success");
                 
-            } catch(e) { alert("Erro ao editar: " + e.message); }
+            } catch(e) { await EcoDialog.alert("Erro ao editar: " + e.message, "Erro", "error"); }
         }
 
         async function deleteCategory(id) {
@@ -466,17 +555,17 @@
             
             const hasItems = Object.values(inventoryItems).some(i => i.categoria === cat.nome);
             if (hasItems) {
-                alert(`Não é possível excluir. Existem itens cadastrados na categoria '${cat.nome}'.\nPor favor, exclua ou edite a categoria desses itens antes de continuar.`);
+                await EcoDialog.alert(`Não é possível excluir. Existem itens cadastrados na categoria <b>${cat.nome}</b>.<br>Mova os itens editando a categoria deles antes de excluir esta.`, "Ação Bloqueada", "error");
                 return;
             }
 
-            if(!confirm(`Tem certeza que deseja excluir a categoria '${cat.nome}'?`)) return;
+            if(!await EcoDialog.confirm(`Tem certeza que deseja excluir a categoria <b>${cat.nome}</b>?`, "Excluir Categoria", "error", "Sim, Excluir")) return;
 
             try {
                 await apiFetch(`${API_ONCOFOOD_CATEGORIES}/${id}`, 'DELETE');
                 await loadCategories();
                 renderCategoryList();
-            } catch(e) { alert("Erro ao excluir: " + e.message); }
+            } catch(e) { await EcoDialog.alert("Erro ao excluir: " + e.message, "Erro", "error"); }
         }
 
         // ==========================================
@@ -513,7 +602,7 @@
             const desc = document.getElementById('newItemDesc').value.trim();
             const img = document.getElementById('newItemImage').value.trim();
 
-            if (!nome) return alert("Por favor, preencha o nome do item.");
+            if (!nome) return await EcoDialog.alert("Por favor, preencha o nome do item.", "Atenção", "warning");
 
             const itemData = {
                 nome: nome,
@@ -543,7 +632,7 @@
                 cancelEdit();
                 await loadInventory();
             } catch (err) {
-                alert("Erro ao salvar item: " + err.message);
+                await EcoDialog.alert("Erro ao salvar item: " + err.message, "Erro", "error");
             } finally {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -582,7 +671,6 @@
             document.getElementById('btnCancelEdit').style.display = 'none';
         }
 
-        // Função do + e - tradicional
         async function updateStock(id, amount) {
             const item = inventoryItems[id];
             if (!item) return;
@@ -606,34 +694,37 @@
             }
         }
 
-        // NOVA FUNÇÃO: Adicionar grande quantidade manualmente via prompt
         async function addManualStock(id) {
             const item = inventoryItems[id];
             if (!item) return;
 
-            const val = prompt(`Entrada de Estoque: ${item.nome}\n\nQuantas unidades chegaram? (Digite um número)\n*Dica: Digite um número com o sinal de menos (-) na frente para fazer uma redução manual rápida.`);
+            const val = await EcoDialog.prompt(
+                `<div style="font-size: 13px; color:#4b5563; margin-bottom:10px;">Quantas unidades chegaram para <b>${item.nome}</b>?</div>
+                 <div style="font-size: 11px; color:#9ca3af; line-height:1.2;">*Dica: Para dar baixa manual sem ser pelo pedido, digite um número negativo. Ex: -5</div>`, 
+                "Entrada de Estoque Manual", 
+                '', 'Ex: 10 ou -5'
+            );
             
             if (val === null || val.trim() === "") return; 
             
             const amount = parseInt(val);
             if (isNaN(amount)) {
-                alert("Por favor, digite um número inteiro válido.");
+                await EcoDialog.alert("Por favor, digite um número inteiro válido.", "Valor Inválido", "error");
                 return;
             }
 
             if (amount === 0) return;
-
             await updateStock(id, amount);
         }
 
         async function deleteInventoryItem(id) {
-            if (!confirm("Tem certeza que deseja excluir este item do cardápio/estoque?")) return;
+            if (!await EcoDialog.confirm("Tem certeza que deseja excluir este item do cardápio/estoque?", "Excluir Item", "error", "Sim, Excluir")) return;
             
             try {
                 await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'DELETE');
                 await loadInventory();
             } catch (e) {
-                alert("Erro ao excluir: " + e.message);
+                await EcoDialog.alert("Erro ao excluir: " + e.message, "Erro", "error");
             }
         }
 
@@ -678,7 +769,7 @@
                                     <span class="stock-val ${isLow}" id="stock-val-${item.id_firebase}">${item.estoque}</span>
                                     <button class="btn-qty" onclick="updateStock('${item.id_firebase}', 1)"><i class="fas fa-plus"></i></button>
                                     
-                                    <button class="btn-qty btn-qty-manual" onclick="addManualStock('${item.id_firebase}')" title="Entrada Manual Rápida"><i class="fas fa-dolly"></i></button>
+                                    <button class="btn-qty btn-qty-manual" onclick="addManualStock('${item.id_firebase}')" title="Ajuste Manual Rápido"><i class="fas fa-dolly"></i></button>
                                 </div>
                             </div>
                             
@@ -720,13 +811,13 @@
             const box = document.getElementById('orderBox').value.trim();
             const itemId = document.getElementById('orderItem').value;
 
-            if (!pac || !itemId) return alert("Preencha o Paciente e selecione um Item.");
+            if (!pac || !itemId) return await EcoDialog.alert("Preencha o Paciente e selecione um Item.", "Atenção", "warning");
             
             const itemObj = inventoryItems[itemId];
-            if (!itemObj) return alert("Item inválido.");
+            if (!itemObj) return await EcoDialog.alert("Item inválido.", "Erro", "error");
 
             if (itemObj.estoque <= 0) {
-                if(!confirm(`O item ${itemObj.nome} está sem estoque no sistema. Deseja enviar o pedido assim mesmo?`)) return;
+                if(!await EcoDialog.confirm(`O item <b>${itemObj.nome}</b> está sem estoque no sistema.<br>Deseja enviar o pedido assim mesmo?`, "Estoque Esgotado", "warning", "Sim, Enviar")) return;
             }
 
             const newOrder = {
@@ -754,7 +845,7 @@
                 
                 await loadOrders();
             } catch(err) {
-                alert("Erro ao enviar pedido: " + err.message);
+                await EcoDialog.alert("Erro ao enviar pedido: " + err.message, "Erro", "error");
             } finally {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -772,17 +863,17 @@
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'PUT', order);
                 await loadOrders(); 
             } catch(e) {
-                alert("Erro ao atualizar status: " + e.message);
+                await EcoDialog.alert("Erro ao atualizar status: " + e.message, "Erro", "error");
             }
         }
 
         async function deleteOrder(id) {
-            if (!confirm("Tem certeza que deseja cancelar e excluir este pedido?")) return;
+            if (!await EcoDialog.confirm("Tem certeza que deseja cancelar e excluir este pedido permanentemente?", "Cancelar Pedido", "error", "Sim, Cancelar")) return;
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'DELETE');
                 await loadOrders();
             } catch(e) {
-                alert("Erro ao excluir: " + e.message);
+                await EcoDialog.alert("Erro ao excluir: " + e.message, "Erro", "error");
             }
         }
 
