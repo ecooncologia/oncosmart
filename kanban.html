@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban de Tarefas - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; overflow-x: hidden; }
+        
+        .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Menu de Quadros (Boards) */
+        .board-selector { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .board-tab { background: #e5e7eb; color: #4b5563; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .board-tab:hover { background: #d1d5db; }
+        .board-tab.active { background: #00995D; color: white; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); }
+        .btn-new-board { background: transparent; border: 2px dashed #cbd5e1; color: #64748b; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-new-board:hover { border-color: #00995D; color: #00995D; }
+
+        /* Cabeçalho do Quadro Atual */
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f9fafb; flex-shrink: 0;}
+        .dash-header-title h1 { margin: 0; font-size: 24px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+        .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
+        
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .btn-action { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 40px; transition: 0.2s; }
+        .btn-action:hover { background: #e5e7eb; }
+        
+        /* Botão Vermelho de Excluir Quadro */
+        .btn-danger-action { background: #fef2f2 !important; color: #ef4444 !important; border: 1px solid #fecaca !important; }
+        .btn-danger-action:hover { background: #ef4444 !important; color: white !important; }
+
+        .btn-add { background: #00995D; color: white; border: none; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); }
+        .btn-add:hover { background: #007a4a; box-shadow: 0 6px 10px rgba(0, 153, 93, 0.3); color: white; }
+        .btn-perm { background: #3b82f6; color: white; border: none; }
+        .btn-perm:hover { background: #2563eb; color: white; }
+
+        /* Fotinhas de Permissão (Avatares) com Overflow Hidden para Imagem não vazar */
+        .members-faces { display: flex; align-items: center; margin-right: 10px; }
+        .member-face { width: 34px; height: 34px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; border: 2px solid #fff; margin-left: -12px; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; padding: 0;}
+        .member-face:first-child { margin-left: 0; }
+
+        /* ========================================================
+           BOARD KANBAN (CENTRALIZADO)
+           ======================================================== */
+        .kanban-wrapper { flex: 1; overflow-x: auto; overflow-y: hidden; display: flex; justify-content: center; }
+        .kanban-board { display: inline-flex; gap: 20px; padding-bottom: 20px; align-items: flex-start; margin: 0 auto; height: 100%;}
+        
+        .kanban-column { background: #f3f4f6; border-radius: 12px; width: 320px; min-width: 320px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; transition: background 0.2s; }
+        .kanban-column.drag-over { background: #e0f2fe; border: 2px dashed #0284c7; }
+
+        .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e5e7eb; border-top: 4px solid #9ca3af;}
+        .column-title { font-weight: 800; font-size: 14px; color: #1f2937; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
+        
+        .column-actions { display: flex; align-items: center; gap: 8px; }
+        .column-count { background: #e5e7eb; color: #4b5563; font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+        .btn-del-col { background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; padding: 0 4px; font-size: 14px;}
+        .btn-del-col:hover { color: #ef4444; }
+
+        .column-body { padding: 15px; overflow-y: auto; flex: 1; min-height: 150px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .kanban-card { background: white; padding: 16px; border-radius: 10px; cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; transition: 0.2s; position: relative; display: flex; flex-direction: column; gap: 10px;}
+        .kanban-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-color: #d1d5db; transform: translateY(-2px); }
+        .kanban-card:active { cursor: grabbing; transform: scale(0.98); opacity: 0.8; box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+        
+        .card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-alta { background: #fee2e2; color: #b91c1c; }
+        .badge-media { background: #fef3c7; color: #d97706; }
+        .badge-baixa { background: #e0f2fe; color: #0369a1; }
+        
+        .card-title { font-size: 14px; font-weight: 700; color: #111827; margin: 0; line-height: 1.4; word-wrap: break-word;}
+        
+        /* Checklist direto no card */
+        .card-checklist-preview { margin-top: 5px; border-top: 1px dashed #e5e7eb; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;}
+        .card-check-item { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; }
+        .card-check-item input[type="checkbox"] { margin: 0; cursor: pointer; accent-color: #00995D; width: 14px; height: 14px; flex-shrink: 0;}
+        .card-check-item span { line-height: 1.2; word-wrap: break-word; }
+
+        .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e5e7eb; padding-top: 10px; margin-top: 5px; }
+        .card-date { font-size: 11px; color: #6b7280; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .card-date.atrasado { color: #dc2626; background: #fee2e2; padding: 2px 6px; border-radius: 4px;}
+        
+        .card-user { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #00995D; color: white; font-size: 10px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5e7eb; overflow: hidden; padding: 0;}
+
+        .btn-edit-card { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; opacity: 0; padding: 4px;}
+        .kanban-card:hover .btn-edit-card { opacity: 1; }
+        .btn-edit-card:hover { color: #00995D; }
+
+        /* ========================================================
+           MODAIS (TAREFAS, QUADROS E PERMISSÕES)
+           ======================================================== */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s;}
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        
+        .modal-content { background: white; padding: 0; border-radius: 16px; width: 100%; max-width: 600px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); transform: scale(0.95); transition: 0.3s; overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;}
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; flex-shrink: 0;}
+        .modal-header h3 { margin: 0; font-size: 18px; color: #111827; display: flex; align-items: center; gap: 10px; }
+        .btn-close { background: none; border: none; font-size: 20px; color: #9ca3af; cursor: pointer; transition: 0.2s; }
+        .btn-close:hover { color: #ef4444; }
+        
+        .modal-body { padding: 25px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { font-size: 12px; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control { padding: 12px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; color: #1f2937; transition: 0.2s; background: #fff; width: 100%; box-sizing: border-box; }
+        .form-control:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); outline: none; }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+        
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
+
+        .modal-footer { padding: 20px 25px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
+        .btn-danger { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: none; }
+        .btn-danger:hover { background: #ef4444; color: white; }
+        .btn-save { background: #00995D; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; margin-left: auto;}
+        .btn-save:hover { background: #007a4a; }
+
+        /* Checklist */
+        .checklist-container { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; background: #f9fafb;}
+        .checklist-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; font-weight: bold; color: #4b5563;}
+        .progress-bar { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #10b981; width: 0%; transition: 0.3s; }
+        
+        .check-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #e5e7eb;}
+        .check-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #00995D;}
+        .check-item input[type="text"] { flex: 1; border: none; outline: none; font-size: 13px; color: #374151;}
+        .check-item.done input[type="text"] { text-decoration: line-through; color: #9ca3af; }
+        .btn-del-check { background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; }
+        
+        .btn-add-check { background: #e2e8f0; color: #475569; border: none; padding: 8px 15px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px;}
+        .btn-add-check:hover { background: #cbd5e1; }
+
+        /* Lista de Permissões */
+        .perm-user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+        .perm-user-name { font-weight: 600; color: #1f2937; font-size: 14px; }
+        .perm-select { padding: 6px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 12px; outline: none;}
+
+        .kanban-wrapper::-webkit-scrollbar { height: 10px; }
+        .kanban-wrapper::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .kanban-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .column-body::-webkit-scrollbar { width: 6px; }
+        .column-body::-webkit-scrollbar-track { background: transparent; }
+        .column-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header"></div>
+        <div id="global-nav"></div>
+
+        <div class="board-selector" id="boardTabs">
+            <button class="btn-new-board" onclick="openBoardModal()"><i class="fas fa-plus"></i> Criar Novo Quadro</button>
+        </div>
+
+        <div class="dash-header">
+            <div class="dash-header-title">
+                <h1><i class="fas fa-columns"></i> <span id="currentBoardTitle">Selecione ou Crie um Quadro</span></h1>
+                <p>Gerencie o fluxo de trabalho da sua equipe</p>
+            </div>
+            
+            <div class="header-actions" id="boardActions" style="display: none;">
+                <div id="boardMembersFaces" class="members-faces"></div>
+
+                <button class="btn-action btn-perm" onclick="openPermissionsModal()">
+                    <i class="fas fa-users"></i> Permissões
+                </button>
+                <button class="btn-action" onclick="openColumnModal()">
+                    <i class="fas fa-layer-group"></i> Nova Coluna
+                </button>
+                <button class="btn-action btn-danger-action" id="btnDeleteBoard" onclick="deleteBoard()" style="display:none;">
+                    <i class="fas fa-trash"></i> Excluir Quadro
+                </button>
+                <button class="btn-action btn-add" onclick="openTaskModal()">
+                    <i class="fas fa-plus"></i> Nova Tarefa
+                </button>
+            </div>
+        </div>
+
+        <div class="kanban-wrapper">
+            <div class="kanban-board" id="kanbanBoard">
+                <div style="margin: auto; color: #9ca3af; text-align: center; padding: 50px;">
+                    <i class="fas fa-chalkboard fa-3x" style="margin-bottom: 15px;"></i><br>
+                    Nenhum quadro selecionado.<br>Crie um novo ou selecione acima.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="taskModalTitle"><i class="fas fa-tasks"></i> Nova Tarefa</h3>
+                <button class="btn-close" type="button" onclick="closeModal('taskModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="taskForm" onsubmit="saveTask(event)">
+                <input type="hidden" id="taskId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Título da Tarefa</label>
+                        <input type="text" id="taskTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <textarea id="taskDesc" class="form-control"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Coluna (Status)</label>
+                            <select id="taskColumn" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Prioridade</label>
+                            <select id="taskPriority" class="form-control">
+                                <option value="baixa">Baixa</option>
+                                <option value="media" selected>Média</option>
+                                <option value="alta">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Responsável</label>
+                            <select id="taskUser" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Data Limite (Prazo)</label>
+                            <input type="date" id="taskDeadline" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-check-square"></i> Checklist</label>
+                        <div class="checklist-container">
+                            <div class="checklist-progress">
+                                <span id="checkProgressText">0%</span>
+                                <div class="progress-bar"><div class="progress-fill" id="checkProgressBar"></div></div>
+                            </div>
+                            <div id="checklistItems"></div>
+                            <button type="button" class="btn-add-check" onclick="addChecklistItem()"><i class="fas fa-plus"></i> Adicionar Item</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btnDeleteTask" class="btn-danger" onclick="deleteTask()"><i class="fas fa-trash"></i> Excluir</button>
+                    <button type="submit" class="btn-save" id="btnSaveTask"><i class="fas fa-save"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="boardModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-chalkboard"></i> Criar Novo Quadro</h3>
+                <button class="btn-close" type="button" onclick="closeModal('boardModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="saveBoard(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nome do Quadro</label>
+                        <input type="text" id="boardTitle" class="form-control" placeholder="Ex: Faturamento, TI..." required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> Criar Quadro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="columnModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-layer-group"></i> Adicionar Coluna</h3>
+                <button class="btn-close" type="button" onclick="closeModal('columnModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="saveColumn(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nome da Coluna</label>
+                        <input type="text" id="columnTitle" class="form-control" placeholder="Ex: Pendentes, Aprovados..." required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-save"><i class="fas fa-plus"></i> Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="permModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-users"></i> Permissões do Quadro</h3>
+                <button class="btn-close" type="button" onclick="closeModal('permModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13px; color: #6b7280; margin-top:0;">Dono do Quadro: <strong id="permOwner" style="color:#111827;"></strong><br>Defina quem pode acessar ou editar este quadro.</p>
+                <div id="permUsersList" style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-save" onclick="savePermissions()"><i class="fas fa-save"></i> Salvar Permissões</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // VARIÁVEIS GLOBAIS E INICIALIZAÇÃO
+        // ==========================================
+        const API_BOARDS = '/quadros_kanban';
+        const API_TASKS = '/tarefas_kanban';
+        
+        let allUsers = [];
+        let userPhotos = {}; // Mapeamento de Fotos dos Usuários (Para Avatares)
+        let loggedUser = "Sistema";
+        
+        let boards = {};
+        let tasks = {};
+        let currentBoardId = null;
+        
+        let draggedTaskId = null;
+
+        function normalizeData(apiData) {
+            if (!apiData) return {}; 
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { 
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            }); 
+            return normalized;
+        }
+
+        function getLoggedUserName() {
+            try {
+                let uStr = localStorage.getItem('ecoUser');
+                if(uStr) return JSON.parse(uStr).nome || "Sistema";
+            } catch(e) {}
+            return "Sistema";
+        }
+
+        // CONEXÃO COM A API
+        async function apiFetch(endpoint, method = 'GET', bodyObj = null) {
+            let options = { method, headers: API_HEADERS };
+            if (bodyObj) options.body = JSON.stringify(bodyObj);
+            
+            const url = method === 'GET' ? `${API_BASE_URL}${endpoint}?t=${Date.now()}` : `${API_BASE_URL}${endpoint}`;
+            const res = await fetch(url, options);
+            
+            if (!res.ok) throw new Error("Status " + res.status);
+            if (method === 'GET') return normalizeData(await res.json());
+            return await res.json();
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('kanban', 'Kanban de Tarefas');
+            loggedUser = getLoggedUserName();
+            
+            await loadUsers();
+            await loadBaseData();
+        });
+
+        async function loadUsers() {
+            try {
+                const data = await apiFetch('/usuarios');
+                allUsers = Object.values(data).map(u => u.nome).filter(n => n);
+                
+                // Salva a foto de todos os usuários cadastrados
+                Object.values(data).forEach(u => {
+                    if (u.nome) {
+                        userPhotos[u.nome] = u.photo || u.foto || null;
+                    }
+                });
+            } catch(e) {
+                allUsers = ["Maikol", "Felipe", "Recepção", "Faturamento"]; 
+            }
+            
+            const sel = document.getElementById('taskUser');
+            sel.innerHTML = '<option value="">Selecione...</option>';
+            allUsers.forEach(n => sel.add(new Option(n, n)));
+        }
+
+        async function loadBaseData() {
+            try { boards = await apiFetch(API_BOARDS); } catch(e) { boards = {}; }
+            try { tasks = await apiFetch(API_TASKS); } catch(e) { tasks = {}; }
+            
+            if (Object.keys(boards).length === 0) {
+                const defaultBoard = {
+                    id_firebase: 'board_' + Date.now(), nome: 'Quadro Principal', criado_por: loggedUser,
+                    membros: {},
+                    colunas: [ 
+                        {id: 'col_1', nome: 'A Fazer', icone: 'fas fa-list-ul', cor: '#9ca3af'}, 
+                        {id: 'col_2', nome: 'Em Andamento', icone: 'fas fa-spinner fa-spin', cor: '#3b82f6'}, 
+                        {id: 'col_3', nome: 'Revisão / Bloqueada', icone: 'fas fa-exclamation-circle', cor: '#f59e0b'},
+                        {id: 'col_4', nome: 'Concluído', icone: 'fas fa-check-circle', cor: '#10b981'}
+                    ]
+                };
+                try { await apiFetch(API_BOARDS, 'POST', defaultBoard); } catch(e) {}
+                boards = { [defaultBoard.id_firebase]: defaultBoard };
+            }
+            
+            renderBoardsTabs();
+            
+            const visibleBoards = getVisibleBoards();
+            if (visibleBoards.length > 0) selectBoard(visibleBoards[0].id_firebase);
+            else document.getElementById('kanbanBoard').innerHTML = '<div style="margin:auto; padding:50px; text-align:center;">Você não tem acesso a nenhum quadro.</div>';
+        }
+
+        // ==========================================
+        // LÓGICA DE QUADROS E PERMISSÕES
+        // ==========================================
+        function getVisibleBoards() {
+            return Object.values(boards).filter(b => {
+                if (b.criado_por === loggedUser) return true;
+                if (b.membros && b.membros[loggedUser] && b.membros[loggedUser] !== 'none') return true;
+                return false; 
+            });
+        }
+
+        function canEditCurrentBoard() {
+            if (!currentBoardId || !boards[currentBoardId]) return false;
+            const b = boards[currentBoardId];
+            if (b.criado_por === loggedUser) return true;
+            if (b.membros && b.membros[loggedUser] === 'edit') return true;
+            return false;
+        }
+
+        // FUNÇÃO NOVA: Gera as Fotos em vez de Iniciais
+        function getAvatarHtml(name) {
+            if (!name) return 'U';
+            
+            let photoUrl = userPhotos[name];
+            
+            // Prioridade para o cache local se for o próprio usuário logado
+            if (name === loggedUser) {
+                const localPhoto = localStorage.getItem('ecoUserPhoto');
+                if (localPhoto && localPhoto.length > 50) photoUrl = localPhoto;
+            }
+            
+            if (photoUrl) {
+                return `<img src="${photoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            }
+            
+            // Fallback para Iniciais se não tiver foto
+            const parts = name.trim().split(' ');
+            if(parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].substring(0,2).toUpperCase();
+        }
+
+        function renderBoardsTabs() {
+            const container = document.getElementById('boardTabs');
+            const btnNew = '<button class="btn-new-board" onclick="openBoardModal()"><i class="fas fa-plus"></i> Novo Quadro</button>';
+            
+            let html = '';
+            getVisibleBoards().forEach(b => {
+                const active = b.id_firebase === currentBoardId ? 'active' : '';
+                html += `<button class="board-tab ${active}" onclick="selectBoard('${b.id_firebase}')">${b.nome}</button>`;
+            });
+            
+            container.innerHTML = html + btnNew;
+        }
+
+        function selectBoard(boardId) {
+            currentBoardId = boardId;
+            renderBoardsTabs();
+            
+            const b = boards[boardId];
+            document.getElementById('currentBoardTitle').innerText = b.nome;
+            document.getElementById('boardActions').style.display = 'flex';
+            
+            const isOwner = b.criado_por === loggedUser;
+            const canEdit = canEditCurrentBoard();
+            
+            // Mostra botões dependendo da permissão (Apenas dono exclui quadro e edita permissões)
+            document.getElementById('btnDeleteBoard').style.display = isOwner ? 'flex' : 'none';
+            document.querySelector('.btn-perm').style.display = isOwner ? 'flex' : 'none';
+            
+            document.querySelectorAll('.btn-add, .btn-action:not(.btn-perm):not(.btn-danger-action)').forEach(el => {
+                el.style.display = canEdit ? 'flex' : 'none';
+            });
+            
+            // Popula os Avatares Reais
+            const facesContainer = document.getElementById('boardMembersFaces');
+            let facesHtml = '';
+            
+            facesHtml += `<div class="member-face" title="Dono: ${b.criado_por}" style="background: #00995D; z-index:10;">${getAvatarHtml(b.criado_por)}</div>`;
+            
+            let zIndex = 9;
+            if (b.membros) {
+                Object.keys(b.membros).forEach(m => {
+                    if(b.membros[m] !== 'none') {
+                        const title = b.membros[m] === 'edit' ? 'Editor' : 'Visualizador';
+                        facesHtml += `<div class="member-face" title="${title}: ${m}" style="z-index:${zIndex--};">${getAvatarHtml(m)}</div>`;
+                    }
+                });
+            }
+            facesContainer.innerHTML = facesHtml;
+
+            renderKanban();
+        }
+
+        // ==========================================
+        // EXCLUIR QUADRO (APENAS DONO)
+        // ==========================================
+        async function deleteBoard() {
+            if(!confirm("ATENÇÃO: Tem certeza que deseja excluir este quadro INTEIRO?\nTodas as configurações e colunas serão perdidas para sempre.")) return;
+            try {
+                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'DELETE');
+                delete boards[currentBoardId];
+                currentBoardId = null;
+                await loadBaseData(); 
+            } catch(e) { alert("Erro ao excluir: " + e.message); }
+        }
+
+        async function saveBoard(e) {
+            e.preventDefault();
+            const title = document.getElementById('boardTitle').value;
+            const newBoard = {
+                id_firebase: 'board_' + Date.now(),
+                nome: title,
+                criado_por: loggedUser,
+                membros: {},
+                colunas: [ 
+                    {id: 'col_1', nome: 'A Fazer', icone: 'fas fa-list-ul', cor: '#9ca3af'}, 
+                    {id: 'col_2', nome: 'Em Andamento', icone: 'fas fa-spinner fa-spin', cor: '#3b82f6'}, 
+                    {id: 'col_3', nome: 'Revisão / Bloqueada', icone: 'fas fa-exclamation-circle', cor: '#f59e0b'},
+                    {id: 'col_4', nome: 'Concluído', icone: 'fas fa-check-circle', cor: '#10b981'}
+                ]
+            };
+            
+            try { await apiFetch(API_BOARDS, 'POST', newBoard); } catch(e) { alert("Erro ao criar: " + e.message); return; }
+            closeModal('boardModal');
+            await loadBaseData();
+            selectBoard(newBoard.id_firebase);
+        }
+
+        // ==========================================
+        // RENDER DO KANBAN DINÂMICO E CARTÕES
+        // ==========================================
+        function renderKanban() {
+            const boardEl = document.getElementById('kanbanBoard');
+            boardEl.innerHTML = '';
+            
+            const b = boards[currentBoardId];
+            if (!b || !b.colunas) return;
+
+            const boardTasks = Object.entries(tasks).filter(([,t]) => t.quadro_id === currentBoardId);
+            const canEdit = canEditCurrentBoard();
+
+            b.colunas.forEach(col => {
+                const colTasks = boardTasks.filter(([,t]) => t.coluna_id === col.id)
+                                           .sort((a,b) => new Date(b[1].data_criacao) - new Date(a[1].data_criacao));
+                
+                const colDiv = document.createElement('div');
+                colDiv.className = 'kanban-column';
+                colDiv.setAttribute('data-colid', col.id);
+                
+                if (canEdit) {
+                    colDiv.ondragover = allowDrop;
+                    colDiv.ondrop = drop;
+                    colDiv.ondragenter = dragEnter;
+                    colDiv.ondragleave = dragLeave;
+                }
+
+                let cardsHtml = '';
+                colTasks.forEach(([taskId, t]) => {
+                    cardsHtml += generateCardHtml(taskId, t);
+                });
+
+                // INTELIGÊNCIA DE CORES: Para os quadros antigos do banco que não tem cor cadastrada
+                let colColor = col.cor;
+                let colIcon = col.icone;
+
+                if (!colColor || !colIcon) {
+                    const n = col.nome.toLowerCase();
+                    if (n.includes('fazer') || n.includes('pendente')) { colColor = '#9ca3af'; colIcon = 'fas fa-list-ul'; }
+                    else if (n.includes('andamento') || n.includes('fazendo')) { colColor = '#3b82f6'; colIcon = 'fas fa-spinner fa-spin'; }
+                    else if (n.includes('revis') || n.includes('bloquead')) { colColor = '#f59e0b'; colIcon = 'fas fa-exclamation-circle'; }
+                    else if (n.includes('conclu') || n.includes('pronto')) { colColor = '#10b981'; colIcon = 'fas fa-check-circle'; }
+                    else {
+                        const palette = [
+                            { icone: 'fas fa-star', cor: '#8b5cf6' },
+                            { icone: 'fas fa-flag', cor: '#ec4899' },
+                            { icone: 'fas fa-bookmark', cor: '#14b8a6' },
+                            { icone: 'fas fa-tag', cor: '#f43f5e' }
+                        ];
+                        const hash = col.nome.length % palette.length;
+                        colColor = palette[hash].cor;
+                        colIcon = palette[hash].icone;
+                    }
+                }
+
+                // Botão de Excluir Coluna
+                const deleteColBtn = canEdit ? `<button class="btn-del-col" onclick="deleteColumn('${col.id}')" title="Excluir Coluna"><i class="fas fa-trash"></i></button>` : '';
+
+                colDiv.innerHTML = `
+                    <div class="column-header" style="border-top-color: ${colColor}; border-top-width: 4px; border-top-style: solid;">
+                        <div class="column-title"><i class="${colIcon}" style="color: ${colColor};"></i> ${col.nome}</div>
+                        <div class="column-actions">
+                            <span class="column-count">${colTasks.length}</span>
+                            ${deleteColBtn}
+                        </div>
+                    </div>
+                    <div class="column-body" id="colbody-${col.id}">
+                        ${cardsHtml}
+                    </div>
+                `;
+                boardEl.appendChild(colDiv);
+            });
+        }
+
+        // ==========================================
+        // EXCLUIR COLUNA
+        // ==========================================
+        async function deleteColumn(colId) {
+            if(!confirm("Tem certeza que deseja excluir esta coluna?\nAs tarefas que estão nela perderão seu status atual no quadro.")) return;
+            const b = boards[currentBoardId];
+            b.colunas = b.colunas.filter(c => c.id !== colId);
+            try { 
+                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b); 
+                renderKanban();
+            } catch(err) { alert(err); }
+        }
+
+        function generateCardHtml(id, t) {
+            let checklistHtml = '';
+            
+            if (t.checklist && t.checklist.length > 0) {
+                checklistHtml = '<div class="card-checklist-preview">';
+                t.checklist.forEach((item, idx) => {
+                    const isChecked = item.concluido ? 'checked' : '';
+                    const textStyle = item.concluido ? 'text-decoration: line-through; color: #9ca3af;' : 'color: #4b5563; font-weight: 600;';
+                    
+                    checklistHtml += `
+                        <label class="card-check-item">
+                            <input type="checkbox" ${isChecked} onmousedown="event.stopPropagation()" onclick="toggleCheckOnCard('${id}', ${idx}, event)">
+                            <span style="${textStyle}">${item.texto}</span>
+                        </label>
+                    `;
+                });
+                checklistHtml += '</div>';
+            }
+
+            let dateHtml = '';
+            if(t.prazo) {
+                const prazoD = new Date(t.prazo + 'T12:00:00');
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const isLate = prazoD < hoje;
+                const dataFmt = prazoD.toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
+                dateHtml = `<span class="card-date ${isLate ? 'atrasado' : ''}"><i class="far fa-clock"></i> ${dataFmt}</span>`;
+            }
+
+            const canEdit = canEditCurrentBoard();
+            const dragAttr = canEdit ? 'draggable="true" ondragstart="dragStart(event)"' : '';
+            const editBtn = canEdit ? `<button class="btn-edit-card" onclick="openTaskModal('${id}')"><i class="fas fa-pen"></i></button>` : '';
+
+            return `
+                <div class="kanban-card" id="${id}" ${dragAttr}>
+                    <div class="card-badges">
+                        <span class="badge badge-${t.prioridade || 'media'}">${t.prioridade || 'Média'}</span>
+                    </div>
+                    <h4 class="card-title">${t.titulo}</h4>
+                    ${editBtn}
+                    
+                    ${checklistHtml}
+                    
+                    <div class="card-footer">
+                        ${dateHtml}
+                        <div class="card-user" title="${t.responsavel}">${getAvatarHtml(t.responsavel)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // CHECKLIST DIRETAMENTE DO CARTÃO
+        // ==========================================
+        async function toggleCheckOnCard(taskId, checkIdx, event) {
+            event.stopPropagation(); 
+            const task = tasks[taskId];
+            if(!task) return;
+            
+            task.checklist[checkIdx].concluido = event.target.checked;
+            renderKanban(); 
+            
+            try { await apiFetch(`${API_TASKS}/${taskId}`, 'PUT', task); } 
+            catch(e) { console.error(e); }
+        }
+
+        // ==========================================
+        // DRAG AND DROP
+        // ==========================================
+        function dragStart(e) {
+            draggedTaskId = e.currentTarget.id;
+            setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
+        }
+
+        function allowDrop(e) { e.preventDefault(); }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            const col = e.target.closest('.kanban-column');
+            if(col) col.classList.add('drag-over');
+        }
+
+        function dragLeave(e) {
+            const col = e.target.closest('.kanban-column');
+            if(col) col.classList.remove('drag-over');
+        }
+
+        async function drop(e) {
+            e.preventDefault();
+            document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+            
+            const col = e.target.closest('.kanban-column');
+            if(!col || !draggedTaskId) return;
+
+            const newColId = col.getAttribute('data-colid');
+            const task = tasks[draggedTaskId];
+
+            const cardEl = document.getElementById(draggedTaskId);
+            if(cardEl) cardEl.style.opacity = '1';
+
+            if(task && task.coluna_id !== newColId) {
+                task.coluna_id = newColId;
+                renderKanban(); 
+                try { await apiFetch(`${API_TASKS}/${draggedTaskId}`, 'PUT', task); } catch(err) { console.error(err); }
+            }
+            draggedTaskId = null;
+        }
+
+        // ==========================================
+        // MODAIS E CRUDS
+        // ==========================================
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function openBoardModal() { openModal('boardModal'); }
+        function openColumnModal() { openModal('columnModal'); }
+
+        async function saveColumn(e) {
+            e.preventDefault();
+            const colName = document.getElementById('columnTitle').value;
+            const b = boards[currentBoardId];
+            
+            const stylePalette = [
+                { icone: 'fas fa-star', cor: '#8b5cf6' },
+                { icone: 'fas fa-flag', cor: '#ec4899' },
+                { icone: 'fas fa-bookmark', cor: '#14b8a6' },
+                { icone: 'fas fa-tag', cor: '#f43f5e' }
+            ];
+            const safeStyle = stylePalette[b.colunas.length % stylePalette.length];
+
+            b.colunas.push({ id: 'col_' + Date.now(), nome: colName, icone: safeStyle.icone, cor: safeStyle.cor });
+            
+            try { await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b); } catch(err) { alert(err); return; }
+            closeModal('columnModal');
+            document.getElementById('columnTitle').value = '';
+            renderKanban();
+        }
+
+        // --- CHECKLIST DENTRO DO MODAL ---
+        let currentChecklist = [];
+
+        function renderChecklistUI() {
+            const container = document.getElementById('checklistItems');
+            let html = '';
+            let done = 0;
+            currentChecklist.forEach((item, idx) => {
+                if(item.concluido) done++;
+                html += `
+                    <div class="check-item ${item.concluido ? 'done' : ''}">
+                        <input type="checkbox" ${item.concluido ? 'checked' : ''} onchange="toggleCheck(${idx})">
+                        <input type="text" value="${item.texto}" placeholder="Digite a tarefa..." oninput="updateCheckText(${idx}, this.value)">
+                        <button type="button" class="btn-del-check" onclick="delCheck(${idx})"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            
+            const pct = currentChecklist.length === 0 ? 0 : Math.round((done / currentChecklist.length) * 100);
+            document.getElementById('checkProgressText').innerText = `${pct}%`;
+            document.getElementById('checkProgressBar').style.width = `${pct}%`;
+        }
+
+        function addChecklistItem() { currentChecklist.push({texto: '', concluido: false}); renderChecklistUI(); }
+        function toggleCheck(idx) { currentChecklist[idx].concluido = !currentChecklist[idx].concluido; renderChecklistUI(); }
+        function updateCheckText(idx, val) { currentChecklist[idx].texto = val; }
+        function delCheck(idx) { currentChecklist.splice(idx, 1); renderChecklistUI(); }
+
+        // --- TAREFAS ---
+        function openTaskModal(taskId = null) {
+            document.getElementById('taskForm').reset();
+            const colSelect = document.getElementById('taskColumn');
+            colSelect.innerHTML = '';
+            boards[currentBoardId].colunas.forEach(c => colSelect.add(new Option(c.nome, c.id)));
+
+            if (taskId && tasks[taskId]) {
+                const t = tasks[taskId];
+                document.getElementById('taskId').value = taskId;
+                document.getElementById('taskTitle').value = t.titulo || '';
+                document.getElementById('taskDesc').value = t.descricao || '';
+                document.getElementById('taskColumn').value = t.coluna_id || '';
+                document.getElementById('taskPriority').value = t.prioridade || 'media';
+                document.getElementById('taskUser').value = t.responsavel || '';
+                document.getElementById('taskDeadline').value = t.prazo || '';
+                currentChecklist = t.checklist ? [...t.checklist] : [];
+                
+                document.getElementById('taskModalTitle').innerHTML = '<i class="fas fa-pen"></i> Editar Tarefa';
+                document.getElementById('btnDeleteTask').style.display = 'block';
+            } else {
+                document.getElementById('taskId').value = '';
+                currentChecklist = [];
+                document.getElementById('taskModalTitle').innerHTML = '<i class="fas fa-tasks"></i> Nova Tarefa';
+                document.getElementById('btnDeleteTask').style.display = 'none';
+            }
+            
+            renderChecklistUI();
+            openModal('taskModal');
+        }
+
+        async function saveTask(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskId').value;
+            const cleanChecklist = currentChecklist.filter(c => c.texto.trim() !== '');
+
+            const taskData = {
+                quadro_id: currentBoardId,
+                coluna_id: document.getElementById('taskColumn').value,
+                titulo: document.getElementById('taskTitle').value,
+                descricao: document.getElementById('taskDesc').value,
+                prioridade: document.getElementById('taskPriority').value,
+                responsavel: document.getElementById('taskUser').value,
+                prazo: document.getElementById('taskDeadline').value,
+                checklist: cleanChecklist,
+                criado_por: loggedUser
+            };
+
+            const btn = document.getElementById('btnSaveTask');
+            btn.disabled = true;
+
+            try {
+                if (id && tasks[id]) {
+                    taskData.data_criacao = tasks[id].data_criacao; 
+                    await apiFetch(`${API_TASKS}/${id}`, 'PUT', taskData);
+                } else {
+                    taskData.data_criacao = new Date().toISOString();
+                    taskData.id_firebase = 'task_' + Date.now();
+                    await apiFetch(API_TASKS, 'POST', taskData);
+                }
+                
+                closeModal('taskModal');
+                tasks = await apiFetch(API_TASKS); 
+                renderKanban();
+            } catch(err) { alert("Erro ao salvar tarefa: " + err.message); } 
+            finally { btn.disabled = false; }
+        }
+
+        async function deleteTask() {
+            const id = document.getElementById('taskId').value;
+            if(!id || !confirm("Excluir esta tarefa permanentemente?")) return;
+            
+            try {
+                await apiFetch(`${API_TASKS}/${id}`, 'DELETE');
+                closeModal('taskModal');
+                tasks = await apiFetch(API_TASKS);
+                renderKanban();
+            } catch(err) { alert("Erro: " + err.message); }
+        }
+
+        // --- PERMISSÕES ---
+        function openPermissionsModal() {
+            const b = boards[currentBoardId];
+            document.getElementById('permOwner').innerText = b.criado_por;
+            
+            const listEl = document.getElementById('permUsersList');
+            let html = '';
+            
+            allUsers.forEach(u => {
+                if(u === b.criado_por) return; 
+                
+                const currentRole = (b.membros && b.membros[u]) ? b.membros[u] : 'none';
+                html += `
+                    <div class="perm-user-row">
+                        <span class="perm-user-name" style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:24px; height:24px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; overflow:hidden;">${getAvatarHtml(u)}</div>
+                            ${u}
+                        </span>
+                        <select class="perm-select" data-user="${u}">
+                            <option value="none" ${currentRole === 'none' ? 'selected' : ''}>Sem Acesso</option>
+                            <option value="view" ${currentRole === 'view' ? 'selected' : ''}>Pode Visualizar</option>
+                            <option value="edit" ${currentRole === 'edit' ? 'selected' : ''}>Pode Editar</option>
+                        </select>
+                    </div>
+                `;
+            });
+            
+            listEl.innerHTML = html || '<div style="padding:15px; text-align:center; color:#6b7280;">Nenhum outro usuário cadastrado no sistema.</div>';
+            openModal('permModal');
+        }
+
+        async function savePermissions() {
+            const b = boards[currentBoardId];
+            b.membros = {}; 
+            
+            document.querySelectorAll('.perm-select').forEach(sel => {
+                if (sel.value !== 'none') {
+                    b.membros[sel.getAttribute('data-user')] = sel.value;
+                }
+            });
+            
+            try { 
+                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b); 
+                closeModal('permModal');
+                alert("Permissões atualizadas com sucesso!");
+                selectBoard(currentBoardId); 
+            } catch(e) { alert("Erro: " + e.message); }
+        }
+
+    </script>
+</body>
+</html>
