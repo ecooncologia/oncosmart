@@ -31,11 +31,10 @@
         .dash-header-title h1 { margin: 0; font-size: 24px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
         .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
         
-        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .btn-action { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 40px; transition: 0.2s; }
         .btn-action:hover { background: #e5e7eb; }
         
-        /* Botão Vermelho de Excluir Quadro */
         .btn-danger-action { background: #fef2f2 !important; color: #ef4444 !important; border: 1px solid #fecaca !important; }
         .btn-danger-action:hover { background: #ef4444 !important; color: white !important; }
 
@@ -44,7 +43,7 @@
         .btn-perm { background: #3b82f6; color: white; border: none; }
         .btn-perm:hover { background: #2563eb; color: white; }
 
-        /* Fotinhas de Permissão (Avatares) com Overflow Hidden para Imagem não vazar */
+        /* Fotinhas de Permissão (Avatares) */
         .members-faces { display: flex; align-items: center; margin-right: 10px; }
         .member-face { width: 34px; height: 34px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; border: 2px solid #fff; margin-left: -12px; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; padding: 0;}
         .member-face:first-child { margin-left: 0; }
@@ -63,6 +62,9 @@
         
         .column-actions { display: flex; align-items: center; gap: 8px; }
         .column-count { background: #e5e7eb; color: #4b5563; font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+        
+        .btn-edit-col { background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; padding: 0 4px; font-size: 14px;}
+        .btn-edit-col:hover { color: #3b82f6; }
         .btn-del-col { background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; padding: 0 4px; font-size: 14px;}
         .btn-del-col:hover { color: #ef4444; }
 
@@ -88,13 +90,19 @@
 
         .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e5e7eb; padding-top: 10px; margin-top: 5px; }
         .card-date { font-size: 11px; color: #6b7280; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .card-date.alerta { color: #d97706; background: #fef3c7; padding: 2px 6px; border-radius: 4px;}
         .card-date.atrasado { color: #dc2626; background: #fee2e2; padding: 2px 6px; border-radius: 4px;}
         
         .card-user { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #00995D; color: white; font-size: 10px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5e7eb; overflow: hidden; padding: 0;}
 
+        /* Botões de Ação do Card */
         .btn-edit-card { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; opacity: 0; padding: 4px;}
         .kanban-card:hover .btn-edit-card { opacity: 1; }
         .btn-edit-card:hover { color: #00995D; }
+
+        .btn-del-card { position: absolute; top: 12px; right: 36px; background: transparent; border: none; color: #9ca3af; cursor: pointer; transition: 0.2s; opacity: 0; padding: 4px;}
+        .kanban-card:hover .btn-del-card { opacity: 1; }
+        .btn-del-card:hover { color: #ef4444; }
 
         /* ========================================================
            MODAIS (TAREFAS, QUADROS E PERMISSÕES)
@@ -122,8 +130,6 @@
         .form-row .form-group { flex: 1; }
 
         .modal-footer { padding: 20px 25px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
-        .btn-danger { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; display: none; }
-        .btn-danger:hover { background: #ef4444; color: white; }
         .btn-save { background: #00995D; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; margin-left: auto;}
         .btn-save:hover { background: #007a4a; }
 
@@ -179,6 +185,9 @@
                 </button>
                 <button class="btn-action" onclick="openColumnModal()">
                     <i class="fas fa-layer-group"></i> Nova Coluna
+                </button>
+                <button class="btn-action" id="btnRenameBoard" onclick="editBoardName()">
+                    <i class="fas fa-pen"></i> Renomear
                 </button>
                 <button class="btn-action btn-danger-action" id="btnDeleteBoard" onclick="deleteBoard()" style="display:none;">
                     <i class="fas fa-trash"></i> Excluir Quadro
@@ -254,7 +263,6 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" id="btnDeleteTask" class="btn-danger" onclick="deleteTask()"><i class="fas fa-trash"></i> Excluir</button>
                     <button type="submit" class="btn-save" id="btnSaveTask"><i class="fas fa-save"></i> Salvar</button>
                 </div>
             </form>
@@ -326,7 +334,7 @@
         const API_TASKS = '/tarefas_kanban';
         
         let allUsers = [];
-        let userPhotos = {}; // Mapeamento de Fotos dos Usuários (Para Avatares)
+        let userPhotos = {}; 
         let loggedUser = "Sistema";
         
         let boards = {};
@@ -354,7 +362,6 @@
             return "Sistema";
         }
 
-        // CONEXÃO COM A API
         async function apiFetch(endpoint, method = 'GET', bodyObj = null) {
             let options = { method, headers: API_HEADERS };
             if (bodyObj) options.body = JSON.stringify(bodyObj);
@@ -379,20 +386,12 @@
             try {
                 const data = await apiFetch('/usuarios');
                 allUsers = Object.values(data).map(u => u.nome).filter(n => n);
-                
-                // Salva a foto de todos os usuários cadastrados
                 Object.values(data).forEach(u => {
-                    if (u.nome) {
-                        userPhotos[u.nome] = u.photo || u.foto || null;
-                    }
+                    if (u.nome) userPhotos[u.nome] = u.photo || u.foto || null;
                 });
             } catch(e) {
                 allUsers = ["Maikol", "Felipe", "Recepção", "Faturamento"]; 
             }
-            
-            const sel = document.getElementById('taskUser');
-            sel.innerHTML = '<option value="">Selecione...</option>';
-            allUsers.forEach(n => sel.add(new Option(n, n)));
         }
 
         async function loadBaseData() {
@@ -440,26 +439,38 @@
             return false;
         }
 
-        // FUNÇÃO NOVA: Gera as Fotos em vez de Iniciais
+        function getInitials(name) {
+            if(!name) return 'U';
+            const parts = name.trim().split(' ');
+            if(parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].substring(0,2).toUpperCase();
+        }
+
         function getAvatarHtml(name) {
             if (!name) return 'U';
-            
             let photoUrl = userPhotos[name];
-            
-            // Prioridade para o cache local se for o próprio usuário logado
             if (name === loggedUser) {
                 const localPhoto = localStorage.getItem('ecoUserPhoto');
                 if (localPhoto && localPhoto.length > 50) photoUrl = localPhoto;
             }
-            
             if (photoUrl) {
                 return `<img src="${photoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             }
-            
-            // Fallback para Iniciais se não tiver foto
-            const parts = name.trim().split(' ');
-            if(parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
-            return parts[0].substring(0,2).toUpperCase();
+            return getInitials(name);
+        }
+
+        // Lista restrita de usuários para o dropdown da Tarefa
+        function getTaskUsersAllowed() {
+            const b = boards[currentBoardId];
+            if (!b) return [];
+            const allowed = new Set();
+            allowed.add(b.criado_por);
+            if (b.membros) {
+                Object.keys(b.membros).forEach(m => {
+                    if (b.membros[m] !== 'none') allowed.add(m);
+                });
+            }
+            return Array.from(allowed);
         }
 
         function renderBoardsTabs() {
@@ -471,7 +482,6 @@
                 const active = b.id_firebase === currentBoardId ? 'active' : '';
                 html += `<button class="board-tab ${active}" onclick="selectBoard('${b.id_firebase}')">${b.nome}</button>`;
             });
-            
             container.innerHTML = html + btnNew;
         }
 
@@ -486,7 +496,6 @@
             const isOwner = b.criado_por === loggedUser;
             const canEdit = canEditCurrentBoard();
             
-            // Mostra botões dependendo da permissão (Apenas dono exclui quadro e edita permissões)
             document.getElementById('btnDeleteBoard').style.display = isOwner ? 'flex' : 'none';
             document.querySelector('.btn-perm').style.display = isOwner ? 'flex' : 'none';
             
@@ -494,10 +503,8 @@
                 el.style.display = canEdit ? 'flex' : 'none';
             });
             
-            // Popula os Avatares Reais
             const facesContainer = document.getElementById('boardMembersFaces');
             let facesHtml = '';
-            
             facesHtml += `<div class="member-face" title="Dono: ${b.criado_por}" style="background: #00995D; z-index:10;">${getAvatarHtml(b.criado_por)}</div>`;
             
             let zIndex = 9;
@@ -510,21 +517,7 @@
                 });
             }
             facesContainer.innerHTML = facesHtml;
-
             renderKanban();
-        }
-
-        // ==========================================
-        // EXCLUIR QUADRO (APENAS DONO)
-        // ==========================================
-        async function deleteBoard() {
-            if(!confirm("ATENÇÃO: Tem certeza que deseja excluir este quadro INTEIRO?\nTodas as configurações e colunas serão perdidas para sempre.")) return;
-            try {
-                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'DELETE');
-                delete boards[currentBoardId];
-                currentBoardId = null;
-                await loadBaseData(); 
-            } catch(e) { alert("Erro ao excluir: " + e.message); }
         }
 
         async function saveBoard(e) {
@@ -547,6 +540,29 @@
             closeModal('boardModal');
             await loadBaseData();
             selectBoard(newBoard.id_firebase);
+        }
+
+        async function editBoardName() {
+            const b = boards[currentBoardId];
+            const newName = prompt("Digite o novo nome para o quadro:", b.nome);
+            if(newName && newName.trim() !== "" && newName !== b.nome) {
+                b.nome = newName.trim();
+                try {
+                    await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b);
+                    renderBoardsTabs();
+                    document.getElementById('currentBoardTitle').innerText = b.nome;
+                } catch(e) { alert("Erro ao renomear quadro."); }
+            }
+        }
+
+        async function deleteBoard() {
+            if(!confirm("ATENÇÃO: Tem certeza que deseja excluir este quadro INTEIRO?\nTodas as configurações e colunas serão perdidas para sempre.")) return;
+            try {
+                await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'DELETE');
+                delete boards[currentBoardId];
+                currentBoardId = null;
+                await loadBaseData(); 
+            } catch(e) { alert("Erro ao excluir: " + e.message); }
         }
 
         // ==========================================
@@ -582,7 +598,6 @@
                     cardsHtml += generateCardHtml(taskId, t);
                 });
 
-                // INTELIGÊNCIA DE CORES: Para os quadros antigos do banco que não tem cor cadastrada
                 let colColor = col.cor;
                 let colIcon = col.icone;
 
@@ -605,7 +620,7 @@
                     }
                 }
 
-                // Botão de Excluir Coluna
+                const editColBtn = canEdit ? `<button class="btn-edit-col" onclick="editColumnName('${col.id}')" title="Renomear Coluna"><i class="fas fa-pen"></i></button>` : '';
                 const deleteColBtn = canEdit ? `<button class="btn-del-col" onclick="deleteColumn('${col.id}')" title="Excluir Coluna"><i class="fas fa-trash"></i></button>` : '';
 
                 colDiv.innerHTML = `
@@ -613,6 +628,7 @@
                         <div class="column-title"><i class="${colIcon}" style="color: ${colColor};"></i> ${col.nome}</div>
                         <div class="column-actions">
                             <span class="column-count">${colTasks.length}</span>
+                            ${editColBtn}
                             ${deleteColBtn}
                         </div>
                     </div>
@@ -624,9 +640,20 @@
             });
         }
 
-        // ==========================================
-        // EXCLUIR COLUNA
-        // ==========================================
+        async function editColumnName(colId) {
+            const b = boards[currentBoardId];
+            const colIndex = b.colunas.findIndex(c => c.id === colId);
+            if(colIndex === -1) return;
+            const newName = prompt("Digite o novo nome para a coluna:", b.colunas[colIndex].nome);
+            if(newName && newName.trim() !== "" && newName !== b.colunas[colIndex].nome) {
+                b.colunas[colIndex].nome = newName.trim();
+                try {
+                    await apiFetch(`${API_BOARDS}/${currentBoardId}`, 'PUT', b);
+                    renderKanban();
+                } catch(e) { alert("Erro ao renomear coluna."); }
+            }
+        }
+
         async function deleteColumn(colId) {
             if(!confirm("Tem certeza que deseja excluir esta coluna?\nAs tarefas que estão nela perderão seu status atual no quadro.")) return;
             const b = boards[currentBoardId];
@@ -639,13 +666,11 @@
 
         function generateCardHtml(id, t) {
             let checklistHtml = '';
-            
             if (t.checklist && t.checklist.length > 0) {
                 checklistHtml = '<div class="card-checklist-preview">';
                 t.checklist.forEach((item, idx) => {
                     const isChecked = item.concluido ? 'checked' : '';
                     const textStyle = item.concluido ? 'text-decoration: line-through; color: #9ca3af;' : 'color: #4b5563; font-weight: 600;';
-                    
                     checklistHtml += `
                         <label class="card-check-item">
                             <input type="checkbox" ${isChecked} onmousedown="event.stopPropagation()" onclick="toggleCheckOnCard('${id}', ${idx}, event)">
@@ -658,16 +683,29 @@
 
             let dateHtml = '';
             if(t.prazo) {
-                const prazoD = new Date(t.prazo + 'T12:00:00');
-                const hoje = new Date(); hoje.setHours(0,0,0,0);
-                const isLate = prazoD < hoje;
+                // Previne problema de fuso horário garantindo que lê a data exata inserida (Meio dia de UTC)
+                const [y, m, d] = t.prazo.split('-');
+                const prazoD = new Date(y, m - 1, d, 0, 0, 0);
+                
+                const hoje = new Date(); 
+                hoje.setHours(0,0,0,0);
+                
+                const diffTime = prazoD.getTime() - hoje.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let dateClass = '';
+                if (diffDays < 0) dateClass = 'atrasado'; // Passou
+                else if (diffDays <= 1) dateClass = 'alerta'; // Hoje ou Amanhã
+                
                 const dataFmt = prazoD.toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
-                dateHtml = `<span class="card-date ${isLate ? 'atrasado' : ''}"><i class="far fa-clock"></i> ${dataFmt}</span>`;
+                dateHtml = `<span class="card-date ${dateClass}"><i class="far fa-clock"></i> ${dataFmt}</span>`;
             }
 
             const canEdit = canEditCurrentBoard();
             const dragAttr = canEdit ? 'draggable="true" ondragstart="dragStart(event)"' : '';
+            
             const editBtn = canEdit ? `<button class="btn-edit-card" onclick="openTaskModal('${id}')"><i class="fas fa-pen"></i></button>` : '';
+            const delBtn = canEdit ? `<button class="btn-del-card" onclick="deleteTaskDirectly('${id}', event)" title="Excluir Tarefa"><i class="fas fa-trash"></i></button>` : '';
 
             return `
                 <div class="kanban-card" id="${id}" ${dragAttr}>
@@ -676,6 +714,7 @@
                     </div>
                     <h4 class="card-title">${t.titulo}</h4>
                     ${editBtn}
+                    ${delBtn}
                     
                     ${checklistHtml}
                     
@@ -774,7 +813,6 @@
             renderKanban();
         }
 
-        // --- CHECKLIST DENTRO DO MODAL ---
         let currentChecklist = [];
 
         function renderChecklistUI() {
@@ -806,9 +844,14 @@
         // --- TAREFAS ---
         function openTaskModal(taskId = null) {
             document.getElementById('taskForm').reset();
+            
             const colSelect = document.getElementById('taskColumn');
             colSelect.innerHTML = '';
             boards[currentBoardId].colunas.forEach(c => colSelect.add(new Option(c.nome, c.id)));
+
+            const selUser = document.getElementById('taskUser');
+            selUser.innerHTML = '<option value="">Selecione...</option>';
+            getTaskUsersAllowed().forEach(u => selUser.add(new Option(u, u)));
 
             if (taskId && tasks[taskId]) {
                 const t = tasks[taskId];
@@ -822,12 +865,10 @@
                 currentChecklist = t.checklist ? [...t.checklist] : [];
                 
                 document.getElementById('taskModalTitle').innerHTML = '<i class="fas fa-pen"></i> Editar Tarefa';
-                document.getElementById('btnDeleteTask').style.display = 'block';
             } else {
                 document.getElementById('taskId').value = '';
                 currentChecklist = [];
                 document.getElementById('taskModalTitle').innerHTML = '<i class="fas fa-tasks"></i> Nova Tarefa';
-                document.getElementById('btnDeleteTask').style.display = 'none';
             }
             
             renderChecklistUI();
@@ -871,13 +912,12 @@
             finally { btn.disabled = false; }
         }
 
-        async function deleteTask() {
-            const id = document.getElementById('taskId').value;
-            if(!id || !confirm("Excluir esta tarefa permanentemente?")) return;
+        async function deleteTaskDirectly(id, event) {
+            event.stopPropagation();
+            if(!confirm("Excluir esta tarefa permanentemente?")) return;
             
             try {
                 await apiFetch(`${API_TASKS}/${id}`, 'DELETE');
-                closeModal('taskModal');
                 tasks = await apiFetch(API_TASKS);
                 renderKanban();
             } catch(err) { alert("Erro: " + err.message); }
