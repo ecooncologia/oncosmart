@@ -67,14 +67,13 @@
         .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; }
         .kpi-subtext span { color: #111827; font-weight: 700; }
 
-        /* Blocos Menores Empilhados - Layout de 3 Colunas (Sem Pendências) */
+        /* Blocos Menores Empilhados - Layout de 3 Colunas */
         .details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; margin-bottom: 25px; }
         
         .detail-card { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; overflow: hidden; display: flex; flex-direction: column; }
         .detail-header { background: #ffffff; padding: 15px 20px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .detail-header i { font-size: 16px; }
         
-        /* Uso de Flex para Linhas em vez de Table (Evita cortes no PDF) */
         .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px dashed #e5e7eb; font-size: 13px; }
         .summary-row:last-child { border-bottom: none; }
         .summary-label { color: #6b7280; font-weight: 600; }
@@ -93,14 +92,10 @@
 
         .list-container { max-height: 500px; overflow-y: auto; }
         
-        /* Input para Convênio */
         .manual-input { width: 100px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: right; font-weight: 700; font-size: 14px; color: #111827; outline: none; transition: 0.2s; }
         .manual-input:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
-        .print-only { display: none; } /* Texto puro que vai aparecer no PDF no lugar do Input */
+        .print-only { display: none; } 
 
-        /* ========================================================
-           IMPRESSÃO - ENCAIXE PERFEITO 
-           ======================================================== */
         @media print {
             body { background: white; -webkit-print-color-adjust: exact; margin: 0; padding: 0;}
             .controls, #global-header, #global-nav { display: none !important; }
@@ -112,7 +107,6 @@
             .dash-header-title h1 { font-size: 20px !important; }
             .dash-header-title p { font-size: 12px !important; margin-top: 3px !important; }
             
-            /* CARDS EM UMA ÚNICA LINHA PARA ECONOMIZAR ESPAÇO */
             .kpi-row { display: flex !important; flex-wrap: nowrap !important; width: 100% !important; gap: 8px !important; margin-bottom: 15px !important; }
             .kpi-card { flex: 1 !important; min-width: 0 !important; padding: 10px !important; box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; gap: 5px !important;}
             .kpi-title { font-size: 9px !important; letter-spacing: 0px !important;}
@@ -121,18 +115,15 @@
             .kpi-card.total .kpi-value { font-size: 20px !important; }
             .kpi-subtext { font-size: 9px !important; }
             
-            /* DIVISÃO EXATA DE 3 COLUNAS LADO A LADO */
             .details-grid { display: flex !important; flex-direction: row !important; width: 100% !important; gap: 10px !important; margin-bottom: 0 !important;}
             .detail-card { flex: 1 !important; box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; margin: 0 !important;}
             .detail-header { padding: 8px 12px !important; font-size: 11px !important; }
             
             .summary-row { padding: 6px 10px !important; font-size: 10px !important; }
             
-            /* MÁGICA DOS INPUTS: ESCONDE INPUT, MOSTRA TEXTO PURO */
             .no-print { display: none !important; }
             .print-only { display: inline-block !important; font-weight: 800; color: #111827; }
             
-            /* A LISTA DE PACIENTES FORÇADA PARA UMA NOVA PÁGINA (PÁGINA 2) */
             .giant-list-card { page-break-before: always !important; break-before: page !important; margin-top: 0 !important; border: none !important; box-shadow: none !important; }
             .giant-list-card .detail-header { justify-content: center !important; font-size: 16px !important; border-bottom: 2px solid #00995D !important; margin-bottom: 10px; padding: 0 0 10px 0 !important; background: transparent !important;}
             .list-container { max-height: none !important; overflow: visible !important; }
@@ -495,10 +486,10 @@
             document.getElementById('printConvQtd').innerText = "0";
             document.getElementById('printConvValor').innerText = "0.00";
 
-            const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart'];
+            const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart', 'detPlantTurnos', 'detPlantValor', 'detTratPac', 'detTratItens', 'detTratValor', 'detTratValorUnimed', 'detTratValorPart'];
             elsToReset.forEach(id => {
                 let el = document.getElementById(id);
-                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:25px;"></i>';
+                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>';
             });
             
             let tbPac = document.getElementById('tablePacientesTrat');
@@ -580,14 +571,14 @@
                 let pacientesTratCount = new Set();
                 let totalAtendimentosTrat = 0;
                 
-                let valorTratamentoTotal = 0; // O grande Total de Tratamentos (Unimed + Particular)
-                let valorTratamentoUnimed = 0; // Parcial Unimed
-                let valorTratamentoParticular = 0; // Parcial Particular (Aplicações)
+                let valorTratamentoTotal = 0;
+                let valorTratamentoUnimed = 0;
+                let valorTratamentoParticular = 0;
 
-                let valorConsultaParticular = 0; // Apenas Consultas normais
+                let valorConsultaParticular = 0; 
                 let atendimentosConsultaPart = 0;
                 
-                let listaRenderPacienteHtml = []; // Usaremos Array para poder ordenar depois (Unimed + Part)
+                let listaRenderPacienteHtml = []; 
 
                 // ------------------------------------------------
                 // 2A. TRATAMENTOS (Via Repasse Unimed)
@@ -695,42 +686,69 @@
                         
                         Object.values(vendasData).forEach(v => {
                             const isLiminar = (v.tipo_registro === 'liminar' || v.forma_pagamento === 'Liminar');
-                            if (isLiminar) return; // Liminares não entram aqui por padrão do seu filtro
-
-                            if (v.medico && v.medico.toUpperCase() === doctorName) {
-                                const datePart = (v.data || '').split('-');
-                                if (datePart.length >= 2) {
-                                    const vYr = parseInt(datePart[0]);
-                                    const vMo = parseInt(datePart[1]) - 1; 
+                            if (isLiminar) return; 
+                            
+                            const datePart = (v.data || '').split('-');
+                            if (datePart.length >= 2) {
+                                const vYr = parseInt(datePart[0]);
+                                const vMo = parseInt(datePart[1]) - 1; 
+                                
+                                if (vYr === yr && vMo === mo) {
+                                    const procedNome = (v.procedimento || '').toUpperCase();
+                                    const isAplicacaoTratamento = procedNome.includes('APLICAÇÃO') || procedNome.includes('APLICACAO');
+                                    let valorRecebido = parseCurrency(v.valor_final);
                                     
-                                    if (vYr === yr && vMo === mo) {
+                                    if (isAplicacaoTratamento) {
+                                        // === É UM TRATAMENTO PARTICULAR ===
+                                        // Usa as regras de comissão (Prescritor e Encaminhador) em vez do médico da venda 
+                                        let pacNome = String(v.paciente || '').toUpperCase().trim();
+                                        let patId = generatePatientId(pacNome);
+                                        let patDb = pacientesDb[patId];
                                         
-                                        const procedNome = (v.procedimento || '').toUpperCase();
-                                        // MÁGICA: Se tem a palavra "APLICAÇÃO", joga para Tratamento. Senão, é Consulta.
-                                        const isAplicacaoTratamento = procedNome.includes('APLICAÇÃO') || procedNome.includes('APLICACAO');
-
-                                        let valorRecebido = parseCurrency(v.valor_final);
-                                        
-                                        if (isAplicacaoTratamento) {
-                                            // === É UM TRATAMENTO PARTICULAR ===
-                                            valorTratamentoParticular += valorRecebido;
-                                            valorTratamentoTotal += valorRecebido;
-                                            
-                                            const pacNome = String(v.paciente || '').toUpperCase();
-                                            pacientesTratCount.add(pacNome);
-                                            totalAtendimentosTrat += 1; // 1 venda = 1 atendimento
-                                            
-                                            listaRenderPacienteHtml.push({
-                                                nome: pacNome,
-                                                html: `<tr>
-                                                    <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${normalizeDate(v.data)}</td>
-                                                    <td style="font-weight: 600; text-align:center; color: #b45309;">${pacNome}</td>
-                                                    <td style="text-align:center;"><span style="font-size:10px; font-weight:700; color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:12px;">Particular</span></td>
-                                                </tr>`
-                                            });
-                                            
+                                        let pId = null, eId = null;
+                                        if (patDb) {
+                                            pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
+                                            eId = patDb.encaminhador_id;
                                         } else {
-                                            // === É UMA CONSULTA PARTICULAR NORMAL ===
+                                            // Fallback de segurança se o paciente não estiver cadastrado no banco: Atribui o médico que atendeu
+                                            let docIdDaVenda = Object.keys(doctors).find(k => doctors[k].nome.toUpperCase() === String(v.medico || '').toUpperCase());
+                                            pId = docIdDaVenda;
+                                        }
+                                        
+                                        // Se o médico selecionado no Dashboard for prescritor ou encaminhador deste paciente
+                                        if (pId === docId || eId === docId) {
+                                            let pName = pId && doctors[pId] ? doctors[pId].nome : '';
+                                            let eName = eId && doctors[eId] ? doctors[eId].nome : '';
+                                            
+                                            const comissaoInfo = getComissaoInfo(pName, eName);
+                                            let doctorPerc = 0;
+                                            if (pId === docId) doctorPerc += comissaoInfo.percP;
+                                            if (eId === docId) doctorPerc += comissaoInfo.percE;
+                                            
+                                            // Se ele tem comissão, repassa o valor!
+                                            if (doctorPerc > 0) {
+                                                let repasseDestePat = Number((valorRecebido * (doctorPerc / 100)).toFixed(2));
+                                                
+                                                valorTratamentoParticular += repasseDestePat;
+                                                valorTratamentoTotal += repasseDestePat;
+                                                
+                                                pacientesTratCount.add(pacNome);
+                                                totalAtendimentosTrat += 1; 
+                                                
+                                                listaRenderPacienteHtml.push({
+                                                    nome: pacNome,
+                                                    html: `<tr>
+                                                        <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${normalizeDate(v.data)}</td>
+                                                        <td style="font-weight: 600; text-align:center; color: #b45309;">${pacNome}</td>
+                                                        <td style="text-align:center;"><span style="font-size:10px; font-weight:700; color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:12px;">Particular</span></td>
+                                                    </tr>`
+                                                });
+                                            }
+                                        }
+                                        
+                                    } else {
+                                        // === É UMA CONSULTA PARTICULAR NORMAL (100% para o médico da venda) ===
+                                        if (v.medico && v.medico.toUpperCase() === doctorName) {
                                             atendimentosConsultaPart++;
                                             valorConsultaParticular += valorRecebido;
                                         }
@@ -760,7 +778,6 @@
                 let elDetTratItens = document.getElementById('detTratItens');
                 if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
                 
-                // Detalha Parciais e Total na Tela
                 document.getElementById('detTratValorUnimed').innerText = `R$ ${valorTratamentoUnimed.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValorPart').innerText = `R$ ${valorTratamentoParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
@@ -770,18 +787,16 @@
                 let elKpiTotalTratamento = document.getElementById('kpiTotalTratamento');
                 if(elKpiTotalTratamento) elKpiTotalTratamento.innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
-                // Renderiza Lista Unificada Ordenada
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
                 if (listaRenderPacienteHtml.length === 0) {
                     elTablePacientesTrat.innerHTML = `<tr><td colspan="3"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com lucro para repasse neste mês.</div></td></tr>`;
                 } else {
-                    // Ordena a lista misturada em Ordem Alfabética
                     listaRenderPacienteHtml.sort((a,b) => a.nome.localeCompare(b.nome));
                     elTablePacientesTrat.innerHTML = listaRenderPacienteHtml.map(item => item.html).join('');
                 }
 
                 // ------------------------------------------------
-                // 4. TOTAL GERAL (APENAS O SISTÊMICO)
+                // 4. TOTAL GERAL
                 // ------------------------------------------------
                 let totalGeral = valorPlantao + valorTratamentoTotal + valorConsultaParticular;
                 
