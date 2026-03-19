@@ -760,7 +760,7 @@
                             <p><i class="fas fa-user-md"></i> Filtro: ${docNameExport}</p>
                         </div>
                     </div>`;
-            html += `<table><thead><tr><th>Paciente / Carteirinha</th><th>Faturamento Unimed</th><th>Custos & Impostos</th><th>Lucro Base Repasse</th><th>Repasse Médico</th></tr></thead><tbody>`;
+            html += `<table><thead><tr><th>Paciente / Carteirinha</th><th>Faturamento Analisado</th><th>Custos & Impostos</th><th>Lucro Base Repasse</th><th>Repasse Médico</th></tr></thead><tbody>`;
 
             let sumPdfFat = 0; let sumPdfLucro = 0; let sumPdfRepasse = 0;
 
@@ -807,10 +807,11 @@
                 }).forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
+                    let tagOrigem = item.isParticular ? ' (PART)' : '';
                     
                     html += `<tr>
                         <td style="text-align:center; ${styleCorte}">${item.data}</td>
-                        <td style="${styleCorte}">${item.medicamento}</td>
+                        <td style="${styleCorte}">${item.medicamento}${tagOrigem}</td>
                         <td style="text-align:center; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; color:#dc2626;">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
@@ -869,7 +870,7 @@
                 h += `<th class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${i}</th>`; 
             } 
             h += '<th class="th-total">Qtd</th><th class="th-total">Total (R$)</th></tr>'; 
-            document.querySelector('#repTable/thead').innerHTML = h; 
+            document.querySelector('#repTable thead').innerHTML = h; 
             
             let b = ''; 
             Object.entries(doctors).filter(([,d]) => {
