@@ -454,7 +454,11 @@
 
         function renderAdminSectors() {
             const listEl = document.getElementById('list-admin-setores');
-            const setores = systemConfig.helpdesk.setores || [];
+            
+            // BLINDAGEM DE ARRAYS PARA O FIREBASE
+            let setoresObj = systemConfig.helpdesk.setores || [];
+            let setores = Array.isArray(setoresObj) ? setoresObj : Object.values(setoresObj);
+            
             let html = '';
             
             if (setores.length === 0) {
@@ -466,7 +470,7 @@
                 html += `
                     <div class="list-item">
                         <span style="font-weight:700; color:#334155;"><i class="fas fa-layer-group" style="color:#0ea5e9; margin-right:8px;"></i> ${s}</span>
-                        <button class="btn btn-info btn-sm" style="background:#0ea5e9;" onclick="openSectorPermsModal('${s}')">
+                        <button class="btn btn-info btn-sm" style="background:#0ea5e9; padding: 6px 12px;" onclick="openSectorPermsModal('${s}')">
                             <i class="fas fa-cogs"></i> Moldar Permissões
                         </button>
                     </div>
@@ -508,7 +512,10 @@
             const wrap = document.getElementById('wrap-filas');
             wrap.innerHTML = '';
             
-            const rootCats = (systemConfig.helpdesk.categorias || []).map(c => c.nome);
+            let rootCatsObj = systemConfig.helpdesk.categorias || [];
+            let rootCatsArr = Array.isArray(rootCatsObj) ? rootCatsObj : Object.values(rootCatsObj);
+            const rootCats = rootCatsArr.map(c => c.nome);
+            
             const techs = Object.values(allUsersData).filter(u => u.permissoes && u.permissoes.helpdesk_admin);
             
             if(techs.length === 0) {
@@ -523,7 +530,9 @@
             let html = '<table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">';
             techs.forEach((tech, index) => {
                 const email = tech.email.toLowerCase();
-                const userFilas = systemConfig.helpdesk.filas[email] || [];
+                let userFilasObj = systemConfig.helpdesk.filas[email] || [];
+                let userFilas = Array.isArray(userFilasObj) ? userFilasObj : Object.values(userFilasObj);
+                
                 const borderClass = index !== techs.length - 1 ? 'border-bottom:1px solid #eee;' : '';
                 
                 html += `
@@ -552,12 +561,15 @@
         }
 
         function toggleFila(email, cat, isChecked) {
-            if(!systemConfig.helpdesk.filas[email]) systemConfig.helpdesk.filas[email] = [];
+            let filasObj = systemConfig.helpdesk.filas[email] || [];
+            let userFilas = Array.isArray(filasObj) ? filasObj : Object.values(filasObj);
+            
             if(isChecked) {
-                if(!systemConfig.helpdesk.filas[email].includes(cat)) systemConfig.helpdesk.filas[email].push(cat);
+                if(!userFilas.includes(cat)) userFilas.push(cat);
             } else {
-                systemConfig.helpdesk.filas[email] = systemConfig.helpdesk.filas[email].filter(c => c !== cat);
+                userFilas = userFilas.filter(c => c !== cat);
             }
+            systemConfig.helpdesk.filas[email] = userFilas;
         }
 
         function toggleCategoryNode(pathKey) {
@@ -568,11 +580,14 @@
 
         function renderCategoryTree() {
             const container = document.getElementById('container-categorias-complexas');
-            container.innerHTML = buildCategoryHTML(systemConfig.helpdesk.categorias, [], 0);
+            let catsObj = systemConfig.helpdesk.categorias || [];
+            let cats = Array.isArray(catsObj) ? catsObj : Object.values(catsObj);
+            container.innerHTML = buildCategoryHTML(cats, [], 0);
         }
 
-        function buildCategoryHTML(subs, path, level) {
-            if(!subs || subs.length === 0) return '';
+        function buildCategoryHTML(subsObj, path, level) {
+            let subs = Array.isArray(subsObj) ? subsObj : Object.values(subsObj || {});
+            if(subs.length === 0) return '';
             let html = '';
             subs.forEach((cat, index) => {
                 const currentPath = [...path, index];
@@ -580,7 +595,8 @@
                 const pathKey = currentPath.join('-');
                 
                 const isRoot = level === 0;
-                const hasChildren = cat.subs && cat.subs.length > 0;
+                let childSubs = Array.isArray(cat.subs) ? cat.subs : Object.values(cat.subs || {});
+                const hasChildren = childSubs.length > 0;
                 const isOpen = expandedCategoryNodes.has(pathKey);
                 
                 const blockStyle = isRoot 
@@ -621,7 +637,7 @@
                             </div>
                         </div>
                         <div style="${isRoot ? 'padding: 0 15px 10px 5px;' : ''} display: ${isOpen ? 'block' : 'none'};">
-                            ${buildCategoryHTML(cat.subs, currentPath, level + 1)}
+                            ${buildCategoryHTML(childSubs, currentPath, level + 1)}
                         </div>
                     </div>
                 `;
@@ -630,8 +646,10 @@
         }
 
         function getNodeByPath(path) {
-            let currentArray = systemConfig.helpdesk.categorias;
-            for (let i = 0; i < path.length - 1; i++) { currentArray = currentArray[path[i]].subs; }
+            let currentArray = Array.isArray(systemConfig.helpdesk.categorias) ? systemConfig.helpdesk.categorias : Object.values(systemConfig.helpdesk.categorias || {});
+            for (let i = 0; i < path.length - 1; i++) { 
+                currentArray = Array.isArray(currentArray[path[i]].subs) ? currentArray[path[i]].subs : Object.values(currentArray[path[i]].subs || {});
+            }
             const index = path[path.length - 1];
             return { parentArray: currentArray, index: index, node: currentArray[index] };
         }
@@ -640,7 +658,9 @@
             const input = document.getElementById('new-helpdesk-categoria');
             const val = input.value.trim();
             if(val) {
-                systemConfig.helpdesk.categorias.push({ nome: val, subs: [] });
+                let cats = Array.isArray(systemConfig.helpdesk.categorias) ? systemConfig.helpdesk.categorias : Object.values(systemConfig.helpdesk.categorias || {});
+                cats.push({ nome: val, subs: [] });
+                systemConfig.helpdesk.categorias = cats;
                 input.value = '';
                 renderAllConfigs();
             }
@@ -659,8 +679,9 @@
             const { node } = getNodeByPath(path);
             const newName = prompt(`Criar subcategoria dentro de "${node.nome}":`);
             if (newName && newName.trim() !== '') {
-                if (!node.subs) node.subs = [];
-                node.subs.push({ nome: newName.trim(), subs: [] });
+                let childSubs = Array.isArray(node.subs) ? node.subs : Object.values(node.subs || {});
+                childSubs.push({ nome: newName.trim(), subs: [] });
+                node.subs = childSubs;
                 expandedCategoryNodes.add(path.join('-'));
                 renderAllConfigs();
             }
@@ -697,16 +718,20 @@
             sel.innerHTML = '<option value="">Selecione de onde copiar...</option>';
 
             const flatCats = [];
-            function traverse(arr, prefix, currentPath) {
+            function traverse(arrObj, prefix, currentPath) {
+                let arr = Array.isArray(arrObj) ? arrObj : Object.values(arrObj || {});
                 arr.forEach((c, i) => {
                     const newPath = [...currentPath, i];
                     const newPrefix = prefix ? prefix + ' > ' + c.nome : c.nome;
                     const isSelfOrDescendant = newPath.join('-').startsWith(path.join('-'));
-                    if (!isSelfOrDescendant && c.subs && c.subs.length > 0) flatCats.push({ name: newPrefix, path: newPath });
-                    if (c.subs) traverse(c.subs, newPrefix, newPath);
+                    
+                    let childSubs = Array.isArray(c.subs) ? c.subs : Object.values(c.subs || {});
+                    if (!isSelfOrDescendant && childSubs.length > 0) flatCats.push({ name: newPrefix, path: newPath });
+                    if (childSubs.length > 0) traverse(childSubs, newPrefix, newPath);
                 });
             }
-            traverse(systemConfig.helpdesk.categorias, '', []);
+            let rootCats = Array.isArray(systemConfig.helpdesk.categorias) ? systemConfig.helpdesk.categorias : Object.values(systemConfig.helpdesk.categorias || {});
+            traverse(rootCats, '', []);
 
             if(flatCats.length === 0) return alert("Não há outras categorias com conteúdo disponível.");
 
@@ -722,9 +747,12 @@
             const sourceNode = getNodeByPath(JSON.parse(sourcePathStr)).node;
             const targetNode = getNodeByPath(JSON.parse(targetPathStr)).node;
 
-            const copySubs = JSON.parse(JSON.stringify(sourceNode.subs));
-            if(!targetNode.subs) targetNode.subs = [];
-            targetNode.subs.push(...copySubs);
+            let srcSubs = Array.isArray(sourceNode.subs) ? sourceNode.subs : Object.values(sourceNode.subs || {});
+            const copySubs = JSON.parse(JSON.stringify(srcSubs));
+            
+            let tgtSubs = Array.isArray(targetNode.subs) ? targetNode.subs : Object.values(targetNode.subs || {});
+            tgtSubs.push(...copySubs);
+            targetNode.subs = tgtSubs;
 
             expandedCategoryNodes.add(JSON.parse(targetPathStr).join('-'));
             closeModal('modalImportSub');
@@ -732,7 +760,9 @@
         }
 
         function renderList(module, key, elementId) {
-            const list = systemConfig[module][key] || [];
+            let listObj = systemConfig[module][key] || [];
+            let list = Array.isArray(listObj) ? listObj : Object.values(listObj);
+            
             const el = document.getElementById(elementId);
             el.innerHTML = '';
             list.forEach((item, index) => {
@@ -745,8 +775,12 @@
             const input = document.getElementById(inputId);
             const val = input.value.trim();
             if(val) {
-                if(!systemConfig[module][key]) systemConfig[module][key] = [];
-                systemConfig[module][key].push(val);
+                let listObj = systemConfig[module][key] || [];
+                let list = Array.isArray(listObj) ? listObj : Object.values(listObj);
+                
+                list.push(val);
+                systemConfig[module][key] = list;
+                
                 input.value = '';
                 renderList(module, key, `list-${module}-${key === 'origens' ? 'origens' : key}`);
                 if (key === 'setores') renderAdminSectors(); 
@@ -754,7 +788,12 @@
         }
 
         function removeItem(module, key, index) {
-            systemConfig[module][key].splice(index, 1);
+            let listObj = systemConfig[module][key] || [];
+            let list = Array.isArray(listObj) ? listObj : Object.values(listObj);
+            
+            list.splice(index, 1);
+            systemConfig[module][key] = list;
+            
             renderList(module, key, `list-${module}-${key === 'origens' ? 'origens' : key}`);
             if (key === 'setores') renderAdminSectors();
         }
@@ -825,9 +864,6 @@
             });
         }
 
-        // ==========================================
-        // MÁGICA: PUXAR PADRÃO DO SETOR PARA O USUÁRIO
-        // ==========================================
         function loadSectorDefaultsToForm() {
             const key = document.getElementById('modalPermUserId').value;
             const user = allUsersData[key];
@@ -839,7 +875,6 @@
 
             if (!confirm(`Deseja preencher as caixinhas com o padrão do setor '${user.setor}'?\n(Isso não salvará automaticamente, você ainda poderá ajustar antes de clicar em Salvar).`)) return;
 
-            // Preenche as checkboxes da tela com o que está no template do setor
             permissionMap.forEach(g => {
                 g.items.forEach(item => {
                     const el = document.getElementById('p_' + item.id);
@@ -849,7 +884,6 @@
                 });
             });
         }
-        // ------------------------------------------
 
         function openPermsModal(key) {
             const user = allUsersData[key]; 
@@ -884,7 +918,6 @@
             closeModal('modalPerms'); loadUsers();
         }
 
-        // --- EDIÇÃO DE NOME E SETOR ---
         function openEditUserModal(key) {
             const user = allUsersData[key];
             document.getElementById('editUserId').value = key;
@@ -892,7 +925,10 @@
             
             const selSector = document.getElementById('editUserSector');
             selSector.innerHTML = '<option value="">Sem Setor Definido</option>';
-            const setores = systemConfig.helpdesk.setores || [];
+            
+            let setoresObj = systemConfig.helpdesk.setores || [];
+            let setores = Array.isArray(setoresObj) ? setoresObj : Object.values(setoresObj);
+            
             setores.sort().forEach(s => {
                 const selected = (user.setor === s) ? 'selected' : '';
                 selSector.innerHTML += `<option value="${s}" ${selected}>${s}</option>`;
