@@ -18,7 +18,6 @@
         body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
         .container { width: 100%; padding: 20px; box-sizing: border-box; }
         
-        /* DESIGN DAS ABAS COM FUNDOS PASTÉIS SUAVES E ALTERNADOS */
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
         .tab-btn { padding: 12px 24px; border: 1px solid #e5e7eb; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 14px; outline: none; }
         
@@ -473,7 +472,6 @@
                         custo_informado: parseFloat(custoDb)
                     };
                 }).filter(item => {
-                    // FILTRO DE MEDICAMENTO: Remove completamente este item do sistema.
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) {
                         return false;
@@ -593,16 +591,23 @@
 
                     let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
                     
-                    let canP = !!pat.pId; // Prescritor sempre ganha, se existir
-                    let canE = !!pat.eId; // Encaminhador
+                    let canP = !!pat.pId; 
+                    let canE = !!pat.eId; 
+                    
+                    let hasGrazielly = false;
+                    if (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
+                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
 
-                    if (isTaxa) {
-                        let eIsGraz = pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY');
-                        if (!eIsGraz) canE = false; // Encaminhador não-Grazielly perde o direito da TAXA
-                        // Nota: canP não é alterado, então o Prescritor ganha na TAXA normalmente.
+                    // REGRA DE OURO DA TAXA
+                    // Se o item é uma taxa, verificamos se a Dra Grazielly está no vínculo desse paciente.
+                    // Se ela não estiver, NINGUÉM ganha comissão de taxa (a taxa é 100% riscada).
+                    if (isTaxa && !hasGrazielly) {
+                        canP = false;
+                        canE = false;
                     }
 
                     let lucroRepasse = lucroItem > 0 ? lucroItem : 0;
+                    
                     let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                     let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
 
@@ -613,15 +618,14 @@
                     item.repasseP = repP;
                     item.repasseE = repE;
 
-                    // Exibição na Fatura
                     let isVisibleForFilter = false;
                     if (filterRepasseDoc) {
                         if (pat.pId === filterRepasseDoc && canP) isVisibleForFilter = true;
                         if (pat.eId === filterRepasseDoc && canE) isVisibleForFilter = true;
                     } else {
-                        // Sem filtro
+                        // Sem filtro: Só risca a taxa se a Grazielly não estiver.
                         if (!isTaxa) isVisibleForFilter = true;
-                        if (isTaxa && (canP || canE)) isVisibleForFilter = true; 
+                        if (isTaxa && hasGrazielly) isVisibleForFilter = true; 
                     }
 
                     item.isCortado = !isVisibleForFilter;
@@ -726,7 +730,7 @@
                 }).forEach((item) => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
-                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado para este médico."' : '';
+                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado neste cenário."' : '';
                     
                     let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let impVisual = `<span style="${styleCorte}">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
