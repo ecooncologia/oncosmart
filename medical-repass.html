@@ -22,18 +22,9 @@
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
         .tab-btn { padding: 12px 24px; border: 1px solid #e5e7eb; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 14px; outline: none; }
         
-        /* Cores Suaves Alternadas para Abas Inativas */
-        .tab-btn:nth-of-type(odd):not(.active) {
-            background: #ecfdf5; /* Menta Pastel */
-        }
-
-        .tab-btn:nth-of-type(even):not(.active) {
-            background: #fffbeb; /* Pêssego Pastel */
-        }
-
+        .tab-btn:nth-of-type(odd):not(.active) { background: #ecfdf5; }
+        .tab-btn:nth-of-type(even):not(.active) { background: #fffbeb; }
         .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
-        
-        /* Estilo da Aba Ativa (Frente) */
         .tab-btn.active { color: #00995D; border-top: 4px solid #00995D; background: white; margin-bottom: -2px; padding-bottom: 14px; box-shadow: 0 -4px 6px -4px rgba(0,0,0,0.05); z-index: 2; }
         
         .tab-content { display: none; animation: fadeIn 0.3s; }
@@ -78,7 +69,6 @@
         .prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; display: block; margin-bottom: 3px; padding: 4px; font-size: 10px; font-weight: bold; border-radius: 4px; text-align: center;}
         .encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; display: block; padding: 4px; font-size: 10px; font-weight: bold; border-radius: 4px; text-align: center;}
         
-        /* Origem Badges */
         .origem-unimed { background: #d1fae5; color: #059669; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; margin-top: 4px;}
         .origem-part { background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; margin-top: 4px;}
 
@@ -317,6 +307,7 @@
                 return grupoMama.some(m => upper.includes(m));
             };
 
+            // Dra Grazielly não está no Grupo Mama, então ela entra no ELSE natural e recebe 12.50%
             if (pName) percP = 12.50; 
             if (eName) percE = isSpecial(eName) ? 37.50 : 12.50; 
 
@@ -533,6 +524,7 @@
             let sumLucroGlobal = 0;
             let sumRepasseGlobal = 0;
 
+            // 1. Agrupa os itens por paciente
             excelData.forEach(d => {
                 let isParticular = d.tipo === 'PARTICULAR';
                 
@@ -545,7 +537,7 @@
                         name: p, carteirinha: d.carteirinha, 
                         items: [], pId: null, pName: '', eId: null, eName: '',
                         fatPaciente: 0, impostoPaciente: 0, custoPaciente: 0, 
-                        lucroGlobalPaciente: 0, baseRepassePaciente: 0,
+                        lucroGlobalPaciente: 0, repasseP_Total: 0, repasseE_Total: 0,
                         hasUnimed: false, hasParticular: false
                     };
                 }
@@ -568,51 +560,100 @@
                     }
                 }
                 
-                const isGrazielly = (patientsTableObj[p].pName && patientsTableObj[p].pName.toUpperCase().includes('GRAZIELLY')) || 
-                                    (patientsTableObj[p].eName && patientsTableObj[p].eName.toUpperCase().includes('GRAZIELLY'));
-                
-                const isTaxa = d.medicamento.includes('TAXA') || d.tipo === 'HOS';
-                let isCortado = isTaxa && !isGrazielly; 
-
-                let fatItem = Number(d.valor.toFixed(2));
-                let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
-                let custoItem = Number((d.custo_informado || 0).toFixed(2));
-                let lucroItem = Number((fatItem - impItem - custoItem).toFixed(2));
-
-                let lucroRepasse = isCortado ? 0 : lucroItem;
-                if (lucroRepasse < 0) lucroRepasse = 0;
-
-                // NOVA REGRA DE BLINDAGEM DE TAXA:
-                // Se é uma TAXA e não é da Grazielly, nós *retiramos* esse valor 
-                // das somatórias gerais do paciente para não inflar a coluna de Faturamento e Lucro.
-                if (!isCortado) {
-                    patientsTableObj[p].fatPaciente += fatItem;
-                    patientsTableObj[p].impostoPaciente += impItem;
-                    patientsTableObj[p].custoPaciente += custoItem;
-                    patientsTableObj[p].lucroGlobalPaciente += lucroItem;
-                }
-                
-                patientsTableObj[p].baseRepassePaciente += lucroRepasse;
-                
-                patientsTableObj[p].items.push({ 
-                    ...d, fatItem, impItem, custoItem, lucroItem, isCortado, isParticular 
-                });
+                patientsTableObj[p].items.push(d);
             });
 
+            // 2. Calcula as matemáticas considerando o Filtro de Médico (Blindagem da TAXA)
             Object.keys(patientsTableObj).forEach(key => {
-                let pObj = patientsTableObj[key];
-                let keep = true;
+                let pat = patientsTableObj[key];
                 
-                if (filterPatient && !key.includes(filterPatient) && !(pObj.carteirinha || '').includes(filterPatient)) keep = false;
-                if (filterRepasseDoc && (pObj.pId !== filterRepasseDoc && pObj.eId !== filterRepasseDoc)) keep = false; 
-                
-                if(!keep) delete patientsTableObj[key];
-                else {
-                    sumUnimedGlobal += pObj.fatPaciente;
-                    sumImpostoGlobal += pObj.impostoPaciente;
-                    sumCustoGlobal += pObj.custoPaciente;
-                    sumLucroGlobal += pObj.lucroGlobalPaciente;
+                if (filterPatient && !key.includes(filterPatient) && !(pat.carteirinha || '').includes(filterPatient)) {
+                    delete patientsTableObj[key];
+                    return;
                 }
+                if (filterRepasseDoc && pat.pId !== filterRepasseDoc && pat.eId !== filterRepasseDoc) {
+                    delete patientsTableObj[key];
+                    return;
+                }
+
+                const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
+
+                pat.items.forEach(item => {
+                    let fatItem = Number(item.valor.toFixed(2));
+                    let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                    let custoItem = Number((item.custo_informado || 0).toFixed(2));
+                    let lucroItem = Number((fatItem - impItem - custoItem).toFixed(2));
+
+                    let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
+                    
+                    let canP = true;
+                    let canE = true;
+
+                    // Regra: Só a Dra Grazielly recebe comissão sobre Taxas
+                    if (isTaxa) {
+                        let pIsGraz = pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY');
+                        let eIsGraz = pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY');
+                        if (!pIsGraz) canP = false;
+                        if (!eIsGraz) canE = false;
+                    }
+
+                    // Se não tiver médico, ninguém ganha repasse do item
+                    if (!pat.pId) canP = false;
+                    if (!pat.eId) canE = false;
+
+                    let lucroRepasse = lucroItem > 0 ? lucroItem : 0;
+                    
+                    let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
+                    let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
+
+                    item.fatItem = fatItem;
+                    item.impItem = impItem;
+                    item.custoItem = custoItem;
+                    item.lucroItem = lucroItem;
+                    item.repasseP = repP;
+                    item.repasseE = repE;
+
+                    // Decide se esse item entra nos cálculos globais de "Faturamento Processado"
+                    // baseado em QUEM está pesquisando o relatório
+                    let isVisibleForFilter = false;
+                    if (filterRepasseDoc) {
+                        if (pat.pId === filterRepasseDoc && canP) isVisibleForFilter = true;
+                        if (pat.eId === filterRepasseDoc && canE) isVisibleForFilter = true;
+                    } else {
+                        // Sem filtro (Todos)
+                        if (!isTaxa) isVisibleForFilter = true;
+                        if (isTaxa && (canP || canE)) isVisibleForFilter = true; 
+                    }
+
+                    item.isCortado = !isVisibleForFilter; // Para riscar na tela o que não pertence ao médico
+
+                    if (isVisibleForFilter) {
+                        pat.fatPaciente += fatItem;
+                        pat.impostoPaciente += impItem;
+                        pat.custoPaciente += custoItem;
+                        pat.lucroGlobalPaciente += lucroItem;
+                    }
+
+                    if (filterRepasseDoc) {
+                        if (pat.pId === filterRepasseDoc) pat.repasseP_Total += repP;
+                        if (pat.eId === filterRepasseDoc) pat.repasseE_Total += repE;
+                    } else {
+                        pat.repasseP_Total += repP;
+                        pat.repasseE_Total += repE;
+                    }
+                });
+
+                // Se o médico foi filtrado e ele não tem direito a R$ 0,00 de nada deste paciente (ex: só tinha taxa cortada)
+                if (filterRepasseDoc && pat.repasseP_Total === 0 && pat.repasseE_Total === 0 && pat.fatPaciente === 0) {
+                    delete patientsTableObj[key];
+                    return;
+                }
+
+                sumUnimedGlobal += pat.fatPaciente;
+                sumImpostoGlobal += pat.impostoPaciente;
+                sumCustoGlobal += pat.custoPaciente;
+                sumLucroGlobal += pat.lucroGlobalPaciente;
+                sumRepasseGlobal += (pat.repasseP_Total + pat.repasseE_Total);
             });
             
             patListToPrint = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
@@ -631,15 +672,9 @@
             
             patListToPrint.forEach((pat, idx) => {
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
-                let repasseP_val = 0; let repasseE_val = 0;
-
-                if (pat.baseRepassePaciente > 0) {
-                    repasseP_val = Number((pat.baseRepassePaciente * (comissaoInfo.percP / 100)).toFixed(2));
-                    repasseE_val = Number((pat.baseRepassePaciente * (comissaoInfo.percE / 100)).toFixed(2));
-                }
                 
-                let repassePacienteTotal = repasseP_val + repasseE_val;
-                sumRepasseGlobal += repassePacienteTotal;
+                let repasseP_val = pat.repasseP_Total; 
+                let repasseE_val = pat.repasseE_Total;
 
                 let docHtml = '';
                 if (pat.pName) docHtml += `<div style="font-size:11px; color:#be185d; font-weight:bold; margin-bottom:2px;"><i class="fas fa-stethoscope"></i> Presc: ${pat.pName}</div>`;
@@ -647,16 +682,15 @@
                 if (!docHtml) docHtml = `<div style="font-size:11px; color:#9ca3af; font-style:italic;">Sem médico vinculado</div>`;
 
                 let repasseBadge = '';
-                if (pat.baseRepassePaciente <= 0) {
-                    repasseBadge = `<span style="color:#9ca3af; font-size:11px; font-weight:bold;">Sem Lucro Base</span>`;
+                if (repasseP_val === 0 && repasseE_val === 0) {
+                    repasseBadge = `<span style="color:#9ca3af; font-size:11px; font-weight:bold;">Sem Repasse</span>`;
                 } else {
-                    if (comissaoInfo.percP > 0) {
+                    if (repasseP_val > 0) {
                         repasseBadge += `<div class="prescritor">P: ${comissaoInfo.percP}% (R$ ${repasseP_val.toLocaleString('pt-BR',{minimumFractionDigits:2})})</div>`;
                     }
-                    if (comissaoInfo.percE > 0) {
+                    if (repasseE_val > 0) {
                         repasseBadge += `<div class="encaminhador">E: ${comissaoInfo.percE}% (R$ ${repasseE_val.toLocaleString('pt-BR',{minimumFractionDigits:2})})</div>`;
                     }
-                    if (comissaoInfo.totalPerc === 0) repasseBadge = `<span class="badge bg-gray">0%</span>`;
                 }
 
                 let custoVisualTotal = pat.impostoPaciente + pat.custoPaciente;
@@ -694,13 +728,13 @@
                 }).forEach((item) => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
-                    let titleTooltip = item.isCortado ? 'title="TAXA não repassada: Apenas Dra. Grazielly pontua taxa."' : '';
+                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado para este médico."' : '';
                     
                     let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let impVisual = `<span style="${styleCorte}">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let lucroVisual = `<span style="font-weight:bold; color:${item.lucroItem >= 0 ? '#166534' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
 
-                    let subBadgeOrigem = item.isParticular ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
+                    let subBadgeOrigem = item.tipo === 'PARTICULAR' ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
 
                     htmlBuffer += `<tr ${titleTooltip}>
                         <td style="${styleCorte}">${item.data}</td>
@@ -772,7 +806,7 @@
                         <div class="header-left">
                             <img src="${LOGO_URL}" alt="Logo">
                             <div class="header-text">
-                                <h1>Auditoria de Repasse Unimed</h1>
+                                <h1>Auditoria de Repasse Inteligente</h1>
                                 <p>Competência Base: ${periodStr}</p>
                             </div>
                         </div>
@@ -787,15 +821,12 @@
             patListToPrint.forEach(pat => {
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 
-                let repasseP_val = 0; let repasseE_val = 0;
-                if (pat.baseRepassePaciente > 0) {
-                    repasseP_val = Number((pat.baseRepassePaciente * (comissaoInfo.percP / 100)).toFixed(2));
-                    repasseE_val = Number((pat.baseRepassePaciente * (comissaoInfo.percE / 100)).toFixed(2));
-                }
+                let repasseP_val = pat.repasseP_Total;
+                let repasseE_val = pat.repasseE_Total;
                 let totalRepasse = repasseP_val + repasseE_val;
                 
                 sumPdfFat += pat.fatPaciente;
-                sumPdfLucro += pat.baseRepassePaciente;
+                sumPdfLucro += pat.lucroGlobalPaciente;
                 sumPdfRepasse += totalRepasse;
 
                 let rolesStr = '';
@@ -804,9 +835,9 @@
                 if (!rolesStr) rolesStr = 'Sem Vínculo Médico';
 
                 let repString = '';
-                if(comissaoInfo.percP > 0) repString += `P: ${comissaoInfo.percP}% (R$ ${repasseP_val.toLocaleString('pt-BR',{minimumFractionDigits:2})})<br>`;
-                if(comissaoInfo.percE > 0) repString += `E: ${comissaoInfo.percE}% (R$ ${repasseE_val.toLocaleString('pt-BR',{minimumFractionDigits:2})})`;
-                if(!repString) repString = '0%';
+                if (repasseP_val > 0) repString += `P: ${comissaoInfo.percP}% (R$ ${repasseP_val.toLocaleString('pt-BR',{minimumFractionDigits:2})})<br>`;
+                if (repasseE_val > 0) repString += `E: ${comissaoInfo.percE}% (R$ ${repasseE_val.toLocaleString('pt-BR',{minimumFractionDigits:2})})`;
+                if (!repString) repString = '0%';
 
                 let custoEImposto = pat.impostoPaciente + pat.custoPaciente;
 
@@ -814,20 +845,17 @@
                     <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${rolesStr}</span></td>
                     <td style="text-align:right; color:#0284c7;">R$ ${pat.fatPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                     <td style="text-align:right; color:#dc2626;">- R$ ${custoEImposto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td style="text-align:right; color:#166534;">R$ ${pat.baseRepassePaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td style="text-align:right; color:#166534;">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                     <td style="text-align:center; color:#7e22ce;">${repString}</td>
                 </tr>`;
                 
                 html += `<tr><td colspan="5" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
                 html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:12%;">Faturamento</th><th style="width:12%;">Imposto (12,33%)</th><th style="width:12%;">Custo Manual</th><th style="width:12%;">Lucro do Item</th></tr>`;
                 
-                pat.items.sort((a,b) => {
-                    let pa = a.data.split('/'); let pb = b.data.split('/');
-                    return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
-                }).forEach(item => {
+                pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
-                    let tagOrigem = item.isParticular ? ' (PART)' : '';
+                    let tagOrigem = item.tipo === 'PARTICULAR' ? ' (PART)' : '';
                     
                     html += `<tr>
                         <td style="text-align:center; ${styleCorte}">${item.data}</td>
@@ -891,7 +919,6 @@
             } 
             h += '<th class="th-total">Qtd</th><th class="th-total">Total (R$)</th></tr>'; 
             
-            // O SELETOR CORRIGIDO: #repTable thead
             document.querySelector('#repTable thead').innerHTML = h; 
             
             let b = ''; 
