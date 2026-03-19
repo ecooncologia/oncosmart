@@ -117,7 +117,13 @@
             <div class="card-header"><i class="fas fa-users-cog"></i> Gestão de Acessos</div>
             <div class="table-container">
                 <table id="usersTable">
-                    <thead><tr><th>Usuário</th><th style="width: 100px; text-align: center;">Admin Global</th><th style="text-align: right;">Ações</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th style="width: 100px; text-align: center;">Admin Global</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
                     <tbody><tr><td colspan="3" style="text-align:center; padding:20px;">Carregando...</td></tr></tbody>
                 </table>
             </div>
@@ -140,6 +146,7 @@
                     <div class="config-nav-item active" onclick="switchConfigTab('helpdesk', this)"><i class="fas fa-headset"></i> Helpdesk</div>
                     <div class="config-nav-item" onclick="switchConfigTab('financeiro', this)"><i class="fas fa-file-invoice-dollar"></i> Financeiro</div>
                     <div class="config-nav-item" onclick="switchConfigTab('clinico', this)"><i class="fas fa-user-nurse"></i> Clínico</div>
+                    <div class="config-nav-item" onclick="switchConfigTab('admin', this)" style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 15px;"><i class="fas fa-shield-alt"></i> Permissões (Admin)</div>
                 </div>
 
                 <div class="config-main">
@@ -210,6 +217,18 @@
                             </div>
                         </div>
                     </div>
+
+                    <div id="cfg-admin" class="config-section-content">
+                        <div class="config-box">
+                            <div class="config-box-header open">
+                                <h4 class="config-box-title"><i class="fas fa-key"></i> Matriz de Permissões por Setor</h4>
+                            </div>
+                            <div class="config-box-body open">
+                                <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 15px;">Defina quais páginas cada setor tem acesso por padrão. Você poderá "puxar" esse padrão ao editar um usuário específico.</p>
+                                <div class="list-manager" id="list-admin-setores" style="max-height: 450px;"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -223,22 +242,42 @@
     <div id="modalPerms" class="modal-overlay">
         <div class="modal-content" style="height: auto; max-height: 90vh;">
             <div class="modal-header">
-                <h2 style="margin:0; font-size:1.2rem; color:var(--secondary);">Gerenciar Permissões</h2>
+                <h2 style="margin:0; font-size:1.2rem; color:var(--secondary);">Permissões Individuais</h2>
                 <button onclick="closeModal('modalPerms')" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
             </div>
             <div class="modal-body">
-                <p id="modalUserEmail" style="color:#64748b; margin-bottom:20px; font-weight:600;"></p>
-                <input type="hidden" id="modalPermUserId">
-                <div class="perm-grid">
-                    <div class="perm-group"><h4><i class="fas fa-globe"></i> Geral</h4><div class="perm-item"><span class="perm-label">Dashboard</span> <label class="switch"><input type="checkbox" id="p_dashboard"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Eventos</span> <label class="switch"><input type="checkbox" id="p_eventos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Tabela TUSS</span> <label class="switch"><input type="checkbox" id="p_tuss"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Mural de ATAS</span> <label class="switch"><input type="checkbox" id="p_atas"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Helpdesk (Usuário)</span> <label class="switch"><input type="checkbox" id="p_helpdesk"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Helpdesk (Admin TI)</span> <label class="switch"><input type="checkbox" id="p_helpdesk_admin"><span class="slider"></span></label></div></div>
-                    <div class="perm-group"><h4><i class="fas fa-user-nurse"></i> Clínico</h4><div class="perm-item"><span class="perm-label">Triagem (Recepção)</span> <label class="switch"><input type="checkbox" id="p_transporte"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Triagem (Enfermagem)</span> <label class="switch"><input type="checkbox" id="p_enfermagem"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Indicadores Enf.</span> <label class="switch"><input type="checkbox" id="p_indicadores_enf"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Médicos</span> <label class="switch"><input type="checkbox" id="p_medicos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Pacientes</span> <label class="switch"><input type="checkbox" id="p_pacientes"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Escala Plantão</span> <label class="switch"><input type="checkbox" id="p_plantao"><span class="slider"></span></label></div></div>
-                    <div class="perm-group"><h4><i class="fas fa-file-invoice-dollar"></i> Financeiro</h4><div class="perm-item"><span class="perm-label">Orçamentos</span> <label class="switch"><input type="checkbox" id="p_orcamentos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Particulares (Vendas)</span> <label class="switch"><input type="checkbox" id="p_consultas"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Repasse Médico</span> <label class="switch"><input type="checkbox" id="p_repass"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Dashboard Repasse</span> <label class="switch"><input type="checkbox" id="p_dashboard-repasse"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Procedimentos</span> <label class="switch"><input type="checkbox" id="p_procedimentos"><span class="slider"></span></label></div></div>
-                    <div class="perm-group"><h4><i class="fas fa-laptop-code"></i> Sistemas</h4><div class="perm-item"><span class="perm-label">Controle de Selos</span> <label class="switch"><input type="checkbox" id="p_selos"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Dashboard Helpdesk</span> <label class="switch"><input type="checkbox" id="p_helpdesk_dash"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Stenci</span> <label class="switch"><input type="checkbox" id="p_stenci"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">Trello</span> <label class="switch"><input type="checkbox" id="p_kanban"><span class="slider"></span></label></div><div class="perm-item"><span class="perm-label">OncoFood - Copa</span> <label class="switch"><input type="checkbox" id="p_oncofood"><span class="slider"></span></label></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                    <p id="modalUserEmail" style="color:#64748b; font-weight:600; margin:0;"></p>
+                    
+                    <button class="btn" onclick="loadSectorDefaultsToForm()" style="background:#0ea5e9; color:white; padding:6px 12px; font-size:12px; border-radius:6px;">
+                        <i class="fas fa-download"></i> Puxar Padrão do Setor
+                    </button>
                 </div>
+                <input type="hidden" id="modalPermUserId">
+                <div class="perm-grid" id="individualPermsContainer">
+                    </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('modalPerms')">Cancelar</button>
-                <button class="btn btn-success" onclick="savePermissions()">Salvar</button>
+                <button class="btn btn-success" onclick="savePermissions()">Salvar Permissões</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalSectorPerms" class="modal-overlay" style="z-index: 1050;">
+        <div class="modal-content" style="height: auto; max-height: 90vh;">
+            <div class="modal-header">
+                <h2 style="margin:0; font-size:1.2rem; color:#0284c7;"><i class="fas fa-building"></i> Template do Setor</h2>
+                <button onclick="closeModal('modalSectorPerms')" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:#64748b; margin-bottom:20px; font-weight:600;">Definindo padrão para: <strong id="modalSectorName" style="color:var(--text-dark);"></strong></p>
+                <input type="hidden" id="modalSectorHidden">
+                <div class="perm-grid" id="sectorPermsContainer">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalSectorPerms')">Concluir</button>
             </div>
         </div>
     </div>
@@ -282,15 +321,80 @@
 
     <script>
         let allUsersData = {};
-        let systemConfig = { helpdesk: { setores: [], categorias: [], filas: {} }, financeiro: { status: [] }, clinico: { origens: [] } };
+        
+        let systemConfig = { 
+            helpdesk: { setores: [], categorias: [], filas: {} }, 
+            financeiro: { status: [] }, 
+            clinico: { origens: [] },
+            admin: { permissoes_setor: {} } 
+        };
+        
         let expandedCategoryNodes = new Set();
+
+        const permissionMap = [
+            { group: "Geral", icon: "fa-globe", items: [
+                { id: "dashboard", label: "Dashboard" },
+                { id: "eventos", label: "Eventos" },
+                { id: "tuss", label: "Tabela TUSS" },
+                { id: "atas", label: "Mural de ATAS" },
+                { id: "helpdesk", label: "Helpdesk (Usuário)" },
+                { id: "helpdesk_admin", label: "Helpdesk (Admin TI)" }
+            ]},
+            { group: "Clínico", icon: "fa-user-nurse", items: [
+                { id: "transporte", label: "Triagem (Recepção)" },
+                { id: "enfermagem", label: "Triagem (Enfermagem)" },
+                { id: "indicadores_enf", label: "Indicadores Enf." },
+                { id: "medicos", label: "Médicos" },
+                { id: "pacientes", label: "Pacientes" },
+                { id: "plantao", label: "Escala Plantão" }
+            ]},
+            { group: "Financeiro", icon: "fa-file-invoice-dollar", items: [
+                { id: "orcamentos", label: "Orçamentos" },
+                { id: "consultas", label: "Particulares (Vendas)" },
+                { id: "repass", label: "Repasse Médico" },
+                { id: "dashboard-repasse", label: "Dashboard Repasse" },
+                { id: "procedimentos", label: "Procedimentos" }
+            ]},
+            { group: "Sistemas", icon: "fa-laptop-code", items: [
+                { id: "selos", label: "Controle de Selos" },
+                { id: "helpdesk_dash", label: "Dashboard Helpdesk" },
+                { id: "stenci", label: "Stenci" },
+                { id: "kanban", label: "Trello" },
+                { id: "oncofood", label: "OncoFood - Copa" }
+            ]}
+        ];
 
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('admin', 'Administração');
+            generatePermissionHTML('individualPermsContainer', 'p_');
+            generatePermissionHTML('sectorPermsContainer', 'sec_');
             await loadSystemConfig();
             await loadUsers();
         });
 
+        function generatePermissionHTML(containerId, prefix) {
+            const container = document.getElementById(containerId);
+            let html = '';
+            permissionMap.forEach(g => {
+                html += `<div class="perm-group"><h4><i class="fas ${g.icon}"></i> ${g.group}</h4>`;
+                g.items.forEach(item => {
+                    let onChangeEvent = prefix === 'sec_' ? `onchange="saveSectorPermissionField(this.id, this.checked)"` : '';
+                    html += `<div class="perm-item">
+                                <span class="perm-label">${item.label}</span> 
+                                <label class="switch">
+                                    <input type="checkbox" id="${prefix}${item.id}" ${onChangeEvent}>
+                                    <span class="slider"></span>
+                                </label>
+                             </div>`;
+                });
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // ==========================================
+        // CONFIGURAÇÕES DO SISTEMA E RBAC (SETORES)
+        // ==========================================
         function openConfigModal() { document.getElementById('modalConfig').style.display = 'flex'; renderAllConfigs(); }
         
         function switchConfigTab(tabName, element) {
@@ -306,15 +410,11 @@
             const header = body.previousElementSibling;
             
             if (body.classList.contains('open')) {
-                body.classList.remove('open');
-                header.classList.remove('open');
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-right');
+                body.classList.remove('open'); header.classList.remove('open');
+                icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-right');
             } else {
-                body.classList.add('open');
-                header.classList.add('open');
-                icon.classList.remove('fa-chevron-right');
-                icon.classList.add('fa-chevron-down');
+                body.classList.add('open'); header.classList.add('open');
+                icon.classList.remove('fa-chevron-right'); icon.classList.add('fa-chevron-down');
             }
         }
 
@@ -329,16 +429,17 @@
 
         async function loadSystemConfig() {
             try {
-                // BLINDADO
                 const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
                 const data = await res.json();
                 
                 if(data.helpdesk_config) systemConfig.helpdesk = data.helpdesk_config;
                 if(data.financeiro_config) systemConfig.financeiro = data.financeiro_config;
                 if(data.clinico_config) systemConfig.clinico = data.clinico_config;
+                if(data.admin_config) systemConfig.admin = data.admin_config;
                 
                 if(!systemConfig.helpdesk.filas) systemConfig.helpdesk.filas = {};
                 systemConfig.helpdesk.categorias = normalizeCategoryTree(systemConfig.helpdesk.categorias || []);
+                if(!systemConfig.admin.permissoes_setor) systemConfig.admin.permissoes_setor = {};
             } catch(e) { console.error("Erro config", e); }
         }
 
@@ -348,13 +449,73 @@
             renderFilasConfig(); 
             renderList('financeiro', 'status', 'list-financeiro-status');
             renderList('clinico', 'origens', 'list-clinico-origens');
+            renderAdminSectors(); 
         }
 
+        function renderAdminSectors() {
+            const listEl = document.getElementById('list-admin-setores');
+            
+            // BLINDAGEM DE ARRAYS PARA O FIREBASE
+            let setoresObj = systemConfig.helpdesk.setores || [];
+            let setores = Array.isArray(setoresObj) ? setoresObj : Object.values(setoresObj);
+            
+            let html = '';
+            
+            if (setores.length === 0) {
+                listEl.innerHTML = '<p style="padding: 15px; color: #64748b; font-size: 13px;">Você não tem nenhum setor cadastrado. Vá na aba Helpdesk e crie os setores da clínica primeiro.</p>';
+                return;
+            }
+
+            setores.sort().forEach(s => {
+                html += `
+                    <div class="list-item">
+                        <span style="font-weight:700; color:#334155;"><i class="fas fa-layer-group" style="color:#0ea5e9; margin-right:8px;"></i> ${s}</span>
+                        <button class="btn btn-info btn-sm" style="background:#0ea5e9; padding: 6px 12px;" onclick="openSectorPermsModal('${s}')">
+                            <i class="fas fa-cogs"></i> Moldar Permissões
+                        </button>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        function openSectorPermsModal(sectorName) {
+            document.getElementById('modalSectorName').innerText = sectorName;
+            document.getElementById('modalSectorHidden').value = sectorName;
+            
+            let currentPerms = systemConfig.admin.permissoes_setor[sectorName] || {};
+            
+            permissionMap.forEach(g => {
+                g.items.forEach(item => {
+                    const el = document.getElementById('sec_' + item.id);
+                    if(el) el.checked = (currentPerms[item.id] === true);
+                });
+            });
+
+            document.getElementById('modalSectorPerms').style.display = 'flex';
+        }
+
+        function saveSectorPermissionField(checkboxId, isChecked) {
+            const sectorName = document.getElementById('modalSectorHidden').value;
+            if(!sectorName) return;
+
+            const permId = checkboxId.replace('sec_', '');
+            
+            if(!systemConfig.admin.permissoes_setor[sectorName]) {
+                systemConfig.admin.permissoes_setor[sectorName] = {};
+            }
+            systemConfig.admin.permissoes_setor[sectorName][permId] = isChecked;
+        }
+
+        // Continuação do Legado de Configurações (Filas, Árvores)
         function renderFilasConfig() {
             const wrap = document.getElementById('wrap-filas');
             wrap.innerHTML = '';
             
-            const rootCats = (systemConfig.helpdesk.categorias || []).map(c => c.nome);
+            let rootCatsObj = systemConfig.helpdesk.categorias || [];
+            let rootCatsArr = Array.isArray(rootCatsObj) ? rootCatsObj : Object.values(rootCatsObj);
+            const rootCats = rootCatsArr.map(c => c.nome);
+            
             const techs = Object.values(allUsersData).filter(u => u.permissoes && u.permissoes.helpdesk_admin);
             
             if(techs.length === 0) {
@@ -369,7 +530,9 @@
             let html = '<table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">';
             techs.forEach((tech, index) => {
                 const email = tech.email.toLowerCase();
-                const userFilas = systemConfig.helpdesk.filas[email] || [];
+                let userFilasObj = systemConfig.helpdesk.filas[email] || [];
+                let userFilas = Array.isArray(userFilasObj) ? userFilasObj : Object.values(userFilasObj);
+                
                 const borderClass = index !== techs.length - 1 ? 'border-bottom:1px solid #eee;' : '';
                 
                 html += `
@@ -398,12 +561,15 @@
         }
 
         function toggleFila(email, cat, isChecked) {
-            if(!systemConfig.helpdesk.filas[email]) systemConfig.helpdesk.filas[email] = [];
+            let filasObj = systemConfig.helpdesk.filas[email] || [];
+            let userFilas = Array.isArray(filasObj) ? filasObj : Object.values(filasObj);
+            
             if(isChecked) {
-                if(!systemConfig.helpdesk.filas[email].includes(cat)) systemConfig.helpdesk.filas[email].push(cat);
+                if(!userFilas.includes(cat)) userFilas.push(cat);
             } else {
-                systemConfig.helpdesk.filas[email] = systemConfig.helpdesk.filas[email].filter(c => c !== cat);
+                userFilas = userFilas.filter(c => c !== cat);
             }
+            systemConfig.helpdesk.filas[email] = userFilas;
         }
 
         function toggleCategoryNode(pathKey) {
@@ -414,11 +580,14 @@
 
         function renderCategoryTree() {
             const container = document.getElementById('container-categorias-complexas');
-            container.innerHTML = buildCategoryHTML(systemConfig.helpdesk.categorias, [], 0);
+            let catsObj = systemConfig.helpdesk.categorias || [];
+            let cats = Array.isArray(catsObj) ? catsObj : Object.values(catsObj);
+            container.innerHTML = buildCategoryHTML(cats, [], 0);
         }
 
-        function buildCategoryHTML(subs, path, level) {
-            if(!subs || subs.length === 0) return '';
+        function buildCategoryHTML(subsObj, path, level) {
+            let subs = Array.isArray(subsObj) ? subsObj : Object.values(subsObj || {});
+            if(subs.length === 0) return '';
             let html = '';
             subs.forEach((cat, index) => {
                 const currentPath = [...path, index];
@@ -426,7 +595,8 @@
                 const pathKey = currentPath.join('-');
                 
                 const isRoot = level === 0;
-                const hasChildren = cat.subs && cat.subs.length > 0;
+                let childSubs = Array.isArray(cat.subs) ? cat.subs : Object.values(cat.subs || {});
+                const hasChildren = childSubs.length > 0;
                 const isOpen = expandedCategoryNodes.has(pathKey);
                 
                 const blockStyle = isRoot 
@@ -467,7 +637,7 @@
                             </div>
                         </div>
                         <div style="${isRoot ? 'padding: 0 15px 10px 5px;' : ''} display: ${isOpen ? 'block' : 'none'};">
-                            ${buildCategoryHTML(cat.subs, currentPath, level + 1)}
+                            ${buildCategoryHTML(childSubs, currentPath, level + 1)}
                         </div>
                     </div>
                 `;
@@ -476,8 +646,10 @@
         }
 
         function getNodeByPath(path) {
-            let currentArray = systemConfig.helpdesk.categorias;
-            for (let i = 0; i < path.length - 1; i++) { currentArray = currentArray[path[i]].subs; }
+            let currentArray = Array.isArray(systemConfig.helpdesk.categorias) ? systemConfig.helpdesk.categorias : Object.values(systemConfig.helpdesk.categorias || {});
+            for (let i = 0; i < path.length - 1; i++) { 
+                currentArray = Array.isArray(currentArray[path[i]].subs) ? currentArray[path[i]].subs : Object.values(currentArray[path[i]].subs || {});
+            }
             const index = path[path.length - 1];
             return { parentArray: currentArray, index: index, node: currentArray[index] };
         }
@@ -486,7 +658,9 @@
             const input = document.getElementById('new-helpdesk-categoria');
             const val = input.value.trim();
             if(val) {
-                systemConfig.helpdesk.categorias.push({ nome: val, subs: [] });
+                let cats = Array.isArray(systemConfig.helpdesk.categorias) ? systemConfig.helpdesk.categorias : Object.values(systemConfig.helpdesk.categorias || {});
+                cats.push({ nome: val, subs: [] });
+                systemConfig.helpdesk.categorias = cats;
                 input.value = '';
                 renderAllConfigs();
             }
@@ -505,8 +679,9 @@
             const { node } = getNodeByPath(path);
             const newName = prompt(`Criar subcategoria dentro de "${node.nome}":`);
             if (newName && newName.trim() !== '') {
-                if (!node.subs) node.subs = [];
-                node.subs.push({ nome: newName.trim(), subs: [] });
+                let childSubs = Array.isArray(node.subs) ? node.subs : Object.values(node.subs || {});
+                childSubs.push({ nome: newName.trim(), subs: [] });
+                node.subs = childSubs;
                 expandedCategoryNodes.add(path.join('-'));
                 renderAllConfigs();
             }
@@ -543,16 +718,20 @@
             sel.innerHTML = '<option value="">Selecione de onde copiar...</option>';
 
             const flatCats = [];
-            function traverse(arr, prefix, currentPath) {
+            function traverse(arrObj, prefix, currentPath) {
+                let arr = Array.isArray(arrObj) ? arrObj : Object.values(arrObj || {});
                 arr.forEach((c, i) => {
                     const newPath = [...currentPath, i];
                     const newPrefix = prefix ? prefix + ' > ' + c.nome : c.nome;
                     const isSelfOrDescendant = newPath.join('-').startsWith(path.join('-'));
-                    if (!isSelfOrDescendant && c.subs && c.subs.length > 0) flatCats.push({ name: newPrefix, path: newPath });
-                    if (c.subs) traverse(c.subs, newPrefix, newPath);
+                    
+                    let childSubs = Array.isArray(c.subs) ? c.subs : Object.values(c.subs || {});
+                    if (!isSelfOrDescendant && childSubs.length > 0) flatCats.push({ name: newPrefix, path: newPath });
+                    if (childSubs.length > 0) traverse(childSubs, newPrefix, newPath);
                 });
             }
-            traverse(systemConfig.helpdesk.categorias, '', []);
+            let rootCats = Array.isArray(systemConfig.helpdesk.categorias) ? systemConfig.helpdesk.categorias : Object.values(systemConfig.helpdesk.categorias || {});
+            traverse(rootCats, '', []);
 
             if(flatCats.length === 0) return alert("Não há outras categorias com conteúdo disponível.");
 
@@ -568,9 +747,12 @@
             const sourceNode = getNodeByPath(JSON.parse(sourcePathStr)).node;
             const targetNode = getNodeByPath(JSON.parse(targetPathStr)).node;
 
-            const copySubs = JSON.parse(JSON.stringify(sourceNode.subs));
-            if(!targetNode.subs) targetNode.subs = [];
-            targetNode.subs.push(...copySubs);
+            let srcSubs = Array.isArray(sourceNode.subs) ? sourceNode.subs : Object.values(sourceNode.subs || {});
+            const copySubs = JSON.parse(JSON.stringify(srcSubs));
+            
+            let tgtSubs = Array.isArray(targetNode.subs) ? targetNode.subs : Object.values(targetNode.subs || {});
+            tgtSubs.push(...copySubs);
+            targetNode.subs = tgtSubs;
 
             expandedCategoryNodes.add(JSON.parse(targetPathStr).join('-'));
             closeModal('modalImportSub');
@@ -578,7 +760,9 @@
         }
 
         function renderList(module, key, elementId) {
-            const list = systemConfig[module][key] || [];
+            let listObj = systemConfig[module][key] || [];
+            let list = Array.isArray(listObj) ? listObj : Object.values(listObj);
+            
             const el = document.getElementById(elementId);
             el.innerHTML = '';
             list.forEach((item, index) => {
@@ -591,16 +775,27 @@
             const input = document.getElementById(inputId);
             const val = input.value.trim();
             if(val) {
-                if(!systemConfig[module][key]) systemConfig[module][key] = [];
-                systemConfig[module][key].push(val);
+                let listObj = systemConfig[module][key] || [];
+                let list = Array.isArray(listObj) ? listObj : Object.values(listObj);
+                
+                list.push(val);
+                systemConfig[module][key] = list;
+                
                 input.value = '';
                 renderList(module, key, `list-${module}-${key === 'origens' ? 'origens' : key}`);
+                if (key === 'setores') renderAdminSectors(); 
             }
         }
 
         function removeItem(module, key, index) {
-            systemConfig[module][key].splice(index, 1);
+            let listObj = systemConfig[module][key] || [];
+            let list = Array.isArray(listObj) ? listObj : Object.values(listObj);
+            
+            list.splice(index, 1);
+            systemConfig[module][key] = list;
+            
             renderList(module, key, `list-${module}-${key === 'origens' ? 'origens' : key}`);
+            if (key === 'setores') renderAdminSectors();
         }
 
         async function saveSystemConfig() {
@@ -608,10 +803,10 @@
                 const btn = document.querySelector('#modalConfig .btn-success');
                 btn.innerHTML = 'Salvando...'; btn.disabled = true;
                 
-                // BLINDADO
                 await fetch(`${API_BASE_URL}/system_configs`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({ id_firebase: 'helpdesk_config', ...systemConfig.helpdesk }) });
                 await fetch(`${API_BASE_URL}/system_configs`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({ id_firebase: 'financeiro_config', ...systemConfig.financeiro }) });
                 await fetch(`${API_BASE_URL}/system_configs`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({ id_firebase: 'clinico_config', ...systemConfig.clinico }) });
+                await fetch(`${API_BASE_URL}/system_configs`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({ id_firebase: 'admin_config', ...systemConfig.admin }) });
                 
                 setTimeout(() => {
                     alert("Configurações atualizadas!");
@@ -626,7 +821,6 @@
         // ========================
         async function loadUsers() {
             try { 
-                // BLINDADO
                 const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }); 
                 const data = await res.json(); 
                 allUsersData = normalizeData(data); 
@@ -662,7 +856,7 @@
                     </td>
                     <td style="text-align: right;">
                         <button class="action-btn btn-edit-user" onclick="openEditUserModal('${key}')" title="Editar Perfil"><i class="fas fa-user-edit"></i></button>
-                        <button class="action-btn btn-edit" onclick="openPermsModal('${key}')" title="Permissões"><i class="fas fa-sliders-h"></i></button>
+                        <button class="action-btn btn-edit" onclick="openPermsModal('${key}')" title="Permissões Individuais"><i class="fas fa-sliders-h"></i></button>
                         <button class="action-btn btn-delete" onclick="deleteUser('${key}', '${user.email}')" title="Excluir"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
@@ -670,13 +864,40 @@
             });
         }
 
+        function loadSectorDefaultsToForm() {
+            const key = document.getElementById('modalPermUserId').value;
+            const user = allUsersData[key];
+            
+            if (!user.setor) return alert("Este usuário não possui um setor definido. Edite o perfil dele primeiro para vincular a um setor.");
+            
+            const template = systemConfig.admin.permissoes_setor[user.setor];
+            if (!template) return alert(`O setor '${user.setor}' ainda não possui um template de permissões configurado na aba Admin (Engrenagem inferior).`);
+
+            if (!confirm(`Deseja preencher as caixinhas com o padrão do setor '${user.setor}'?\n(Isso não salvará automaticamente, você ainda poderá ajustar antes de clicar em Salvar).`)) return;
+
+            permissionMap.forEach(g => {
+                g.items.forEach(item => {
+                    const el = document.getElementById('p_' + item.id);
+                    if (el) {
+                        el.checked = (template[item.id] === true);
+                    }
+                });
+            });
+        }
+
         function openPermsModal(key) {
             const user = allUsersData[key]; 
             document.getElementById('modalPermUserId').value = key; 
-            document.getElementById('modalUserEmail').innerText = user.nome;
+            document.getElementById('modalUserEmail').innerText = user.nome + ` (${user.setor || 'Sem Setor'})`;
             const p = user.permissoes || {};
-            const fields = ['dashboard', 'helpdesk', 'helpdesk_admin', 'helpdesk_dash', 'transporte', 'enfermagem', 'indicadores_enf', 'medicos', 'pacientes', 'plantao', 'orcamentos', 'consultas', 'repass', 'dashboard-repasse', 'procedimentos', 'selos', 'stenci', 'eventos', 'atas', 'kanban', 'oncofood', 'tuss'];
-            fields.forEach(f => { const el = document.getElementById('p_' + f); if(el) el.checked = (p[f] === true); });
+            
+            permissionMap.forEach(g => {
+                g.items.forEach(item => {
+                    const el = document.getElementById('p_' + item.id);
+                    if(el) el.checked = (p[item.id] === true);
+                });
+            });
+
             document.getElementById('modalPerms').style.display = 'flex';
         }
 
@@ -684,15 +905,19 @@
             const key = document.getElementById('modalPermUserId').value; 
             const user = allUsersData[key];
             const newPerms = { admin: user.permissoes.admin };
-            const fields = ['dashboard', 'helpdesk', 'helpdesk_admin', 'helpdesk_dash', 'transporte', 'enfermagem', 'indicadores_enf', 'medicos', 'pacientes', 'plantao', 'orcamentos', 'consultas', 'repass', 'dashboard-repasse', 'procedimentos', 'selos', 'stenci', 'eventos', 'atas', 'kanban', 'oncofood', 'tuss'];
-            fields.forEach(f => { const el = document.getElementById('p_' + f); if(el) newPerms[f] = el.checked; });
+            
+            permissionMap.forEach(g => {
+                g.items.forEach(item => {
+                    const el = document.getElementById('p_' + item.id);
+                    if(el) newPerms[item.id] = el.checked;
+                });
+            });
+
             user.permissoes = newPerms;
-            // BLINDADO
             await fetch(`${API_BASE_URL}/usuarios/${key}`, { method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(user) });
             closeModal('modalPerms'); loadUsers();
         }
 
-        // --- EDIÇÃO DE NOME E SETOR ---
         function openEditUserModal(key) {
             const user = allUsersData[key];
             document.getElementById('editUserId').value = key;
@@ -700,8 +925,11 @@
             
             const selSector = document.getElementById('editUserSector');
             selSector.innerHTML = '<option value="">Sem Setor Definido</option>';
-            const setores = systemConfig.helpdesk.setores || [];
-            setores.forEach(s => {
+            
+            let setoresObj = systemConfig.helpdesk.setores || [];
+            let setores = Array.isArray(setoresObj) ? setoresObj : Object.values(setoresObj);
+            
+            setores.sort().forEach(s => {
                 const selected = (user.setor === s) ? 'selected' : '';
                 selSector.innerHTML += `<option value="${s}" ${selected}>${s}</option>`;
             });
@@ -720,7 +948,6 @@
             user.nome = newName;
             user.setor = newSector;
 
-            // BLINDADO
             await fetch(`${API_BASE_URL}/usuarios/${key}`, { 
                 method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(user) 
             });
@@ -732,7 +959,6 @@
         async function toggleAdmin(key, isChecked, email) { 
             const user = allUsersData[key]; 
             user.permissoes.admin = isChecked; 
-            // BLINDADO
             await fetch(`${API_BASE_URL}/usuarios/${key}`, { method: 'PUT', headers: {'Content-Type': 'application/json', ...API_HEADERS}, body: JSON.stringify(user) }); 
         }
         
@@ -740,12 +966,10 @@
             const name = document.getElementById('newUserName').value.trim(); const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
             if(!name || !email) return alert("Preencha os campos.");
             const id = email.replace(/\./g, ',');
-            // BLINDADO
             await fetch(`${API_BASE_URL}/usuarios`, { method: 'POST', headers: {'Content-Type':'application/json', ...API_HEADERS}, body: JSON.stringify({id_firebase: id, nome: name, email: email, permissoes: {dashboard: false}}) });
             alert("Criado!"); loadUsers();
         }
         
-        // BLINDADO
         async function deleteUser(key) { if(confirm("Excluir?")) { await fetch(`${API_BASE_URL}/usuarios/${key}`, { method: 'DELETE', headers: API_HEADERS }); loadUsers(); } }
         
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
