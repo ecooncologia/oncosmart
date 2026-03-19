@@ -797,15 +797,19 @@
                     }, 
                     body: JSON.stringify(obj) 
                 });
-                
-                // --- NOVA LÓGICA: AUTO-CADASTRO DE PACIENTE PARA APLICAÇÕES ---
+
+                // =========================================================================
+                // INÍCIO DA MÁGICA: Integração de Particulares no Repasse e Aba Pacientes
+                // =========================================================================
                 const procStr = document.getElementById('saleProcedureName').value.toUpperCase();
                 if (saleType === 'particular' && (procStr.includes('APLICAÇÃO') || procStr.includes('APLICACAO'))) {
+                    
                     const pacNomeBase = obj.paciente;
                     const docNomeBase = obj.medico;
                     const pacIdCriado = 'pac_' + pacNomeBase.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                     
                     try {
+                        // 1. Cadastra na aba de Pacientes
                         const resPac = await fetch(`${API_BASE_URL}/pacientes/${pacIdCriado}`, { headers: API_HEADERS });
                         if (!resPac.ok || resPac.status === 404) {
                             let docIdParaVincular = Object.keys(doctors).find(k => doctors[k].nome === docNomeBase);
@@ -813,6 +817,11 @@
                                 id_firebase: pacIdCriado,
                                 nome: pacNomeBase.toUpperCase(),
                                 doctor_id: docIdParaVincular || '',
+                                status: 'Em Tratamento', // <- Garantindo o status para não ficar oculto no pacientes.html
+                                prescritor_id: '',
+                                encaminhador_id: '',
+                                telefone: '',
+                                cpf: '',
                                 data_cadastro: new Date().toISOString(),
                                 origem: 'auto_particular'
                             };
@@ -822,9 +831,41 @@
                                 body: JSON.stringify(novoPacienteAuto)
                             });
                         }
-                    } catch(err) { console.error("Erro ao auto-cadastrar paciente particular:", err); }
+
+                        // 2. Injeta no Repasse Inteligente (/repasse_unimed) APENAS SE FOR NOVA VENDA
+                        if (!id) {
+                            const dateParts = obj.data.split('-');
+                            const compRepasse = `${dateParts[1]}/${dateParts[0]}`; // Transforma 2026-03-24 para 03/2026
+                            
+                            const repasseAuto = {
+                                id_firebase: 'rep_part_' + Date.now(),
+                                paciente: pacNomeBase.toUpperCase(),
+                                data_atendimento: obj.data,
+                                competencia: compRepasse,
+                                valor_pago: obj.valor_final, // Valor limpo (já sem a taxa da maquininha)
+                                descricao: `Aplicação Particular - ${obj.procedimento}`,
+                                tipo: 'Particular', // Tag mágica para o Nicolas
+                                custo_informado: 0,
+                                impostos_retidos: 0,
+                                dados_extras: JSON.stringify({ 
+                                    origem: 'venda_particular', 
+                                    medico_atendimento: docNomeBase,
+                                    forma_pagamento: obj.forma_pagamento
+                                }),
+                                criado_por: 'Sistema Automático'
+                            };
+
+                            await fetch(`${API_BASE_URL}/repasse_unimed`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                                body: JSON.stringify(repasseAuto)
+                            });
+                        }
+                    } catch(err) { console.error("Erro ao auto-cadastrar no repasse inteligente:", err); }
                 }
-                // -------------------------------------------------------------
+                // =========================================================================
+                // FIM DA MÁGICA
+                // =========================================================================
 
                 alert(id ? "Atualizado com sucesso!" : "Registrado com sucesso!");
                 resetForm();
