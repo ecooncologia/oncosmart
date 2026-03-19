@@ -434,10 +434,8 @@
             return normalized;
         }
 
-        // --- FUNÇÃO PARA PEGAR O NOME DO USUÁRIO LOGADO (100% BLINDADA) ---
         function getLoggedUser() {
             try {
-                // 1. Tenta achar objetos JSON criados no momento do Login pelo global.js
                 const keysJSON = ['user', 'usuario', 'userData', 'user_info', 'loggedUser'];
                 for (let k of keysJSON) {
                     let item = localStorage.getItem(k);
@@ -451,14 +449,12 @@
                     }
                 }
                 
-                // 2. Tenta achar nomes salvos como texto direto no Cache
                 const keysText = ['userName', 'user_name', 'nome_usuario', 'usuario_nome'];
                 for (let k of keysText) {
                     let item = localStorage.getItem(k);
                     if (item) return item;
                 }
 
-                // 3. Fallback: Puxa direto do HTML da barra superior
                 const userElement = document.querySelector('.user-name, .header-user, #userName');
                 if (userElement && userElement.innerText) return userElement.innerText.trim();
 
@@ -698,7 +694,7 @@
             const total = parseFloat(document.getElementById('saleProcedureCost').value) || 0;
             
             let obj = {
-                paciente: document.getElementById('salePatientName').value,
+                paciente: document.getElementById('salePatientName').value.trim(),
                 medico: document.getElementById('saleDoctorName').value,
                 procedimento: document.getElementById('saleProcedureName').value,
                 data: document.getElementById('saleDate').value,
@@ -801,6 +797,35 @@
                     }, 
                     body: JSON.stringify(obj) 
                 });
+                
+                // --- NOVA LÓGICA: AUTO-CADASTRO DE PACIENTE PARA APLICAÇÕES ---
+                const procStr = document.getElementById('saleProcedureName').value.toUpperCase();
+                if (saleType === 'particular' && (procStr.includes('APLICAÇÃO') || procStr.includes('APLICACAO'))) {
+                    const pacNomeBase = obj.paciente;
+                    const docNomeBase = obj.medico;
+                    const pacIdCriado = 'pac_' + pacNomeBase.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    
+                    try {
+                        const resPac = await fetch(`${API_BASE_URL}/pacientes/${pacIdCriado}`, { headers: API_HEADERS });
+                        if (!resPac.ok || resPac.status === 404) {
+                            let docIdParaVincular = Object.keys(doctors).find(k => doctors[k].nome === docNomeBase);
+                            const novoPacienteAuto = {
+                                id_firebase: pacIdCriado,
+                                nome: pacNomeBase.toUpperCase(),
+                                doctor_id: docIdParaVincular || '',
+                                data_cadastro: new Date().toISOString(),
+                                origem: 'auto_particular'
+                            };
+                            await fetch(`${API_BASE_URL}/pacientes/${pacIdCriado}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                                body: JSON.stringify(novoPacienteAuto)
+                            });
+                        }
+                    } catch(err) { console.error("Erro ao auto-cadastrar paciente particular:", err); }
+                }
+                // -------------------------------------------------------------
+
                 alert(id ? "Atualizado com sucesso!" : "Registrado com sucesso!");
                 resetForm();
                 loadData();
@@ -1455,7 +1480,6 @@
             });
         }
 
-        // --- FUNÇÃO ADICIONADA: EXPORTAÇÃO PARA EXCEL ---
         async function exportExcel() {
             const rows = getFilteredData().map(i => i[1]);
             if (rows.length === 0) { 
@@ -1464,7 +1488,6 @@
             }
 
             const excelData = [];
-            // Cabeçalho das colunas do Excel
             excelData.push(["Data", "Paciente", "Médico", "Procedimento", "Recebedor", "Pgto/Ciclos", "Taxa", "Total Líquido (R$)", "Valor Pago Bruto (R$)", "NF", "Usuário"]);
 
             rows.forEach(s => {
@@ -1513,7 +1536,6 @@
                 ]);
             });
 
-            // Geração e Download do Arquivo usando o SheetJS
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Financeiro");
@@ -1521,7 +1543,6 @@
             const dataAtual = new Date().toISOString().slice(0,10);
             XLSX.writeFile(wb, `Relatorio_Financeiro_${dataAtual}.xlsx`);
         }
-        // --- FIM DA FUNÇÃO EXCEL ---
 
         async function exportPDF() {
             const { jsPDF } = window.jspdf;
