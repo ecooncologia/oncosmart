@@ -18,9 +18,24 @@
         body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
         .container { width: 100%; padding: 20px; box-sizing: border-box; }
         
-        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
-        .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; }
-        .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
+        /* DESIGN DAS ABAS COM FUNDOS PASTÉIS SUAVES E ALTERNADOS */
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
+        .tab-btn { padding: 12px 24px; border: 1px solid #e5e7eb; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 14px; outline: none; }
+        
+        /* Cores Suaves Alternadas para Abas Inativas */
+        .tab-btn:nth-of-type(odd):not(.active) {
+            background: #ecfdf5; /* Menta Pastel */
+        }
+
+        .tab-btn:nth-of-type(even):not(.active) {
+            background: #fffbeb; /* Pêssego Pastel */
+        }
+
+        .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
+        
+        /* Estilo da Aba Ativa (Frente) */
+        .tab-btn.active { color: #00995D; border-top: 4px solid #00995D; background: white; margin-bottom: -2px; padding-bottom: 14px; box-shadow: 0 -4px 6px -4px rgba(0,0,0,0.05); z-index: 2; }
+        
         .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -437,7 +452,6 @@
                 const arrayBot = Object.values(normalizeData(data));
                 const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
                 
-                // Agora ele não bloqueia se estiver vazio, pois pode haver faturamento inserido manualmente
                 if (dadosFiltrados.length === 0) {
                     excelData = [];
                     renderAnalysisTable();
@@ -508,7 +522,7 @@
         function renderAnalysisTable() {
             const filterPatient = document.getElementById('filterPatient').value.toUpperCase();
             const filterRepasseDoc = document.getElementById('filterRepasseDoctor').value; 
-            const filterOrigem = document.getElementById('filterOrigemRepasse').value; // Filtro Inteligente (Particular / Unimed)
+            const filterOrigem = document.getElementById('filterOrigemRepasse').value; 
             
             const tbody = document.querySelector('#dataTable tbody');
             const patientsTableObj = {};
