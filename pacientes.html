@@ -20,11 +20,18 @@
         .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         
         .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
-        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; min-width: 250px; }
+        .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; min-width: 250px; outline: none; }
+        .input-field:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
         
         .btn-primary { background: #00995D; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s; }
         .btn-primary:hover { background: #007a4a; }
         
+        /* ABAS DE NAVEGAÇÃO */
+        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; overflow-x: auto; }
+        .tab-btn { padding: 12px 20px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; white-space: nowrap; font-size: 13px; }
+        .tab-btn:hover { color: #374151; }
+        .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
+
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -38,9 +45,9 @@
         .bg-inactive { background: #e5e7eb; color: #4b5563; border: 1px solid #d1d5db; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* Novos Badges de Médico */
-        .badge.prescritor { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
-        .badge.encaminhador { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+        /* Origem Badges */
+        .origem-unimed { background: #d1fae5; color: #059669; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
+        .origem-part { background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
 
         /* Botões de Ação na Tabela */
         .actions-cell { display: flex; justify-content: center; gap: 8px; }
@@ -74,25 +81,25 @@
         <div id="global-header" class="header"></div>
         <div id="global-nav"></div>
 
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchPatientTab('todos', this)">Todos</button>
+            <button class="tab-btn" onclick="switchPatientTab('novos', this)">Novos (Sem Vínculo)</button>
+            <button class="tab-btn" onclick="switchPatientTab('vinculados', this)">Vinculados</button>
+            <button class="tab-btn" onclick="switchPatientTab('unimed', this)"><i class="fas fa-notes-medical"></i> Base Unimed</button>
+            <button class="tab-btn" onclick="switchPatientTab('particular', this)"><i class="fas fa-star"></i> Base Particular</button>
+            <button class="tab-btn" onclick="switchPatientTab('inativos', this)"><i class="fas fa-ban"></i> Inativos</button>
+        </div>
+
         <div class="controls">
             <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                 <div class="input-group">
-                    <input type="text" id="searchPatient" class="input-field" placeholder="Buscar por nome ou carteirinha..." onkeyup="filterTable()">
-                </div>
-                <div class="input-group">
-                    <select id="filterStatus" class="input-field" onchange="filterTable()" style="min-width: 150px;">
-                        <option value="ativos">Todos os Ativos</option>
-                        <option value="novo">Somente Novos (Sem Médico)</option>
-                        <option value="vinculado">Vinculados (Com Médico)</option>
-                        <option value="inativo">Inativos</option>
-                        <option value="all">Ver Absolutamente Todos</option>
-                    </select>
+                    <input type="text" id="searchPatient" class="input-field" placeholder="Buscar por nome ou carteirinha..." onkeyup="renderTable()">
                 </div>
             </div>
             
             <div style="display: flex; gap: 10px; align-items: center;">
                 <span id="syncIndicator" style="font-size: 12px; color: #6b7280; display: none;">
-                    <i class="fas fa-sync-alt fa-spin"></i> Buscando dados Unimed...
+                    <i class="fas fa-sync-alt fa-spin"></i> Sincronizando BD...
                 </span>
                 
                 <button class="btn-primary" style="background:#3b82f6;" onclick="openBulkLinkModal()">
@@ -100,7 +107,7 @@
                 </button>
 
                 <button class="btn-primary" onclick="openAddModal()">
-                    <i class="fas fa-user-plus"></i> Novo Paciente Manual
+                    <i class="fas fa-user-plus"></i> Novo Manual
                 </button>
             </div>
         </div>
@@ -201,11 +208,20 @@
     <script>
         let patients = {};
         let doctors = {};
-        let bulkLinkIds = []; // Controle dos vínculos em massa
+        let bulkLinkIds = []; 
+        let currentTab = 'todos';
 
         const generatePatientId = (name) => {
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
+
+        function normalizeData(apiData) {
+            if (!apiData) return {}; const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            }); return normalized;
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('pacientes', 'Gestão de Pacientes');
@@ -213,6 +229,13 @@
             await loadPatients();
             autoSyncUnimedPatients();
         });
+
+        function switchPatientTab(tabName, element) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            renderTable();
+        }
 
         // ==========================================
         // 1. CARREGAMENTO DE DADOS
@@ -249,7 +272,7 @@
         }
 
         // ==========================================
-        // 2. SINCRONIZAÇÃO INVISÍVEL
+        // 2. SINCRONIZAÇÃO INVISÍVEL UNIMED
         // ==========================================
         async function autoSyncUnimedPatients() {
             const indicator = document.getElementById('syncIndicator');
@@ -270,18 +293,31 @@
                         const carteirinhaRobo = row.carteirinha || '';
 
                         if (!patients[patId]) {
+                            // É novo, cria marcando que veio da Unimed
                             const newPat = {
                                 id_firebase: patId, nome: patName, carteirinha: carteirinhaRobo,
-                                doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", data_criacao: new Date().toISOString()
+                                doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", 
+                                origem: 'unimed', // Para podermos filtrar na aba certa
+                                data_criacao: new Date().toISOString()
                             };
                             await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) });
                             patients[patId] = newPat;
                             dadosAtualizados = true;
                         } 
-                        else if (!patients[patId].carteirinha && carteirinhaRobo) {
-                            patients[patId].carteirinha = carteirinhaRobo;
-                            await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) });
-                            dadosAtualizados = true;
+                        else {
+                            let updated = false;
+                            if (!patients[patId].carteirinha && carteirinhaRobo) {
+                                patients[patId].carteirinha = carteirinhaRobo;
+                                updated = true;
+                            }
+                            if (patients[patId].origem !== 'auto_particular' && patients[patId].origem !== 'unimed') {
+                                patients[patId].origem = 'unimed'; // Atualiza os antigos para cair na aba certa
+                                updated = true;
+                            }
+                            if (updated) {
+                                await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) });
+                                dadosAtualizados = true;
+                            }
                         }
                     }
                 }
@@ -290,7 +326,7 @@
         }
 
         // ==========================================
-        // 3. RENDERIZAÇÃO DA TABELA E CHECKBOXES
+        // 3. RENDERIZAÇÃO DA TABELA
         // ==========================================
         function toggleAllPatients(source) {
             const checkboxes = document.querySelectorAll('.patient-checkbox');
@@ -300,7 +336,6 @@
         function renderTable() {
             const tbody = document.querySelector('#patientsTable tbody');
             const searchTerm = document.getElementById('searchPatient').value.toUpperCase();
-            const filterStatus = document.getElementById('filterStatus').value;
 
             const patArray = Object.values(patients).sort((a,b) => a.nome.localeCompare(b.nome));
             let html = '';
@@ -309,15 +344,26 @@
                 const isInactive = p.status === 'inativo';
                 const hasDoctor = p.prescritor_id || p.encaminhador_id || p.doctor_id;
                 const cartStr = p.carteirinha || '';
+                const isParticular = p.origem === 'auto_particular';
+
+                // Aplicação da Inteligência de Abas
+                if (currentTab === 'inativos' && !isInactive) return;
+                if (currentTab !== 'inativos') {
+                    if (isInactive) return; // Esconde inativo de todas as outras abas
+                    if (currentTab === 'novos' && hasDoctor) return;
+                    if (currentTab === 'vinculados' && !hasDoctor) return;
+                    if (currentTab === 'unimed' && isParticular) return;
+                    if (currentTab === 'particular' && !isParticular) return;
+                }
 
                 if (searchTerm && !p.nome.includes(searchTerm) && !cartStr.includes(searchTerm)) return;
-                if (filterStatus === 'ativos' && isInactive) return;
-                if (filterStatus === 'inativo' && !isInactive) return;
-                if (filterStatus === 'novo' && (hasDoctor || isInactive)) return;
-                if (filterStatus === 'vinculado' && (!hasDoctor || isInactive)) return;
 
                 let statusBadge = '';
                 let doctorNameHtml = '';
+                
+                // Exibição da Origem ao lado do nome
+                let origemBadge = isParticular ? `<span class="origem-part">Particular</span>` : `<span class="origem-unimed">Unimed</span>`;
+                if (!p.origem && !isParticular) origemBadge = `<span class="origem-unimed">Unimed</span>`; // Tratamento para base legada
 
                 if (isInactive) {
                     statusBadge = `<span class="badge bg-inactive" title="Motivo: ${p.motivo_inativacao || 'Não informado'}"><i class="fas fa-ban"></i> Inativo</span>`;
@@ -365,7 +411,7 @@
                     <td style="text-align:center;">
                         <input type="checkbox" class="patient-checkbox" value="${p.id_firebase}">
                     </td>
-                    <td style="font-weight: bold; color: ${isInactive ? '#9ca3af' : '#1f2937'};">${p.nome}</td>
+                    <td style="font-weight: bold; color: ${isInactive ? '#9ca3af' : '#1f2937'};">${p.nome} ${origemBadge}</td>
                     <td style="font-family: monospace; color: #4b5563;">${cartStr || '-'}</td>
                     <td style="text-align: center;">${statusBadge}</td>
                     <td>${doctorNameHtml}</td>
@@ -377,14 +423,11 @@
             tbody.innerHTML = html;
         }
 
-        function filterTable() { renderTable(); }
-
         // ==========================================
         // 4. FUNÇÕES DE CRUD E MODAIS
         // ==========================================
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
-        // --- ADICIONAR / EDITAR PACIENTE ---
         function openAddModal() {
             document.getElementById('editPatientId').value = ''; document.getElementById('patientNameInput').value = '';
             document.getElementById('patientCarteirinhaInput').value = ''; document.getElementById('addEditModalTitle').innerText = 'Adicionar Novo Paciente';
@@ -412,16 +455,15 @@
             } else {
                 const newId = generatePatientId(nameInput);
                 if (patients[newId]) return alert('Este paciente já existe na base de dados!');
-                const newPat = { id_firebase: newId, nome: nameInput, carteirinha: cartInput, doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", data_criacao: new Date().toISOString() };
+                const newPat = { id_firebase: newId, nome: nameInput, carteirinha: cartInput, doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", origem: "manual", data_criacao: new Date().toISOString() };
                 try { await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) }); patients[newId] = newPat;
                 } catch(e) { alert("Erro ao criar."); }
             }
             closeModals(); renderTable();
         }
 
-        // --- VINCULAR MÉDICOS (INDIVIDUAL E MASSA) ---
         function openLinkModal(id, name, prescritorId, encaminhadorId) {
-            bulkLinkIds = [id]; // Transforma o individual num array de 1
+            bulkLinkIds = [id]; 
             document.getElementById('linkModalTitle').innerText = 'Vincular Médicos';
             document.getElementById('linkPatientName').innerText = name;
             document.getElementById('linkPrescritorSelect').value = prescritorId || '';
@@ -477,7 +519,6 @@
             }
         }
 
-        // --- INATIVAR / EXCLUIR ---
         function openInactivateModal(id, name) {
             document.getElementById('inactivatePatientId').value = id; document.getElementById('inactivatePatientName').innerText = name;
             document.getElementById('inactivateReason').value = ''; document.getElementById('inactivateModal').classList.add('active');
@@ -495,14 +536,6 @@
             if(!confirm("CUIDADO: Tem certeza que deseja EXCLUIR PERMANENTEMENTE este paciente?\n\nSe ele aparecer na Unimed novamente, será recriado do zero.")) return;
             try { await fetch(`${API_BASE_URL}/pacientes/${id}`, { method: 'DELETE', headers: API_HEADERS }); delete patients[id]; renderTable();
             } catch(e) { alert('Erro ao tentar excluir do banco.'); }
-        }
-
-        function normalizeData(apiData) {
-            if (!apiData) return {}; const normalized = {};
-            Object.entries(apiData).forEach(([key, val]) => {
-                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) { try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
-                } else { normalized[key] = val; }
-            }); return normalized;
         }
     </script>
 </body>
