@@ -582,10 +582,16 @@
                 let lucroRepasse = isCortado ? 0 : lucroItem;
                 if (lucroRepasse < 0) lucroRepasse = 0;
 
-                patientsTableObj[p].fatPaciente += fatItem;
-                patientsTableObj[p].impostoPaciente += impItem;
-                patientsTableObj[p].custoPaciente += custoItem;
-                patientsTableObj[p].lucroGlobalPaciente += lucroItem;
+                // NOVA REGRA DE BLINDAGEM DE TAXA:
+                // Se é uma TAXA e não é da Grazielly, nós *retiramos* esse valor 
+                // das somatórias gerais do paciente para não inflar a coluna de Faturamento e Lucro.
+                if (!isCortado) {
+                    patientsTableObj[p].fatPaciente += fatItem;
+                    patientsTableObj[p].impostoPaciente += impItem;
+                    patientsTableObj[p].custoPaciente += custoItem;
+                    patientsTableObj[p].lucroGlobalPaciente += lucroItem;
+                }
+                
                 patientsTableObj[p].baseRepassePaciente += lucroRepasse;
                 
                 patientsTableObj[p].items.push({ 
