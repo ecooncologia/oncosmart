@@ -26,11 +26,17 @@
         .btn-primary { background: #00995D; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; height: 38px; transition: 0.2s; }
         .btn-primary:hover { background: #007a4a; }
         
-        /* ABAS DE NAVEGAÇÃO */
-        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; overflow-x: auto; }
-        .tab-btn { padding: 12px 20px; border: none; background: none; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; white-space: nowrap; font-size: 13px; }
-        .tab-btn:hover { color: #374151; }
-        .tab-btn.active { color: #00995D; border-bottom: 3px solid #00995D; background: white; border-radius: 8px 8px 0 0; }
+        /* DESIGN DAS ABAS COM FUNDOS PASTÉIS SUAVES E ALTERNADOS */
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; overflow-x: auto; }
+        .tab-btn { padding: 12px 20px; border: 1px solid #e5e7eb; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 13px; outline: none; white-space: nowrap; }
+        
+        /* Cores Suaves Alternadas para Abas Inativas */
+        .tab-btn:nth-of-type(odd):not(.active) { background: #ecfdf5; /* Menta Pastel */ }
+        .tab-btn:nth-of-type(even):not(.active) { background: #fffbeb; /* Pêssego Pastel */ }
+        .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
+        
+        /* Estilo da Aba Ativa (Frente) */
+        .tab-btn.active { color: #00995D; border-top: 4px solid #00995D; background: white; margin-bottom: -2px; padding-bottom: 14px; box-shadow: 0 -4px 6px -4px rgba(0,0,0,0.05); z-index: 2; }
 
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
@@ -423,11 +429,14 @@
             tbody.innerHTML = html;
         }
 
+        function filterTable() { renderTable(); }
+
         // ==========================================
         // 4. FUNÇÕES DE CRUD E MODAIS
         // ==========================================
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
+        // --- ADICIONAR / EDITAR PACIENTE ---
         function openAddModal() {
             document.getElementById('editPatientId').value = ''; document.getElementById('patientNameInput').value = '';
             document.getElementById('patientCarteirinhaInput').value = ''; document.getElementById('addEditModalTitle').innerText = 'Adicionar Novo Paciente';
@@ -462,8 +471,9 @@
             closeModals(); renderTable();
         }
 
+        // --- VINCULAR MÉDICOS (INDIVIDUAL E MASSA) ---
         function openLinkModal(id, name, prescritorId, encaminhadorId) {
-            bulkLinkIds = [id]; 
+            bulkLinkIds = [id]; // Transforma o individual num array de 1
             document.getElementById('linkModalTitle').innerText = 'Vincular Médicos';
             document.getElementById('linkPatientName').innerText = name;
             document.getElementById('linkPrescritorSelect').value = prescritorId || '';
@@ -519,6 +529,7 @@
             }
         }
 
+        // --- INATIVAR / EXCLUIR ---
         function openInactivateModal(id, name) {
             document.getElementById('inactivatePatientId').value = id; document.getElementById('inactivatePatientName').innerText = name;
             document.getElementById('inactivateReason').value = ''; document.getElementById('inactivateModal').classList.add('active');
