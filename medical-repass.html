@@ -20,7 +20,6 @@
         
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
         .tab-btn { padding: 12px 24px; border: 1px solid #e5e7eb; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 14px; outline: none; }
-        
         .tab-btn:nth-of-type(odd):not(.active) { background: #ecfdf5; }
         .tab-btn:nth-of-type(even):not(.active) { background: #fffbeb; }
         .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
@@ -434,12 +433,54 @@
                 const anoSelecionado = document.getElementById('selYearUnimed').value;
                 const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
-                const response = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
-                if (!response.ok) throw new Error('Dados não encontrados no servidor.');
-                
-                const data = await response.json();
-                const arrayBot = Object.values(normalizeData(data));
-                const dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
+                // --- NOVA LÓGICA DE INJEÇÃO FORÇADA DE PARTICULARES ---
+                const [resUnimed, resVendas] = await Promise.all([
+                    fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS })
+                ]);
+
+                const unimedData = resUnimed.ok ? normalizeData(await resUnimed.json()) : {};
+                const vendasData = resVendas.ok ? normalizeData(await resVendas.json()) : {};
+
+                let arrayBot = Object.values(unimedData);
+                let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
+
+                // Varre as vendas atrás de Aplicações Particulares para forçar a exibição
+                Object.entries(vendasData).forEach(([vId, v]) => {
+                    if (v.tipo_registro === 'particular' && (v.procedimento || '').toUpperCase().includes('APLICA')) {
+                        const dateParts = (v.data || '').split('-');
+                        if (dateParts.length >= 2) {
+                            const vComp = `${dateParts[1]}/${dateParts[0]}`;
+                            if (vComp === competenciaAlvo) {
+                                // Checa se já não foi injetado antes para evitar duplicidade
+                                const alreadyExists = dadosFiltrados.some(d => {
+                                    try {
+                                        let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
+                                        return (ext.origem === 'venda_particular' || d.tipo === 'PARTICULAR' || d.tipo === 'Particular') && 
+                                               d.data_atendimento === v.data && 
+                                               String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
+                                    } catch(e) { return false; }
+                                });
+                                
+                                if (!alreadyExists) {
+                                    dadosFiltrados.push({
+                                        id_firebase: 'virt_part_' + vId,
+                                        paciente: String(v.paciente).toUpperCase().trim(),
+                                        data_atendimento: v.data,
+                                        competencia: vComp,
+                                        carteirinha: '',
+                                        descricao: `Aplicação Particular - ${v.procedimento}`,
+                                        valor_pago: parseFloat(v.valor_final || 0),
+                                        quantidade: parseFloat(v.aplicacoes_realizadas || 1),
+                                        tipo: 'PARTICULAR',
+                                        custo_informado: 0,
+                                        dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
                 
                 if (dadosFiltrados.length === 0) {
                     excelData = [];
@@ -531,6 +572,7 @@
             let sumLucroGlobal = 0;
             let sumRepasseGlobal = 0;
 
+            // 1. Agrupa os itens por paciente
             excelData.forEach(d => {
                 let isParticular = d.tipo === 'PARTICULAR';
                 
@@ -554,7 +596,9 @@
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
                 
-                if (patDb) {
+                // NOVO: Só aceita vínculo se o paciente NÃO estiver inativo!
+                // Isso corta o bug fantasma do vínculo do mês passado.
+                if (patDb && patDb.status !== 'inativo') {
                     patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
                     patientsTableObj[p].eId = patDb.encaminhador_id;
                     
@@ -569,6 +613,7 @@
                 patientsTableObj[p].items.push(d);
             });
 
+            // 2. Calcula as matemáticas e aplica as regras cegas de TAXA
             Object.keys(patientsTableObj).forEach(key => {
                 let pat = patientsTableObj[key];
                 
@@ -593,21 +638,20 @@
                     
                     let canP = !!pat.pId; 
                     let canE = !!pat.eId; 
-                    
+
                     let hasGrazielly = false;
                     if (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
                     if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
 
-                    // REGRA DE OURO DA TAXA
-                    // Se o item é uma taxa, verificamos se a Dra Grazielly está no vínculo desse paciente.
-                    // Se ela não estiver, NINGUÉM ganha comissão de taxa (a taxa é 100% riscada).
-                    if (isTaxa && !hasGrazielly) {
-                        canP = false;
-                        canE = false;
+                    // REGRA DE OURO DA TAXA CORRIGIDA:
+                    if (isTaxa) {
+                        if (!hasGrazielly) {
+                            canP = false;
+                            canE = false;
+                        }
                     }
 
                     let lucroRepasse = lucroItem > 0 ? lucroItem : 0;
-                    
                     let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                     let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
 
@@ -618,12 +662,12 @@
                     item.repasseP = repP;
                     item.repasseE = repE;
 
+                    // Exibição visual da Fatura
                     let isVisibleForFilter = false;
                     if (filterRepasseDoc) {
                         if (pat.pId === filterRepasseDoc && canP) isVisibleForFilter = true;
                         if (pat.eId === filterRepasseDoc && canE) isVisibleForFilter = true;
                     } else {
-                        // Sem filtro: Só risca a taxa se a Grazielly não estiver.
                         if (!isTaxa) isVisibleForFilter = true;
                         if (isTaxa && hasGrazielly) isVisibleForFilter = true; 
                     }
