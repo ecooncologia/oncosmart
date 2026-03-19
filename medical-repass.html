@@ -307,7 +307,6 @@
                 return grupoMama.some(m => upper.includes(m));
             };
 
-            // Dra Grazielly não está no Grupo Mama, então ela entra no ELSE natural e recebe 12.50%
             if (pName) percP = 12.50; 
             if (eName) percE = isSpecial(eName) ? 37.50 : 12.50; 
 
@@ -473,6 +472,16 @@
                         originais: originais,
                         custo_informado: parseFloat(custoDb)
                     };
+                }).filter(item => {
+                    // FILTRO DE MEDICAMENTO: Remove completamente este item do sistema.
+                    const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) {
+                        return false;
+                    }
+                    if (medNormalized.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) {
+                        return false;
+                    }
+                    return true;
                 });
 
                 renderAnalysisTable();
@@ -524,7 +533,6 @@
             let sumLucroGlobal = 0;
             let sumRepasseGlobal = 0;
 
-            // 1. Agrupa os itens por paciente
             excelData.forEach(d => {
                 let isParticular = d.tipo === 'PARTICULAR';
                 
@@ -563,7 +571,6 @@
                 patientsTableObj[p].items.push(d);
             });
 
-            // 2. Calcula as matemáticas considerando o Filtro de Médico (Blindagem da TAXA)
             Object.keys(patientsTableObj).forEach(key => {
                 let pat = patientsTableObj[key];
                 
@@ -586,23 +593,16 @@
 
                     let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
                     
-                    let canP = true;
-                    let canE = true;
+                    let canP = !!pat.pId; // Prescritor sempre ganha, se existir
+                    let canE = !!pat.eId; // Encaminhador
 
-                    // Regra: Só a Dra Grazielly recebe comissão sobre Taxas
                     if (isTaxa) {
-                        let pIsGraz = pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY');
                         let eIsGraz = pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY');
-                        if (!pIsGraz) canP = false;
-                        if (!eIsGraz) canE = false;
+                        if (!eIsGraz) canE = false; // Encaminhador não-Grazielly perde o direito da TAXA
+                        // Nota: canP não é alterado, então o Prescritor ganha na TAXA normalmente.
                     }
 
-                    // Se não tiver médico, ninguém ganha repasse do item
-                    if (!pat.pId) canP = false;
-                    if (!pat.eId) canE = false;
-
                     let lucroRepasse = lucroItem > 0 ? lucroItem : 0;
-                    
                     let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                     let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
 
@@ -613,19 +613,18 @@
                     item.repasseP = repP;
                     item.repasseE = repE;
 
-                    // Decide se esse item entra nos cálculos globais de "Faturamento Processado"
-                    // baseado em QUEM está pesquisando o relatório
+                    // Exibição na Fatura
                     let isVisibleForFilter = false;
                     if (filterRepasseDoc) {
                         if (pat.pId === filterRepasseDoc && canP) isVisibleForFilter = true;
                         if (pat.eId === filterRepasseDoc && canE) isVisibleForFilter = true;
                     } else {
-                        // Sem filtro (Todos)
+                        // Sem filtro
                         if (!isTaxa) isVisibleForFilter = true;
                         if (isTaxa && (canP || canE)) isVisibleForFilter = true; 
                     }
 
-                    item.isCortado = !isVisibleForFilter; // Para riscar na tela o que não pertence ao médico
+                    item.isCortado = !isVisibleForFilter;
 
                     if (isVisibleForFilter) {
                         pat.fatPaciente += fatItem;
@@ -643,7 +642,6 @@
                     }
                 });
 
-                // Se o médico foi filtrado e ele não tem direito a R$ 0,00 de nada deste paciente (ex: só tinha taxa cortada)
                 if (filterRepasseDoc && pat.repasseP_Total === 0 && pat.repasseE_Total === 0 && pat.fatPaciente === 0) {
                     delete patientsTableObj[key];
                     return;
