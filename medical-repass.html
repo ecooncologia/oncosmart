@@ -870,6 +870,8 @@
                 h += `<th class="${isHol?'holiday-col':(isWk?'weekend-col':'')}">${i}</th>`; 
             } 
             h += '<th class="th-total">Qtd</th><th class="th-total">Total (R$)</th></tr>'; 
+            
+            // O SELETOR CORRIGIDO: #repTable thead
             document.querySelector('#repTable thead').innerHTML = h; 
             
             let b = ''; 
