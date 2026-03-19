@@ -97,11 +97,6 @@
         .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; outline: none; }
         .form-control:focus { border-color: var(--primary); }
         .btn-close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
-
-        /* Estilos do Checkbox Múltiplo e Botão de Ação em Massa */
-        .chk-mass { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
-        .btn-mass-action { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2); }
-        .btn-mass-action:hover { background: #0369a1; transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -119,23 +114,17 @@
         </div>
 
         <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <span><i class="fas fa-users-cog"></i> Gestão de Acessos</span>
-                <button class="btn-mass-action" onclick="applySectorPermissionsBulk()" id="btnBulkSync">
-                    <i class="fas fa-sync"></i> Sincronizar Permissões do Setor (Lote)
-                </button>
-            </div>
+            <div class="card-header"><i class="fas fa-users-cog"></i> Gestão de Acessos</div>
             <div class="table-container">
                 <table id="usersTable">
                     <thead>
                         <tr>
-                            <th style="width: 40px; text-align: center;"><input type="checkbox" id="chkSelectAll" class="chk-mass" onclick="toggleAllUsers(this.checked)" title="Selecionar Todos"></th>
                             <th>Usuário</th>
                             <th style="width: 100px; text-align: center;">Admin Global</th>
                             <th style="text-align: right;">Ações</th>
                         </tr>
                     </thead>
-                    <tbody><tr><td colspan="4" style="text-align:center; padding:20px;">Carregando...</td></tr></tbody>
+                    <tbody><tr><td colspan="3" style="text-align:center; padding:20px;">Carregando...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -235,7 +224,7 @@
                                 <h4 class="config-box-title"><i class="fas fa-key"></i> Matriz de Permissões por Setor</h4>
                             </div>
                             <div class="config-box-body open">
-                                <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 15px;">Defina quais páginas cada setor tem acesso por padrão. (Os setores são puxados da aba Helpdesk).</p>
+                                <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 15px;">Defina quais páginas cada setor tem acesso por padrão. Você poderá "puxar" esse padrão ao editar um usuário específico.</p>
                                 <div class="list-manager" id="list-admin-setores" style="max-height: 450px;"></div>
                             </div>
                         </div>
@@ -257,14 +246,20 @@
                 <button onclick="closeModal('modalPerms')" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
             </div>
             <div class="modal-body">
-                <p id="modalUserEmail" style="color:#64748b; margin-bottom:20px; font-weight:600;"></p>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                    <p id="modalUserEmail" style="color:#64748b; font-weight:600; margin:0;"></p>
+                    
+                    <button class="btn" onclick="loadSectorDefaultsToForm()" style="background:#0ea5e9; color:white; padding:6px 12px; font-size:12px; border-radius:6px;">
+                        <i class="fas fa-download"></i> Puxar Padrão do Setor
+                    </button>
+                </div>
                 <input type="hidden" id="modalPermUserId">
                 <div class="perm-grid" id="individualPermsContainer">
                     </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('modalPerms')">Cancelar</button>
-                <button class="btn btn-success" onclick="savePermissions()">Salvar</button>
+                <button class="btn btn-success" onclick="savePermissions()">Salvar Permissões</button>
             </div>
         </div>
     </div>
@@ -327,17 +322,15 @@
     <script>
         let allUsersData = {};
         
-        // Estrutura atualizada com o módulo Admin
         let systemConfig = { 
             helpdesk: { setores: [], categorias: [], filas: {} }, 
             financeiro: { status: [] }, 
             clinico: { origens: [] },
-            admin: { permissoes_setor: {} } // NOVO: Guarda as permissões por setor
+            admin: { permissoes_setor: {} } 
         };
         
         let expandedCategoryNodes = new Set();
 
-        // Array central com todas as permissões e seus grupos para renderizar telas dinamicamente
         const permissionMap = [
             { group: "Geral", icon: "fa-globe", items: [
                 { id: "dashboard", label: "Dashboard" },
@@ -379,7 +372,6 @@
             await loadUsers();
         });
 
-        // Gera as chavinhas na tela dinamicamente (Serve tanto pro Usuário quanto pro Setor)
         function generatePermissionHTML(containerId, prefix) {
             const container = document.getElementById(containerId);
             let html = '';
@@ -457,10 +449,9 @@
             renderFilasConfig(); 
             renderList('financeiro', 'status', 'list-financeiro-status');
             renderList('clinico', 'origens', 'list-clinico-origens');
-            renderAdminSectors(); // Renderiza a nova aba Admin
+            renderAdminSectors(); 
         }
 
-        // --- MÓDULO NOVO: PERMISSÕES POR SETOR ---
         function renderAdminSectors() {
             const listEl = document.getElementById('list-admin-setores');
             const setores = systemConfig.helpdesk.setores || [];
@@ -488,10 +479,8 @@
             document.getElementById('modalSectorName').innerText = sectorName;
             document.getElementById('modalSectorHidden').value = sectorName;
             
-            // Puxa as configs do banco ou cria vazio
             let currentPerms = systemConfig.admin.permissoes_setor[sectorName] || {};
             
-            // Preenche as chavinhas da tela
             permissionMap.forEach(g => {
                 g.items.forEach(item => {
                     const el = document.getElementById('sec_' + item.id);
@@ -506,17 +495,13 @@
             const sectorName = document.getElementById('modalSectorHidden').value;
             if(!sectorName) return;
 
-            // Remove o prefixo sec_ para pegar o ID real
             const permId = checkboxId.replace('sec_', '');
             
             if(!systemConfig.admin.permissoes_setor[sectorName]) {
                 systemConfig.admin.permissoes_setor[sectorName] = {};
             }
             systemConfig.admin.permissoes_setor[sectorName][permId] = isChecked;
-            
-            // Nota: O Salvamento real pro banco só ocorre quando ele clica no botão verde "Salvar Alterações" do modal pai.
         }
-        // ------------------------------------------
 
         // Continuação do Legado de Configurações (Filas, Árvores)
         function renderFilasConfig() {
@@ -764,7 +749,6 @@
                 systemConfig[module][key].push(val);
                 input.value = '';
                 renderList(module, key, `list-${module}-${key === 'origens' ? 'origens' : key}`);
-                // Ao criar um setor, também refazemos a aba admin para ele aparecer lá
                 if (key === 'setores') renderAdminSectors(); 
             }
         }
@@ -801,10 +785,6 @@
                 const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }); 
                 const data = await res.json(); 
                 allUsersData = normalizeData(data); 
-                
-                // Reseta a caixa de "selecionar todos" ao recarregar a tabela
-                document.getElementById('chkSelectAll').checked = false;
-                
                 renderTable(allUsersData); 
             } catch(e) { console.error("Erro usuarios", e) }
         }
@@ -819,9 +799,6 @@
                 const setorDisplay = user.setor ? user.setor : 'SEM SETOR';
 
                 tr.innerHTML = `
-                    <td style="text-align:center;">
-                        <input type="checkbox" class="chk-mass user-row-chk" value="${key}">
-                    </td>
                     <td>
                         <div class="user-cell">
                             <img src="${user.foto||'https://ui-avatars.com/api/?name='+user.nome}" class="table-avatar">
@@ -849,73 +826,35 @@
         }
 
         // ==========================================
-        // MÁGICA: SINCRONIZAÇÃO DE LOTES (RBAC)
+        // MÁGICA: PUXAR PADRÃO DO SETOR PARA O USUÁRIO
         // ==========================================
-        function toggleAllUsers(isChecked) {
-            const checkboxes = document.querySelectorAll('.user-row-chk');
-            checkboxes.forEach(chk => chk.checked = isChecked);
-        }
+        function loadSectorDefaultsToForm() {
+            const key = document.getElementById('modalPermUserId').value;
+            const user = allUsersData[key];
+            
+            if (!user.setor) return alert("Este usuário não possui um setor definido. Edite o perfil dele primeiro para vincular a um setor.");
+            
+            const template = systemConfig.admin.permissoes_setor[user.setor];
+            if (!template) return alert(`O setor '${user.setor}' ainda não possui um template de permissões configurado na aba Admin (Engrenagem inferior).`);
 
-        async function applySectorPermissionsBulk() {
-            const checkboxes = document.querySelectorAll('.user-row-chk:checked');
-            if (checkboxes.length === 0) return alert("Selecione pelo menos um usuário na tabela para sincronizar as permissões.");
+            if (!confirm(`Deseja preencher as caixinhas com o padrão do setor '${user.setor}'?\n(Isso não salvará automaticamente, você ainda poderá ajustar antes de clicar em Salvar).`)) return;
 
-            if (!confirm(`Sincronizar as permissões de ${checkboxes.length} usuário(s) com as regras padrão dos setores deles?\n\n(Usuários 'Sem Setor' ou de setores sem template configurado serão ignorados).`)) return;
-
-            const btn = document.getElementById('btnBulkSync');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-            btn.disabled = true;
-
-            let updatedCount = 0;
-
-            try {
-                for (let chk of checkboxes) {
-                    const key = chk.value;
-                    const user = allUsersData[key];
-                    
-                    if (user && user.setor) {
-                        const template = systemConfig.admin.permissoes_setor[user.setor];
-                        
-                        if (template) {
-                            // Preserva o status de Admin Global, mas sobrescreve as flags de telas pelo template
-                            const newPerms = { admin: user.permissoes.admin };
-                            
-                            // Injera os valores do template
-                            permissionMap.forEach(g => {
-                                g.items.forEach(item => {
-                                    newPerms[item.id] = (template[item.id] === true);
-                                });
-                            });
-                            
-                            user.permissoes = newPerms;
-                            
-                            // Atualiza no banco
-                            await fetch(`${API_BASE_URL}/usuarios/${key}`, { 
-                                method: 'PUT', 
-                                headers: {'Content-Type': 'application/json', ...API_HEADERS}, 
-                                body: JSON.stringify(user) 
-                            });
-                            
-                            updatedCount++;
-                        }
+            // Preenche as checkboxes da tela com o que está no template do setor
+            permissionMap.forEach(g => {
+                g.items.forEach(item => {
+                    const el = document.getElementById('p_' + item.id);
+                    if (el) {
+                        el.checked = (template[item.id] === true);
                     }
-                }
-
-                alert(`Mágica Feita! ${updatedCount} usuário(s) foram sincronizados com sucesso.`);
-                await loadUsers(); // Recarrega
-            } catch(e) {
-                alert("Erro ao sincronizar: " + e.message);
-            } finally {
-                btn.innerHTML = '<i class="fas fa-sync"></i> Sincronizar Permissões do Setor (Lote)';
-                btn.disabled = false;
-            }
+                });
+            });
         }
         // ------------------------------------------
 
         function openPermsModal(key) {
             const user = allUsersData[key]; 
             document.getElementById('modalPermUserId').value = key; 
-            document.getElementById('modalUserEmail').innerText = user.nome;
+            document.getElementById('modalUserEmail').innerText = user.nome + ` (${user.setor || 'Sem Setor'})`;
             const p = user.permissoes || {};
             
             permissionMap.forEach(g => {
