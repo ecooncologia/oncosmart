@@ -131,10 +131,6 @@
             
             @page { size: A4 landscape; margin: 10mm; }
         }
-
-        @media (max-width: 1024px) {
-            .details-grid { grid-template-columns: 1fr; }
-        }
     </style>
 </head>
 <body>
@@ -554,13 +550,10 @@
 
                 let elKpiPlantTurnos = document.getElementById('kpiPlantTurnos');
                 if(elKpiPlantTurnos) elKpiPlantTurnos.innerText = turnosPlantao;
-                
                 let elDetPlantTurnos = document.getElementById('detPlantTurnos');
                 if(elDetPlantTurnos) elDetPlantTurnos.innerText = turnosPlantao;
-                
                 let elDetPlantValor = document.getElementById('detPlantValor');
                 if(elDetPlantValor) elDetPlantValor.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                
                 let elKpiTotalPlantao = document.getElementById('kpiTotalPlantao');
                 if(elKpiTotalPlantao) elKpiTotalPlantao.innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
@@ -581,7 +574,7 @@
                 let listaRenderPacienteHtml = []; 
 
                 // ------------------------------------------------
-                // 2A. TRATAMENTOS (Via Repasse Unimed)
+                // 2A. TRATAMENTOS (Via Repasse Inteligente: Unimed & Particular)
                 // ------------------------------------------------
                 try {
                     const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
@@ -605,7 +598,8 @@
                         if (pId === docId || eId === docId) {
                             if (!agrupamentoPacienteU[pac]) {
                                 agrupamentoPacienteU[pac] = {
-                                    fatTotal: 0, impTotal: 0, custoTotal: 0,
+                                    fatUnimed: 0, impUnimed: 0, custoUnimed: 0,
+                                    fatPart: 0, impPart: 0, custoPart: 0,
                                     itemsDates: [],
                                     pName: pId && doctors[pId] ? doctors[pId].nome : '',
                                     eName: eId && doctors[eId] ? doctors[eId].nome : '',
@@ -627,9 +621,15 @@
                                 let lucroItem = fatItem - impItem - custoDb;
                                 
                                 if (lucroItem > 0) {
-                                    agrupamentoPacienteU[pac].fatTotal += fatItem;
-                                    agrupamentoPacienteU[pac].impTotal += impItem;
-                                    agrupamentoPacienteU[pac].custoTotal += custoDb;
+                                    if (d.tipo === 'Particular') {
+                                        agrupamentoPacienteU[pac].fatPart += fatItem;
+                                        agrupamentoPacienteU[pac].impPart += impItem;
+                                        agrupamentoPacienteU[pac].custoPart += custoDb;
+                                    } else {
+                                        agrupamentoPacienteU[pac].fatUnimed += fatItem;
+                                        agrupamentoPacienteU[pac].impUnimed += impItem;
+                                        agrupamentoPacienteU[pac].custoUnimed += custoDb;
+                                    }
                                     
                                     let dNorm = normalizeDate(d.data_atendimento);
                                     if(dNorm && dNorm.length > 5) agrupamentoPacienteU[pac].itemsDates.push(dNorm);
@@ -640,33 +640,41 @@
 
                     Object.keys(agrupamentoPacienteU).forEach(pac => {
                         let calc = agrupamentoPacienteU[pac];
-                        let lucroGlobal = calc.fatTotal - calc.impTotal - calc.custoTotal;
+                        let lucroUnimed = calc.fatUnimed - calc.impUnimed - calc.custoUnimed;
+                        let lucroPart = calc.fatPart - calc.impPart - calc.custoPart;
                         
-                        if (lucroGlobal > 0) {
-                            const comissaoInfo = getComissaoInfo(calc.pName, calc.eName);
-                            let doctorPerc = 0;
-                            if (calc.pId === docId) doctorPerc += comissaoInfo.percP;
-                            if (calc.eId === docId) doctorPerc += comissaoInfo.percE;
+                        const comissaoInfo = getComissaoInfo(calc.pName, calc.eName);
+                        let doctorPerc = 0;
+                        if (calc.pId === docId) doctorPerc += comissaoInfo.percP;
+                        if (calc.eId === docId) doctorPerc += comissaoInfo.percE;
+                        
+                        if (doctorPerc > 0) {
+                            let repasseUnimed = lucroUnimed > 0 ? Number((lucroUnimed * (doctorPerc / 100)).toFixed(2)) : 0;
+                            let repassePart = lucroPart > 0 ? Number((lucroPart * (doctorPerc / 100)).toFixed(2)) : 0;
                             
-                            if (doctorPerc > 0) {
-                                let repasseDestePat = Number((lucroGlobal * (doctorPerc / 100)).toFixed(2));
+                            if (repasseUnimed > 0 || repassePart > 0) {
+                                valorTratamentoUnimed += repasseUnimed;
+                                valorTratamentoParticular += repassePart;
                                 
-                                valorTratamentoUnimed += repasseDestePat;
+                                let repasseDestePat = repasseUnimed + repassePart;
                                 valorTratamentoTotal += repasseDestePat;
                                 
                                 pacientesTratCount.add(pac);
                                 
                                 let uniqDates = [...new Set(calc.itemsDates)];
                                 totalAtendimentosTrat += uniqDates.length;
-                                
                                 let datesStr = uniqDates.join(', ');
+                                
+                                let badges = [];
+                                if (repasseUnimed > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#059669; background:#d1fae5; padding:4px 8px; border-radius:12px;">Unimed</span>`);
+                                if (repassePart > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:12px;">Particular</span>`);
                                 
                                 listaRenderPacienteHtml.push({
                                     nome: pac,
                                     html: `<tr>
                                         <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compStr}</td>
                                         <td style="font-weight: 600; text-align:center; color: #111827;">${pac}</td>
-                                        <td style="text-align:center;"><span style="font-size:10px; font-weight:700; color:#059669; background:#d1fae5; padding:4px 8px; border-radius:12px;">Unimed</span></td>
+                                        <td style="text-align:center;">${badges.join(' ')}</td>
                                     </tr>`
                                 });
                             }
@@ -677,7 +685,7 @@
 
 
                 // ------------------------------------------------
-                // 2B. TRATAMENTOS E CONSULTAS (Via Vendas Particulares/Liminares)
+                // 2B. CONSULTAS PARTICULARES E LIMINARES (Via Vendas)
                 // ------------------------------------------------
                 try {
                     const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
@@ -696,61 +704,12 @@
                                 if (vYr === yr && vMo === mo) {
                                     const procedNome = (v.procedimento || '').toUpperCase();
                                     const isAplicacaoTratamento = procedNome.includes('APLICAÇÃO') || procedNome.includes('APLICACAO');
-                                    let valorRecebido = parseCurrency(v.valor_final);
                                     
-                                    if (isAplicacaoTratamento) {
-                                        // === É UM TRATAMENTO PARTICULAR ===
-                                        // Usa as regras de comissão (Prescritor e Encaminhador) em vez do médico da venda 
-                                        let pacNome = String(v.paciente || '').toUpperCase().trim();
-                                        let patId = generatePatientId(pacNome);
-                                        let patDb = pacientesDb[patId];
-                                        
-                                        let pId = null, eId = null;
-                                        if (patDb) {
-                                            pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
-                                            eId = patDb.encaminhador_id;
-                                        } else {
-                                            // Fallback de segurança se o paciente não estiver cadastrado no banco: Atribui o médico que atendeu
-                                            let docIdDaVenda = Object.keys(doctors).find(k => doctors[k].nome.toUpperCase() === String(v.medico || '').toUpperCase());
-                                            pId = docIdDaVenda;
-                                        }
-                                        
-                                        // Se o médico selecionado no Dashboard for prescritor ou encaminhador deste paciente
-                                        if (pId === docId || eId === docId) {
-                                            let pName = pId && doctors[pId] ? doctors[pId].nome : '';
-                                            let eName = eId && doctors[eId] ? doctors[eId].nome : '';
-                                            
-                                            const comissaoInfo = getComissaoInfo(pName, eName);
-                                            let doctorPerc = 0;
-                                            if (pId === docId) doctorPerc += comissaoInfo.percP;
-                                            if (eId === docId) doctorPerc += comissaoInfo.percE;
-                                            
-                                            // Se ele tem comissão, repassa o valor!
-                                            if (doctorPerc > 0) {
-                                                let repasseDestePat = Number((valorRecebido * (doctorPerc / 100)).toFixed(2));
-                                                
-                                                valorTratamentoParticular += repasseDestePat;
-                                                valorTratamentoTotal += repasseDestePat;
-                                                
-                                                pacientesTratCount.add(pacNome);
-                                                totalAtendimentosTrat += 1; 
-                                                
-                                                listaRenderPacienteHtml.push({
-                                                    nome: pacNome,
-                                                    html: `<tr>
-                                                        <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${normalizeDate(v.data)}</td>
-                                                        <td style="font-weight: 600; text-align:center; color: #b45309;">${pacNome}</td>
-                                                        <td style="text-align:center;"><span style="font-size:10px; font-weight:700; color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:12px;">Particular</span></td>
-                                                    </tr>`
-                                                });
-                                            }
-                                        }
-                                        
-                                    } else {
-                                        // === É UMA CONSULTA PARTICULAR NORMAL (100% para o médico da venda) ===
+                                    // PULA APLICAÇÕES. Elas já foram contabilizadas no bloco 2A acima!
+                                    if (!isAplicacaoTratamento) {
                                         if (v.medico && v.medico.toUpperCase() === doctorName) {
                                             atendimentosConsultaPart++;
-                                            valorConsultaParticular += valorRecebido;
+                                            valorConsultaParticular += parseCurrency(v.valor_final);
                                         }
                                     }
                                 }
