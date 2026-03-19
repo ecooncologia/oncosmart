@@ -101,6 +101,11 @@
                 <div class="input-group">
                     <input type="text" id="searchPatient" class="input-field" placeholder="Buscar por nome ou carteirinha..." onkeyup="renderTable()">
                 </div>
+                <div class="input-group">
+                    <select id="filterDoctor" class="input-field" onchange="renderTable()" style="min-width: 200px;">
+                        <option value="">Filtrar por Médico Vinculado</option>
+                    </select>
+                </div>
             </div>
             
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -244,7 +249,7 @@
         }
 
         // ==========================================
-        // 1. CARREGAMENTO DE DADOS
+        // 1. CARREGAMENTO DE DADOS E FILTROS
         // ==========================================
         async function loadDoctors() {
             try {
@@ -253,13 +258,18 @@
                     doctors = normalizeData(await res.json());
                     const selPresc = document.getElementById('linkPrescritorSelect');
                     const selEncam = document.getElementById('linkEncaminhadorSelect');
+                    const selFilter = document.getElementById('filterDoctor');
                     
                     selPresc.innerHTML = '<option value="">-- Nenhum --</option>';
                     selEncam.innerHTML = '<option value="">-- Nenhum --</option>';
+                    selFilter.innerHTML = '<option value="">Filtrar por Médico Vinculado</option>';
 
                     Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
                         if (doc.prescritor === 'sim') selPresc.add(new Option(doc.nome, id));
                         if (doc.encaminhador === 'sim') selEncam.add(new Option(doc.nome, id));
+                        
+                        // Todos os médicos vão pro filtro da tabela
+                        selFilter.add(new Option(doc.nome, id));
                     });
                 }
             } catch(e) {}
@@ -299,11 +309,10 @@
                         const carteirinhaRobo = row.carteirinha || '';
 
                         if (!patients[patId]) {
-                            // É novo, cria marcando que veio da Unimed
                             const newPat = {
                                 id_firebase: patId, nome: patName, carteirinha: carteirinhaRobo,
                                 doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", 
-                                origem: 'unimed', // Para podermos filtrar na aba certa
+                                origem: 'unimed',
                                 data_criacao: new Date().toISOString()
                             };
                             await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) });
@@ -317,7 +326,7 @@
                                 updated = true;
                             }
                             if (patients[patId].origem !== 'auto_particular' && patients[patId].origem !== 'unimed') {
-                                patients[patId].origem = 'unimed'; // Atualiza os antigos para cair na aba certa
+                                patients[patId].origem = 'unimed';
                                 updated = true;
                             }
                             if (updated) {
@@ -342,6 +351,7 @@
         function renderTable() {
             const tbody = document.querySelector('#patientsTable tbody');
             const searchTerm = document.getElementById('searchPatient').value.toUpperCase();
+            const filterDocId = document.getElementById('filterDoctor').value; // O ID do médico selecionado no filtro
 
             const patArray = Object.values(patients).sort((a,b) => a.nome.localeCompare(b.nome));
             let html = '';
@@ -355,21 +365,29 @@
                 // Aplicação da Inteligência de Abas
                 if (currentTab === 'inativos' && !isInactive) return;
                 if (currentTab !== 'inativos') {
-                    if (isInactive) return; // Esconde inativo de todas as outras abas
+                    if (isInactive) return;
                     if (currentTab === 'novos' && hasDoctor) return;
                     if (currentTab === 'vinculados' && !hasDoctor) return;
                     if (currentTab === 'unimed' && isParticular) return;
                     if (currentTab === 'particular' && !isParticular) return;
                 }
 
+                // Filtro de Texto (Nome ou Carteirinha)
                 if (searchTerm && !p.nome.includes(searchTerm) && !cartStr.includes(searchTerm)) return;
+
+                // Nova Inteligência: Filtro por Médico
+                if (filterDocId) {
+                    // O paciente só passa no filtro se o médico selecionado for o prescritor OU o encaminhador OU o doctor_id antigo
+                    if (p.prescritor_id !== filterDocId && p.encaminhador_id !== filterDocId && p.doctor_id !== filterDocId) {
+                        return; // Oculta o paciente da tabela
+                    }
+                }
 
                 let statusBadge = '';
                 let doctorNameHtml = '';
                 
-                // Exibição da Origem ao lado do nome
                 let origemBadge = isParticular ? `<span class="origem-part">Particular</span>` : `<span class="origem-unimed">Unimed</span>`;
-                if (!p.origem && !isParticular) origemBadge = `<span class="origem-unimed">Unimed</span>`; // Tratamento para base legada
+                if (!p.origem && !isParticular) origemBadge = `<span class="origem-unimed">Unimed</span>`;
 
                 if (isInactive) {
                     statusBadge = `<span class="badge bg-inactive" title="Motivo: ${p.motivo_inativacao || 'Não informado'}"><i class="fas fa-ban"></i> Inativo</span>`;
@@ -429,14 +447,11 @@
             tbody.innerHTML = html;
         }
 
-        function filterTable() { renderTable(); }
-
         // ==========================================
         // 4. FUNÇÕES DE CRUD E MODAIS
         // ==========================================
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
-        // --- ADICIONAR / EDITAR PACIENTE ---
         function openAddModal() {
             document.getElementById('editPatientId').value = ''; document.getElementById('patientNameInput').value = '';
             document.getElementById('patientCarteirinhaInput').value = ''; document.getElementById('addEditModalTitle').innerText = 'Adicionar Novo Paciente';
@@ -471,9 +486,8 @@
             closeModals(); renderTable();
         }
 
-        // --- VINCULAR MÉDICOS (INDIVIDUAL E MASSA) ---
         function openLinkModal(id, name, prescritorId, encaminhadorId) {
-            bulkLinkIds = [id]; // Transforma o individual num array de 1
+            bulkLinkIds = [id]; 
             document.getElementById('linkModalTitle').innerText = 'Vincular Médicos';
             document.getElementById('linkPatientName').innerText = name;
             document.getElementById('linkPrescritorSelect').value = prescritorId || '';
@@ -529,7 +543,6 @@
             }
         }
 
-        // --- INATIVAR / EXCLUIR ---
         function openInactivateModal(id, name) {
             document.getElementById('inactivatePatientId').value = id; document.getElementById('inactivatePatientName').innerText = name;
             document.getElementById('inactivateReason').value = ''; document.getElementById('inactivateModal').classList.add('active');
