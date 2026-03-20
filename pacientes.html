@@ -89,9 +89,7 @@
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="switchPatientTab('todos', this)">Pacientes do Mês</button>
             <button class="tab-btn" onclick="switchPatientTab('novos', this)">Novos (Sem Vínculo)</button>
-            
             <button class="tab-btn" onclick="switchPatientTab('retornos', this)"><i class="fas fa-history"></i> Retornos (Revisão)</button>
-            
             <button class="tab-btn" onclick="switchPatientTab('vinculados', this)">Vinculados</button>
             <button class="tab-btn" onclick="switchPatientTab('unimed', this)"><i class="fas fa-notes-medical"></i> Base Unimed</button>
             <button class="tab-btn" onclick="switchPatientTab('particular', this)"><i class="fas fa-star"></i> Base Particular</button>
@@ -330,63 +328,86 @@
                 const unimedArray = Object.values(unimedData);
 
                 window.patientActivityMap = {};
-                
+                const pacsParaVerificar = []; 
+
+                // 1. Processa Unimed
                 unimedArray.forEach(row => {
                     if (row.paciente && row.competencia) {
-                        const patId = generatePatientId(row.paciente);
+                        const patName = String(row.paciente).toUpperCase().trim();
+                        const patId = generatePatientId(patName);
                         if (!window.patientActivityMap[patId]) window.patientActivityMap[patId] = new Set();
                         window.patientActivityMap[patId].add(row.competencia);
+                        pacsParaVerificar.push({ id: patId, nome: patName, carteirinha: row.carteirinha || '', origem: 'unimed' });
                     }
                 });
 
+                // 2. Processa Particulares (Aplicações com Medicamento)
                 Object.values(vendasData).forEach(v => {
-                    if (v.tipo_registro === 'particular' && (v.procedimento || '').toUpperCase().includes('APLICA')) {
-                        const dateParts = (v.data || '').split('-');
-                        if (dateParts.length >= 2) {
-                            const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            const patId = generatePatientId(v.paciente);
+                    let tipoReg = String(v.tipo_registro || '').toLowerCase();
+                    // Normalização para remover acentos e garantir a leitura correta de "APLICAÇÃO COM"
+                    let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    
+                    // NOVA REGRA DE BUSCA EXATA DO PAINEL DE PROCEDIMENTOS
+                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICACAO COM')) {
+                        let dStr = v.data || '';
+                        let vComp = '';
+                        
+                        if(dStr.includes('-')){
+                            let p = dStr.split('-');
+                            vComp = p[0].length === 4 ? `${p[1]}/${p[0]}` : `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                        } else if(dStr.includes('/')){
+                            let p = dStr.split('/');
+                            vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                        }
+
+                        if (vComp && v.paciente) {
+                            const patName = String(v.paciente).toUpperCase().trim();
+                            const patId = generatePatientId(patName);
                             if (!window.patientActivityMap[patId]) window.patientActivityMap[patId] = new Set();
                             window.patientActivityMap[patId].add(vComp);
+                            pacsParaVerificar.push({ id: patId, nome: patName, carteirinha: '', origem: 'auto_particular' });
                         }
                     }
                 });
 
-                // === ROTINA DE AUTO-CURA (RESTAURAR PACIENTES INATIVADOS PELO CÓDIGO ANTIGO) ===
+                // 3. AUTO-CURA: Restaura pacientes inativados pelo sistema antigo
                 let pacientesRestaurados = false;
                 for (const patId in patients) {
                     const pat = patients[patId];
                     if (pat.status === 'inativo' && pat.motivo_inativacao && pat.motivo_inativacao.includes('Ausência de faturamento Unimed')) {
                         pat.status = 'ativo';
-                        pat.motivo_inativacao = ''; // Remove o motivo automático antigo
+                        pat.motivo_inativacao = ''; 
                         await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pat) });
                         pacientesRestaurados = true;
                     }
                 }
 
+                // 4. Cria pacientes novos na base
                 let dadosAtualizados = false;
-                for (const row of unimedArray) {
-                    if (row.paciente) {
-                        const patName = String(row.paciente).toUpperCase().trim();
-                        const patId = generatePatientId(patName);
-                        const carteirinhaRobo = row.carteirinha || '';
+                for (const row of pacsParaVerificar) {
+                    const patId = row.id;
+                    if (!patients[patId]) {
+                        const newPat = {
+                            id_firebase: patId, nome: row.nome, carteirinha: row.carteirinha,
+                            doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", 
+                            origem: row.origem, data_criacao: new Date().toISOString()
+                        };
+                        await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) });
+                        patients[patId] = newPat;
+                        dadosAtualizados = true;
+                    } else {
+                        let updated = false;
+                        if (!patients[patId].carteirinha && row.carteirinha) { patients[patId].carteirinha = row.carteirinha; updated = true; }
+                        
+                        if (row.origem === 'unimed' && patients[patId].origem !== 'unimed' && patients[patId].origem !== 'auto_particular') { 
+                            patients[patId].origem = 'unimed'; updated = true; 
+                        } else if (row.origem === 'auto_particular' && !patients[patId].origem) {
+                            patients[patId].origem = 'auto_particular'; updated = true;
+                        }
 
-                        if (!patients[patId]) {
-                            const newPat = {
-                                id_firebase: patId, nome: patName, carteirinha: carteirinhaRobo,
-                                doctor_id: "", prescritor_id: "", encaminhador_id: "", status: "ativo", 
-                                origem: 'unimed', data_criacao: new Date().toISOString()
-                            };
-                            await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) });
-                            patients[patId] = newPat;
+                        if (updated) {
+                            await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) });
                             dadosAtualizados = true;
-                        } else {
-                            let updated = false;
-                            if (!patients[patId].carteirinha && carteirinhaRobo) { patients[patId].carteirinha = carteirinhaRobo; updated = true; }
-                            if (patients[patId].origem !== 'auto_particular' && patients[patId].origem !== 'unimed') { patients[patId].origem = 'unimed'; updated = true; }
-                            if (updated) {
-                                await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) });
-                                dadosAtualizados = true;
-                            }
                         }
                     }
                 }
