@@ -41,7 +41,7 @@
         .data-table th { background: #00995D; color: white; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; }
         .data-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333; vertical-align: middle; }
         
-        /* Badges de Status */
+        /* Badges de Status e Mês */
         .badge { padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 11px; display: inline-block; text-align: center; }
         .bg-new { background: #fef08a; color: #854d0e; border: 1px solid #fde047; animation: pulse 2s infinite; }
         .bg-linked { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
@@ -50,6 +50,11 @@
 
         .origem-unimed { background: #d1fae5; color: #059669; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
         .origem-part { background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
+
+        /* NOVAS TAGS DE MESES */
+        .month-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+        .badge-month { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0284c7; font-weight: 800; text-transform: uppercase; border: 1px solid #bae6fd; }
+        .badge-month.current { background: #0ea5e9; color: white; border-color: #0284c7; }
 
         .actions-cell { display: flex; justify-content: center; gap: 8px; }
         .btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e5e7eb; background: white; color: #4b5563; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -82,19 +87,19 @@
         <div id="global-nav"></div>
 
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchPatientTab('todos', this)">Todos</button>
+            <button class="tab-btn active" onclick="switchPatientTab('todos', this)">Pacientes do Mês</button>
             <button class="tab-btn" onclick="switchPatientTab('novos', this)">Novos (Sem Vínculo)</button>
             <button class="tab-btn" onclick="switchPatientTab('vinculados', this)">Vinculados</button>
             <button class="tab-btn" onclick="switchPatientTab('unimed', this)"><i class="fas fa-notes-medical"></i> Base Unimed</button>
             <button class="tab-btn" onclick="switchPatientTab('particular', this)"><i class="fas fa-star"></i> Base Particular</button>
-            <button class="tab-btn" onclick="switchPatientTab('inativos', this)"><i class="fas fa-ban"></i> Inativos</button>
+            <button class="tab-btn" onclick="switchPatientTab('inativos', this)"><i class="fas fa-ban"></i> Inativos (Manuais)</button>
         </div>
 
         <div class="controls">
             <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
                 
                 <div class="input-group">
-                    <label class="label-title">Mês Ativo</label>
+                    <label class="label-title">Filtro de Mês</label>
                     <select id="selMonthPat" class="input-field" style="min-width:130px;" onchange="loadActivityData()"></select>
                 </div>
                 <div class="input-group">
@@ -135,10 +140,10 @@
                     <thead>
                         <tr>
                             <th style="width: 40px; text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAllPatients(this)"></th>
-                            <th style="width: 25%">Nome do Paciente</th>
+                            <th style="width: 30%">Paciente & Histórico (Ano)</th>
                             <th style="width: 15%">Carteirinha</th>
                             <th style="width: 10%; text-align: center;">Status</th>
-                            <th style="width: 30%">Médico(s) Vinculado(s)</th>
+                            <th style="width: 25%">Médico(s) Vinculado(s)</th>
                             <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
@@ -212,8 +217,8 @@
                 <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Paciente: <strong id="inactivatePatientName" style="color: #000;"></strong></p>
                 <input type="hidden" id="inactivatePatientId">
                 
-                <label class="form-label">Motivo da Inativação (Obrigatório)</label>
-                <textarea id="inactivateReason" class="form-textarea" placeholder="Ex: Paciente transferido, óbito, fim do tratamento..."></textarea>
+                <label class="form-label">Motivo da Inativação (Ex: Óbito, Transferência)</label>
+                <textarea id="inactivateReason" class="form-textarea" placeholder="Digite o motivo..."></textarea>
             </div>
             <div class="modal-footer">
                 <button class="btn-sync" style="background: #9ca3af;" onclick="closeModals()">Cancelar</button>
@@ -228,10 +233,10 @@
         let bulkLinkIds = []; 
         let currentTab = 'todos';
         
-        // NOVO: Memória de atividade dos pacientes (saber quem estava em qual mês)
         window.patientActivityMap = {};
 
         const monthsList = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        const shortMonths = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
         const generatePatientId = (name) => {
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -248,10 +253,9 @@
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('pacientes', 'Gestão de Pacientes');
             
-            // Popula os seletores de Mês e Ano
             const now = new Date(); 
             const curY = now.getFullYear(); 
-            let curM = now.getMonth() - 1; // Puxa o mês passado por padrão, igual repasse
+            let curM = now.getMonth() - 1; 
             if (curM < 0) curM = 11;
             
             const elYear = document.getElementById('selYearPat'); 
@@ -264,7 +268,7 @@
 
             await loadDoctors();
             await loadPatients();
-            await loadActivityData(); // Carrega os dados do robô e filtra
+            await loadActivityData(); 
         });
 
         function switchPatientTab(tabName, element) {
@@ -274,9 +278,6 @@
             renderTable();
         }
 
-        // ==========================================
-        // 1. CARREGAMENTO DE DADOS E FILTROS
-        // ==========================================
         async function loadDoctors() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
@@ -310,9 +311,6 @@
             }
         }
 
-        // ==========================================
-        // 2. SINCRONIZAÇÃO E INATIVAÇÃO AUTOMÁTICA
-        // ==========================================
         async function loadActivityData() {
             const indicator = document.getElementById('syncIndicator');
             indicator.style.display = 'inline-block';
@@ -328,10 +326,8 @@
                 const vendasData = resVendas.ok ? normalizeData(await resVendas.json()) : {};
                 const unimedArray = Object.values(unimedData);
 
-                // Constrói o mapa de atividade: Quem apareceu em qual mês
                 window.patientActivityMap = {};
                 
-                // Processa Unimed
                 unimedArray.forEach(row => {
                     if (row.paciente && row.competencia) {
                         const patId = generatePatientId(row.paciente);
@@ -340,7 +336,6 @@
                     }
                 });
 
-                // Processa Particulares
                 Object.values(vendasData).forEach(v => {
                     if (v.tipo_registro === 'particular' && (v.procedimento || '').toUpperCase().includes('APLICA')) {
                         const dateParts = (v.data || '').split('-');
@@ -353,7 +348,6 @@
                     }
                 });
 
-                // Roda o Auto-Cadastrador da Unimed (para pacientes que vieram do robô e não estão no BD)
                 let dadosAtualizados = false;
                 for (const row of unimedArray) {
                     if (row.paciente) {
@@ -381,43 +375,11 @@
                         }
                     }
                 }
-
-                // RODA A INATIVAÇÃO INTELIGENTE PARA O MÊS SELECIONADO
-                await processAutoInactivation(unimedArray);
                 
                 renderTable();
             } catch(e) { } finally { indicator.style.display = 'none'; }
         }
 
-        async function processAutoInactivation(unimedArray) {
-            const mesSel = parseInt(document.getElementById('selMonthPat').value) + 1;
-            const anoSel = parseInt(document.getElementById('selYearPat').value);
-            const compAtual = `${String(mesSel).padStart(2,'0')}/${anoSel}`;
-            
-            let mesAnt = mesSel - 1; let anoAnt = anoSel;
-            if (mesAnt === 0) { mesAnt = 12; anoAnt -= 1; }
-            const compAnt = `${String(mesAnt).padStart(2,'0')}/${anoAnt}`;
-
-            const patsAtual = new Set(unimedArray.filter(r => r.competencia === compAtual).map(r => generatePatientId(r.paciente)));
-            const patsAnt = new Set(unimedArray.filter(r => r.competencia === compAnt).map(r => generatePatientId(r.paciente)));
-
-            // Se não houver dados no mês atual, não inativa ninguém para evitar acidentes antes do robô rodar!
-            if (patsAtual.size === 0) return; 
-
-            let inativados = false;
-            for (let patId of patsAnt) {
-                if (!patsAtual.has(patId) && patients[patId] && patients[patId].status !== 'inativo') {
-                    patients[patId].status = 'inativo';
-                    patients[patId].motivo_inativacao = `Ausência de faturamento Unimed em ${compAtual}`;
-                    await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) });
-                    inativados = true;
-                }
-            }
-        }
-
-        // ==========================================
-        // 3. RENDERIZAÇÃO DA TABELA (Com filtro de Mês)
-        // ==========================================
         function toggleAllPatients(source) {
             const checkboxes = document.querySelectorAll('.patient-checkbox');
             checkboxes.forEach(cb => cb.checked = source.checked);
@@ -436,11 +398,9 @@
             let html = '';
 
             patArray.forEach(p => {
-                // Inteligência: O Paciente apareceu no Mês Selecionado?
-                const teveAtividadeNoMes = window.patientActivityMap[p.id_firebase] && window.patientActivityMap[p.id_firebase].has(compSelecionada);
-                
-                // Se a pessoa quer ver Inativos do sistema todo, mostramos. Se não, filtramos pelo mês.
-                if (currentTab !== 'inativos' && !teveAtividadeNoMes) return;
+                const teveAtividadeNoMesSelecionado = window.patientActivityMap[p.id_firebase] && window.patientActivityMap[p.id_firebase].has(compSelecionada);
+
+                if (currentTab !== 'inativos' && !teveAtividadeNoMesSelecionado) return;
 
                 const isInactive = p.status === 'inativo';
                 const hasDoctor = p.prescritor_id || p.encaminhador_id || p.doctor_id;
@@ -480,7 +440,7 @@
                     let eName = p.encaminhador_id && doctors[p.encaminhador_id] ? doctors[p.encaminhador_id].nome : null;
 
                     if (!pName && !eName && p.doctor_id && doctors[p.doctor_id]) {
-                        doctorNameHtml = `<span style="color:#6b7280; font-style:italic;"><i class="fas fa-history"></i> ${doctors[p.doctor_id].nome} (Vínculo Antigo - Favor Atualizar)</span>`;
+                        doctorNameHtml = `<span style="color:#6b7280; font-style:italic;"><i class="fas fa-history"></i> ${doctors[p.doctor_id].nome} (Vínculo Antigo)</span>`;
                     } else {
                         if (pName) doctorNameHtml += `<div style="color:#be185d; font-weight:bold; font-size:12px; margin-bottom:5px;"><i class="fas fa-stethoscope"></i> Prescritor: ${pName}</div>`;
                         if (eName) doctorNameHtml += `<div style="color:#c2410c; font-weight:bold; font-size:12px;"><i class="fas fa-share-square"></i> Encaminhador: ${eName}</div>`;
@@ -490,8 +450,20 @@
                     doctorNameHtml = `<span style="color:#9ca3af; font-style:italic;">Aguardando vínculo...</span>`;
                 }
 
+                // GERAÇÃO DAS TAGS DE MESES ATIVOS NO ANO SELECIONADO
+                let activeMonthsHtml = '<div class="month-badges">';
+                for(let m=1; m<=12; m++) {
+                    let compCheck = `${String(m).padStart(2,'0')}/${anoSel}`;
+                    if(window.patientActivityMap[p.id_firebase] && window.patientActivityMap[p.id_firebase].has(compCheck)) {
+                        let isCurrentMonth = (m === mesSel);
+                        let bgClass = isCurrentMonth ? 'current' : '';
+                        activeMonthsHtml += `<span class="badge-month ${bgClass}">${shortMonths[m-1]}</span>`;
+                    }
+                }
+                activeMonthsHtml += '</div>';
+
                 let actionButtons = `
-                    <button class="btn-icon btn-icon-link" title="Vincular Médico" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.prescritor_id || ''}', '${p.encaminhador_id || ''}')">
+                    <button class="btn-icon btn-icon-link" title="Validar / Mudar Vínculo" onclick="openLinkModal('${p.id_firebase}', '${p.nome}', '${p.prescritor_id || ''}', '${p.encaminhador_id || ''}')">
                         <i class="fas fa-link"></i>
                     </button>
                     <button class="btn-icon btn-icon-edit" title="Editar Cadastro" onclick="openEditModal('${p.id_firebase}')">
@@ -501,7 +473,7 @@
 
                 if (!isInactive) {
                     actionButtons += `
-                    <button class="btn-icon btn-icon-ban" title="Inativar Paciente" onclick="openInactivateModal('${p.id_firebase}', '${p.nome}')">
+                    <button class="btn-icon btn-icon-ban" title="Inativar Manualmente" onclick="openInactivateModal('${p.id_firebase}', '${p.nome}')">
                         <i class="fas fa-ban"></i>
                     </button>`;
                 }
@@ -516,7 +488,10 @@
                     <td style="text-align:center;">
                         <input type="checkbox" class="patient-checkbox" value="${p.id_firebase}">
                     </td>
-                    <td style="font-weight: bold; color: ${isInactive ? '#9ca3af' : '#1f2937'};">${p.nome} ${origemBadge}</td>
+                    <td style="font-weight: bold; color: ${isInactive ? '#9ca3af' : '#1f2937'};">
+                        ${p.nome} ${origemBadge}
+                        ${activeMonthsHtml}
+                    </td>
                     <td style="font-family: monospace; color: #4b5563;">${cartStr || '-'}</td>
                     <td style="text-align: center;">${statusBadge}</td>
                     <td>${doctorNameHtml}</td>
@@ -524,14 +499,9 @@
                 </tr>`;
             });
 
-            if (html === '') html = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #6b7280;">Nenhum paciente processado em <b>${compSelecionada}</b> neste filtro.</td></tr>`;
+            if (html === '') html = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #6b7280;">Nenhum paciente encontrado na base de <b>${compSelecionada}</b> neste filtro.</td></tr>`;
             tbody.innerHTML = html;
         }
-
-        // ==========================================
-        // 4. FUNÇÕES DE CRUD E MODAIS
-        // ==========================================
-        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
         function openAddModal() {
             document.getElementById('editPatientId').value = ''; document.getElementById('patientNameInput').value = '';
@@ -623,6 +593,8 @@
                 btnSave.disabled = false;
             }
         }
+
+        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
         function openInactivateModal(id, name) {
             document.getElementById('inactivatePatientId').value = id; document.getElementById('inactivatePatientName').innerText = name;
