@@ -561,15 +561,6 @@
                 // ------------------------------------------------
                 // 2. BUSCAR DADOS UNIFICADOS (MOTOR REPASSE)
                 // ------------------------------------------------
-                let valorConsultaParticular = 0; 
-                let atendimentosConsultaPart = 0;
-                let valorTratamentoTotal = 0;
-                let valorTratamentoUnimed = 0;
-                let valorTratamentoParticular = 0;
-                let pacientesTratCount = new Set();
-                let totalAtendimentosTrat = 0;
-                let listaRenderPacienteHtmlMap = new Map(); 
-
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
@@ -579,6 +570,10 @@
                 let arrayBot = Object.values(unimedData);
                 let dadosFiltrados = arrayBot.filter(r => r.competencia === compStr);
 
+                let valorConsultaParticular = 0; 
+                let atendimentosConsultaPart = 0;
+
+                // INJEÇÃO DE PARTICULARES (Idêntico ao medical-repass)
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     const isLiminar = (String(v.tipo_registro).toLowerCase() === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
                     if (isLiminar) return; 
@@ -602,7 +597,8 @@
                             const alreadyExists = dadosFiltrados.some(d => {
                                 try {
                                     let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
-                                    return (ext.origem === 'venda_particular' || String(d.tipo).toUpperCase() === 'PARTICULAR') && 
+                                    let isPartExt = ext.origem === 'venda_particular' || ext.origem === 'particular';
+                                    return (isPartExt || String(d.tipo).toUpperCase() === 'PARTICULAR') && 
                                            d.data_atendimento === dStr && 
                                            String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
                                 } catch(e) { return false; }
@@ -616,7 +612,7 @@
                                     competencia: vComp,
                                     carteirinha: '',
                                     descricao: String(v.procedimento || 'Aplicação Particular'),
-                                    valor_pago: parseCurrency(v.valor_final || 0),
+                                    valor_pago: parseCurrency(v.valor_final || v.valor || 0),
                                     quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                     tipo: 'PARTICULAR',
                                     custo_informado: 0,
@@ -628,34 +624,31 @@
                         else if (tipoReg.includes('particular') && !procNormalizado.includes('TAXA') && !procNormalizado.includes('APLICACAO COM')) {
                             if (v.medico && v.medico.toUpperCase() === doctorName) {
                                 atendimentosConsultaPart++;
-                                valorConsultaParticular += parseCurrency(v.valor_final);
+                                valorConsultaParticular += parseCurrency(v.valor_final || v.valor || 0);
                             }
                         }
                     }
                 });
 
-                // Filtra Soro e formata dados
+                // FORMATAÇÃO E AGRUPAMENTO DOS DADOS NO PADRÃO DO REPASSE
                 let excelData = dadosFiltrados.map(row => {
-                    let originais = [];
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
-                    if (row.itens_originais) originais = row.itens_originais;
-                    else if (extras.itens_originais) originais = extras.itens_originais;
-
                     let custoDb = row.custo_informado || extras.custo_informado || 0;
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
+                    // Força o tipo como Particular se vier da injeção
+                    let tipoBase = String(row.tipo || "MED").toUpperCase().trim();
+                    if (extras.origem === 'venda_particular' || extras.origem === 'particular') tipoBase = 'PARTICULAR';
+
                     return {
                         id_firebase: row.id_firebase,
                         paciente: String(row.paciente || '').toUpperCase().trim(), 
-                        carteirinha: row.carteirinha || "",
                         medicamento: String(row.descricao || '').toUpperCase().trim(), 
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
                         data: dataNormalized, 
-                        competencia: row.competencia,
-                        tipo: String(row.tipo || "MED").toUpperCase(), 
-                        originais: originais,
+                        tipo: tipoBase, 
                         custo_informado: parseFloat(custoDb) 
                     };
                 }).filter(item => {
@@ -671,7 +664,7 @@
                     const p = d.paciente; 
                     if (!patientsTableObj[p]) {
                         patientsTableObj[p] = { 
-                            name: p, carteirinha: d.carteirinha, items: [], 
+                            name: p, items: [], 
                             pId: null, pName: '', eId: null, eName: ''
                         };
                     }
@@ -693,10 +686,20 @@
                     patientsTableObj[p].items.push(d);
                 });
 
+                let valorTratamentoTotal = 0;
+                let valorTratamentoUnimed = 0;
+                let valorTratamentoParticular = 0;
+                let pacientesTratCount = new Set();
+                let totalAtendimentosTrat = 0;
+                let listaRenderPacienteHtmlMap = new Map(); 
+
+                // ------------------------------------------------
+                // 3. CALCULAR REPASSES (CLONE DA TELA MEDICAL-REPASS)
+                // ------------------------------------------------
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     
-                    // Pula se o médico não for prescritor nem encaminhador
+                    // Pula se o médico selecionado no Dashboard não tem vínculo com o paciente
                     if (pat.pId !== docId && pat.eId !== docId) return;
 
                     const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
