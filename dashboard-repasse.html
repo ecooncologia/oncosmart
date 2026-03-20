@@ -230,21 +230,39 @@
                     <div class="detail-header" style="color: #059669;">
                         <i class="fas fa-chart-pie" style="color: #10b981;"></i> Resumo Analítico - Tratamentos
                     </div>
-                    <div class="summary-row">
-                        <span class="summary-label">Volume Total de Pacientes</span>
+                    
+                    <div class="summary-row" style="background:#f1f5f9;">
+                        <span class="summary-label" style="color:#1f2937;">Volume Total de Pacientes</span>
                         <span class="summary-val" id="detTratPac">0</span>
                     </div>
-                    <div class="summary-row">
-                        <span class="summary-label">Volume Total de Atendimentos</span>
+                    <div class="summary-row" style="padding: 5px 20px; font-size: 11px; background: #fff; border-bottom: none;">
+                        <span class="summary-label" style="font-weight:normal;">» Pacientes Unimed</span>
+                        <span class="summary-val" id="detTratPacUnimed" style="font-weight:normal;">0</span>
+                    </div>
+                    <div class="summary-row" style="padding: 5px 20px; font-size: 11px; background: #fff; border-bottom: 1px dashed #e5e7eb;">
+                        <span class="summary-label" style="font-weight:normal;">» Pacientes Particular</span>
+                        <span class="summary-val" id="detTratPacPart" style="font-weight:normal;">0</span>
+                    </div>
+
+                    <div class="summary-row" style="background:#f1f5f9;">
+                        <span class="summary-label" style="color:#1f2937;">Total de Atendimentos</span>
                         <span class="summary-val" id="detTratItens">0</span>
                     </div>
-                    
-                    <div class="summary-row" style="padding: 5px 20px; font-size: 11px; background: #f8fafc; border-bottom: none;">
-                        <span class="summary-label" style="font-weight:normal;">» Via Unimed</span>
+                    <div class="summary-row" style="padding: 5px 20px; font-size: 11px; background: #fff; border-bottom: none;">
+                        <span class="summary-label" style="font-weight:normal;">» Atendimentos Unimed</span>
+                        <span class="summary-val" id="detTratItensUnimed" style="font-weight:normal;">0</span>
+                    </div>
+                    <div class="summary-row" style="padding: 5px 20px; font-size: 11px; background: #fff; border-bottom: 1px dashed #e5e7eb;">
+                        <span class="summary-label" style="font-weight:normal;">» Atendimentos Particular</span>
+                        <span class="summary-val" id="detTratItensPart" style="font-weight:normal;">0</span>
+                    </div>
+
+                    <div class="summary-row" style="padding: 5px 20px; font-size: 11px; background: #f8fafc; border-bottom: none; margin-top: 10px;">
+                        <span class="summary-label" style="font-weight:normal;">» Repasse Unimed</span>
                         <span class="summary-val" id="detTratValorUnimed" style="font-weight:normal;">R$ 0,00</span>
                     </div>
                     <div class="summary-row" style="padding: 5px 20px; font-size: 11px; background: #f8fafc;">
-                        <span class="summary-label" style="font-weight:normal;">» Via Particular</span>
+                        <span class="summary-label" style="font-weight:normal;">» Repasse Particular</span>
                         <span class="summary-val" id="detTratValorPart" style="font-weight:normal;">R$ 0,00</span>
                     </div>
 
@@ -482,10 +500,15 @@
             document.getElementById('printConvQtd').innerText = "0";
             document.getElementById('printConvValor').innerText = "0.00";
 
-            const elsToReset = ['kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart', 'detPlantTurnos', 'detPlantValor', 'detTratPac', 'detTratItens', 'detTratValor', 'detTratValorUnimed', 'detTratValorPart'];
+            const elsToReset = [
+                'kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart', 
+                'detPlantTurnos', 'detPlantValor', 'detTratPac', 'detTratPacUnimed', 'detTratPacPart',
+                'detTratItens', 'detTratItensUnimed', 'detTratItensPart', 
+                'detTratValor', 'detTratValorUnimed', 'detTratValorPart'
+            ];
             elsToReset.forEach(id => {
                 let el = document.getElementById(id);
-                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>';
+                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:12px;"></i>';
             });
             
             let tbPac = document.getElementById('tablePacientesTrat');
@@ -573,7 +596,7 @@
                 let valorConsultaParticular = 0; 
                 let atendimentosConsultaPart = 0;
 
-                // INJEÇÃO DE PARTICULARES (Idêntico ao medical-repass)
+                // INJEÇÃO DE PARTICULARES
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     const isLiminar = (String(v.tipo_registro).toLowerCase() === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
                     if (isLiminar) return; 
@@ -637,9 +660,12 @@
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // Força o tipo como Particular se vier da injeção
-                    let tipoBase = String(row.tipo || "MED").toUpperCase().trim();
-                    if (extras.origem === 'venda_particular' || extras.origem === 'particular') tipoBase = 'PARTICULAR';
+                    // A Trava de Aço: Se tem 'virt_part' no ID ou veio de venda_particular, força a ser Particular
+                    let isPart = false;
+                    let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
+                    if (tipoStr === 'PARTICULAR' || tipoStr.includes('PARTICULAR')) isPart = true;
+                    if (extras.origem && String(extras.origem).toLowerCase().includes('particular')) isPart = true;
+                    if (String(row.id_firebase).includes('virt_part_')) isPart = true;
 
                     return {
                         id_firebase: row.id_firebase,
@@ -648,7 +674,7 @@
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
                         data: dataNormalized, 
-                        tipo: tipoBase, 
+                        isParticular: isPart, 
                         custo_informado: parseFloat(custoDb) 
                     };
                 }).filter(item => {
@@ -689,8 +715,15 @@
                 let valorTratamentoTotal = 0;
                 let valorTratamentoUnimed = 0;
                 let valorTratamentoParticular = 0;
+                
                 let pacientesTratCount = new Set();
+                let pacientesTratUnimedCount = new Set();
+                let pacientesTratPartCount = new Set();
+                
                 let totalAtendimentosTrat = 0;
+                let atendimentosTratUnimed = 0;
+                let atendimentosTratPart = 0;
+                
                 let listaRenderPacienteHtmlMap = new Map(); 
 
                 // ------------------------------------------------
@@ -732,8 +765,6 @@
                         let lucroRepasse = lucroItem > 0 ? lucroItem : 0;
                         let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                         let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
-                        
-                        let isParticular = item.tipo === 'PARTICULAR';
 
                         let repParaOmedicoAqui = 0;
                         if (pat.pId === docId) repParaOmedicoAqui += repP;
@@ -744,12 +775,16 @@
                             totalAtendimentosTrat++;
                             datesOfPac.push(item.data);
                             
-                            if (isParticular) {
+                            if (item.isParticular) {
                                 valorTratamentoParticular += repParaOmedicoAqui;
                                 repPartPac += repParaOmedicoAqui;
+                                atendimentosTratPart++;
+                                pacientesTratPartCount.add(pat.name);
                             } else {
                                 valorTratamentoUnimed += repParaOmedicoAqui;
                                 repUnimedPac += repParaOmedicoAqui;
+                                atendimentosTratUnimed++;
+                                pacientesTratUnimedCount.add(pat.name);
                             }
                         }
                     });
@@ -792,9 +827,17 @@
                 
                 let elDetTratPac = document.getElementById('detTratPac');
                 if(elDetTratPac) elDetTratPac.innerText = pacientesTratCount.size;
+                let elDetTratPacUnimed = document.getElementById('detTratPacUnimed');
+                if(elDetTratPacUnimed) elDetTratPacUnimed.innerText = pacientesTratUnimedCount.size;
+                let elDetTratPacPart = document.getElementById('detTratPacPart');
+                if(elDetTratPacPart) elDetTratPacPart.innerText = pacientesTratPartCount.size;
                 
                 let elDetTratItens = document.getElementById('detTratItens');
                 if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
+                let elDetTratItensUnimed = document.getElementById('detTratItensUnimed');
+                if(elDetTratItensUnimed) elDetTratItensUnimed.innerText = atendimentosTratUnimed;
+                let elDetTratItensPart = document.getElementById('detTratItensPart');
+                if(elDetTratItensPart) elDetTratItensPart.innerText = atendimentosTratPart;
                 
                 document.getElementById('detTratValorUnimed').innerText = `R$ ${valorTratamentoUnimed.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValorPart').innerText = `R$ ${valorTratamentoParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
