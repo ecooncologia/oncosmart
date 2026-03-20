@@ -454,35 +454,46 @@
                 let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
 
                 Object.entries(vendasData).forEach(([vId, v]) => {
-                    if (v.tipo_registro === 'particular' && (v.procedimento || '').toUpperCase().includes('APLICA')) {
-                        const dateParts = (v.data || '').split('-');
-                        if (dateParts.length >= 2) {
-                            const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === competenciaAlvo) {
-                                const alreadyExists = dadosFiltrados.some(d => {
-                                    try {
-                                        let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
-                                        return (ext.origem === 'venda_particular' || d.tipo === 'PARTICULAR' || d.tipo === 'Particular') && 
-                                               d.data_atendimento === v.data && 
-                                               String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
-                                    } catch(e) { return false; }
+                    let tipoReg = String(v.tipo_registro || '').toLowerCase();
+                    let proc = String(v.procedimento || '').toUpperCase();
+                    
+                    // NOVA REGRA DE TEXTO: Se for particular, contiver APLICA e NÃO contiver TAXA
+                    if (tipoReg.includes('particular') && proc.includes('APLICA') && !proc.includes('TAXA')) {
+                        let dStr = v.data || '';
+                        let vComp = '';
+                        
+                        if(dStr.includes('-')){
+                            let p = dStr.split('-');
+                            vComp = p[0].length === 4 ? `${p[1]}/${p[0]}` : `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                        } else if(dStr.includes('/')){
+                            let p = dStr.split('/');
+                            vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                        }
+
+                        if (vComp === competenciaAlvo) {
+                            const alreadyExists = dadosFiltrados.some(d => {
+                                try {
+                                    let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
+                                    return (ext.origem === 'venda_particular' || d.tipo === 'PARTICULAR' || d.tipo === 'Particular') && 
+                                           d.data_atendimento === dStr && 
+                                           String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
+                                } catch(e) { return false; }
+                            });
+                            
+                            if (!alreadyExists) {
+                                dadosFiltrados.push({
+                                    id_firebase: 'virt_part_' + vId,
+                                    paciente: String(v.paciente).toUpperCase().trim(),
+                                    data_atendimento: dStr,
+                                    competencia: vComp,
+                                    carteirinha: '',
+                                    descricao: `Aplicação Particular - ${v.procedimento}`,
+                                    valor_pago: parseFloat(v.valor_final || 0),
+                                    quantidade: parseFloat(v.aplicacoes_realizadas || 1),
+                                    tipo: 'PARTICULAR',
+                                    custo_informado: 0,
+                                    dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                 });
-                                
-                                if (!alreadyExists) {
-                                    dadosFiltrados.push({
-                                        id_firebase: 'virt_part_' + vId,
-                                        paciente: String(v.paciente).toUpperCase().trim(),
-                                        data_atendimento: v.data,
-                                        competencia: vComp,
-                                        carteirinha: '',
-                                        descricao: `Aplicação Particular - ${v.procedimento}`,
-                                        valor_pago: parseFloat(v.valor_final || 0),
-                                        quantidade: parseFloat(v.aplicacoes_realizadas || 1),
-                                        tipo: 'PARTICULAR',
-                                        custo_informado: 0,
-                                        dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
-                                    });
-                                }
                             }
                         }
                     }
@@ -648,7 +659,7 @@
                     let canE = !!pat.eId; 
 
                     let hasGrazielly = false;
-                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true; // Apenas Encaminhadora
+                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true; 
 
                     if (isTaxa) {
                         if (!hasGrazielly) {
