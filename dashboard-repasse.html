@@ -582,7 +582,7 @@
 
 
                 // ------------------------------------------------
-                // 2. BUSCAR DADOS UNIFICADOS (MOTOR REPASSE)
+                // 2. INJEÇÃO DE DADOS (Idêntico ao medical-repass)
                 // ------------------------------------------------
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
@@ -596,86 +596,81 @@
                 let valorConsultaParticular = 0; 
                 let atendimentosConsultaPart = 0;
 
-                // INJEÇÃO DE PARTICULARES
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     const isLiminar = (String(v.tipo_registro).toLowerCase() === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
                     if (isLiminar) return; 
 
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
-                    let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    let procNormalizado = String(v.procedimento || '').toUpperCase();
 
-                    let dStr = v.data || '';
-                    let vComp = '';
-                    if(dStr.includes('-')){
-                        let p = dStr.split('-');
-                        vComp = p[0].length === 4 ? `${p[1]}/${p[0]}` : `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
-                    } else if(dStr.includes('/')){
-                        let p = dStr.split('/');
-                        vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
-                    }
-
-                    if (vComp === compStr) {
-                        // É APLICAÇÃO PARTICULAR!
-                        if (tipoReg.includes('particular') && procNormalizado.includes('APLICACAO COM')) {
-                            const alreadyExists = dadosFiltrados.some(d => {
-                                try {
-                                    let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
-                                    let isPartExt = ext.origem === 'venda_particular' || ext.origem === 'particular';
-                                    return (isPartExt || String(d.tipo).toUpperCase() === 'PARTICULAR') && 
-                                           d.data_atendimento === dStr && 
-                                           String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
-                                } catch(e) { return false; }
-                            });
-                            
-                            if (!alreadyExists) {
-                                dadosFiltrados.push({
-                                    id_firebase: 'virt_part_' + vId,
-                                    paciente: String(v.paciente).toUpperCase().trim(),
-                                    data_atendimento: dStr,
-                                    competencia: vComp,
-                                    carteirinha: '',
-                                    descricao: String(v.procedimento || 'Aplicação Particular'),
-                                    valor_pago: parseCurrency(v.valor_final || v.valor || 0),
-                                    quantidade: parseFloat(v.aplicacoes_realizadas || 1),
-                                    tipo: 'PARTICULAR',
-                                    custo_informado: 0,
-                                    dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
+                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICA')) {
+                        const dateParts = (v.data || '').split('-');
+                        if (dateParts.length >= 2) {
+                            const vComp = `${dateParts[1]}/${dateParts[0]}`;
+                            if (vComp === compStr) {
+                                const alreadyExists = dadosFiltrados.some(d => {
+                                    try {
+                                        let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
+                                        return (ext.origem === 'venda_particular' || String(d.tipo).toUpperCase() === 'PARTICULAR') && 
+                                               d.data_atendimento === v.data && 
+                                               String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
+                                    } catch(e) { return false; }
                                 });
+                                
+                                if (!alreadyExists) {
+                                    dadosFiltrados.push({
+                                        id_firebase: 'virt_part_' + vId,
+                                        paciente: String(v.paciente).toUpperCase().trim(),
+                                        data_atendimento: v.data,
+                                        competencia: vComp,
+                                        carteirinha: '',
+                                        descricao: `Aplicação Particular - ${v.procedimento}`,
+                                        valor_pago: parseFloat(v.valor_final || v.valor || 0),
+                                        quantidade: parseFloat(v.aplicacoes_realizadas || 1),
+                                        tipo: 'PARTICULAR',
+                                        custo_informado: 0,
+                                        dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
+                                    });
+                                }
                             }
-                        } 
-                        // É CONSULTA PARTICULAR (Sem ser Taxa e sem ser Aplicação)
-                        else if (tipoReg.includes('particular') && !procNormalizado.includes('TAXA') && !procNormalizado.includes('APLICACAO COM')) {
-                            if (v.medico && v.medico.toUpperCase() === doctorName) {
-                                atendimentosConsultaPart++;
-                                valorConsultaParticular += parseCurrency(v.valor_final || v.valor || 0);
+                        }
+                    } else if (tipoReg.includes('particular') && !procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
+                        const dateParts = (v.data || '').split('-');
+                        if (dateParts.length >= 2) {
+                            const vComp = `${dateParts[1]}/${dateParts[0]}`;
+                            if (vComp === compStr) {
+                                if (v.medico && v.medico.toUpperCase() === doctorName) {
+                                    atendimentosConsultaPart++;
+                                    valorConsultaParticular += parseCurrency(v.valor_final || v.valor || 0);
+                                }
                             }
                         }
                     }
                 });
 
-                // FORMATAÇÃO E AGRUPAMENTO DOS DADOS NO PADRÃO DO REPASSE
+                // FORMATAÇÃO NO PADRÃO DO REPASSE
                 let excelData = dadosFiltrados.map(row => {
+                    let originais = [];
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
+                    
+                    if (row.itens_originais) originais = row.itens_originais;
+                    else if (extras.itens_originais) originais = extras.itens_originais;
+
                     let custoDb = row.custo_informado || extras.custo_informado || 0;
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // A Trava de Aço: Se tem 'virt_part' no ID ou veio de venda_particular, força a ser Particular
-                    let isPart = false;
-                    let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
-                    if (tipoStr === 'PARTICULAR' || tipoStr.includes('PARTICULAR')) isPart = true;
-                    if (extras.origem && String(extras.origem).toLowerCase().includes('particular')) isPart = true;
-                    if (String(row.id_firebase).includes('virt_part_')) isPart = true;
-
                     return {
                         id_firebase: row.id_firebase,
                         paciente: String(row.paciente || '').toUpperCase().trim(), 
+                        carteirinha: row.carteirinha || "",
                         medicamento: String(row.descricao || '').toUpperCase().trim(), 
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
                         data: dataNormalized, 
-                        tipo: tipoStr, // Retornando o tipo original também por segurança
-                        isParticular: isPart, // <-- Essa é a flag absoluta!
+                        competencia: row.competencia,
+                        tipo: String(row.tipo || "MED").toUpperCase(), 
+                        originais: originais,
                         custo_informado: parseFloat(custoDb) 
                     };
                 }).filter(item => {
@@ -691,8 +686,8 @@
                     const p = d.paciente; 
                     if (!patientsTableObj[p]) {
                         patientsTableObj[p] = { 
-                            name: p, items: [], 
-                            pId: null, pName: '', eId: null, eName: ''
+                            name: p, carteirinha: d.carteirinha, 
+                            items: [], pId: null, pName: '', eId: null, eName: ''
                         };
                     }
                     
@@ -728,14 +723,11 @@
                 let listaRenderPacienteHtmlMap = new Map(); 
 
                 // ------------------------------------------------
-                // 3. CALCULAR REPASSES (CLONE DA TELA MEDICAL-REPASS)
+                // 3. CALCULAR REPASSES (CLONE EXATO DO MEDICAL-REPASS)
                 // ------------------------------------------------
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     
-                    // Pula se o médico selecionado no Dashboard não tem vínculo com o paciente
-                    if (pat.pId !== docId && pat.eId !== docId) return;
-
                     const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                     let hasTratamentoRepasseParaEsteMedico = false;
                     let repUnimedPac = 0;
@@ -767,26 +759,32 @@
                         let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                         let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
 
-                        let repParaOmedicoAqui = 0;
-                        if (pat.pId === docId) repParaOmedicoAqui += repP;
-                        if (pat.eId === docId) repParaOmedicoAqui += repE;
+                        let isVisibleForFilter = false;
+                        if (pat.pId === docId && canP) isVisibleForFilter = true;
+                        if (pat.eId === docId && canE) isVisibleForFilter = true;
 
-                        if (repParaOmedicoAqui > 0) {
-                            hasTratamentoRepasseParaEsteMedico = true;
-                            totalAtendimentosTrat++;
-                            datesOfPac.push(item.data);
-                            
-                            // AQUI ESTAVA O BUG DO PROMPT ANTERIOR: Ele estava lendo item.tipo ao invés de item.isParticular!
-                            if (item.isParticular) {
-                                valorTratamentoParticular += repParaOmedicoAqui;
-                                repPartPac += repParaOmedicoAqui;
-                                atendimentosTratPart++;
-                                pacientesTratPartCount.add(pat.name);
-                            } else {
-                                valorTratamentoUnimed += repParaOmedicoAqui;
-                                repUnimedPac += repParaOmedicoAqui;
-                                atendimentosTratUnimed++;
-                                pacientesTratUnimedCount.add(pat.name);
+                        if (isVisibleForFilter) {
+                            let repParaOmedicoAqui = 0;
+                            if (pat.pId === docId && canP) repParaOmedicoAqui += repP;
+                            if (pat.eId === docId && canE) repParaOmedicoAqui += repE;
+
+                            if (repParaOmedicoAqui > 0) {
+                                hasTratamentoRepasseParaEsteMedico = true;
+                                totalAtendimentosTrat++;
+                                datesOfPac.push(item.data);
+                                
+                                // A TRAVA DE AÇO AQUI! item.tipo identico ao Repasse
+                                if (item.tipo === 'PARTICULAR') {
+                                    valorTratamentoParticular += repParaOmedicoAqui;
+                                    repPartPac += repParaOmedicoAqui;
+                                    atendimentosTratPart++;
+                                    pacientesTratPartCount.add(pat.name);
+                                } else {
+                                    valorTratamentoUnimed += repParaOmedicoAqui;
+                                    repUnimedPac += repParaOmedicoAqui;
+                                    atendimentosTratUnimed++;
+                                    pacientesTratUnimedCount.add(pat.name);
+                                }
                             }
                         }
                     });
