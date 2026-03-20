@@ -20,6 +20,7 @@
         
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
         .tab-btn { padding: 12px 24px; border: 1px solid #e5e7eb; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 14px; outline: none; }
+        
         .tab-btn:nth-of-type(odd):not(.active) { background: #ecfdf5; }
         .tab-btn:nth-of-type(even):not(.active) { background: #fffbeb; }
         .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
@@ -35,7 +36,7 @@
         .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
         .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
         .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
-        .input-custo { border: 1px solid #0284c7; border-radius: 4px; padding: 6px 8px; width: 110px; font-weight: bold; color: #0284c7; outline: none; transition: 0.2s; background: #fff; }
+        .input-custo { border: 1px solid #0284c7; border-radius: 4px; padding: 6px 8px; width: 90px; font-weight: bold; color: #0284c7; outline: none; transition: 0.2s; background: #fff; text-align: center; }
         .input-custo:focus { box-shadow: 0 0 0 2px #bae6fd; }
 
         .sub-tabs-container { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
@@ -243,6 +244,9 @@
         let shifts = {};
         let pacientesDb = {};
         let patListToPrint = []; 
+        
+        // Memória de gavetas abertas para não fechar no meio da digitação
+        let expandedRows = new Set();
 
         const IMPOSTO_TAXA = 0.1233;
         const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -260,31 +264,6 @@
                 } else { normalized[key] = val; }
             }); 
             return normalized;
-        }
-
-        function normalizeDate(d) {
-            if (!d) return "";
-            if (typeof d === 'number') {
-                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
-                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
-            }
-            let str = String(d).trim();
-            if (!str) return ""; 
-            
-            if (str.includes('T')) str = str.split('T')[0];
-            if (str.includes('-')) {
-                let p = str.split('-');
-                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            if (str.includes('/')) {
-                let p = str.split('/');
-                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
-                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-                }
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            return str;
         }
 
         function getComissaoInfo(pName, eName) {
@@ -370,10 +349,17 @@
             event.target.classList.add('active');
         }
 
-        function toggleLevel1(id, btn) { 
-            document.getElementById(`L1-${id}`).classList.toggle('expanded'); 
-            btn.classList.toggle('rotate'); 
-        }
+        // Função de abrir/fechar com memória de estado (para não fechar a gaveta no meio da edição)
+        window.toggleLevel1 = function(id, btn) {
+            let row = document.getElementById(`L1-${id}`);
+            row.classList.toggle('expanded');
+            btn.classList.toggle('rotate');
+            if (row.classList.contains('expanded')) {
+                expandedRows.add(id);
+            } else {
+                expandedRows.delete(id);
+            }
+        };
 
         function switchShiftTab(tabId, element) { 
             currentShiftTab = tabId; 
@@ -433,7 +419,6 @@
                 const anoSelecionado = document.getElementById('selYearUnimed').value;
                 const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
-                // --- NOVA LÓGICA DE INJEÇÃO FORÇADA DE PARTICULARES ---
                 const [resUnimed, resVendas] = await Promise.all([
                     fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS })
@@ -445,14 +430,12 @@
                 let arrayBot = Object.values(unimedData);
                 let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
 
-                // Varre as vendas atrás de Aplicações Particulares para forçar a exibição
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     if (v.tipo_registro === 'particular' && (v.procedimento || '').toUpperCase().includes('APLICA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
                             if (vComp === competenciaAlvo) {
-                                // Checa se já não foi injetado antes para evitar duplicidade
                                 const alreadyExists = dadosFiltrados.some(d => {
                                     try {
                                         let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
@@ -495,6 +478,7 @@
                     if (row.itens_originais) originais = row.itens_originais;
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
+                    // IMPORTANTE: Custo Informado agora é considerado o CUSTO UNITÁRIO
                     let custoDb = row.custo_informado || extras.custo_informado || 0;
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
@@ -510,7 +494,7 @@
                         competencia: row.competencia,
                         tipo: String(row.tipo || "MED").toUpperCase(), 
                         originais: originais,
-                        custo_informado: parseFloat(custoDb)
+                        custo_informado: parseFloat(custoDb) // Custo Unitário
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -536,9 +520,14 @@
             const novoValor = parseFloat(strVal) || 0;
             
             const itemObj = excelData.find(d => d.id_firebase === id_firebase);
-            if (itemObj) itemObj.custo_informado = novoValor;
+            if (itemObj) itemObj.custo_informado = novoValor; // Atualiza localmente
+
+            // Re-renderiza a tabela INSTANTANEAMENTE para aplicar a matemática 
+            // e devolver o foco no próximo input, se o usuário tiver apertado TAB.
+            renderAnalysisTable();
 
             try {
+                // Atualiza em background sem travar o usuário
                 const resGet = await fetch(`${API_BASE_URL}/repasse_unimed`);
                 const dbData = normalizeData(await resGet.json());
                 let dbItem = dbData[id_firebase];
@@ -555,10 +544,12 @@
                     });
                 }
             } catch(e) {}
-            renderAnalysisTable();
         }
 
         function renderAnalysisTable() {
+            // Captura qual input está selecionado para devolver o foco após renderizar (Corrige o TAB)
+            let activeElId = document.activeElement ? document.activeElement.id : null;
+
             const filterPatient = document.getElementById('filterPatient').value.toUpperCase();
             const filterRepasseDoc = document.getElementById('filterRepasseDoctor').value; 
             const filterOrigem = document.getElementById('filterOrigemRepasse').value; 
@@ -572,7 +563,6 @@
             let sumLucroGlobal = 0;
             let sumRepasseGlobal = 0;
 
-            // 1. Agrupa os itens por paciente
             excelData.forEach(d => {
                 let isParticular = d.tipo === 'PARTICULAR';
                 
@@ -596,8 +586,6 @@
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
                 
-                // NOVO: Só aceita vínculo se o paciente NÃO estiver inativo!
-                // Isso corta o bug fantasma do vínculo do mês passado.
                 if (patDb && patDb.status !== 'inativo') {
                     patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
                     patientsTableObj[p].eId = patDb.encaminhador_id;
@@ -613,7 +601,6 @@
                 patientsTableObj[p].items.push(d);
             });
 
-            // 2. Calcula as matemáticas e aplica as regras cegas de TAXA
             Object.keys(patientsTableObj).forEach(key => {
                 let pat = patientsTableObj[key];
                 
@@ -631,8 +618,12 @@
                 pat.items.forEach(item => {
                     let fatItem = Number(item.valor.toFixed(2));
                     let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
-                    let custoItem = Number((item.custo_informado || 0).toFixed(2));
-                    let lucroItem = Number((fatItem - impItem - custoItem).toFixed(2));
+                    
+                    // NOVA MATEMÁTICA: O valor inserido é o Custo Unitário! Multiplica pela quantidade.
+                    let custoUnitario = Number(item.custo_informado || 0);
+                    let custoTotalItem = Number((custoUnitario * item.mg).toFixed(2));
+
+                    let lucroItem = Number((fatItem - impItem - custoTotalItem).toFixed(2));
 
                     let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
                     
@@ -643,7 +634,6 @@
                     if (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
                     if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
 
-                    // REGRA DE OURO DA TAXA CORRIGIDA:
                     if (isTaxa) {
                         if (!hasGrazielly) {
                             canP = false;
@@ -657,12 +647,12 @@
 
                     item.fatItem = fatItem;
                     item.impItem = impItem;
-                    item.custoItem = custoItem;
+                    item.custoItem = custoTotalItem; // Custo Total (Qtd * Unitário)
+                    item.custoUnitario = custoUnitario; 
                     item.lucroItem = lucroItem;
                     item.repasseP = repP;
                     item.repasseE = repE;
 
-                    // Exibição visual da Fatura
                     let isVisibleForFilter = false;
                     if (filterRepasseDoc) {
                         if (pat.pId === filterRepasseDoc && canP) isVisibleForFilter = true;
@@ -677,7 +667,7 @@
                     if (isVisibleForFilter) {
                         pat.fatPaciente += fatItem;
                         pat.impostoPaciente += impItem;
-                        pat.custoPaciente += custoItem;
+                        pat.custoPaciente += custoTotalItem;
                         pat.lucroGlobalPaciente += lucroItem;
                     }
 
@@ -745,8 +735,12 @@
                 if(pat.hasUnimed) badgesOrigem += `<span class="origem-unimed">Unimed</span> `;
                 if(pat.hasParticular) badgesOrigem += `<span class="origem-part">Particular</span>`;
 
+                // Resgata o estado de expansão da gaveta do paciente
+                let isExpanded = expandedRows.has(idx) ? 'expanded' : '';
+                let isRotated = expandedRows.has(idx) ? 'rotate' : '';
+
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
-                        <td style="text-align:center;"><button class="btn-toggle"><i class="fas fa-chevron-right"></i></button></td>
+                        <td style="text-align:center;"><button class="btn-toggle ${isRotated}"><i class="fas fa-chevron-right"></i></button></td>
                         <td style="font-weight:bold; color: #1f2937;">
                             ${pat.name} ${badgesOrigem}<br>
                             <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span><br>
@@ -757,15 +751,17 @@
                         <td style="font-weight:600; color:${pat.lucroGlobalPaciente >= 0 ? '#166534' : '#b91c1c'};">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:center;">${repasseBadge}</td>
                     </tr>
-                    <tr id="L1-${idx}" class="row-detail"><td colspan="6"><table class="nested-table">
+                    <tr id="L1-${idx}" class="row-detail ${isExpanded}"><td colspan="6"><table class="nested-table">
                         <thead><tr>
                             <th>Data Atend.</th>
                             <th>Descrição / Medicamento</th>
                             <th style="text-align:center;">Qtd/Mg</th>
                             <th style="text-align:right;">Faturamento</th>
                             <th style="text-align:right;">Imposto (-12,33%)</th>
-                            <th style="text-align:center; background:#fffbeb; color:#b45309; border-radius:4px 0 0 0;">Custo Manual (R$)</th>
-                            <th style="text-align:right; background:#f0fdf4; color:#166534; border-radius:0 4px 0 0;">Lucro do Item</th>
+                            <th style="text-align:center; background:#fffbeb; color:#b45309; border-radius:4px 0 0 0;">Custo Unit. (R$)</th>
+                            <th style="text-align:right; color:#b45309;">Custo Total</th>
+                            <th style="text-align:right; background:#f0fdf4; color:#166534;">Lucro do Item</th>
+                            <th style="text-align:center; background:#f3e8ff; color:#7e22ce; border-radius:0 4px 0 0;">Repasse</th>
                         </tr></thead><tbody>`;
 
                 pat.items.sort((a,b) => {
@@ -778,9 +774,20 @@
                     
                     let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let impVisual = `<span style="${styleCorte}">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let custoTotalVisual = `<span style="${styleCorte}">- R$ ${item.custoItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let lucroVisual = `<span style="font-weight:bold; color:${item.lucroItem >= 0 ? '#166534' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
 
                     let subBadgeOrigem = item.tipo === 'PARTICULAR' ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
+                    
+                    // Coluna NOVA: Detalhamento de Repasse do Item
+                    let repasseItemHtml = '';
+                    if (item.isCortado) {
+                        repasseItemHtml = `<span style="color:#9ca3af; font-size:10px;">Riscado</span>`;
+                    } else {
+                        if (item.repasseP > 0) repasseItemHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repasseP.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                        if (item.repasseE > 0) repasseItemHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repasseE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                        if (!repasseItemHtml) repasseItemHtml = '-';
+                    }
 
                     htmlBuffer += `<tr ${titleTooltip}>
                         <td style="${styleCorte}">${item.data}</td>
@@ -789,9 +796,11 @@
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</td>
                         <td style="text-align:right; color:#dc2626;">${impVisual}</td>
                         <td style="text-align:center; background:#fffbeb;">
-                            <input type="number" step="0.01" class="input-custo" value="${item.custoItem > 0 ? item.custoItem : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id_firebase}', this)">
+                            <input type="number" step="0.0001" id="custo-${item.id_firebase}" class="input-custo" value="${item.custoUnitario > 0 ? item.custoUnitario : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id_firebase}', this)">
                         </td>
+                        <td style="text-align:right; color:#b45309;">${custoTotalVisual}</td>
                         <td style="text-align:right; background:#f0fdf4;">${lucroVisual}</td>
+                        <td style="text-align:center; background:#f3e8ff; vertical-align:middle;">${repasseItemHtml}</td>
                     </tr>`;
 
                     if (item.originais && item.originais.length > 1) {
@@ -801,7 +810,7 @@
                                 <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
                                 <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
                                 <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                <td></td><td></td><td style="background:#f0fdf4;"></td>
+                                <td></td><td></td><td></td><td style="background:#f0fdf4;"></td><td></td>
                             </tr>`;
                         });
                     }
@@ -817,6 +826,14 @@
             document.getElementById('dashRepasseTotal').innerText = sumRepasseGlobal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'});
             
             tbody.innerHTML = htmlBuffer;
+
+            // Restaura o foco para o input seguinte ao usar o TAB!
+            if (activeElId) {
+                let elToFocus = document.getElementById(activeElId);
+                if (elToFocus) {
+                    elToFocus.focus();
+                }
+            }
         }
 
         function generateUnimedPDF() {
@@ -896,21 +913,32 @@
                 </tr>`;
                 
                 html += `<tr><td colspan="5" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
-                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:12%;">Faturamento</th><th style="width:12%;">Imposto (12,33%)</th><th style="width:12%;">Custo Manual</th><th style="width:12%;">Lucro do Item</th></tr>`;
+                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto (12,33%)</th><th style="width:10%;">Custo Unit.</th><th style="width:10%;">Custo Total</th><th style="width:10%;">Lucro do Item</th><th style="width:10%;">Repasse</th></tr>`;
                 
                 pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
                     let tagOrigem = item.tipo === 'PARTICULAR' ? ' (PART)' : '';
                     
+                    let repasseItemHtml = '';
+                    if (item.isCortado) {
+                        repasseItemHtml = `<span style="color:#9ca3af; font-size:9px;">Riscado</span>`;
+                    } else {
+                        if (item.repasseP > 0) repasseItemHtml += `P: R$ ${item.repasseP.toLocaleString('pt-BR',{minimumFractionDigits:2})}<br>`;
+                        if (item.repasseE > 0) repasseItemHtml += `E: R$ ${item.repasseE.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                        if (!repasseItemHtml) repasseItemHtml = '-';
+                    }
+
                     html += `<tr>
                         <td style="text-align:center; ${styleCorte}">${item.data}</td>
                         <td style="${styleCorte}">${item.medicamento}${tagOrigem}</td>
                         <td style="text-align:center; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; color:#dc2626;">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:center; color:#b45309;">R$ ${item.custoUnitario.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
                         <td style="text-align:right; color:#b45309;">- R$ ${item.custoItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; font-weight:bold; color:${item.lucroItem >= 0 ? '#166534' : '#dc2626'};">R$ ${item.lucroItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:center; color:#7e22ce;">${repasseItemHtml}</td>
                     </tr>`;
                 });
 
