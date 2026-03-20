@@ -245,7 +245,6 @@
         let pacientesDb = {};
         let patListToPrint = []; 
         
-        // Memória de gavetas abertas para não fechar no meio da digitação
         let expandedRows = new Set();
 
         const IMPOSTO_TAXA = 0.1233;
@@ -264,6 +263,31 @@
                 } else { normalized[key] = val; }
             }); 
             return normalized;
+        }
+
+        function normalizeDate(d) {
+            if (!d) return "";
+            if (typeof d === 'number') {
+                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
+                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
+            }
+            let str = String(d).trim();
+            if (!str) return ""; 
+            
+            if (str.includes('T')) str = str.split('T')[0];
+            if (str.includes('-')) {
+                let p = str.split('-');
+                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            if (str.includes('/')) {
+                let p = str.split('/');
+                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
+                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+                }
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            return str;
         }
 
         function getComissaoInfo(pName, eName) {
@@ -349,7 +373,6 @@
             event.target.classList.add('active');
         }
 
-        // Função de abrir/fechar com memória de estado (para não fechar a gaveta no meio da edição)
         window.toggleLevel1 = function(id, btn) {
             let row = document.getElementById(`L1-${id}`);
             row.classList.toggle('expanded');
@@ -478,7 +501,6 @@
                     if (row.itens_originais) originais = row.itens_originais;
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
-                    // IMPORTANTE: Custo Informado agora é considerado o CUSTO UNITÁRIO
                     let custoDb = row.custo_informado || extras.custo_informado || 0;
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
@@ -494,7 +516,7 @@
                         competencia: row.competencia,
                         tipo: String(row.tipo || "MED").toUpperCase(), 
                         originais: originais,
-                        custo_informado: parseFloat(custoDb) // Custo Unitário
+                        custo_informado: parseFloat(custoDb) 
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -520,14 +542,11 @@
             const novoValor = parseFloat(strVal) || 0;
             
             const itemObj = excelData.find(d => d.id_firebase === id_firebase);
-            if (itemObj) itemObj.custo_informado = novoValor; // Atualiza localmente
+            if (itemObj) itemObj.custo_informado = novoValor; 
 
-            // Re-renderiza a tabela INSTANTANEAMENTE para aplicar a matemática 
-            // e devolver o foco no próximo input, se o usuário tiver apertado TAB.
             renderAnalysisTable();
 
             try {
-                // Atualiza em background sem travar o usuário
                 const resGet = await fetch(`${API_BASE_URL}/repasse_unimed`);
                 const dbData = normalizeData(await resGet.json());
                 let dbItem = dbData[id_firebase];
@@ -547,7 +566,6 @@
         }
 
         function renderAnalysisTable() {
-            // Captura qual input está selecionado para devolver o foco após renderizar (Corrige o TAB)
             let activeElId = document.activeElement ? document.activeElement.id : null;
 
             const filterPatient = document.getElementById('filterPatient').value.toUpperCase();
@@ -586,7 +604,7 @@
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
                 
-                if (patDb && patDb.status !== 'inativo') {
+                if (patDb) {
                     patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
                     patientsTableObj[p].eId = patDb.encaminhador_id;
                     
@@ -619,7 +637,6 @@
                     let fatItem = Number(item.valor.toFixed(2));
                     let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                     
-                    // NOVA MATEMÁTICA: O valor inserido é o Custo Unitário! Multiplica pela quantidade.
                     let custoUnitario = Number(item.custo_informado || 0);
                     let custoTotalItem = Number((custoUnitario * item.mg).toFixed(2));
 
@@ -631,8 +648,7 @@
                     let canE = !!pat.eId; 
 
                     let hasGrazielly = false;
-                    if (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
-                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
+                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true; // Apenas Encaminhadora
 
                     if (isTaxa) {
                         if (!hasGrazielly) {
@@ -647,7 +663,7 @@
 
                     item.fatItem = fatItem;
                     item.impItem = impItem;
-                    item.custoItem = custoTotalItem; // Custo Total (Qtd * Unitário)
+                    item.custoItem = custoTotalItem; 
                     item.custoUnitario = custoUnitario; 
                     item.lucroItem = lucroItem;
                     item.repasseP = repP;
@@ -735,7 +751,6 @@
                 if(pat.hasUnimed) badgesOrigem += `<span class="origem-unimed">Unimed</span> `;
                 if(pat.hasParticular) badgesOrigem += `<span class="origem-part">Particular</span>`;
 
-                // Resgata o estado de expansão da gaveta do paciente
                 let isExpanded = expandedRows.has(idx) ? 'expanded' : '';
                 let isRotated = expandedRows.has(idx) ? 'rotate' : '';
 
@@ -779,7 +794,6 @@
 
                     let subBadgeOrigem = item.tipo === 'PARTICULAR' ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
                     
-                    // Coluna NOVA: Detalhamento de Repasse do Item
                     let repasseItemHtml = '';
                     if (item.isCortado) {
                         repasseItemHtml = `<span style="color:#9ca3af; font-size:10px;">Riscado</span>`;
@@ -827,7 +841,6 @@
             
             tbody.innerHTML = htmlBuffer;
 
-            // Restaura o foco para o input seguinte ao usar o TAB!
             if (activeElId) {
                 let elToFocus = document.getElementById(activeElId);
                 if (elToFocus) {
