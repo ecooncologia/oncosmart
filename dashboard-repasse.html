@@ -67,7 +67,7 @@
         .kpi-subtext { font-size: 12px; color: #6b7280; font-weight: 600; display: flex; justify-content: flex-start; gap: 4px; }
         .kpi-subtext span { color: #111827; font-weight: 700; }
 
-        /* Blocos Menores Empilhados - Layout de 3 Colunas */
+        /* Blocos Menores Empilhados */
         .details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; margin-bottom: 25px; }
         
         .detail-card { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; overflow: hidden; display: flex; flex-direction: column; }
@@ -559,220 +559,221 @@
 
 
                 // ------------------------------------------------
-                // VARIÁVEIS GLOBAIS DE TRATAMENTO E CONSULTAS
+                // 2. BUSCAR DADOS UNIFICADOS (MOTOR REPASSE)
                 // ------------------------------------------------
-                let pacientesTratCount = new Set();
-                let totalAtendimentosTrat = 0;
-                
+                let valorConsultaParticular = 0; 
+                let atendimentosConsultaPart = 0;
                 let valorTratamentoTotal = 0;
                 let valorTratamentoUnimed = 0;
                 let valorTratamentoParticular = 0;
+                let pacientesTratCount = new Set();
+                let totalAtendimentosTrat = 0;
+                let listaRenderPacienteHtmlMap = new Map(); 
 
-                let valorConsultaParticular = 0; 
-                let atendimentosConsultaPart = 0;
+                const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
+                const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
-                let listaRenderPacienteHtml = []; 
-                let processedPartIds = new Set(); // Anti-duplicidade para Vendas x Repasse
+                let unimedData = resU.ok ? normalizeData(await resU.json()) : {};
+                let vendasData = resSales.ok ? normalizeData(await resSales.json()) : {};
+                
+                let arrayBot = Object.values(unimedData);
+                let dadosFiltrados = arrayBot.filter(r => r.competencia === compStr);
 
-                // ------------------------------------------------
-                // 2A. TRATAMENTOS (Via Repasse Inteligente: Unimed)
-                // ------------------------------------------------
-                try {
-                    const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
-                    let uData = resU.ok ? Object.values(normalizeData(await resU.json())).filter(r => r.competencia === compStr) : [];
+                Object.entries(vendasData).forEach(([vId, v]) => {
+                    const isLiminar = (String(v.tipo_registro).toLowerCase() === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
+                    if (isLiminar) return; 
 
-                    let agrupamentoPacienteU = {};
+                    let tipoReg = String(v.tipo_registro || '').toLowerCase();
+                    let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
-                    uData.forEach(d => {
-                        // Salva na memória o que já veio preenchido como particular no Repasse
-                        if (String(d.id_firebase).startsWith('virt_part_')) {
-                            processedPartIds.add(d.id_firebase);
-                        }
-
-                        let pac = String(d.paciente || '').toUpperCase().trim();
-                        if(!pac) return;
-                        
-                        let patId = generatePatientId(pac);
-                        let patDb = pacientesDb[patId];
-                        
-                        let pId = null, eId = null;
-                        if (patDb) {
-                            pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
-                            eId = patDb.encaminhador_id;
-                        }
-                        
-                        if (pId === docId || eId === docId) {
-                            if (!agrupamentoPacienteU[pac]) {
-                                agrupamentoPacienteU[pac] = {
-                                    fatUnimed: 0, impUnimed: 0, custoUnimed: 0,
-                                    fatPart: 0, impPart: 0, custoPart: 0,
-                                    itemsDates: [],
-                                    pName: pId && doctors[pId] ? doctors[pId].nome : '',
-                                    eName: eId && doctors[eId] ? doctors[eId].nome : '',
-                                    pId: pId, eId: eId
-                                };
-                            }
-                            
-                            let fatItem = Number(parseFloat(d.valor_pago || 0).toFixed(2));
-                            let isTaxa = String(d.descricao || '').toUpperCase().includes('TAXA') || String(d.tipo || '').toUpperCase() === 'HOS';
-                            let medNorm = String(d.descricao || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-
-                            // Exclui o Soro igual no Repasse
-                            if (medNorm.includes("CLORETO DE SODIO 0,9") && medNorm.includes("ECOFLAC") && medNorm.includes("1000 ML")) return;
-                            
-                            let isGrazielly = (agrupamentoPacienteU[pac].eName.toUpperCase().includes('GRAZIELLY'));
-                            let isCortado = isTaxa && !isGrazielly;
-                            
-                            if (!isCortado) {
-                                let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
-                                let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
-                                
-                                let mgQtd = parseFloat(d.quantidade || 1);
-                                let custoUnitario = Number(parseFloat(d.custo_informado || ext.custo_informado || 0).toFixed(2));
-                                let custoTotalDB = custoUnitario * mgQtd;
-                                
-                                let lucroItem = fatItem - impItem - custoTotalDB;
-                                
-                                if (lucroItem > 0) {
-                                    if (d.tipo === 'Particular' || d.tipo === 'PARTICULAR') {
-                                        agrupamentoPacienteU[pac].fatPart += fatItem;
-                                        agrupamentoPacienteU[pac].impPart += impItem;
-                                        agrupamentoPacienteU[pac].custoPart += custoTotalDB;
-                                    } else {
-                                        agrupamentoPacienteU[pac].fatUnimed += fatItem;
-                                        agrupamentoPacienteU[pac].impUnimed += impItem;
-                                        agrupamentoPacienteU[pac].custoUnimed += custoTotalDB;
-                                    }
-                                    
-                                    let dNorm = normalizeDate(d.data_atendimento);
-                                    if(dNorm && dNorm.length > 5) agrupamentoPacienteU[pac].itemsDates.push(dNorm);
-                                }
-                            }
-                        }
-                    });
-
-                    // ------------------------------------------------
-                    // 2B. CONSULTAS PARTICULARES E APLICAÇÕES (Via Vendas)
-                    // ------------------------------------------------
-                    const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
-                    if (resSales.ok) {
-                        const vendasData = normalizeData(await resSales.json());
-                        
-                        Object.values(vendasData).forEach(v => {
-                            const isLiminar = (v.tipo_registro === 'liminar' || v.forma_pagamento === 'Liminar');
-                            if (isLiminar) return; 
-                            
-                            const tipoReg = String(v.tipo_registro || '').toLowerCase();
-                            const procedNome = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                            
-                            const datePart = (v.data || '').split('-');
-                            let vComp = '';
-                            if (datePart.length >= 2) {
-                                vComp = datePart[0].length === 4 ? `${datePart[1]}/${datePart[0]}` : `${datePart[1]}/${datePart[2].length===2?'20'+datePart[2]:datePart[2]}`;
-                            } else if ((v.data || '').includes('/')) {
-                                let p = v.data.split('/');
-                                vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
-                            }
-
-                            if (vComp === compStr) {
-                                if (tipoReg.includes('particular')) {
-                                    
-                                    // TRAVA INTELIGENTE UNIVERSAL: Se for APLICA e não for TAXA
-                                    if (procedNome.includes('APLICA') && !procedNome.includes('TAXA')) {
-                                        
-                                        const virtId = 'virt_part_' + v.id_firebase; // Anti-duplicidade
-                                        
-                                        if (!processedPartIds.has(virtId)) {
-                                            let pacNome = String(v.paciente || '').toUpperCase().trim();
-                                            let patId = generatePatientId(pacNome);
-                                            let patDb = pacientesDb[patId];
-                                            
-                                            let pId = patDb ? (patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null)) : null;
-                                            let eId = patDb ? patDb.encaminhador_id : null;
-
-                                            if (pId === docId || eId === docId) {
-                                                if (!agrupamentoPacienteU[pacNome]) {
-                                                    agrupamentoPacienteU[pacNome] = {
-                                                        fatUnimed: 0, impUnimed: 0, custoUnimed: 0,
-                                                        fatPart: 0, impPart: 0, custoPart: 0,
-                                                        itemsDates: [],
-                                                        pName: pId && doctors[pId] ? doctors[pId].nome : '',
-                                                        eName: eId && doctors[eId] ? doctors[eId].nome : '',
-                                                        pId: pId, eId: eId
-                                                    };
-                                                }
-                                                
-                                                let fatItem = Number(parseFloat(v.valor_final || 0).toFixed(2));
-                                                let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
-                                                let lucroItem = fatItem - impItem; // Aqui assume custo zero.
-
-                                                if (lucroItem > 0) {
-                                                    agrupamentoPacienteU[pacNome].fatPart += fatItem;
-                                                    agrupamentoPacienteU[pacNome].impPart += impItem;
-                                                    agrupamentoPacienteU[pacNome].itemsDates.push(normalizeDate(v.data));
-                                                }
-                                            }
-                                        }
-                                    } 
-                                    // SE FOR UMA CONSULTA (NÃO É APLICAÇÃO E NÃO É TAXA DE SALA)
-                                    else if (!procedNome.includes('TAXA')) {
-                                        if (v.medico && v.medico.toUpperCase() === doctorName) {
-                                            atendimentosConsultaPart++;
-                                            valorConsultaParticular += parseCurrency(v.valor_final);
-                                        }
-                                    }
-                                }
-                            }
-                        });
+                    let dStr = v.data || '';
+                    let vComp = '';
+                    if(dStr.includes('-')){
+                        let p = dStr.split('-');
+                        vComp = p[0].length === 4 ? `${p[1]}/${p[0]}` : `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                    } else if(dStr.includes('/')){
+                        let p = dStr.split('/');
+                        vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
                     }
 
-                    // ------------------------------------------------
-                    // 3. CALCULAR TUDO E MONTAR A TELA
-                    // ------------------------------------------------
-                    Object.keys(agrupamentoPacienteU).forEach(pac => {
-                        let calc = agrupamentoPacienteU[pac];
-                        let lucroUnimed = calc.fatUnimed - calc.impUnimed - calc.custoUnimed;
-                        let lucroPart = calc.fatPart - calc.impPart - calc.custoPart;
-                        
-                        const comissaoInfo = getComissaoInfo(calc.pName, calc.eName);
-                        let doctorPerc = 0;
-                        if (calc.pId === docId) doctorPerc += comissaoInfo.percP;
-                        if (calc.eId === docId) doctorPerc += comissaoInfo.percE;
-                        
-                        if (doctorPerc > 0) {
-                            let repasseUnimed = lucroUnimed > 0 ? Number((lucroUnimed * (doctorPerc / 100)).toFixed(2)) : 0;
-                            let repassePart = lucroPart > 0 ? Number((lucroPart * (doctorPerc / 100)).toFixed(2)) : 0;
+                    if (vComp === compStr) {
+                        // É APLICAÇÃO PARTICULAR!
+                        if (tipoReg.includes('particular') && procNormalizado.includes('APLICACAO COM')) {
+                            const alreadyExists = dadosFiltrados.some(d => {
+                                try {
+                                    let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
+                                    return (ext.origem === 'venda_particular' || String(d.tipo).toUpperCase() === 'PARTICULAR') && 
+                                           d.data_atendimento === dStr && 
+                                           String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
+                                } catch(e) { return false; }
+                            });
                             
-                            if (repasseUnimed > 0 || repassePart > 0) {
-                                valorTratamentoUnimed += repasseUnimed;
-                                valorTratamentoParticular += repassePart;
-                                
-                                let repasseDestePat = repasseUnimed + repassePart;
-                                valorTratamentoTotal += repasseDestePat;
-                                
-                                pacientesTratCount.add(pac);
-                                
-                                let uniqDates = [...new Set(calc.itemsDates)];
-                                totalAtendimentosTrat += uniqDates.length;
-                                let datesStr = uniqDates.join(', ');
-                                
-                                let badges = [];
-                                if (repasseUnimed > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#059669; background:#d1fae5; padding:4px 8px; border-radius:12px;">Unimed</span>`);
-                                if (repassePart > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:12px;">Particular</span>`);
-                                
-                                listaRenderPacienteHtml.push({
-                                    nome: pac,
-                                    html: `<tr>
-                                        <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compStr}</td>
-                                        <td style="font-weight: 600; text-align:center; color: #111827;">${pac}</td>
-                                        <td style="text-align:center;">${badges.join(' ')}</td>
-                                    </tr>`
+                            if (!alreadyExists) {
+                                dadosFiltrados.push({
+                                    id_firebase: 'virt_part_' + vId,
+                                    paciente: String(v.paciente).toUpperCase().trim(),
+                                    data_atendimento: dStr,
+                                    competencia: vComp,
+                                    carteirinha: '',
+                                    descricao: String(v.procedimento || 'Aplicação Particular'),
+                                    valor_pago: parseCurrency(v.valor_final || 0),
+                                    quantidade: parseFloat(v.aplicacoes_realizadas || 1),
+                                    tipo: 'PARTICULAR',
+                                    custo_informado: 0,
+                                    dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                 });
+                            }
+                        } 
+                        // É CONSULTA PARTICULAR (Sem ser Taxa e sem ser Aplicação)
+                        else if (tipoReg.includes('particular') && !procNormalizado.includes('TAXA') && !procNormalizado.includes('APLICACAO COM')) {
+                            if (v.medico && v.medico.toUpperCase() === doctorName) {
+                                atendimentosConsultaPart++;
+                                valorConsultaParticular += parseCurrency(v.valor_final);
+                            }
+                        }
+                    }
+                });
+
+                // Filtra Soro e formata dados
+                let excelData = dadosFiltrados.map(row => {
+                    let originais = [];
+                    let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
+                    if (row.itens_originais) originais = row.itens_originais;
+                    else if (extras.itens_originais) originais = extras.itens_originais;
+
+                    let custoDb = row.custo_informado || extras.custo_informado || 0;
+                    let dataNormalized = row.data_atendimento || "-";
+                    if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
+
+                    return {
+                        id_firebase: row.id_firebase,
+                        paciente: String(row.paciente || '').toUpperCase().trim(), 
+                        carteirinha: row.carteirinha || "",
+                        medicamento: String(row.descricao || '').toUpperCase().trim(), 
+                        valor: parseFloat(row.valor_pago || 0), 
+                        mg: parseFloat(row.quantidade || 1), 
+                        data: dataNormalized, 
+                        competencia: row.competencia,
+                        tipo: String(row.tipo || "MED").toUpperCase(), 
+                        originais: originais,
+                        custo_informado: parseFloat(custoDb) 
+                    };
+                }).filter(item => {
+                    const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) return false;
+                    if (medNormalized.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) return false;
+                    return true;
+                });
+
+                const patientsTableObj = {};
+                
+                excelData.forEach(d => {
+                    const p = d.paciente; 
+                    if (!patientsTableObj[p]) {
+                        patientsTableObj[p] = { 
+                            name: p, carteirinha: d.carteirinha, items: [], 
+                            pId: null, pName: '', eId: null, eName: ''
+                        };
+                    }
+                    
+                    const patId = generatePatientId(d.paciente);
+                    const patDb = pacientesDb[patId];
+                    
+                    if (patDb) {
+                        patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
+                        patientsTableObj[p].eId = patDb.encaminhador_id;
+                        
+                        if (patientsTableObj[p].pId && doctors[patientsTableObj[p].pId]) {
+                            patientsTableObj[p].pName = doctors[patientsTableObj[p].pId].nome;
+                        }
+                        if (patientsTableObj[p].eId && doctors[patientsTableObj[p].eId]) {
+                            patientsTableObj[p].eName = doctors[patientsTableObj[p].eId].nome;
+                        }
+                    }
+                    patientsTableObj[p].items.push(d);
+                });
+
+                Object.keys(patientsTableObj).forEach(key => {
+                    let pat = patientsTableObj[key];
+                    
+                    // Pula se o médico não for prescritor nem encaminhador
+                    if (pat.pId !== docId && pat.eId !== docId) return;
+
+                    const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
+                    let hasTratamentoRepasseParaEsteMedico = false;
+                    let repUnimedPac = 0;
+                    let repPartPac = 0;
+                    let datesOfPac = [];
+
+                    pat.items.forEach(item => {
+                        let fatItem = Number(item.valor.toFixed(2));
+                        let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                        let custoUnitario = Number(item.custo_informado || 0);
+                        let custoTotalItem = Number((custoUnitario * item.mg).toFixed(2));
+                        let lucroItem = Number((fatItem - impItem - custoTotalItem).toFixed(2));
+
+                        let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
+                        let canP = !!pat.pId; 
+                        let canE = !!pat.eId; 
+
+                        let hasGrazielly = false;
+                        if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true; 
+
+                        if (isTaxa) {
+                            if (!hasGrazielly) {
+                                canP = false;
+                                canE = false;
+                            }
+                        }
+
+                        let lucroRepasse = lucroItem > 0 ? lucroItem : 0;
+                        let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
+                        let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
+                        
+                        let isParticular = item.tipo === 'PARTICULAR';
+
+                        let repParaOmedicoAqui = 0;
+                        if (pat.pId === docId) repParaOmedicoAqui += repP;
+                        if (pat.eId === docId) repParaOmedicoAqui += repE;
+
+                        if (repParaOmedicoAqui > 0) {
+                            hasTratamentoRepasseParaEsteMedico = true;
+                            totalAtendimentosTrat++;
+                            datesOfPac.push(item.data);
+                            
+                            if (isParticular) {
+                                valorTratamentoParticular += repParaOmedicoAqui;
+                                repPartPac += repParaOmedicoAqui;
+                            } else {
+                                valorTratamentoUnimed += repParaOmedicoAqui;
+                                repUnimedPac += repParaOmedicoAqui;
                             }
                         }
                     });
 
-                } catch(e) {}
+                    if (hasTratamentoRepasseParaEsteMedico) {
+                        pacientesTratCount.add(pat.name);
+                        valorTratamentoTotal += (repUnimedPac + repPartPac);
+                        
+                        let uniqDates = [...new Set(datesOfPac)];
+                        let datesStr = uniqDates.join(', ');
+                        
+                        let badges = [];
+                        if (repUnimedPac > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#059669; background:#d1fae5; padding:4px 8px; border-radius:12px;">Unimed</span>`);
+                        if (repPartPac > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:12px;">Particular</span>`);
+                        
+                        listaRenderPacienteHtmlMap.set(pat.name, {
+                            nome: pat.name,
+                            html: `<tr>
+                                <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compStr}</td>
+                                <td style="font-weight: 600; text-align:center; color: #111827;">${pat.name}</td>
+                                <td style="text-align:center;">${badges.join(' ')}</td>
+                            </tr>`
+                        });
+                    }
+                });
+
+                let listaRenderPacienteHtml = Array.from(listaRenderPacienteHtmlMap.values());
 
                 // --- Atualiza UI Consultas Particulares ---
                 let elKpiPartAtend = document.getElementById('kpiPartAtend');
