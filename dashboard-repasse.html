@@ -572,6 +572,7 @@
                 let atendimentosConsultaPart = 0;
                 
                 let listaRenderPacienteHtml = []; 
+                let processedPartIds = new Set(); // Anti-duplicidade para Vendas x Repasse
 
                 // ------------------------------------------------
                 // 2A. TRATAMENTOS (Via Repasse Inteligente: Unimed)
@@ -583,6 +584,11 @@
                     let agrupamentoPacienteU = {};
 
                     uData.forEach(d => {
+                        // Salva na memória o que já veio preenchido como particular no Repasse
+                        if (String(d.id_firebase).startsWith('virt_part_')) {
+                            processedPartIds.add(d.id_firebase);
+                        }
+
                         let pac = String(d.paciente || '').toUpperCase().trim();
                         if(!pac) return;
                         
@@ -621,7 +627,6 @@
                                 let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                                 let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
                                 
-                                // Nova lógica: Custo Unitário x Quantidade
                                 let mgQtd = parseFloat(d.quantidade || 1);
                                 let custoUnitario = Number(parseFloat(d.custo_informado || ext.custo_informado || 0).toFixed(2));
                                 let custoTotalDB = custoUnitario * mgQtd;
@@ -670,43 +675,51 @@
                             }
 
                             if (vComp === compStr) {
-                                // INTELIGÊNCIA VENDAS: É Aplicação (Tratamento) ou Consulta?
-                                if (tipoReg.includes('particular') && procedNome.includes('APLICACAO COM')) {
-                                    // É TRATAMENTO PARTICULAR! Joga no liquidificador de repasse
-                                    let pacNome = String(v.paciente || '').toUpperCase().trim();
-                                    let patId = generatePatientId(pacNome);
-                                    let patDb = pacientesDb[patId];
+                                if (tipoReg.includes('particular')) {
                                     
-                                    let pId = patDb ? (patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null)) : null;
-                                    let eId = patDb ? patDb.encaminhador_id : null;
-
-                                    if (pId === docId || eId === docId) {
-                                        if (!agrupamentoPacienteU[pacNome]) {
-                                            agrupamentoPacienteU[pacNome] = {
-                                                fatUnimed: 0, impUnimed: 0, custoUnimed: 0,
-                                                fatPart: 0, impPart: 0, custoPart: 0,
-                                                itemsDates: [],
-                                                pName: pId && doctors[pId] ? doctors[pId].nome : '',
-                                                eName: eId && doctors[eId] ? doctors[eId].nome : '',
-                                                pId: pId, eId: eId
-                                            };
-                                        }
+                                    // TRAVA INTELIGENTE UNIVERSAL: Se for APLICA e não for TAXA
+                                    if (procedNome.includes('APLICA') && !procedNome.includes('TAXA')) {
                                         
-                                        let fatItem = Number(parseFloat(v.valor_final || 0).toFixed(2));
-                                        let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
-                                        let lucroItem = fatItem - impItem; // Aqui assume custo zero, pois na Unimed vc colocaria o custo manual
+                                        const virtId = 'virt_part_' + v.id_firebase; // Anti-duplicidade
+                                        
+                                        if (!processedPartIds.has(virtId)) {
+                                            let pacNome = String(v.paciente || '').toUpperCase().trim();
+                                            let patId = generatePatientId(pacNome);
+                                            let patDb = pacientesDb[patId];
+                                            
+                                            let pId = patDb ? (patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null)) : null;
+                                            let eId = patDb ? patDb.encaminhador_id : null;
 
-                                        if (lucroItem > 0) {
-                                            agrupamentoPacienteU[pacNome].fatPart += fatItem;
-                                            agrupamentoPacienteU[pacNome].impPart += impItem;
-                                            agrupamentoPacienteU[pacNome].itemsDates.push(normalizeDate(v.data));
+                                            if (pId === docId || eId === docId) {
+                                                if (!agrupamentoPacienteU[pacNome]) {
+                                                    agrupamentoPacienteU[pacNome] = {
+                                                        fatUnimed: 0, impUnimed: 0, custoUnimed: 0,
+                                                        fatPart: 0, impPart: 0, custoPart: 0,
+                                                        itemsDates: [],
+                                                        pName: pId && doctors[pId] ? doctors[pId].nome : '',
+                                                        eName: eId && doctors[eId] ? doctors[eId].nome : '',
+                                                        pId: pId, eId: eId
+                                                    };
+                                                }
+                                                
+                                                let fatItem = Number(parseFloat(v.valor_final || 0).toFixed(2));
+                                                let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                                                let lucroItem = fatItem - impItem; // Aqui assume custo zero.
+
+                                                if (lucroItem > 0) {
+                                                    agrupamentoPacienteU[pacNome].fatPart += fatItem;
+                                                    agrupamentoPacienteU[pacNome].impPart += impItem;
+                                                    agrupamentoPacienteU[pacNome].itemsDates.push(normalizeDate(v.data));
+                                                }
+                                            }
                                         }
-                                    }
-                                } else {
-                                    // NÃO É APLICAÇÃO. Logo, é uma CONSULTA PARTICULAR normal.
-                                    if (v.medico && v.medico.toUpperCase() === doctorName) {
-                                        atendimentosConsultaPart++;
-                                        valorConsultaParticular += parseCurrency(v.valor_final);
+                                    } 
+                                    // SE FOR UMA CONSULTA (NÃO É APLICAÇÃO E NÃO É TAXA DE SALA)
+                                    else if (!procedNome.includes('TAXA')) {
+                                        if (v.medico && v.medico.toUpperCase() === doctorName) {
+                                            atendimentosConsultaPart++;
+                                            valorConsultaParticular += parseCurrency(v.valor_final);
+                                        }
                                     }
                                 }
                             }
