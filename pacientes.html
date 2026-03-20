@@ -344,10 +344,10 @@
                 // 2. Processa Particulares (Aplicações com Medicamento)
                 Object.values(vendasData).forEach(v => {
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
-                    // Usando normalização para remover acentos e garantir a leitura correta de "APLICAÇÃO COM"
+                    // Normalização para remover acentos e garantir a leitura correta de "APLICAÇÃO COM"
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     
-                    // NOVA REGRA: Buscar EXATAMENTE pela expressão "APLICACAO COM" (que já ignora a "Taxa")
+                    // NOVA REGRA DE BUSCA EXATA DO PAINEL DE PROCEDIMENTOS
                     if (tipoReg.includes('particular') && procNormalizado.includes('APLICACAO COM')) {
                         let dStr = v.data || '';
                         let vComp = '';
