@@ -89,6 +89,9 @@
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="switchPatientTab('todos', this)">Pacientes do Mês</button>
             <button class="tab-btn" onclick="switchPatientTab('novos', this)">Novos (Sem Vínculo)</button>
+            
+            <button class="tab-btn" onclick="switchPatientTab('retornos', this)"><i class="fas fa-history"></i> Retornos (Revisão)</button>
+            
             <button class="tab-btn" onclick="switchPatientTab('vinculados', this)">Vinculados</button>
             <button class="tab-btn" onclick="switchPatientTab('unimed', this)"><i class="fas fa-notes-medical"></i> Base Unimed</button>
             <button class="tab-btn" onclick="switchPatientTab('particular', this)"><i class="fas fa-star"></i> Base Particular</button>
@@ -348,6 +351,18 @@
                     }
                 });
 
+                // === ROTINA DE AUTO-CURA (RESTAURAR PACIENTES INATIVADOS PELO CÓDIGO ANTIGO) ===
+                let pacientesRestaurados = false;
+                for (const patId in patients) {
+                    const pat = patients[patId];
+                    if (pat.status === 'inativo' && pat.motivo_inativacao && pat.motivo_inativacao.includes('Ausência de faturamento Unimed')) {
+                        pat.status = 'ativo';
+                        pat.motivo_inativacao = ''; // Remove o motivo automático antigo
+                        await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pat) });
+                        pacientesRestaurados = true;
+                    }
+                }
+
                 let dadosAtualizados = false;
                 for (const row of unimedArray) {
                     if (row.paciente) {
@@ -394,11 +409,16 @@
             const anoSel = parseInt(document.getElementById('selYearPat').value);
             const compSelecionada = `${String(mesSel).padStart(2,'0')}/${anoSel}`;
 
+            let mesAnt = mesSel - 1; let anoAnt = anoSel;
+            if (mesAnt === 0) { mesAnt = 12; anoAnt -= 1; }
+            const compAnt = `${String(mesAnt).padStart(2,'0')}/${anoAnt}`;
+
             const patArray = Object.values(patients).sort((a,b) => a.nome.localeCompare(b.nome));
             let html = '';
 
             patArray.forEach(p => {
                 const teveAtividadeNoMesSelecionado = window.patientActivityMap[p.id_firebase] && window.patientActivityMap[p.id_firebase].has(compSelecionada);
+                const teveAtividadeMesAnterior = window.patientActivityMap[p.id_firebase] && window.patientActivityMap[p.id_firebase].has(compAnt);
 
                 if (currentTab !== 'inativos' && !teveAtividadeNoMesSelecionado) return;
 
@@ -407,11 +427,14 @@
                 const cartStr = p.carteirinha || '';
                 const isParticular = p.origem === 'auto_particular';
 
+                const isRetorno = teveAtividadeNoMesSelecionado && !teveAtividadeMesAnterior && hasDoctor;
+
                 if (currentTab === 'inativos' && !isInactive) return;
                 if (currentTab !== 'inativos') {
                     if (isInactive) return;
+                    if (currentTab === 'retornos' && !isRetorno) return;
                     if (currentTab === 'novos' && hasDoctor) return;
-                    if (currentTab === 'vinculados' && !hasDoctor) return;
+                    if (currentTab === 'vinculados' && (!hasDoctor || isRetorno)) return; 
                     if (currentTab === 'unimed' && isParticular) return;
                     if (currentTab === 'particular' && !isParticular) return;
                 }
@@ -430,8 +453,12 @@
                 let origemBadge = isParticular ? `<span class="origem-part">Particular</span>` : `<span class="origem-unimed">Unimed</span>`;
                 if (!p.origem && !isParticular) origemBadge = `<span class="origem-unimed">Unimed</span>`;
 
+                if (isRetorno && !isInactive) {
+                    origemBadge += ` <span class="badge" style="background:#fef08a; color:#854d0e; margin-left:5px;" title="Não teve faturamento no mês anterior"><i class="fas fa-exclamation-triangle"></i> Retornou em ${compSelecionada}</span>`;
+                }
+
                 if (isInactive) {
-                    statusBadge = `<span class="badge bg-inactive" title="Motivo: ${p.motivo_inativacao || 'Não informado'}"><i class="fas fa-ban"></i> Inativo</span>`;
+                    statusBadge = `<span class="badge bg-inactive" title="Motivo: ${p.motivo_inativacao || 'Não informado'}"><i class="fas fa-ban"></i> Inativo Manual</span>`;
                     doctorNameHtml = `<span style="color:#9ca3af; text-decoration: line-through;">Cadastro Inativo</span>`;
                 } else if (hasDoctor) {
                     statusBadge = `<span class="badge bg-linked"><i class="fas fa-check-circle"></i> Vinculado</span>`;
@@ -450,7 +477,6 @@
                     doctorNameHtml = `<span style="color:#9ca3af; font-style:italic;">Aguardando vínculo...</span>`;
                 }
 
-                // GERAÇÃO DAS TAGS DE MESES ATIVOS NO ANO SELECIONADO
                 let activeMonthsHtml = '<div class="month-badges">';
                 for(let m=1; m<=12; m++) {
                     let compCheck = `${String(m).padStart(2,'0')}/${anoSel}`;
