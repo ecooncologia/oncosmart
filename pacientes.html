@@ -341,13 +341,14 @@
                     }
                 });
 
-                // 2. Processa Particulares (Aplicações - Ignorando Taxas)
+                // 2. Processa Particulares (Aplicações com Medicamento)
                 Object.values(vendasData).forEach(v => {
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
-                    let proc = String(v.procedimento || '').toUpperCase();
+                    // Usando normalização para remover acentos e garantir a leitura correta de "APLICAÇÃO COM"
+                    let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     
-                    // Lógica corrigida para Particulares:
-                    if (tipoReg.includes('particular') && proc.includes('APLICA') && !proc.includes('TAXA')) {
+                    // NOVA REGRA: Buscar EXATAMENTE pela expressão "APLICACAO COM" (que já ignora a "Taxa")
+                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICACAO COM')) {
                         let dStr = v.data || '';
                         let vComp = '';
                         
