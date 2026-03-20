@@ -41,6 +41,7 @@
         .data-table th { background: #00995D; color: white; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; }
         .data-table td { padding: 12px; border-bottom: 1px solid #eee; color: #333; vertical-align: middle; }
         
+        /* Badges de Status e Mês */
         .badge { padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 11px; display: inline-block; text-align: center; }
         .bg-new { background: #fef08a; color: #854d0e; border: 1px solid #fde047; animation: pulse 2s infinite; }
         .bg-linked { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
@@ -50,6 +51,7 @@
         .origem-unimed { background: #d1fae5; color: #059669; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
         .origem-part { background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
 
+        /* NOVAS TAGS DE MESES */
         .month-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
         .badge-month { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0284c7; font-weight: 800; text-transform: uppercase; border: 1px solid #bae6fd; }
         .badge-month.current { background: #0ea5e9; color: white; border-color: #0284c7; }
@@ -326,7 +328,7 @@
                 const unimedArray = Object.values(unimedData);
 
                 window.patientActivityMap = {};
-                const pacsParaVerificar = []; // Lista unificada para auto-criar no banco
+                const pacsParaVerificar = []; 
 
                 // 1. Processa Unimed
                 unimedArray.forEach(row => {
@@ -339,16 +341,16 @@
                     }
                 });
 
-                // 2. Processa Particulares (Aplicações)
+                // 2. Processa Particulares (Aplicações - Ignorando Taxas)
                 Object.values(vendasData).forEach(v => {
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let proc = String(v.procedimento || '').toUpperCase();
                     
-                    if (tipoReg === 'particular' && proc.includes('APLICA')) {
+                    // Lógica corrigida para Particulares:
+                    if (tipoReg.includes('particular') && proc.includes('APLICA') && !proc.includes('TAXA')) {
                         let dStr = v.data || '';
                         let vComp = '';
                         
-                        // Blindagem de formatação de data (Traço ou Barra)
                         if(dStr.includes('-')){
                             let p = dStr.split('-');
                             vComp = p[0].length === 4 ? `${p[1]}/${p[0]}` : `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
@@ -368,16 +370,19 @@
                 });
 
                 // 3. AUTO-CURA: Restaura pacientes inativados pelo sistema antigo
+                let pacientesRestaurados = false;
                 for (const patId in patients) {
                     const pat = patients[patId];
                     if (pat.status === 'inativo' && pat.motivo_inativacao && pat.motivo_inativacao.includes('Ausência de faturamento Unimed')) {
                         pat.status = 'ativo';
                         pat.motivo_inativacao = ''; 
                         await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pat) });
+                        pacientesRestaurados = true;
                     }
                 }
 
-                // 4. Cria pacientes novos na base (Tanto Unimed quanto Particular)
+                // 4. Cria pacientes novos na base
+                let dadosAtualizados = false;
                 for (const row of pacsParaVerificar) {
                     const patId = row.id;
                     if (!patients[patId]) {
@@ -388,6 +393,7 @@
                         };
                         await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(newPat) });
                         patients[patId] = newPat;
+                        dadosAtualizados = true;
                     } else {
                         let updated = false;
                         if (!patients[patId].carteirinha && row.carteirinha) { patients[patId].carteirinha = row.carteirinha; updated = true; }
@@ -400,6 +406,7 @@
 
                         if (updated) {
                             await fetch(API_BASE_URL + '/pacientes', { method: 'POST', headers: API_HEADERS, body: JSON.stringify(patients[patId]) });
+                            dadosAtualizados = true;
                         }
                     }
                 }
