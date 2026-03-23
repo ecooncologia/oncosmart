@@ -507,7 +507,7 @@
                     return;
                 }
 
-                excelData = dadosFiltrados.map(row => {
+                let rawExcelData = dadosFiltrados.map(row => {
                     let originais = [];
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     
@@ -534,13 +534,41 @@
                         custo_correto: parseFloat(custoCorreto),
                         custo_errado: parseFloat(custoErrado)
                     };
-                }).filter(item => {
-                    const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                    if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) return false;
-                    if (medNormalized.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) return false;
-                    return true;
                 });
 
+                // AGRUPADOR INTELIGENTE DE OPDIVO (Unificando as Miligramagens)
+                let groupedData = [];
+                let opdivoMap = {};
+
+                rawExcelData.forEach(item => {
+                    let medNorm = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    
+                    if (medNorm.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNorm.includes("ECOFLAC") && medNorm.includes("1000 ML")) return;
+                    if (medNorm.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) return;
+
+                    if (medNorm.includes("OPDIVO")) {
+                        let key = item.paciente + "_" + item.data;
+                        if (!opdivoMap[key]) {
+                            opdivoMap[key] = { 
+                                ...item, 
+                                medicamento: "OPDIVO (UNIFICADO)", 
+                                originais: item.originais && item.originais.length > 0 ? item.originais : [{ descricao: item.medicamento, quantidade: item.mg, valor: item.valor }] 
+                            };
+                            groupedData.push(opdivoMap[key]);
+                        } else {
+                            opdivoMap[key].valor += item.valor;
+                            opdivoMap[key].mg += item.mg;
+                            opdivoMap[key].id_firebase += "|" + item.id_firebase; 
+                            opdivoMap[key].originais.push({ descricao: item.medicamento, quantidade: item.mg, valor: item.valor });
+                            opdivoMap[key].custo_correto = Math.max(opdivoMap[key].custo_correto, item.custo_correto);
+                            opdivoMap[key].custo_errado = Math.max(opdivoMap[key].custo_errado, item.custo_errado);
+                        }
+                    } else {
+                        groupedData.push(item);
+                    }
+                });
+
+                excelData = groupedData;
                 renderAnalysisTable();
             } catch (err) {
                 excelData = [];
@@ -562,35 +590,38 @@
             renderAnalysisTable();
 
             try {
-                let isVirtualPart = id_firebase.startsWith('virt_part_');
-                let endpoint = isVirtualPart ? '/vendas' : '/repasse_unimed';
-                let realId = isVirtualPart ? id_firebase.replace('virt_part_', '') : id_firebase;
+                let ids = id_firebase.split('|'); // Desmembra o ID caso seja um item Unificado
+                
+                for (let singleId of ids) {
+                    let isVirtualPart = singleId.startsWith('virt_part_');
+                    let endpoint = isVirtualPart ? '/vendas' : '/repasse_unimed';
+                    let realId = isVirtualPart ? singleId.replace('virt_part_', '') : singleId;
 
-                const resGet = await fetch(`${API_BASE_URL}${endpoint}`);
-                const dbData = normalizeData(await resGet.json());
-                
-                let dbItem = dbData[realId] || Object.values(dbData).find(d => d.id === realId || d.id_firebase === realId);
-                
-                if (dbItem) {
-                    if (!dbItem.dados_extras) dbItem.dados_extras = {};
-                    if (typeof dbItem.dados_extras === 'string') {
-                        try { dbItem.dados_extras = JSON.parse(dbItem.dados_extras); } catch(e) { dbItem.dados_extras = {}; }
-                    }
+                    const resGet = await fetch(`${API_BASE_URL}${endpoint}`);
+                    const dbData = normalizeData(await resGet.json());
                     
-                    if (tipo === 'correto') {
-                        dbItem.dados_extras.custo_correto = novoValor;
-                        dbItem.dados_extras.custo_informado = novoValor; // Fallback compatibilidade
-                        if (!isVirtualPart) dbItem.custo_informado = novoValor;
-                    } else {
-                        dbItem.dados_extras.custo_errado = novoValor;
+                    let dbItem = dbData[realId] || Object.values(dbData).find(d => d.id === realId || d.id_firebase === realId);
+                    
+                    if (dbItem) {
+                        if (!dbItem.dados_extras) dbItem.dados_extras = {};
+                        if (typeof dbItem.dados_extras === 'string') {
+                            try { dbItem.dados_extras = JSON.parse(dbItem.dados_extras); } catch(e) { dbItem.dados_extras = {}; }
+                        }
+                        
+                        if (tipo === 'correto') {
+                            dbItem.dados_extras.custo_correto = novoValor;
+                            dbItem.dados_extras.custo_informado = novoValor; 
+                            if (!isVirtualPart) dbItem.custo_informado = novoValor;
+                        } else {
+                            dbItem.dados_extras.custo_errado = novoValor;
+                        }
+
+                        dbItem.dados_extras = JSON.stringify(dbItem.dados_extras);
+
+                        await fetch(`${API_BASE_URL}${endpoint}/${realId}`, {
+                            method: 'PUT', headers: API_HEADERS, body: JSON.stringify(dbItem)
+                        });
                     }
-
-                    // A maioria das APIs aceita objeto, mas por garantia devolvemos stringificado se precisarem
-                    dbItem.dados_extras = JSON.stringify(dbItem.dados_extras);
-
-                    await fetch(`${API_BASE_URL}${endpoint}/${realId}`, {
-                        method: 'PUT', headers: API_HEADERS, body: JSON.stringify(dbItem)
-                    });
                 }
             } catch(e) { console.error('Erro ao salvar no BD:', e); }
         }
@@ -893,7 +924,7 @@
                         <td style="text-align:center; background:#fef2f2;">${repEHtml}</td>
                     </tr>`;
 
-                    if (item.originais && item.originais.length > 1) {
+                    if (item.originais && item.originais.length > 0) {
                         item.originais.forEach(sub => {
                             htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
                                 <td style="border-bottom:none;"></td>
