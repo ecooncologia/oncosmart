@@ -162,13 +162,13 @@
             <div class="dashboard-cards">
                 <div class="card-stat imposto">
                     <h5>Faturamento & Impostos</h5>
-                    <div class="stat-row">
-                        <span class="label">Fat. Analisado:</span>
-                        <span class="val" id="dashUnimedTotal" style="color:#0284c7;">R$ 0,00</span>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                        <span style="color: #6b7280; font-weight: 600;">Fat. Analisado:</span>
+                        <span id="dashUnimedTotal" style="font-weight: bold; color:#0284c7;">R$ 0,00</span>
                     </div>
-                    <div class="stat-row">
-                        <span class="label">Imp. Retido:</span>
-                        <span class="val" id="dashImpostoTotal" style="color:#dc2626;">R$ 0,00</span>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                        <span style="color: #6b7280; font-weight: 600;">Imp. Retido:</span>
+                        <span id="dashImpostoTotal" style="font-weight: bold; color:#dc2626;">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -276,15 +276,15 @@
                                 <th rowspan="2" style="text-align:right;">Fat. Analisado</th>
                                 <th rowspan="2" style="text-align:right; border-right: 2px solid #cbd5e1;">Imposto</th>
                                 
-                                <th colspan="3" style="text-align:center; color:#3f6212; border-bottom: 2px solid #ecfccb;">CENÁRIO CORRETO</th>
-                                <th colspan="3" style="text-align:center; color:#991b1b; border-bottom: 2px solid #fee2e2;">CENÁRIO ERRADO</th>
+                                <th colspan="3" style="text-align:center; color:#d9f99d; border-right: 2px solid #cbd5e1;">CENÁRIO CORRETO</th>
+                                <th colspan="3" style="text-align:center; color:#fca5a5;">CENÁRIO ERRADO</th>
                             </tr>
                             <tr>
-                                <th style="text-align:right; color:#4d7c0f;">Custo Total</th>
-                                <th style="text-align:right; background:#ecfccb; color:#3f6212;">Lucro Líq.</th>
-                                <th style="text-align:center; background:#ecfccb; color:#3f6212; border-right: 2px solid #d9f99d;">Repasse</th>
+                                <th style="text-align:right; color:#d9f99d;">Custo Total</th>
+                                <th style="text-align:right; background:#ecfccb; color:#15803d;">Lucro Líq.</th>
+                                <th style="text-align:center; background:#ecfccb; color:#15803d; border-right: 2px solid #cbd5e1;">Repasse</th>
                                 
-                                <th style="text-align:right; color:#991b1b;">Custo Total</th>
+                                <th style="text-align:right; color:#fca5a5;">Custo Total</th>
                                 <th style="text-align:right; background:#fee2e2; color:#991b1b;">Lucro Líq.</th>
                                 <th style="text-align:center; background:#fee2e2; color:#991b1b;">Repasse</th>
                             </tr>
@@ -327,31 +327,6 @@
                 } else { normalized[key] = val; }
             }); 
             return normalized;
-        }
-
-        function normalizeDate(d) {
-            if (!d) return "";
-            if (typeof d === 'number') {
-                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
-                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
-            }
-            let str = String(d).trim();
-            if (!str) return ""; 
-            
-            if (str.includes('T')) str = str.split('T')[0];
-            if (str.includes('-')) {
-                let p = str.split('-');
-                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            if (str.includes('/')) {
-                let p = str.split('/');
-                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
-                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-                }
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            return str;
         }
 
         function getComissaoInfo(pName, eName) {
@@ -871,8 +846,15 @@
                 document.getElementById('dashUnimedTotal').innerText = "R$ 0,00";
                 document.getElementById('dashImpostoTotal').innerText = "R$ 0,00";
                 document.getElementById('dashCustoTotalC').innerText = "R$ 0,00";
+                document.getElementById('dashCustoTotalE').innerText = "R$ 0,00";
+                document.getElementById('dashCustoDiff').innerText = "R$ 0,00";
                 document.getElementById('dashLucroTotalC').innerText = "R$ 0,00";
+                document.getElementById('dashLucroTotalE').innerText = "R$ 0,00";
+                document.getElementById('dashLucroDiff').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseTotalC').innerText = "R$ 0,00";
+                document.getElementById('dashRepasseTotalE').innerText = "R$ 0,00";
+                document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
+                
                 tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
                 return; 
             }
@@ -952,7 +934,7 @@
                         <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPaciente >= 0 ? '#166534' : '#b91c1c'}; background:#ecfccb;">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:center; background:#ecfccb; border-right: 2px solid #d9f99d;">${repasseBadgeC}</td>
 
-                        <td style="text-align:right; font-weight:600; color:#991b1b;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:right; font-weight:600; color:#991b1b; border-left: 2px solid #cbd5e1;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPacienteE >= 0 ? '#7f1d1d' : '#b91c1c'}; background:#fee2e2;">R$ ${pat.lucroGlobalPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:center; background:#fee2e2;">${repasseBadgeE}</td>
                     </tr>
@@ -965,19 +947,22 @@
                                 <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px;">Fat.</th>
                                 <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px; border-right:2px solid #cbd5e1;">Imposto</th>
                                 
-                                <th colspan="3" style="text-align:center; color:#3f6212; border-bottom: 1px solid #cbd5e1;">CENÁRIO CORRETO</th>
-                                <th colspan="3" style="text-align:center; color:#991b1b; border-bottom: 1px solid #cbd5e1;">CENÁRIO ERRADO</th>
+                                <th colspan="2" style="text-align:center; color:#475569; border-bottom: 2px solid #cbd5e1;">CUSTO (C)</th>
+                                <th colspan="2" style="text-align:center; background:#15803d; color:white; border-bottom: 1px solid #4ade80;">CENÁRIO CORRETO</th>
+                                
+                                <th colspan="2" style="text-align:center; color:#475569; border-left: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1;">CUSTO (E)</th>
+                                <th colspan="2" style="text-align:center; background:#b91c1c; color:white; border-bottom: 1px solid #f87171;">CENÁRIO ERRADO</th>
                             </tr>
                             <tr>
                                 <th style="text-align:center; color:#4d7c0f;">Unitário</th>
                                 <th style="text-align:right; color:#4d7c0f;">Total</th>
-                                <th style="text-align:right; background:#ecfccb; color:#3f6212;">Lucro Líq.</th>
-                                <th style="text-align:center; background:#ecfccb; color:#3f6212; border-right:2px solid #d9f99d;">Repasse</th>
+                                <th style="text-align:right; background:#15803d; color:white;">Lucro</th>
+                                <th style="text-align:center; background:#15803d; color:white;">Repasse</th>
                                 
-                                <th style="text-align:center; color:#991b1b;">Unitário</th>
+                                <th style="text-align:center; color:#991b1b; border-left: 2px solid #cbd5e1;">Unitário</th>
                                 <th style="text-align:right; color:#991b1b;">Total</th>
-                                <th style="text-align:right; background:#fee2e2; color:#991b1b;">Lucro Líq.</th>
-                                <th style="text-align:center; background:#fee2e2; color:#991b1b;">Repasse</th>
+                                <th style="text-align:right; background:#b91c1c; color:white;">Lucro</th>
+                                <th style="text-align:center; background:#b91c1c; color:white;">Repasse</th>
                             </tr>
                         </thead><tbody>`;
 
@@ -1025,9 +1010,9 @@
                         <td style="text-align:center;">${inputC}</td>
                         <td style="text-align:right; color:#4d7c0f;">${custoTotalCVis}</td>
                         <td style="text-align:right; background:#ecfccb;">${lucroCVis}</td>
-                        <td style="text-align:center; background:#ecfccb; border-right:2px solid #d9f99d;">${repCHtml}</td>
+                        <td style="text-align:center; background:#ecfccb;">${repCHtml}</td>
 
-                        <td style="text-align:center;">${inputE}</td>
+                        <td style="text-align:center; border-left: 2px solid #cbd5e1;">${inputE}</td>
                         <td style="text-align:right; color:#991b1b;">${custoTotalEVis}</td>
                         <td style="text-align:right; background:#fee2e2;">${lucroEVis}</td>
                         <td style="text-align:center; background:#fee2e2;">${repEHtml}</td>
@@ -1041,8 +1026,8 @@
                                 <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
                                 <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                                 <td style="border-right:2px solid #cbd5e1;"></td>
-                                <td></td><td></td><td style="background:#ecfccb;"></td><td style="background:#ecfccb; border-right:2px solid #d9f99d;"></td>
-                                <td></td><td></td><td style="background:#fee2e2;"></td><td style="background:#fee2e2;"></td>
+                                <td></td><td style="color:#4d7c0f;"></td><td style="background:#ecfccb;"></td><td style="background:#ecfccb;"></td>
+                                <td style="border-left: 2px solid #cbd5e1;"></td><td style="color:#991b1b;"></td><td style="background:#fee2e2;"></td><td style="background:#fee2e2;"></td>
                             </tr>`;
                         });
                     }
@@ -1107,16 +1092,16 @@
                     <th rowspan="2">Paciente / Carteirinha</th>
                     <th rowspan="2">Fat. Analisado</th>
                     <th rowspan="2">Impostos</th>
-                    <th colspan="3" style="color:#3f6212;">CENÁRIO CORRETO</th>
-                    <th colspan="3" style="color:#991b1b;">CENÁRIO ERRADO</th>
+                    <th rowspan="2">Custo (C)</th>
+                    <th colspan="2" style="background:#15803d; color:white;">CENÁRIO CORRETO</th>
+                    <th rowspan="2">Custo (E)</th>
+                    <th colspan="2" style="background:#b91c1c; color:white;">CENÁRIO ERRADO</th>
                 </tr>
                 <tr>
-                    <th style="color:#4d7c0f;">Custo</th>
-                    <th style="background:#ecfccb; color:#3f6212;">Lucro</th>
-                    <th style="background:#ecfccb; color:#3f6212;">Repasse</th>
-                    <th style="color:#991b1b;">Custo</th>
-                    <th style="background:#fee2e2; color:#991b1b;">Lucro</th>
-                    <th style="background:#fee2e2; color:#991b1b;">Repasse</th>
+                    <th style="background:#15803d; color:white;">Lucro</th>
+                    <th style="background:#15803d; color:white;">Repasse</th>
+                    <th style="background:#b91c1c; color:white;">Lucro</th>
+                    <th style="background:#b91c1c; color:white;">Repasse</th>
                 </tr>
             </thead><tbody>`;
 
@@ -1158,7 +1143,7 @@
                 </tr>`;
                 
                 html += `<tr><td colspan="9" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
-                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto</th><th style="width:10%;">Custo Unit. (C)</th><th style="width:10%; background:#ecfccb; color:#3f6212;">Lucro (C)</th><th style="width:10%;">Custo Unit. (E)</th><th style="width:10%; background:#fee2e2; color:#991b1b;">Lucro (E)</th></tr>`;
+                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto</th><th style="width:10%;">Custo Unit. (C)</th><th style="width:10%; background:#15803d; color:white;">Lucro (C)</th><th style="width:10%;">Custo Unit. (E)</th><th style="width:10%; background:#b91c1c; color:white;">Lucro (E)</th></tr>`;
                 
                 pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
