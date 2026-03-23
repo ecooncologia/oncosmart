@@ -52,13 +52,18 @@
         .btn-print:hover { background: #374151; }
         
         .dashboard-cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .card-stat { background: white; flex: 1; min-width: 200px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-stat h5 { margin: 0 0 8px 0; color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid #f3f4f6; padding-bottom: 5px;}
+        .card-stat { background: white; flex: 1; min-width: 190px; padding: 15px; border-radius: 10px; border-left: 4px solid #00995D; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat h5 { margin: 0 0 8px 0; color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid #f3f4f6; padding-bottom: 5px; }
         .card-stat h2 { margin: 0; color: #1f2937; font-size: 22px; }
         .card-stat.imposto { border-left-color: #0284c7; }
         .card-stat.custo { border-left-color: #f59e0b; }
         .card-stat.lucro { border-left-color: #10b981; }
         .card-stat.repasse { border-left-color: #8b5cf6; }
+        
+        .stat-details { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e7eb; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+        .stat-row .label { color: #6b7280; font-weight: 600; }
+        .stat-row .val { font-weight: bold; }
 
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; background: white; padding-bottom: 10px; max-height: 700px; }
@@ -157,13 +162,13 @@
             <div class="dashboard-cards">
                 <div class="card-stat imposto">
                     <h5>Faturamento & Impostos</h5>
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                        <span style="color: #6b7280; font-weight: 600;">Fat. Analisado:</span>
-                        <span id="dashUnimedTotal" style="font-weight: bold; color:#0284c7;">R$ 0,00</span>
+                    <div class="stat-row">
+                        <span class="label">Fat. Analisado:</span>
+                        <span class="val" id="dashUnimedTotal" style="color:#0284c7;">R$ 0,00</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                        <span style="color: #6b7280; font-weight: 600;">Imp. Retido:</span>
-                        <span id="dashImpostoTotal" style="font-weight: bold; color:#dc2626;">R$ 0,00</span>
+                    <div class="stat-row">
+                        <span class="label">Imp. Retido:</span>
+                        <span class="val" id="dashImpostoTotal" style="color:#dc2626;">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -173,14 +178,14 @@
                         <h2 id="dashCustoTotalC" style="color:#65a30d;">R$ 0,00</h2>
                         <span style="font-size:9px; font-weight:bold; color:#65a30d; background:#ecfccb; padding:2px 4px; border-radius:4px;">CORRETO</span>
                     </div>
-                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e7eb;">
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                            <span style="color: #6b7280; font-weight: 600;">Cenário Errado:</span>
-                            <span id="dashCustoTotalE" style="font-weight: bold; color:#ef4444;">R$ 0,00</span>
+                    <div class="stat-details">
+                        <div class="stat-row">
+                            <span class="label">Cenário Errado:</span>
+                            <span class="val" id="dashCustoTotalE" style="color:#ef4444;">R$ 0,00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 11px;">
-                            <span style="color: #6b7280; font-weight: 600;">Diferença:</span>
-                            <span id="dashCustoDiff" style="font-weight: bold;">R$ 0,00</span>
+                        <div class="stat-row">
+                            <span class="label">Diferença:</span>
+                            <span class="val" id="dashCustoDiff">R$ 0,00</span>
                         </div>
                     </div>
                 </div>
@@ -191,32 +196,32 @@
                         <h2 id="dashLucroTotalC" style="color:#059669;">R$ 0,00</h2>
                         <span style="font-size:9px; font-weight:bold; color:#059669; background:#d1fae5; padding:2px 4px; border-radius:4px;">CORRETO</span>
                     </div>
-                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e7eb;">
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                            <span style="color: #6b7280; font-weight: 600;">Cenário Errado:</span>
-                            <span id="dashLucroTotalE" style="font-weight: bold; color:#ef4444;">R$ 0,00</span>
+                    <div class="stat-details">
+                        <div class="stat-row">
+                            <span class="label">Cenário Errado:</span>
+                            <span class="val" id="dashLucroTotalE" style="color:#ef4444;">R$ 0,00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 11px;">
-                            <span style="color: #6b7280; font-weight: 600;">Diferença:</span>
-                            <span id="dashLucroDiff" style="font-weight: bold;">R$ 0,00</span>
+                        <div class="stat-row">
+                            <span class="label">Diferença:</span>
+                            <span class="val" id="dashLucroDiff">R$ 0,00</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="card-stat repasse">
-                    <h5>Repasse Final Calculado</h5>
+                    <h5>Repasse Médico</h5>
                     <div style="display:flex; justify-content:space-between; align-items:baseline;">
                         <h2 id="dashRepasseTotalC" style="color:#7e22ce;">R$ 0,00</h2>
                         <span style="font-size:9px; font-weight:bold; color:#7e22ce; background:#f3e8ff; padding:2px 4px; border-radius:4px;">CORRETO</span>
                     </div>
-                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e7eb;">
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                            <span style="color: #6b7280; font-weight: 600;">Cenário Errado:</span>
-                            <span id="dashRepasseTotalE" style="font-weight: bold; color:#ef4444;">R$ 0,00</span>
+                    <div class="stat-details">
+                        <div class="stat-row">
+                            <span class="label">Cenário Errado:</span>
+                            <span class="val" id="dashRepasseTotalE" style="color:#ef4444;">R$ 0,00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 11px;">
-                            <span style="color: #6b7280; font-weight: 600;">Diferença:</span>
-                            <span id="dashRepasseDiff" style="font-weight: bold;">R$ 0,00</span>
+                        <div class="stat-row">
+                            <span class="label">Diferença:</span>
+                            <span class="val" id="dashRepasseDiff">R$ 0,00</span>
                         </div>
                     </div>
                 </div>
@@ -271,18 +276,17 @@
                                 <th rowspan="2" style="text-align:right;">Fat. Analisado</th>
                                 <th rowspan="2" style="text-align:right; border-right: 2px solid #cbd5e1;">Imposto</th>
                                 
-                                <th rowspan="2" style="text-align:right;">Custo Total (C)</th>
-                                <th colspan="2" style="text-align:center; background:#15803d; color:white; border-bottom: 1px solid #4ade80;">CENÁRIO CORRETO</th>
-                                
-                                <th rowspan="2" style="text-align:right; border-left: 2px solid #cbd5e1;">Custo Total (E)</th>
-                                <th colspan="2" style="text-align:center; background:#b91c1c; color:white; border-bottom: 1px solid #f87171;">CENÁRIO ERRADO</th>
+                                <th colspan="3" style="text-align:center; color:#3f6212; border-bottom: 2px solid #ecfccb;">CENÁRIO CORRETO</th>
+                                <th colspan="3" style="text-align:center; color:#991b1b; border-bottom: 2px solid #fee2e2;">CENÁRIO ERRADO</th>
                             </tr>
                             <tr>
-                                <th style="text-align:right; background:#15803d; color:white;">Lucro Líq.</th>
-                                <th style="text-align:center; background:#15803d; color:white;">Repasse</th>
+                                <th style="text-align:right; color:#4d7c0f;">Custo Total</th>
+                                <th style="text-align:right; background:#ecfccb; color:#3f6212;">Lucro Líq.</th>
+                                <th style="text-align:center; background:#ecfccb; color:#3f6212; border-right: 2px solid #d9f99d;">Repasse</th>
                                 
-                                <th style="text-align:right; background:#b91c1c; color:white;">Lucro Líq.</th>
-                                <th style="text-align:center; background:#b91c1c; color:white;">Repasse</th>
+                                <th style="text-align:right; color:#991b1b;">Custo Total</th>
+                                <th style="text-align:right; background:#fee2e2; color:#991b1b;">Lucro Líq.</th>
+                                <th style="text-align:center; background:#fee2e2; color:#991b1b;">Repasse</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -822,6 +826,7 @@
                     item.isCortado = !isVisibleForFilter;
 
                     if (isVisibleForFilter) {
+                        // Totais principais do paciente e dashboard usam o CENÁRIO CORRETO
                         pat.fatPaciente += fatItem;
                         pat.impostoPaciente += impItem;
                         
@@ -866,15 +871,8 @@
                 document.getElementById('dashUnimedTotal').innerText = "R$ 0,00";
                 document.getElementById('dashImpostoTotal').innerText = "R$ 0,00";
                 document.getElementById('dashCustoTotalC').innerText = "R$ 0,00";
-                document.getElementById('dashCustoTotalE').innerText = "R$ 0,00";
-                document.getElementById('dashCustoDiff').innerText = "R$ 0,00";
                 document.getElementById('dashLucroTotalC').innerText = "R$ 0,00";
-                document.getElementById('dashLucroTotalE').innerText = "R$ 0,00";
-                document.getElementById('dashLucroDiff').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseTotalC').innerText = "R$ 0,00";
-                document.getElementById('dashRepasseTotalE').innerText = "R$ 0,00";
-                document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
-                
                 tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
                 return; 
             }
@@ -952,9 +950,9 @@
                         
                         <td style="text-align:right; font-weight:600; color:#4d7c0f;">- R$ ${pat.custoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPaciente >= 0 ? '#166534' : '#b91c1c'}; background:#ecfccb;">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:center; background:#ecfccb;">${repasseBadgeC}</td>
+                        <td style="text-align:center; background:#ecfccb; border-right: 2px solid #d9f99d;">${repasseBadgeC}</td>
 
-                        <td style="text-align:right; font-weight:600; color:#991b1b; border-left: 2px solid #cbd5e1;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:right; font-weight:600; color:#991b1b;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPacienteE >= 0 ? '#7f1d1d' : '#b91c1c'}; background:#fee2e2;">R$ ${pat.lucroGlobalPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:center; background:#fee2e2;">${repasseBadgeE}</td>
                     </tr>
@@ -967,22 +965,19 @@
                                 <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px;">Fat.</th>
                                 <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px; border-right:2px solid #cbd5e1;">Imposto</th>
                                 
-                                <th colspan="2" style="text-align:center; color:#374151; border-bottom: 2px solid #cbd5e1;">CUSTO (C)</th>
-                                <th colspan="2" style="text-align:center; background:#15803d; color:white; border-bottom: 1px solid #4ade80;">CORRETO</th>
-                                
-                                <th colspan="2" style="text-align:center; color:#374151; border-left: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1;">CUSTO (E)</th>
-                                <th colspan="2" style="text-align:center; background:#b91c1c; color:white; border-bottom: 1px solid #fca5a5;">ERRADO</th>
+                                <th colspan="3" style="text-align:center; color:#3f6212; border-bottom: 1px solid #cbd5e1;">CENÁRIO CORRETO</th>
+                                <th colspan="3" style="text-align:center; color:#991b1b; border-bottom: 1px solid #cbd5e1;">CENÁRIO ERRADO</th>
                             </tr>
                             <tr>
                                 <th style="text-align:center; color:#4d7c0f;">Unitário</th>
                                 <th style="text-align:right; color:#4d7c0f;">Total</th>
-                                <th style="text-align:right; background:#15803d; color:white;">Lucro</th>
-                                <th style="text-align:center; background:#15803d; color:white;">Repasse</th>
+                                <th style="text-align:right; background:#ecfccb; color:#3f6212;">Lucro Líq.</th>
+                                <th style="text-align:center; background:#ecfccb; color:#3f6212; border-right:2px solid #d9f99d;">Repasse</th>
                                 
-                                <th style="text-align:center; color:#991b1b; border-left: 2px solid #cbd5e1;">Unitário</th>
+                                <th style="text-align:center; color:#991b1b;">Unitário</th>
                                 <th style="text-align:right; color:#991b1b;">Total</th>
-                                <th style="text-align:right; background:#b91c1c; color:white;">Lucro</th>
-                                <th style="text-align:center; background:#b91c1c; color:white;">Repasse</th>
+                                <th style="text-align:right; background:#fee2e2; color:#991b1b;">Lucro Líq.</th>
+                                <th style="text-align:center; background:#fee2e2; color:#991b1b;">Repasse</th>
                             </tr>
                         </thead><tbody>`;
 
@@ -1030,9 +1025,9 @@
                         <td style="text-align:center;">${inputC}</td>
                         <td style="text-align:right; color:#4d7c0f;">${custoTotalCVis}</td>
                         <td style="text-align:right; background:#ecfccb;">${lucroCVis}</td>
-                        <td style="text-align:center; background:#ecfccb;">${repCHtml}</td>
+                        <td style="text-align:center; background:#ecfccb; border-right:2px solid #d9f99d;">${repCHtml}</td>
 
-                        <td style="text-align:center; border-left: 2px solid #cbd5e1;">${inputE}</td>
+                        <td style="text-align:center;">${inputE}</td>
                         <td style="text-align:right; color:#991b1b;">${custoTotalEVis}</td>
                         <td style="text-align:right; background:#fee2e2;">${lucroEVis}</td>
                         <td style="text-align:center; background:#fee2e2;">${repEHtml}</td>
@@ -1046,8 +1041,8 @@
                                 <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
                                 <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                                 <td style="border-right:2px solid #cbd5e1;"></td>
-                                <td></td><td style="color:#4d7c0f;"></td><td style="background:#ecfccb;"></td><td style="background:#ecfccb;"></td>
-                                <td style="border-left: 2px solid #cbd5e1;"></td><td style="color:#991b1b;"></td><td style="background:#fee2e2;"></td><td style="background:#fee2e2;"></td>
+                                <td></td><td></td><td style="background:#ecfccb;"></td><td style="background:#ecfccb; border-right:2px solid #d9f99d;"></td>
+                                <td></td><td></td><td style="background:#fee2e2;"></td><td style="background:#fee2e2;"></td>
                             </tr>`;
                         });
                     }
@@ -1112,16 +1107,16 @@
                     <th rowspan="2">Paciente / Carteirinha</th>
                     <th rowspan="2">Fat. Analisado</th>
                     <th rowspan="2">Impostos</th>
-                    <th rowspan="2">Custo (C)</th>
-                    <th colspan="2" style="background:#15803d; color:white;">CENÁRIO CORRETO</th>
-                    <th rowspan="2">Custo (E)</th>
-                    <th colspan="2" style="background:#b91c1c; color:white;">CENÁRIO ERRADO</th>
+                    <th colspan="3" style="color:#3f6212;">CENÁRIO CORRETO</th>
+                    <th colspan="3" style="color:#991b1b;">CENÁRIO ERRADO</th>
                 </tr>
                 <tr>
-                    <th style="background:#15803d; color:white;">Lucro</th>
-                    <th style="background:#15803d; color:white;">Repasse</th>
-                    <th style="background:#b91c1c; color:white;">Lucro</th>
-                    <th style="background:#b91c1c; color:white;">Repasse</th>
+                    <th style="color:#4d7c0f;">Custo</th>
+                    <th style="background:#ecfccb; color:#3f6212;">Lucro</th>
+                    <th style="background:#ecfccb; color:#3f6212;">Repasse</th>
+                    <th style="color:#991b1b;">Custo</th>
+                    <th style="background:#fee2e2; color:#991b1b;">Lucro</th>
+                    <th style="background:#fee2e2; color:#991b1b;">Repasse</th>
                 </tr>
             </thead><tbody>`;
 
@@ -1163,7 +1158,7 @@
                 </tr>`;
                 
                 html += `<tr><td colspan="9" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
-                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto</th><th style="width:10%;">Custo Unit. (C)</th><th style="width:10%; background:#15803d; color:white;">Lucro (C)</th><th style="width:10%;">Custo Unit. (E)</th><th style="width:10%; background:#b91c1c; color:white;">Lucro (E)</th></tr>`;
+                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto</th><th style="width:10%;">Custo Unit. (C)</th><th style="width:10%; background:#ecfccb; color:#3f6212;">Lucro (C)</th><th style="width:10%;">Custo Unit. (E)</th><th style="width:10%; background:#fee2e2; color:#991b1b;">Lucro (E)</th></tr>`;
                 
                 pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
