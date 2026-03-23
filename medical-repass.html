@@ -115,8 +115,8 @@
         <div id="global-nav"></div>
 
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="openTab('plantao')">Escala Plantão</button>
-            <button class="tab-btn" onclick="openTab('unimed')">Repasse Inteligente</button>
+            <button class="tab-btn active" onclick="openTab('plantao', event)">Escala Plantão</button>
+            <button class="tab-btn" onclick="openTab('unimed', event)">Repasse Inteligente</button>
         </div>
 
         <div id="tab-plantao" class="tab-content active">
@@ -406,39 +406,64 @@
             return h; 
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            initGlobal('repass', 'Repasse Médico');
-            const now = new Date(); 
-            const curY = now.getFullYear(); 
-            const curM = now.getMonth();
-            
-            ['selYearPlantao', 'selYearUnimed'].forEach(id => { 
-                const el = document.getElementById(id); 
-                for(let i = curY - 2; i <= curY + 2; i++) { el.add(new Option(i, i)); }
-                el.value = curY; 
-            });
-            
-            const elPlantao = document.getElementById('selMonthPlantao');
-            months.forEach((m, i) => elPlantao.add(new Option(m, i)));
-            elPlantao.value = curM;
+        // ==========================================
+        // INICIALIZAÇÃO BLINDADA (ANTIFALHA)
+        // ==========================================
+        async function startApp() {
+            try {
+                if (typeof initGlobal !== 'undefined') {
+                    initGlobal('repass', 'Repasse Médico');
+                    const now = new Date(); 
+                    const curY = now.getFullYear(); 
+                    const curM = now.getMonth();
+                    
+                    ['selYearPlantao', 'selYearUnimed'].forEach(id => { 
+                        const el = document.getElementById(id); 
+                        if(el) {
+                            for(let i = curY - 2; i <= curY + 2; i++) { el.add(new Option(i, i)); }
+                            el.value = curY; 
+                        }
+                    });
+                    
+                    const elPlantao = document.getElementById('selMonthPlantao');
+                    if(elPlantao) {
+                        months.forEach((m, i) => elPlantao.add(new Option(m, i)));
+                        elPlantao.value = curM;
+                    }
 
-            const elUnimed = document.getElementById('selMonthUnimed');
-            months.forEach((m, i) => elUnimed.add(new Option(m, i)));
-            let mesPassado = curM - 1;
-            if (mesPassado < 0) mesPassado = 11;
-            elUnimed.value = mesPassado; 
+                    const elUnimed = document.getElementById('selMonthUnimed');
+                    if(elUnimed) {
+                        months.forEach((m, i) => elUnimed.add(new Option(m, i)));
+                        let mesPassado = curM - 1;
+                        if (mesPassado < 0) mesPassado = 11;
+                        elUnimed.value = mesPassado; 
+                    }
 
-            await loadDoctors();
-            await loadPacientesDb();
-            renderRepasseTable(); 
-            fetchBotData();       
-        });
+                    await loadDoctors();
+                    await loadPacientesDb();
+                    renderRepasseTable(); 
+                    fetchBotData();       
+                } else {
+                    // Tenta de novo em 100ms se o global.js atrasar
+                    setTimeout(startApp, 100);
+                }
+            } catch(e) {
+                console.error("Erro na inicialização da página: ", e);
+            }
+        }
 
-        function openTab(t){ 
+        document.addEventListener('DOMContentLoaded', startApp);
+
+        function openTab(t, e){ 
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${t}`).classList.add('active');
-            event.target.classList.add('active');
+            if (e && e.currentTarget) {
+                e.currentTarget.classList.add('active');
+            } else {
+                const targetBtn = document.querySelector(`.tab-btn[onclick*="${t}"]`);
+                if(targetBtn) targetBtn.classList.add('active');
+            }
         }
 
         window.toggleLevel1 = function(id, btn) {
@@ -503,7 +528,7 @@
 
         async function fetchBotData() {
             const tbody = document.querySelector('#dataTable tbody'); 
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Sincronizando com Banco de Dados...</td></tr>';
+            if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Sincronizando com Banco de Dados...</td></tr>';
             
             try {
                 const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
@@ -644,7 +669,7 @@
             } catch (err) {
                 excelData = [];
                 renderAnalysisTable();
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #dc2626; padding: 30px;"><i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
+                if(tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #dc2626; padding: 30px;"><i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
             }
         }
 
@@ -907,11 +932,11 @@
                 document.getElementById('dashRepasseTotalFuturo').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
                 
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
+                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
                 return; 
             }
 
-            // ATUALIZAÇÃO KPI DASHBOARD
+            // ATUALIZAÇÃO KPI DASHBOARD COM CENÁRIO E DIFERENÇA
             document.getElementById('dashUnimedTotal').innerText = sumUnimedGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashImpostoTotal').innerText = sumImpostoGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             
@@ -1055,7 +1080,7 @@
                         <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem}</td>
                         <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</td>
-                        <td style="text-align:right; color:#dc2626; border-right:1px solid rgba(0,0,0,0.1);">${impVisual}</td>
+                        <td style="text-align:right; color:#dc2626;">${impVisual}</td>
                         
                         <td style="text-align:center;">${inputE}</td>
                         <td style="text-align:right;">${custoTotalEVis}</td>
@@ -1087,7 +1112,7 @@
                 htmlBuffer += `</tbody></table></td></tr>`;
             });
             
-            tbody.innerHTML = htmlBuffer;
+            if(tbody) tbody.innerHTML = htmlBuffer;
 
             if (activeElId) {
                 let elToFocus = document.getElementById(activeElId);
