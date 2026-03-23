@@ -276,17 +276,17 @@
                                 <th rowspan="2" style="text-align:right;">Fat. Analisado</th>
                                 <th rowspan="2" style="text-align:right; border-right: 1px solid rgba(255,255,255,0.3);">Imposto</th>
                                 
-                                <th colspan="3" style="text-align:center; border-bottom: 1px solid rgba(255,255,255,0.3); border-right: 1px solid rgba(255,255,255,0.3);">CENÁRIO CORRETO</th>
-                                <th colspan="3" style="text-align:center; border-bottom: 1px solid rgba(255,255,255,0.3);">CENÁRIO ERRADO</th>
+                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.3);">CENÁRIO CORRETO</th>
+                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.3);">CENÁRIO ERRADO</th>
                             </tr>
                             <tr>
-                                <th style="text-align:right;">Custo Total</th>
-                                <th style="text-align:right;">Lucro Líq.</th>
-                                <th style="text-align:center; border-right: 1px solid rgba(255,255,255,0.3);">Repasse</th>
+                                <th style="text-align:right; color:white;">Custo Total</th>
+                                <th style="text-align:right; color:white;">Lucro Líq.</th>
+                                <th style="text-align:center; color:white; border-right: 1px solid rgba(255,255,255,0.3);">Repasse</th>
                                 
-                                <th style="text-align:right;">Custo Total</th>
-                                <th style="text-align:right;">Lucro Líq.</th>
-                                <th style="text-align:center;">Repasse</th>
+                                <th style="text-align:right; color:white;">Custo Total</th>
+                                <th style="text-align:right; color:white;">Lucro Líq.</th>
+                                <th style="text-align:center; color:white;">Repasse</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -327,31 +327,6 @@
                 } else { normalized[key] = val; }
             }); 
             return normalized;
-        }
-
-        function normalizeDate(d) {
-            if (!d) return "";
-            if (typeof d === 'number') {
-                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
-                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
-            }
-            let str = String(d).trim();
-            if (!str) return ""; 
-            
-            if (str.includes('T')) str = str.split('T')[0];
-            if (str.includes('-')) {
-                let p = str.split('-');
-                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            if (str.includes('/')) {
-                let p = str.split('/');
-                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
-                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-                }
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            return str;
         }
 
         function getComissaoInfo(pName, eName) {
@@ -544,8 +519,6 @@
                             });
                             
                             if (!alreadyExists) {
-                                let extVenda = typeof v.dados_extras === 'string' ? JSON.parse(v.dados_extras) : (v.dados_extras || {});
-                                
                                 dadosFiltrados.push({
                                     id_firebase: 'virt_part_' + vId,
                                     paciente: String(v.paciente).toUpperCase().trim(),
@@ -556,12 +529,9 @@
                                     valor_pago: parseFloat(v.valor_final || 0),
                                     quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                     tipo: 'PARTICULAR',
-                                    custo_informado: v.custo_informado || extVenda.custo_informado || 0,
-                                    dados_extras: { 
-                                        ...extVenda,
-                                        origem: 'venda_particular', 
-                                        medico_atendimento: v.medico 
-                                    }
+                                    custo_correto: v.custo_correto || 0,
+                                    custo_errado: v.custo_errado || 0,
+                                    dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                 });
                             }
                         }
@@ -581,8 +551,8 @@
                     if (row.itens_originais) originais = row.itens_originais;
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
-                    let custoCorreto = extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : (row.custo_informado || extras.custo_informado || 0);
-                    let custoErrado = extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0;
+                    let custoCorreto = row.custo_correto !== undefined ? parseFloat(row.custo_correto) : (extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : (row.custo_informado || extras.custo_informado || 0));
+                    let custoErrado = row.custo_errado !== undefined ? parseFloat(row.custo_errado) : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
 
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
@@ -598,8 +568,8 @@
                         competencia: row.competencia,
                         tipo: String(row.tipo || "MED").toUpperCase(), 
                         originais: originais,
-                        custo_correto: parseFloat(custoCorreto),
-                        custo_errado: parseFloat(custoErrado)
+                        custo_correto: custoCorreto,
+                        custo_errado: custoErrado
                     };
                 });
 
@@ -666,26 +636,22 @@
                     const resGet = await fetch(`${API_BASE_URL}${endpoint}`);
                     const dbData = normalizeData(await resGet.json());
                     
-                    let dbItem = dbData[realId] || Object.values(dbData).find(d => d.id === realId || d.id_firebase === realId);
+                    let dbKey = realId;
+                    let dbItem = dbData[realId];
+                    if (!dbItem) {
+                        let entry = Object.entries(dbData).find(([k, v]) => v && (v.id === realId || v.id_firebase === realId));
+                        if (entry) {
+                            dbKey = entry[0];
+                            dbItem = entry[1];
+                        }
+                    }
                     
                     if (dbItem) {
-                        if (!dbItem.dados_extras) dbItem.dados_extras = {};
-                        if (typeof dbItem.dados_extras === 'string') {
-                            try { dbItem.dados_extras = JSON.parse(dbItem.dados_extras); } catch(e) { dbItem.dados_extras = {}; }
-                        }
-                        
                         if (tipo === 'correto') {
-                            dbItem.dados_extras.custo_correto = novoValor;
-                            dbItem.dados_extras.custo_informado = novoValor; 
-                            if (!isVirtualPart) dbItem.custo_informado = novoValor;
+                            dbItem.custo_correto = novoValor;
+                            dbItem.custo_informado = novoValor; 
                         } else {
-                            dbItem.dados_extras.custo_errado = novoValor;
-                        }
-
-                        let dbKey = realId;
-                        if (!dbData[realId]) {
-                            let entry = Object.entries(dbData).find(([k, v]) => v && (v.id === realId || v.id_firebase === realId));
-                            if (entry) dbKey = entry[0];
+                            dbItem.custo_errado = novoValor;
                         }
 
                         await fetch(`${API_BASE_URL}${endpoint}/${dbKey}`, {
@@ -894,6 +860,7 @@
                 return; 
             }
 
+            // ATUALIZAÇÃO KPI DASHBOARD
             document.getElementById('dashUnimedTotal').innerText = sumUnimedGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashImpostoTotal').innerText = sumImpostoGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             
@@ -920,6 +887,7 @@
             patListToPrint.forEach((pat, idx) => {
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 
+                // Badges Correto
                 let repasseP_valC = pat.repasseP_Total; 
                 let repasseE_valC = pat.repasseE_Total;
                 let repasseBadgeC = '';
@@ -930,6 +898,7 @@
                     if (repasseE_valC > 0) repasseBadgeC += `<div class="encaminhador">E: ${comissaoInfo.percE}% (R$ ${repasseE_valC.toLocaleString('pt-BR',{minimumFractionDigits:2})})</div>`;
                 }
 
+                // Badges Errado
                 let repasseP_valE = pat.repasseP_TotalE; 
                 let repasseE_valE = pat.repasseE_TotalE;
                 let repasseBadgeE = '';
@@ -960,11 +929,11 @@
                             <div style="margin-top:6px;">${docHtml}</div>
                         </td> 
                         <td style="text-align:right; font-weight:600; color:#0284c7;">R$ ${pat.fatPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td> 
-                        <td style="text-align:right; font-weight:600; color:#dc2626; border-right: 1px solid rgba(0,0,0,0.1);"> - R$ ${pat.impostoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:right; font-weight:600; color:#dc2626;"> - R$ ${pat.impostoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         
                         <td style="text-align:right; font-weight:600; color:#4b5563;">- R$ ${pat.custoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPaciente >= 0 ? '#166534' : '#b91c1c'}; background:#ecfccb;">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:center; background:#ecfccb; border-right: 1px solid rgba(0,0,0,0.1);">${repasseBadgeC}</td>
+                        <td style="text-align:center; background:#ecfccb;">${repasseBadgeC}</td>
 
                         <td style="text-align:right; font-weight:600; color:#4b5563;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPacienteE >= 0 ? '#7f1d1d' : '#b91c1c'}; background:#fee2e2;">R$ ${pat.lucroGlobalPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
@@ -977,21 +946,21 @@
                                 <th rowspan="2" style="vertical-align:bottom; padding-bottom:12px;">Descrição / Medicamento</th>
                                 <th rowspan="2" style="text-align:center; vertical-align:bottom; padding-bottom:12px;">Qtd</th>
                                 <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px;">Fat.</th>
-                                <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px; border-right:1px solid rgba(0,0,0,0.1);">Imposto</th>
+                                <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px;">Imposto</th>
                                 
-                                <th colspan="4" style="text-align:center; border-bottom: 1px solid #cbd5e1;">CENÁRIO CORRETO</th>
-                                <th colspan="4" style="text-align:center; border-bottom: 1px solid #cbd5e1;">CENÁRIO ERRADO</th>
+                                <th colspan="4" style="text-align:center;">CENÁRIO CORRETO</th>
+                                <th colspan="4" style="text-align:center;">CENÁRIO ERRADO</th>
                             </tr>
                             <tr>
-                                <th style="text-align:center;">Unitário</th>
-                                <th style="text-align:right;">Total</th>
-                                <th style="text-align:right; background:#ecfccb;">Lucro Líq.</th>
-                                <th style="text-align:center; background:#ecfccb; border-right:1px solid rgba(0,0,0,0.1);">Repasse</th>
+                                <th style="text-align:center; color:white;">Unitário</th>
+                                <th style="text-align:right; color:white;">Total</th>
+                                <th style="text-align:right; color:white;">Lucro Líq.</th>
+                                <th style="text-align:center; color:white;">Repasse</th>
                                 
-                                <th style="text-align:center;">Unitário</th>
-                                <th style="text-align:right;">Total</th>
-                                <th style="text-align:right; background:#fee2e2;">Lucro Líq.</th>
-                                <th style="text-align:center; background:#fee2e2;">Repasse</th>
+                                <th style="text-align:center; color:white;">Unitário</th>
+                                <th style="text-align:right; color:white;">Total</th>
+                                <th style="text-align:right; color:white;">Lucro Líq.</th>
+                                <th style="text-align:center; color:white;">Repasse</th>
                             </tr>
                         </thead><tbody>`;
 
@@ -1034,12 +1003,12 @@
                         <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem}</td>
                         <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</td>
-                        <td style="text-align:right; color:#dc2626; border-right:1px solid rgba(0,0,0,0.1);">${impVisual}</td>
+                        <td style="text-align:right; color:#dc2626;">${impVisual}</td>
                         
                         <td style="text-align:center;">${inputC}</td>
                         <td style="text-align:right;">${custoTotalCVis}</td>
                         <td style="text-align:right; background:#ecfccb;">${lucroCVis}</td>
-                        <td style="text-align:center; background:#ecfccb; border-right:1px solid rgba(0,0,0,0.1);">${repCHtml}</td>
+                        <td style="text-align:center; background:#ecfccb;">${repCHtml}</td>
 
                         <td style="text-align:center;">${inputE}</td>
                         <td style="text-align:right;">${custoTotalEVis}</td>
@@ -1054,9 +1023,9 @@
                                 <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
                                 <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
                                 <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                <td style="border-right:1px solid rgba(0,0,0,0.1);"></td>
+                                <td></td>
                                 
-                                <td></td><td></td><td style="background:#ecfccb;"></td><td style="background:#ecfccb; border-right:1px solid rgba(0,0,0,0.1);"></td>
+                                <td></td><td></td><td style="background:#ecfccb;"></td><td style="background:#ecfccb;"></td>
                                 <td></td><td></td><td style="background:#fee2e2;"></td><td style="background:#fee2e2;"></td>
                             </tr>`;
                         });
@@ -1187,10 +1156,10 @@
                         <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; color:#dc2626;">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         
-                        <td style="text-align:center;">R$ ${item.custo_correto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
+                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_correto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
                         <td style="text-align:right; font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'}; background:#ecfccb;">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         
-                        <td style="text-align:center;">R$ ${item.custo_errado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
+                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_errado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
                         <td style="text-align:right; font-weight:bold; color:${item.lucroE >= 0 ? '#7f1d1d' : '#dc2626'}; background:#fee2e2;">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                     </tr>`;
                 });
