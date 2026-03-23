@@ -175,13 +175,13 @@
                 <div class="card-stat custo">
                     <h5>Custo Medicamentos</h5>
                     <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                        <h2 id="dashCustoTotalC" style="color:#65a30d;">R$ 0,00</h2>
-                        <span style="font-size:9px; font-weight:bold; color:#65a30d; background:#ecfccb; padding:2px 4px; border-radius:4px;">CORRETO</span>
+                        <h2 id="dashCustoTotalC" style="color:#6b7280;">R$ 0,00</h2>
+                        <span style="font-size:9px; font-weight:bold; color:#6b7280; background:#f3f4f6; padding:2px 4px; border-radius:4px;">CORRETO</span>
                     </div>
                     <div class="stat-details">
                         <div class="stat-row">
                             <span class="label">Cenário Errado:</span>
-                            <span class="val" id="dashCustoTotalE" style="color:#ef4444;">R$ 0,00</span>
+                            <span class="val" id="dashCustoTotalE" style="color:#4b5563;">R$ 0,00</span>
                         </div>
                         <div class="stat-row">
                             <span class="label">Diferença:</span>
@@ -209,7 +209,7 @@
                 </div>
 
                 <div class="card-stat repasse">
-                    <h5>Repasse Final Calculado</h5>
+                    <h5>Repasse Médico Final</h5>
                     <div style="display:flex; justify-content:space-between; align-items:baseline;">
                         <h2 id="dashRepasseTotalC" style="color:#7e22ce;">R$ 0,00</h2>
                         <span style="font-size:9px; font-weight:bold; color:#7e22ce; background:#f3e8ff; padding:2px 4px; border-radius:4px;">CORRETO</span>
@@ -276,17 +276,17 @@
                                 <th rowspan="2" style="text-align:right;">Fat. Analisado</th>
                                 <th rowspan="2" style="text-align:right; border-right: 1px solid rgba(255,255,255,0.3);">Imposto</th>
                                 
-                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.3);">CENÁRIO CORRETO</th>
-                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.3);">CENÁRIO ERRADO</th>
+                                <th colspan="3" style="text-align:center; border-bottom: 1px solid rgba(255,255,255,0.3); border-right: 1px solid rgba(255,255,255,0.3);">CENÁRIO CORRETO</th>
+                                <th colspan="3" style="text-align:center; border-bottom: 1px solid rgba(255,255,255,0.3);">CENÁRIO ERRADO</th>
                             </tr>
                             <tr>
-                                <th style="text-align:right; color:white;">Custo Total</th>
-                                <th style="text-align:right; color:white;">Lucro Líq.</th>
-                                <th style="text-align:center; color:white; border-right: 1px solid rgba(255,255,255,0.3);">Repasse</th>
+                                <th style="text-align:right;">Custo Total</th>
+                                <th style="text-align:right;">Lucro Líq.</th>
+                                <th style="text-align:center; border-right: 1px solid rgba(255,255,255,0.3);">Repasse</th>
                                 
-                                <th style="text-align:right; color:white;">Custo Total</th>
-                                <th style="text-align:right; color:white;">Lucro Líq.</th>
-                                <th style="text-align:center; color:white;">Repasse</th>
+                                <th style="text-align:right;">Custo Total</th>
+                                <th style="text-align:right;">Lucro Líq.</th>
+                                <th style="text-align:center;">Repasse</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -327,6 +327,31 @@
                 } else { normalized[key] = val; }
             }); 
             return normalized;
+        }
+
+        function normalizeDate(d) {
+            if (!d) return "";
+            if (typeof d === 'number') {
+                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
+                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
+            }
+            let str = String(d).trim();
+            if (!str) return ""; 
+            
+            if (str.includes('T')) str = str.split('T')[0];
+            if (str.includes('-')) {
+                let p = str.split('-');
+                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            if (str.includes('/')) {
+                let p = str.split('/');
+                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
+                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+                }
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            return str;
         }
 
         function getComissaoInfo(pName, eName) {
@@ -519,7 +544,6 @@
                             });
                             
                             if (!alreadyExists) {
-                                // Preserva o dados_extras se já existir, senão cria um novo
                                 let extVenda = typeof v.dados_extras === 'string' ? JSON.parse(v.dados_extras) : (v.dados_extras || {});
                                 
                                 dadosFiltrados.push({
@@ -534,7 +558,7 @@
                                     tipo: 'PARTICULAR',
                                     custo_informado: v.custo_informado || extVenda.custo_informado || 0,
                                     dados_extras: { 
-                                        ...extVenda, 
+                                        ...extVenda,
                                         origem: 'venda_particular', 
                                         medico_atendimento: v.medico 
                                     }
@@ -642,15 +666,7 @@
                     const resGet = await fetch(`${API_BASE_URL}${endpoint}`);
                     const dbData = normalizeData(await resGet.json());
                     
-                    let dbKey = realId;
-                    let dbItem = dbData[realId];
-                    if (!dbItem) {
-                        let entry = Object.entries(dbData).find(([k, v]) => v && (v.id === realId || v.id_firebase === realId));
-                        if (entry) {
-                            dbKey = entry[0];
-                            dbItem = entry[1];
-                        }
-                    }
+                    let dbItem = dbData[realId] || Object.values(dbData).find(d => d.id === realId || d.id_firebase === realId);
                     
                     if (dbItem) {
                         if (!dbItem.dados_extras) dbItem.dados_extras = {};
@@ -666,7 +682,11 @@
                             dbItem.dados_extras.custo_errado = novoValor;
                         }
 
-                        dbItem.dados_extras = JSON.stringify(dbItem.dados_extras);
+                        let dbKey = realId;
+                        if (!dbData[realId]) {
+                            let entry = Object.entries(dbData).find(([k, v]) => v && (v.id === realId || v.id_firebase === realId));
+                            if (entry) dbKey = entry[0];
+                        }
 
                         await fetch(`${API_BASE_URL}${endpoint}/${dbKey}`, {
                             method: 'PUT', headers: API_HEADERS, body: JSON.stringify(dbItem)
@@ -874,7 +894,6 @@
                 return; 
             }
 
-            // ATUALIZAÇÃO KPI DASHBOARD COM CENÁRIO E DIFERENÇA
             document.getElementById('dashUnimedTotal').innerText = sumUnimedGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashImpostoTotal').innerText = sumImpostoGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             
@@ -882,26 +901,25 @@
             document.getElementById('dashCustoTotalE').innerText = sumCustoGlobalE.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             let diffCusto = sumCustoGlobalC - sumCustoGlobalE;
             document.getElementById('dashCustoDiff').innerText = (diffCusto > 0 ? '+' : '') + diffCusto.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-            document.getElementById('dashCustoDiff').style.color = diffCusto === 0 ? '#6b7280' : (diffCusto > 0 ? '#ef4444' : '#10b981');
+            document.getElementById('dashCustoDiff').style.color = diffCusto === 0 ? '#6b7280' : (diffCusto > 0 ? '#ef4444' : '#10b981'); 
 
             document.getElementById('dashLucroTotalC').innerText = sumLucroGlobalC.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashLucroTotalE').innerText = sumLucroGlobalE.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             let diffLucro = sumLucroGlobalC - sumLucroGlobalE;
             document.getElementById('dashLucroDiff').innerText = (diffLucro > 0 ? '+' : '') + diffLucro.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-            document.getElementById('dashLucroDiff').style.color = diffLucro === 0 ? '#6b7280' : (diffLucro > 0 ? '#10b981' : '#ef4444');
+            document.getElementById('dashLucroDiff').style.color = diffLucro === 0 ? '#6b7280' : (diffLucro > 0 ? '#10b981' : '#ef4444'); 
 
             document.getElementById('dashRepasseTotalC').innerText = sumRepasseGlobalC.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashRepasseTotalE').innerText = sumRepasseGlobalE.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             let diffRepasse = sumRepasseGlobalC - sumRepasseGlobalE;
             document.getElementById('dashRepasseDiff').innerText = (diffRepasse > 0 ? '+' : '') + diffRepasse.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-            document.getElementById('dashRepasseDiff').style.color = diffRepasse === 0 ? '#6b7280' : (diffRepasse > 0 ? '#10b981' : '#ef4444');
+            document.getElementById('dashRepasseDiff').style.color = diffRepasse === 0 ? '#6b7280' : (diffRepasse > 0 ? '#10b981' : '#ef4444'); 
 
             let htmlBuffer = "";
             
             patListToPrint.forEach((pat, idx) => {
                 const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                 
-                // Badges Correto
                 let repasseP_valC = pat.repasseP_Total; 
                 let repasseE_valC = pat.repasseE_Total;
                 let repasseBadgeC = '';
@@ -912,7 +930,6 @@
                     if (repasseE_valC > 0) repasseBadgeC += `<div class="encaminhador">E: ${comissaoInfo.percE}% (R$ ${repasseE_valC.toLocaleString('pt-BR',{minimumFractionDigits:2})})</div>`;
                 }
 
-                // Badges Errado
                 let repasseP_valE = pat.repasseP_TotalE; 
                 let repasseE_valE = pat.repasseE_TotalE;
                 let repasseBadgeE = '';
@@ -1156,7 +1173,7 @@
                 </tr>`;
                 
                 html += `<tr><td colspan="9" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
-                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto</th><th style="width:10%;">Custo Unit. (C)</th><th style="width:10%; background:#ecfccb; color:#3f6212;">Lucro (C)</th><th style="width:10%;">Custo Unit. (E)</th><th style="width:10%; background:#fee2e2; color:#991b1b;">Lucro (E)</th></tr>`;
+                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto</th><th style="width:10%;">Custo Unit. (C)</th><th style="width:10%; background:#ecfccb; color:#15803d;">Lucro (C)</th><th style="width:10%;">Custo Unit. (E)</th><th style="width:10%; background:#fee2e2; color:#b91c1c;">Lucro (E)</th></tr>`;
                 
                 pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
