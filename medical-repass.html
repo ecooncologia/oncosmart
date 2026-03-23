@@ -36,8 +36,12 @@
         .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
         .label-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 5px; }
         .input-field { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; height: 38px; box-sizing: border-box; }
-        .input-custo { border: 1px solid #0284c7; border-radius: 4px; padding: 6px 8px; width: 90px; font-weight: bold; color: #0284c7; outline: none; transition: 0.2s; background: #fff; text-align: center; }
-        .input-custo:focus { box-shadow: 0 0 0 2px #bae6fd; }
+        
+        .input-custo { border-radius: 4px; padding: 6px; width: 80px; font-weight: bold; outline: none; transition: 0.2s; background: #fff; text-align: center; border: 1px solid #d1d5db; }
+        .input-custo.correto { border-color: #65a30d; color: #4d7c0f; }
+        .input-custo.correto:focus { box-shadow: 0 0 0 2px #d9f99d; }
+        .input-custo.errado { border-color: #ef4444; color: #b91c1c; }
+        .input-custo.errado:focus { box-shadow: 0 0 0 2px #fecaca; }
 
         .sub-tabs-container { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
         .sub-tab-btn { background: #f3f4f6; border: 1px solid #e5e7eb; border-bottom: none; padding: 10px 20px; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 8px 8px 0 0; transition: 0.2s; white-space: nowrap; }
@@ -76,9 +80,9 @@
         .row-detail { display: none; background-color: #f8fafc; }
         .row-detail.expanded { display: table-row; }
         
-        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .nested-table th { background: #f1f5f9; color: #475569; font-size: 10px; padding: 10px 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
-        .nested-table td { font-size: 11px; border-bottom: 1px solid #f1f5f9; padding: 8px 12px; color: #475569; vertical-align: middle; }
+        .nested-table { width: 98%; margin: 10px auto; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-collapse: separate; border-spacing: 0; }
+        .nested-table th { background: #f1f5f9; color: #475569; font-size: 10px; padding: 8px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
+        .nested-table td { font-size: 11px; border-bottom: 1px solid #f1f5f9; padding: 6px 8px; color: #475569; vertical-align: middle; }
 
         .sub-item-row { background-color: #f8fafc; font-size: 11px; color: #64748b; }
         .sub-item-row td { border-bottom: 1px dashed #e2e8f0 !important; padding: 6px 12px !important; }
@@ -160,15 +164,15 @@
                     <h2 id="dashImpostoTotal" style="color:#dc2626;">R$ 0,00</h2>
                 </div>
                 <div class="card-stat custo">
-                    <h5>Custo de Medicamentos</h5>
-                    <h2 id="dashCustoTotal" style="color:#d97706;">R$ 0,00</h2>
+                    <h5>Custo Base (Cenário Correto)</h5>
+                    <h2 id="dashCustoTotal" style="color:#65a30d;">R$ 0,00</h2>
                 </div>
                 <div class="card-stat lucro">
-                    <h5>Lucro Líquido Global</h5>
+                    <h5>Lucro Líquido (Cenário Correto)</h5>
                     <h2 id="dashLucroTotal" style="color:#059669;">R$ 0,00</h2>
                 </div>
                 <div class="card-stat repasse">
-                    <h5>Repasse Médico Gerado</h5>
+                    <h5>Repasse Final (Cenário Correto)</h5>
                     <h2 id="dashRepasseTotal" style="color:#7e22ce;">R$ 0,00</h2>
                 </div>
             </div>
@@ -455,10 +459,9 @@
 
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
-                    let proc = String(v.procedimento || '').toUpperCase();
+                    let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     
-                    // NOVA REGRA DE TEXTO: Se for particular, contiver APLICA e NÃO contiver TAXA
-                    if (tipoReg.includes('particular') && proc.includes('APLICA') && !proc.includes('TAXA')) {
+                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         let dStr = v.data || '';
                         let vComp = '';
                         
@@ -491,7 +494,6 @@
                                     valor_pago: parseFloat(v.valor_final || 0),
                                     quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                     tipo: 'PARTICULAR',
-                                    custo_informado: 0,
                                     dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                 });
                             }
@@ -512,7 +514,9 @@
                     if (row.itens_originais) originais = row.itens_originais;
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
-                    let custoDb = row.custo_informado || extras.custo_informado || 0;
+                    let custoCorreto = extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : (row.custo_informado || extras.custo_informado || 0);
+                    let custoErrado = extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0;
+
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
@@ -527,16 +531,13 @@
                         competencia: row.competencia,
                         tipo: String(row.tipo || "MED").toUpperCase(), 
                         originais: originais,
-                        custo_informado: parseFloat(custoDb) 
+                        custo_correto: parseFloat(custoCorreto),
+                        custo_errado: parseFloat(custoErrado)
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                    if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) {
-                        return false;
-                    }
-                    if (medNormalized.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) {
-                        return false;
-                    }
+                    if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) return false;
+                    if (medNormalized.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) return false;
                     return true;
                 });
 
@@ -548,32 +549,50 @@
             }
         }
 
-        async function updateCustoManual(id_firebase, inputElement) {
+        async function updateCustoManual(id_firebase, tipo, inputElement) {
             let strVal = String(inputElement.value).replace(',', '.');
             const novoValor = parseFloat(strVal) || 0;
             
             const itemObj = excelData.find(d => d.id_firebase === id_firebase);
-            if (itemObj) itemObj.custo_informado = novoValor; 
+            if (itemObj) {
+                if (tipo === 'correto') itemObj.custo_correto = novoValor;
+                else itemObj.custo_errado = novoValor;
+            }
 
             renderAnalysisTable();
 
             try {
-                const resGet = await fetch(`${API_BASE_URL}/repasse_unimed`);
+                let isVirtualPart = id_firebase.startsWith('virt_part_');
+                let endpoint = isVirtualPart ? '/vendas' : '/repasse_unimed';
+                let realId = isVirtualPart ? id_firebase.replace('virt_part_', '') : id_firebase;
+
+                const resGet = await fetch(`${API_BASE_URL}${endpoint}`);
                 const dbData = normalizeData(await resGet.json());
-                let dbItem = dbData[id_firebase];
+                
+                let dbItem = dbData[realId] || Object.values(dbData).find(d => d.id === realId || d.id_firebase === realId);
                 
                 if (dbItem) {
                     if (!dbItem.dados_extras) dbItem.dados_extras = {};
-                    if (typeof dbItem.dados_extras === 'string') dbItem.dados_extras = JSON.parse(dbItem.dados_extras);
+                    if (typeof dbItem.dados_extras === 'string') {
+                        try { dbItem.dados_extras = JSON.parse(dbItem.dados_extras); } catch(e) { dbItem.dados_extras = {}; }
+                    }
                     
-                    dbItem.dados_extras.custo_informado = novoValor;
-                    dbItem.custo_informado = novoValor;
+                    if (tipo === 'correto') {
+                        dbItem.dados_extras.custo_correto = novoValor;
+                        dbItem.dados_extras.custo_informado = novoValor; // Fallback compatibilidade
+                        if (!isVirtualPart) dbItem.custo_informado = novoValor;
+                    } else {
+                        dbItem.dados_extras.custo_errado = novoValor;
+                    }
 
-                    await fetch(`${API_BASE_URL}/repasse_unimed/${id_firebase}`, {
+                    // A maioria das APIs aceita objeto, mas por garantia devolvemos stringificado se precisarem
+                    dbItem.dados_extras = JSON.stringify(dbItem.dados_extras);
+
+                    await fetch(`${API_BASE_URL}${endpoint}/${realId}`, {
                         method: 'PUT', headers: API_HEADERS, body: JSON.stringify(dbItem)
                     });
                 }
-            } catch(e) {}
+            } catch(e) { console.error('Erro ao salvar no BD:', e); }
         }
 
         function renderAnalysisTable() {
@@ -615,7 +634,7 @@
                 const patId = generatePatientId(d.paciente);
                 const patDb = pacientesDb[patId];
                 
-                if (patDb) {
+                if (patDb && patDb.status !== 'inativo') {
                     patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
                     patientsTableObj[p].eId = patDb.encaminhador_id;
                     
@@ -648,10 +667,15 @@
                     let fatItem = Number(item.valor.toFixed(2));
                     let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                     
-                    let custoUnitario = Number(item.custo_informado || 0);
-                    let custoTotalItem = Number((custoUnitario * item.mg).toFixed(2));
+                    // CENÁRIO CORRETO
+                    let custoTotalC = Number((item.custo_correto * item.mg).toFixed(2));
+                    let lucroC = Number((fatItem - impItem - custoTotalC).toFixed(2));
+                    let repPC = 0, repEC = 0;
 
-                    let lucroItem = Number((fatItem - impItem - custoTotalItem).toFixed(2));
+                    // CENÁRIO ERRADO
+                    let custoTotalE = Number((item.custo_errado * item.mg).toFixed(2));
+                    let lucroE = Number((fatItem - impItem - custoTotalE).toFixed(2));
+                    let repPE = 0, repEE = 0;
 
                     let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
                     
@@ -659,7 +683,8 @@
                     let canE = !!pat.eId; 
 
                     let hasGrazielly = false;
-                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true; 
+                    if (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
+                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
 
                     if (isTaxa) {
                         if (!hasGrazielly) {
@@ -668,17 +693,30 @@
                         }
                     }
 
-                    let lucroRepasse = lucroItem > 0 ? lucroItem : 0;
-                    let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
-                    let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
+                    // Calculando Comissões Correto
+                    if (lucroC > 0) {
+                        repPC = canP ? Number((lucroC * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
+                        repEC = canE ? Number((lucroC * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
+                    }
+
+                    // Calculando Comissões Errado
+                    if (lucroE > 0) {
+                        repPE = canP ? Number((lucroE * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
+                        repEE = canE ? Number((lucroE * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
+                    }
 
                     item.fatItem = fatItem;
                     item.impItem = impItem;
-                    item.custoItem = custoTotalItem; 
-                    item.custoUnitario = custoUnitario; 
-                    item.lucroItem = lucroItem;
-                    item.repasseP = repP;
-                    item.repasseE = repE;
+                    
+                    item.custoTotalC = custoTotalC;
+                    item.lucroC = lucroC;
+                    item.repPC = repPC;
+                    item.repEC = repEC;
+
+                    item.custoTotalE = custoTotalE;
+                    item.lucroE = lucroE;
+                    item.repPE = repPE;
+                    item.repEE = repEE;
 
                     let isVisibleForFilter = false;
                     if (filterRepasseDoc) {
@@ -692,18 +730,19 @@
                     item.isCortado = !isVisibleForFilter;
 
                     if (isVisibleForFilter) {
+                        // Totais principais do paciente e dashboard usam o CENÁRIO CORRETO
                         pat.fatPaciente += fatItem;
                         pat.impostoPaciente += impItem;
-                        pat.custoPaciente += custoTotalItem;
-                        pat.lucroGlobalPaciente += lucroItem;
+                        pat.custoPaciente += custoTotalC;
+                        pat.lucroGlobalPaciente += lucroC;
                     }
 
                     if (filterRepasseDoc) {
-                        if (pat.pId === filterRepasseDoc) pat.repasseP_Total += repP;
-                        if (pat.eId === filterRepasseDoc) pat.repasseE_Total += repE;
+                        if (pat.pId === filterRepasseDoc) pat.repasseP_Total += repPC;
+                        if (pat.eId === filterRepasseDoc) pat.repasseE_Total += repEC;
                     } else {
-                        pat.repasseP_Total += repP;
-                        pat.repasseE_Total += repE;
+                        pat.repasseP_Total += repPC;
+                        pat.repasseE_Total += repEC;
                     }
                 });
 
@@ -778,17 +817,29 @@
                         <td style="text-align:center;">${repasseBadge}</td>
                     </tr>
                     <tr id="L1-${idx}" class="row-detail ${isExpanded}"><td colspan="6"><table class="nested-table">
-                        <thead><tr>
-                            <th>Data Atend.</th>
-                            <th>Descrição / Medicamento</th>
-                            <th style="text-align:center;">Qtd/Mg</th>
-                            <th style="text-align:right;">Faturamento</th>
-                            <th style="text-align:right;">Imposto (-12,33%)</th>
-                            <th style="text-align:center; background:#fffbeb; color:#b45309; border-radius:4px 0 0 0;">Custo Unit. (R$)</th>
-                            <th style="text-align:right; color:#b45309;">Custo Total</th>
-                            <th style="text-align:right; background:#f0fdf4; color:#166534;">Lucro do Item</th>
-                            <th style="text-align:center; background:#f3e8ff; color:#7e22ce; border-radius:0 4px 0 0;">Repasse</th>
-                        </tr></thead><tbody>`;
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="vertical-align:bottom; padding-bottom:12px;">Data Atend.</th>
+                                <th rowspan="2" style="vertical-align:bottom; padding-bottom:12px;">Descrição / Medicamento</th>
+                                <th rowspan="2" style="text-align:center; vertical-align:bottom; padding-bottom:12px;">Qtd</th>
+                                <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px;">Fat.</th>
+                                <th rowspan="2" style="text-align:right; vertical-align:bottom; padding-bottom:12px; border-right:2px solid #cbd5e1;">Imposto</th>
+                                
+                                <th colspan="4" style="text-align:center; background:#ecfccb; color:#3f6212; border-bottom: 1px solid #d9f99d; border-radius:6px 0 0 0;">CENÁRIO CORRETO</th>
+                                <th colspan="4" style="text-align:center; background:#fee2e2; color:#991b1b; border-bottom: 1px solid #fecaca; border-radius:0 6px 0 0;">CENÁRIO ERRADO</th>
+                            </tr>
+                            <tr>
+                                <th style="text-align:center; background:#ecfccb; color:#3f6212;">Unitário</th>
+                                <th style="text-align:right; background:#ecfccb; color:#3f6212;">Total</th>
+                                <th style="text-align:right; background:#ecfccb; color:#3f6212;">Lucro</th>
+                                <th style="text-align:center; background:#ecfccb; color:#3f6212; border-right:2px solid #d9f99d;">Repasse</th>
+                                
+                                <th style="text-align:center; background:#fee2e2; color:#991b1b;">Unitário</th>
+                                <th style="text-align:right; background:#fee2e2; color:#991b1b;">Total</th>
+                                <th style="text-align:right; background:#fee2e2; color:#991b1b;">Lucro</th>
+                                <th style="text-align:center; background:#fee2e2; color:#991b1b;">Repasse</th>
+                            </tr>
+                        </thead><tbody>`;
 
                 pat.items.sort((a,b) => {
                     let pa = a.data.split('/'); let pb = b.data.split('/');
@@ -800,18 +851,28 @@
                     
                     let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let impVisual = `<span style="${styleCorte}">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-                    let custoTotalVisual = `<span style="${styleCorte}">- R$ ${item.custoItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-                    let lucroVisual = `<span style="font-weight:bold; color:${item.lucroItem >= 0 ? '#166534' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-
                     let subBadgeOrigem = item.tipo === 'PARTICULAR' ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
                     
-                    let repasseItemHtml = '';
-                    if (item.isCortado) {
-                        repasseItemHtml = `<span style="color:#9ca3af; font-size:10px;">Riscado</span>`;
-                    } else {
-                        if (item.repasseP > 0) repasseItemHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repasseP.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
-                        if (item.repasseE > 0) repasseItemHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repasseE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
-                        if (!repasseItemHtml) repasseItemHtml = '-';
+                    // HTML Cenário Correto
+                    let inputC = `<input type="number" step="0.0001" id="custoC-${item.id_firebase}" class="input-custo correto" value="${item.custo_correto > 0 ? item.custo_correto : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id_firebase}', 'correto', this)">`;
+                    let custoTotalCVis = `<span style="${styleCorte}">- R$ ${item.custoTotalC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let lucroCVis = `<span style="font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let repCHtml = '';
+                    if (item.isCortado) { repCHtml = `<span style="color:#9ca3af; font-size:10px;">Riscado</span>`; } else {
+                        if (item.repPC > 0) repCHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                        if (item.repEC > 0) repCHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                        if (!repCHtml) repCHtml = '-';
+                    }
+
+                    // HTML Cenário Errado
+                    let inputE = `<input type="number" step="0.0001" id="custoE-${item.id_firebase}" class="input-custo errado" value="${item.custo_errado > 0 ? item.custo_errado : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id_firebase}', 'errado', this)">`;
+                    let custoTotalEVis = `<span style="${styleCorte}">- R$ ${item.custoTotalE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let lucroEVis = `<span style="font-weight:bold; color:${item.lucroE >= 0 ? '#991b1b' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let repEHtml = '';
+                    if (item.isCortado) { repEHtml = `<span style="color:#9ca3af; font-size:10px;">Riscado</span>`; } else {
+                        if (item.repPE > 0) repEHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                        if (item.repEE > 0) repEHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                        if (!repEHtml) repEHtml = '-';
                     }
 
                     htmlBuffer += `<tr ${titleTooltip}>
@@ -819,13 +880,17 @@
                         <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem}</td>
                         <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</td>
-                        <td style="text-align:right; color:#dc2626;">${impVisual}</td>
-                        <td style="text-align:center; background:#fffbeb;">
-                            <input type="number" step="0.0001" id="custo-${item.id_firebase}" class="input-custo" value="${item.custoUnitario > 0 ? item.custoUnitario : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id_firebase}', this)">
-                        </td>
-                        <td style="text-align:right; color:#b45309;">${custoTotalVisual}</td>
-                        <td style="text-align:right; background:#f0fdf4;">${lucroVisual}</td>
-                        <td style="text-align:center; background:#f3e8ff; vertical-align:middle;">${repasseItemHtml}</td>
+                        <td style="text-align:right; color:#dc2626; border-right:2px solid #cbd5e1;">${impVisual}</td>
+                        
+                        <td style="text-align:center; background:#f7fee7;">${inputC}</td>
+                        <td style="text-align:right; color:#4d7c0f; background:#f7fee7;">${custoTotalCVis}</td>
+                        <td style="text-align:right; background:#ecfccb;">${lucroCVis}</td>
+                        <td style="text-align:center; background:#f7fee7; border-right:2px solid #d9f99d;">${repCHtml}</td>
+
+                        <td style="text-align:center; background:#fef2f2;">${inputE}</td>
+                        <td style="text-align:right; color:#991b1b; background:#fef2f2;">${custoTotalEVis}</td>
+                        <td style="text-align:right; background:#fee2e2;">${lucroEVis}</td>
+                        <td style="text-align:center; background:#fef2f2;">${repEHtml}</td>
                     </tr>`;
 
                     if (item.originais && item.originais.length > 1) {
@@ -835,7 +900,9 @@
                                 <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
                                 <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
                                 <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                <td></td><td></td><td></td><td style="background:#f0fdf4;"></td><td></td>
+                                <td style="border-right:2px solid #cbd5e1;"></td>
+                                <td style="background:#f7fee7;"></td><td style="background:#f7fee7;"></td><td style="background:#ecfccb;"></td><td style="background:#f7fee7; border-right:2px solid #d9f99d;"></td>
+                                <td style="background:#fef2f2;"></td><td style="background:#fef2f2;"></td><td style="background:#fee2e2;"></td><td style="background:#fef2f2;"></td>
                             </tr>`;
                         });
                     }
@@ -893,7 +960,7 @@
                         <div class="header-left">
                             <img src="${LOGO_URL}" alt="Logo">
                             <div class="header-text">
-                                <h1>Auditoria de Repasse Inteligente</h1>
+                                <h1>Auditoria de Repasse (Cenário Correto)</h1>
                                 <p>Competência Base: ${periodStr}</p>
                             </div>
                         </div>
@@ -937,7 +1004,7 @@
                 </tr>`;
                 
                 html += `<tr><td colspan="5" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
-                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto (12,33%)</th><th style="width:10%;">Custo Unit.</th><th style="width:10%;">Custo Total</th><th style="width:10%;">Lucro do Item</th><th style="width:10%;">Repasse</th></tr>`;
+                html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto (12,33%)</th><th style="width:10%;">Custo Unit. (C)</th><th style="width:10%;">Custo Total (C)</th><th style="width:10%;">Lucro (C)</th><th style="width:10%;">Repasse (C)</th></tr>`;
                 
                 pat.items.forEach(item => {
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -948,8 +1015,8 @@
                     if (item.isCortado) {
                         repasseItemHtml = `<span style="color:#9ca3af; font-size:9px;">Riscado</span>`;
                     } else {
-                        if (item.repasseP > 0) repasseItemHtml += `P: R$ ${item.repasseP.toLocaleString('pt-BR',{minimumFractionDigits:2})}<br>`;
-                        if (item.repasseE > 0) repasseItemHtml += `E: R$ ${item.repasseE.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                        if (item.repPC > 0) repasseItemHtml += `P: R$ ${item.repPC.toLocaleString('pt-BR',{minimumFractionDigits:2})}<br>`;
+                        if (item.repEC > 0) repasseItemHtml += `E: R$ ${item.repEC.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                         if (!repasseItemHtml) repasseItemHtml = '-';
                     }
 
@@ -959,9 +1026,9 @@
                         <td style="text-align:center; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:right; color:#dc2626;">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:center; color:#b45309;">R$ ${item.custoUnitario.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
-                        <td style="text-align:right; color:#b45309;">- R$ ${item.custoItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:right; font-weight:bold; color:${item.lucroItem >= 0 ? '#166534' : '#dc2626'};">R$ ${item.lucroItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:center; color:#4d7c0f;">R$ ${item.custo_correto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
+                        <td style="text-align:right; color:#4d7c0f;">- R$ ${item.custoTotalC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:right; font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'};">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                         <td style="text-align:center; color:#7e22ce;">${repasseItemHtml}</td>
                     </tr>`;
                 });
@@ -970,7 +1037,7 @@
             });
             
             html += `<tr>
-                <td colspan="3" style="text-align:right; font-size:14px; font-weight:bold; color:#00855B; padding:10px;">TOTAIS GERAIS DO FILTRO:</td>
+                <td colspan="3" style="text-align:right; font-size:14px; font-weight:bold; color:#00855B; padding:10px;">TOTAIS GERAIS DO FILTRO (CENÁRIO CORRETO):</td>
                 <td style="text-align:right; font-size:14px; font-weight:bold; color:#166534; padding:10px;">R$ ${sumPdfLucro.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
                 <td style="text-align:center; font-size:14px; font-weight:bold; color:#7e22ce; padding:10px;">R$ ${sumPdfRepasse.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
             </tr>`;
