@@ -628,7 +628,7 @@
                                         valor_pago: parseFloat(v.valor_final || v.valor || 0),
                                         quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                         tipo: 'PARTICULAR',
-                                        custo_informado: 0,
+                                        custo_errado: v.custo_errado || 0, // Injeta o custo Atual
                                         dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                     });
                                 }
@@ -648,30 +648,35 @@
                     }
                 });
 
-                // FORMATAÇÃO NO PADRÃO DO REPASSE
+                // FORMATAÇÃO E AGRUPAMENTO DOS DADOS NO PADRÃO DO REPASSE
                 let excelData = dadosFiltrados.map(row => {
-                    let originais = [];
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     
-                    if (row.itens_originais) originais = row.itens_originais;
-                    else if (extras.itens_originais) originais = extras.itens_originais;
+                    // REFLETINDO O CENÁRIO ATUAL (CUSTO ERRADO DO BANCO)
+                    let custoAtual = row.custo_errado !== undefined && row.custo_errado !== null 
+                        ? parseFloat(row.custo_errado) 
+                        : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
 
-                    let custoDb = row.custo_informado || extras.custo_informado || 0;
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
+
+                    // A Trava de Aço: Se tem 'virt_part' no ID ou veio de venda_particular, força a ser Particular
+                    let isPart = false;
+                    let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
+                    if (tipoStr === 'PARTICULAR' || tipoStr.includes('PARTICULAR')) isPart = true;
+                    if (extras.origem && String(extras.origem).toLowerCase().includes('particular')) isPart = true;
+                    if (String(row.id_firebase).includes('virt_part_')) isPart = true;
 
                     return {
                         id_firebase: row.id_firebase,
                         paciente: String(row.paciente || '').toUpperCase().trim(), 
-                        carteirinha: row.carteirinha || "",
                         medicamento: String(row.descricao || '').toUpperCase().trim(), 
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
                         data: dataNormalized, 
-                        competencia: row.competencia,
-                        tipo: String(row.tipo || "MED").toUpperCase(), 
-                        originais: originais,
-                        custo_informado: parseFloat(custoDb) 
+                        tipo: tipoStr, 
+                        isParticular: isPart, 
+                        custo_informado: parseFloat(custoAtual) // Usando o custo ATUAL na tela
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -686,8 +691,8 @@
                     const p = d.paciente; 
                     if (!patientsTableObj[p]) {
                         patientsTableObj[p] = { 
-                            name: p, carteirinha: d.carteirinha, 
-                            items: [], pId: null, pName: '', eId: null, eName: ''
+                            name: p, items: [], 
+                            pId: null, pName: '', eId: null, eName: ''
                         };
                     }
                     
@@ -723,11 +728,14 @@
                 let listaRenderPacienteHtmlMap = new Map(); 
 
                 // ------------------------------------------------
-                // 3. CALCULAR REPASSES (CLONE EXATO DO MEDICAL-REPASS)
+                // 3. CALCULAR REPASSES (CENÁRIO ATUAL)
                 // ------------------------------------------------
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     
+                    // Pula se o médico selecionado no Dashboard não tem vínculo com o paciente
+                    if (pat.pId !== docId && pat.eId !== docId) return;
+
                     const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                     let hasTratamentoRepasseParaEsteMedico = false;
                     let repUnimedPac = 0;
@@ -773,8 +781,7 @@
                                 totalAtendimentosTrat++;
                                 datesOfPac.push(item.data);
                                 
-                                // A TRAVA DE AÇO AQUI! item.tipo identico ao Repasse
-                                if (item.tipo === 'PARTICULAR') {
+                                if (item.isParticular) {
                                     valorTratamentoParticular += repParaOmedicoAqui;
                                     repPartPac += repParaOmedicoAqui;
                                     atendimentosTratPart++;
