@@ -20,7 +20,7 @@
         .content-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; }
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; } .form-group { flex: 1; }
         .total-preview { background: #F0FDF4; padding: 15px; border-radius: 10px; border: 1px solid #BBF7D0; margin-top: 10px; text-align: center; }
-        .total-preview strong { font-size: 24px; color: var(--primary); }
+        .total-preview strong { font-size: 24px; color: #166534; }
         
         /* Badges de Tipo */
         .badge-type { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
@@ -32,7 +32,9 @@
         .actions-cell { display: flex; gap: 5px; justify-content: center; }
         .btn-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; transition: 0.2s; color: white; }
         .btn-edit { background: #3182ce; }
+        .btn-edit:hover { background: #2b6cb0; }
         .btn-delete { background: #e53e3e; } 
+        .btn-delete:hover { background: #c53030; }
         
         /* Barra de Ferramentas (Busca e Bulk) */
         .toolbar-container {
@@ -40,6 +42,13 @@
         }
         .search-filters { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
         .bulk-actions { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 6px; }
+
+        /* Estilização dos Botões de Formulário */
+        .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; justify-content: center; transition: 0.2s; border: none; color: white; }
+        .btn-success { background: #00995D; } 
+        .btn-success:hover { background: #007a4a; }
+        .btn-warning { background: #f59e0b; color: #fff; } 
+        .btn-warning:hover { background: #d97706; }
 
         @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } }
     </style>
@@ -141,7 +150,7 @@
                                 <option value="Orcamento">Mudar para Orçamento</option>
                                 <option value="Ambos">Mudar para Todos</option>
                             </select>
-                            <button class="btn btn-edit" style="width: auto; padding: 5px 15px; height: 35px;" onclick="applyBulkUpdate()">
+                            <button class="btn btn-success" style="width: auto; padding: 5px 15px; height: 35px;" onclick="applyBulkUpdate()">
                                 Aplicar
                             </button>
                         </div>
@@ -161,7 +170,7 @@
                                 </tr>
                             </thead>
                             <tbody id="procList">
-                                <tr><td colspan="5" style="text-align:center;">Carregando...</td></tr>
+                                <tr><td colspan="5" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -173,10 +182,17 @@
     <script>
         let proceduresList = {}; 
 
-        document.addEventListener('DOMContentLoaded', () => { 
-            initGlobal('procedures', 'Procedimentos'); 
-            loadProcedures(); 
-        });
+        // INICIALIZAÇÃO BLINDADA
+        function startApp() {
+            if (typeof initGlobal !== 'undefined') {
+                initGlobal('procedures', 'Procedimentos'); 
+                loadProcedures(); 
+            } else {
+                setTimeout(startApp, 100);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', startApp);
 
         function getSafeFloat(val) {
             let v = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.') || 0);
@@ -199,6 +215,7 @@
             e.preventDefault();
             
             const id = document.getElementById('editingId').value;
+            const btnSave = document.getElementById('btnSave');
             
             const proc = {
                 tipo: document.getElementById('procType').value,
@@ -212,10 +229,12 @@
             proc.preco = proc.custo_procedimento; 
 
             const method = id ? 'PUT' : 'POST';
-            const url = id ? `${API_BASE_URL}/procedimentos/${id}` : `${API_BASE_URL}/procedimentos`;
+            const url = id ? `${API_BASE_URL}/procedimentos/${encodeURIComponent(id)}` : `${API_BASE_URL}/procedimentos`;
+
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            btnSave.disabled = true;
 
             try {
-                // BLINDADO
                 await fetch(url, { 
                     method: method, 
                     headers: {
@@ -224,23 +243,27 @@
                     },
                     body: JSON.stringify(proc) 
                 });
-                alert(id ? 'Atualizado com sucesso!' : 'Cadastrado com sucesso!');
                 resetForm();
-                loadProcedures();
+                await loadProcedures();
             } catch(err) {
                 alert('Erro ao salvar: ' + err.message);
+            } finally {
+                btnSave.innerHTML = '<i class="fas fa-save"></i> Salvar';
+                btnSave.disabled = false;
             }
         }
 
         async function loadProcedures() {
             try {
-                // BLINDADO
                 const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
-                const rawData = await res.json();
-                proceduresList = normalizeData(rawData);
-                renderList(); 
+                if(res.ok) {
+                    const rawData = await res.json();
+                    proceduresList = normalizeData(rawData);
+                    renderList(); 
+                }
             } catch(err) {
                 console.error(err);
+                document.getElementById('procList').innerHTML = '<tr><td colspan="5" style="text-align:center; color: red;">Erro de conexão.</td></tr>';
             }
         }
 
@@ -252,7 +275,11 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filterType = document.getElementById('filterType').value;
 
-            let items = Object.entries(proceduresList).map(([id, p]) => ({ id, ...p }));
+            // 💡 CORREÇÃO DO CONFLITO DE IDENTIDADE:
+            // Cria um array de itens garantindo que a Chave do Banco seja sempre preservada em `unique_key`
+            let items = Object.entries(proceduresList).map(([key, p]) => {
+                return { ...p, unique_key: key };
+            });
 
             if (searchTerm) items = items.filter(p => (p.nome || "").toLowerCase().includes(searchTerm));
             if (filterType) items = items.filter(p => p.tipo === filterType);
@@ -260,7 +287,7 @@
             items.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
 
             if(items.length === 0) {
-                return list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum procedimento encontrado.</td></tr>';
+                return list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: #6b7280;">Nenhum procedimento encontrado.</td></tr>';
             }
 
             const fmt = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -287,17 +314,22 @@
                     tipoLabel = 'Todos';
                 }
 
+                // USO DO "unique_key" PARA EVITAR CONFLITO NO ONCLICK E NO CHECKBOX
                 list.innerHTML += `
                     <tr>
                         <td style="text-align: center;">
-                            <input type="checkbox" class="proc-checkbox" value="${p.id}">
+                            <input type="checkbox" class="proc-checkbox" value="${p.unique_key}">
                         </td>
                         <td><span class="badge-type ${tipoClass}">${tipoLabel}</span></td>
-                        <td>${p.nome}</td>
-                        <td style="font-weight:bold">${fmt(tot)}</td>
+                        <td style="font-weight: 500; color: #374151;">${p.nome}</td>
+                        <td style="font-weight:bold; color: #00855B;">${fmt(tot)}</td>
                         <td class="actions-cell">
-                            <button class="btn-icon btn-edit" onclick="editProc('${p.id}')" title="Editar"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon btn-delete" onclick="del('${p.id}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon btn-edit" data-id="${p.unique_key}" onclick="editProc(this.dataset.id)" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-delete" data-id="${p.unique_key}" onclick="deleteProc(this.dataset.id)" title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>`;
             });
@@ -320,8 +352,7 @@
                 const promises = Array.from(selectedChecks).map(chk => {
                     const id = chk.value;
                     const current = proceduresList[id];
-                    // BLINDADO
-                    return fetch(`${API_BASE_URL}/procedimentos/${id}`, {
+                    return fetch(`${API_BASE_URL}/procedimentos/${encodeURIComponent(id)}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -331,18 +362,24 @@
                     });
                 });
                 await Promise.all(promises);
-                alert('Atualizado com sucesso!');
                 loadProcedures();
-            } catch (err) { alert('Erro na atualização.'); }
+            } catch (err) { alert('Erro na atualização em massa.'); }
         }
 
-        function editProc(id) {
+        // FUNÇÃO DE EDIÇÃO BLINDADA
+        window.editProc = function(id) {
             const p = proceduresList[id];
             if(!p) return;
 
             document.getElementById('editingId').value = id;
-            document.getElementById('procType').value = p.tipo || 'Particular';
-            document.getElementById('procName').value = p.nome;
+            
+            // Corrige possível divergência de letras maiúsculas/minúsculas no select
+            const typeSelect = document.getElementById('procType');
+            const pTipo = p.tipo || 'Particular';
+            let optionFound = Array.from(typeSelect.options).find(opt => opt.value.toLowerCase() === pTipo.toLowerCase());
+            typeSelect.value = optionFound ? optionFound.value : 'Particular';
+            
+            document.getElementById('procName').value = p.nome || '';
             
             document.getElementById('procMat').value = getSafeFloat(p.custo_material).toFixed(2);
             document.getElementById('procMed').value = getSafeFloat(p.custo_medicamento).toFixed(2);
@@ -353,10 +390,10 @@
 
             document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Procedimento';
             document.getElementById('btnSave').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
-            document.getElementById('btnCancel').style.display = 'block';
+            document.getElementById('btnCancel').style.display = 'flex'; // Mantém o layout alinhado
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        };
 
         function resetForm() {
             document.getElementById('procForm').reset();
@@ -368,16 +405,20 @@
             document.getElementById('btnCancel').style.display = 'none';
         }
 
-        async function del(id) { 
-            if(confirm('Excluir este procedimento?')) { 
-                // BLINDADO
-                await fetch(`${API_BASE_URL}/procedimentos/${id}`, {
-                    method:'DELETE',
-                    headers: API_HEADERS
-                }); 
-                loadProcedures(); 
+        // FUNÇÃO DE EXCLUSÃO BLINDADA
+        window.deleteProc = async function(id) { 
+            if(confirm('Tem certeza que deseja excluir permanentemente este procedimento?')) { 
+                try {
+                    await fetch(`${API_BASE_URL}/procedimentos/${encodeURIComponent(id)}`, {
+                        method:'DELETE',
+                        headers: API_HEADERS
+                    }); 
+                    await loadProcedures(); 
+                } catch(e) {
+                    alert('Falha ao excluir o procedimento.');
+                }
             } 
-        }
+        };
 
         function normalizeData(apiData) {
             if (!apiData) return {};
