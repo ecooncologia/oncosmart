@@ -59,37 +59,70 @@ function injectMenuStyles() {
     const style = document.createElement('style');
     style.id = 'smart-menu-styles';
     style.innerHTML = `
-        .smart-nav-container { display: flex; gap: 10px; padding: 12px 30px; background: #fff; border-bottom: 1px solid #e5e7eb; flex-wrap: wrap; box-shadow: 0 4px 6px -4px rgba(0,0,0,0.05); }
+        /* Fundo Colorido Gradiente da Nav Global */
+        .smart-nav-container { display: flex; gap: 10px; padding: 14px 30px; background: linear-gradient(135deg, #00855B 0%, #00593D 100%); flex-wrap: wrap; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border-bottom: 2px solid #004d34; }
         
         .smart-dropdown { position: relative; display: inline-block; }
         
-        .smart-dropbtn { background: #f9fafb; color: #4b5563; padding: 10px 16px; font-size: 13px; font-weight: 700; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap; }
-        .smart-dropbtn:hover { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
+        /* Botões dos Setores */
+        .smart-dropbtn { background: rgba(255, 255, 255, 0.15); color: #ffffff; padding: 10px 18px; font-size: 13px; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap; backdrop-filter: blur(5px); }
+        .smart-dropbtn:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); transform: translateY(-1px); }
         
-        /* Setor que está com a página aberta fica Verde */
-        .smart-dropdown.active-sector .smart-dropbtn { background: #00995D; color: white; border-color: #00995D; box-shadow: 0 4px 10px rgba(0,153,93,0.2); }
+        /* Setor que está com a página aberta fica Branco com texto Verde */
+        .smart-dropdown.active-sector .smart-dropbtn { background: #ffffff; color: #00855B; border-color: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transform: none; }
         
-        .smart-dropdown-content { display: none; position: absolute; background-color: #fff; min-width: 220px; box-shadow: 0px 10px 25px rgba(0,0,0,0.1); z-index: 1000; border-radius: 10px; border: 1px solid #e5e7eb; top: 100%; left: 0; margin-top: 6px; overflow: hidden; }
-        .smart-dropdown:hover .smart-dropdown-content { display: block; animation: dropFade 0.2s ease-out; }
+        /* Caixa do Dropdown */
+        .smart-dropdown-content { display: none; position: absolute; background-color: #ffffff; min-width: 230px; box-shadow: 0px 15px 35px rgba(0,0,0,0.2); z-index: 9999; border-radius: 10px; border: 1px solid #e5e7eb; top: 100%; left: 0; margin-top: 8px; overflow: hidden; }
         
-        @keyframes dropFade { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        /* Classe que o JS vai usar para abrir no clique */
+        .smart-dropdown-content.show { display: block; animation: dropFade 0.2s ease-out; }
         
-        .smart-drop-item { padding: 12px 18px; text-decoration: none; display: block; color: #374151; font-size: 13px; font-weight: 600; border: none; border-bottom: 1px solid #f3f4f6; transition: 0.2s; cursor: pointer; text-align: left; background: none; width: 100%; }
+        @keyframes dropFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Itens dentro do Menu */
+        .smart-drop-item { padding: 14px 20px; text-decoration: none; display: block; color: #374151; font-size: 13px; font-weight: 600; border: none; border-bottom: 1px solid #f3f4f6; transition: 0.2s; cursor: pointer; text-align: left; background: none; width: 100%; }
         .smart-drop-item:last-child { border-bottom: none; }
-        .smart-drop-item:hover { background-color: #f9fafb; color: #00995D; padding-left: 24px; }
-        .smart-drop-item.active { background-color: #ecfdf5; color: #00995D; border-left: 4px solid #00995D; }
+        .smart-drop-item:hover { background-color: #f0fdf4; color: #00855B; padding-left: 26px; }
+        .smart-drop-item.active { background-color: #ecfdf5; color: #00855B; border-left: 4px solid #00855B; }
         
         /* Mobile View Ajustes */
         @media (max-width: 768px) {
             .smart-nav-container { flex-direction: column; align-items: stretch; padding: 15px; }
             .smart-dropdown { width: 100%; }
             .smart-dropbtn { justify-content: space-between; width: 100%; }
-            .smart-dropdown-content { position: static; box-shadow: none; border: none; border-left: 2px solid #e5e7eb; margin-left: 10px; border-radius: 0; display: none; }
-            .smart-dropdown:focus-within .smart-dropdown-content, .smart-dropdown:active .smart-dropdown-content { display: block; }
+            .smart-dropdown-content { position: static; box-shadow: none; border: none; border-left: 2px solid rgba(255,255,255,0.3); margin-left: 10px; margin-top: 5px; border-radius: 8px; background-color: rgba(255,255,255,0.95); }
         }
     `;
     document.head.appendChild(style);
 }
+
+// Funções para Controle do Menu por Clique
+window.toggleSmartMenu = function(id, event) {
+    event.stopPropagation(); // Evita que o clique feche imediatamente
+    
+    // Pega o menu que foi clicado
+    const targetMenu = document.getElementById(id);
+    const isCurrentlyOpen = targetMenu.classList.contains('show');
+
+    // Fecha todos os outros menus primeiro
+    document.querySelectorAll('.smart-dropdown-content').forEach(el => {
+        el.classList.remove('show');
+    });
+
+    // Se o menu clicado NÃO estava aberto, abre ele
+    if (!isCurrentlyOpen) {
+        targetMenu.classList.add('show');
+    }
+};
+
+// Fecha qualquer menu se o usuário clicar fora
+window.addEventListener('click', function(event) {
+    if (!event.target.matches('.smart-dropbtn') && !event.target.closest('.smart-dropbtn')) {
+        document.querySelectorAll('.smart-dropdown-content.show').forEach(el => {
+            el.classList.remove('show');
+        });
+    }
+});
 
 async function initGlobal(currentPageId, pageTitle) {
     try {
@@ -178,8 +211,8 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
     let html = '<div class="smart-nav-container">';
     let hasVisibleMenu = false;
     
-    // RENDERIZAÇÃO DOS SETORES EM DROPDOWNS
-    MENU_SECTORS.forEach(sector => {
+    // RENDERIZAÇÃO DOS SETORES EM DROPDOWNS (Clique em vez de Hover)
+    MENU_SECTORS.forEach((sector, index) => {
         let sectorHtml = '';
         let sectorHasVisiblePages = false;
         let isSectorActive = false;
@@ -205,13 +238,18 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
             }
         });
 
+        // Gera um ID único para cada menu dropdown
+        const dropId = 'dropMenu' + index;
+
         // Se o usuário tiver pelo menos 1 página liberada nesse setor, exibe o botão do setor
         if (sectorHasVisiblePages) {
             const sectorActiveClass = isSectorActive ? 'active-sector' : '';
             html += `
             <div class="smart-dropdown ${sectorActiveClass}">
-                <button class="smart-dropbtn"><i class="${sector.icon}"></i> ${sector.name} &nbsp;<i class="fas fa-chevron-down" style="font-size:10px; opacity:0.6;"></i></button>
-                <div class="smart-dropdown-content">
+                <button class="smart-dropbtn" onclick="toggleSmartMenu('${dropId}', event)">
+                    <i class="${sector.icon}"></i> ${sector.name} &nbsp;<i class="fas fa-chevron-down" style="font-size:10px; opacity:0.8;"></i>
+                </button>
+                <div id="${dropId}" class="smart-dropdown-content">
                     ${sectorHtml}
                 </div>
             </div>`;
@@ -219,7 +257,9 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
             // Mostra o placeholder "Em breve" apenas para o Admin
             html += `
             <div class="smart-dropdown">
-                <button class="smart-dropbtn" style="opacity: 0.5; cursor: not-allowed;"><i class="${sector.icon}"></i> ${sector.name} <small>(Em breve)</small></button>
+                <button class="smart-dropbtn" style="opacity: 0.5; cursor: not-allowed;">
+                    <i class="${sector.icon}"></i> ${sector.name} <small>(Em breve)</small>
+                </button>
             </div>`;
         }
     });
