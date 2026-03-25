@@ -59,8 +59,20 @@ function injectMenuStyles() {
     const style = document.createElement('style');
     style.id = 'smart-menu-styles';
     style.innerHTML = `
-        /* Fundo Colorido Gradiente da Nav Global */
-        .smart-nav-container { display: flex; gap: 10px; padding: 14px 30px; background: linear-gradient(135deg, #00855B 0%, #00593D 100%); flex-wrap: wrap; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border-bottom: 2px solid #004d34; }
+        /* Fundo Colorido Gradiente da Nav Global com formato de Pílula */
+        .smart-nav-container { 
+            display: flex; 
+            justify-content: center; /* Centraliza os setores */
+            gap: 12px; 
+            padding: 12px 30px; 
+            background: linear-gradient(135deg, #00855B 0%, #00593D 100%); 
+            flex-wrap: wrap; 
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15); 
+            border-bottom: 3px solid #004d34; 
+            border-radius: 16px; /* Cantos arredondados combinando com os painéis */
+            margin-top: 15px; /* Distância do cabeçalho */
+            margin-bottom: 25px; /* Distância do conteúdo da página */
+        }
         
         .smart-dropdown { position: relative; display: inline-block; }
         
@@ -72,12 +84,12 @@ function injectMenuStyles() {
         .smart-dropdown.active-sector .smart-dropbtn { background: #ffffff; color: #00855B; border-color: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transform: none; }
         
         /* Caixa do Dropdown */
-        .smart-dropdown-content { display: none; position: absolute; background-color: #ffffff; min-width: 230px; box-shadow: 0px 15px 35px rgba(0,0,0,0.2); z-index: 9999; border-radius: 10px; border: 1px solid #e5e7eb; top: 100%; left: 0; margin-top: 8px; overflow: hidden; }
+        .smart-dropdown-content { display: none; position: absolute; background-color: #ffffff; min-width: 230px; box-shadow: 0px 15px 35px rgba(0,0,0,0.2); z-index: 9999; border-radius: 10px; border: 1px solid #e5e7eb; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 8px; overflow: hidden; }
         
         /* Classe que o JS vai usar para abrir no clique */
         .smart-dropdown-content.show { display: block; animation: dropFade 0.2s ease-out; }
         
-        @keyframes dropFade { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes dropFade { from { opacity: 0; margin-top: 0px; } to { opacity: 1; margin-top: 8px; } }
         
         /* Itens dentro do Menu */
         .smart-drop-item { padding: 14px 20px; text-decoration: none; display: block; color: #374151; font-size: 13px; font-weight: 600; border: none; border-bottom: 1px solid #f3f4f6; transition: 0.2s; cursor: pointer; text-align: left; background: none; width: 100%; }
@@ -87,10 +99,10 @@ function injectMenuStyles() {
         
         /* Mobile View Ajustes */
         @media (max-width: 768px) {
-            .smart-nav-container { flex-direction: column; align-items: stretch; padding: 15px; }
+            .smart-nav-container { flex-direction: column; align-items: stretch; padding: 15px; border-radius: 12px; }
             .smart-dropdown { width: 100%; }
             .smart-dropbtn { justify-content: space-between; width: 100%; }
-            .smart-dropdown-content { position: static; box-shadow: none; border: none; border-left: 2px solid rgba(255,255,255,0.3); margin-left: 10px; margin-top: 5px; border-radius: 8px; background-color: rgba(255,255,255,0.95); }
+            .smart-dropdown-content { position: static; box-shadow: none; border: none; border-left: 2px solid rgba(255,255,255,0.3); margin-left: 10px; margin-top: 5px; border-radius: 8px; background-color: rgba(255,255,255,0.95); transform: none; }
         }
     `;
     document.head.appendChild(style);
