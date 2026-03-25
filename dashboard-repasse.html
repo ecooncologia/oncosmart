@@ -434,6 +434,31 @@
             return h; 
         }
 
+        function normalizeDate(d) {
+            if (!d) return "";
+            if (typeof d === 'number') {
+                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
+                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
+            }
+            let str = String(d).trim();
+            if (!str) return ""; 
+            
+            if (str.includes('T')) str = str.split('T')[0];
+            if (str.includes('-')) {
+                let p = str.split('-');
+                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            if (str.includes('/')) {
+                let p = str.split('/');
+                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
+                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+                }
+                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
+            }
+            return str;
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('dashboard-repasse', 'Painel de Honorários');
             const now = new Date(); 
@@ -499,29 +524,29 @@
             const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
             const strUnimed = `${months[mo].toUpperCase()}/${yr}`;
 
-            // Plantão e Particulares = Mês Anterior
-            let moAnt = mo - 1;
-            let yrAnt = yr;
-            if(moAnt < 0) { moAnt = 11; yrAnt--; }
-            const compAnt = `${String(moAnt+1).padStart(2,'0')}/${yrAnt}`;
-            const strAnt = `${months[moAnt].toUpperCase()}/${yrAnt}`;
-
             // Mês de Repasse = Mês Selecionado + 2
             let moRep = mo + 2;
             let yrRep = yr;
             if(moRep > 11) { moRep -= 12; yrRep++; }
             const strRepasse = `${months[moRep].toUpperCase()}/${yrRep}`;
 
+            // Plantão e Particulares = Mês Anterior ao Repasse (Mês Selecionado + 1)
+            let moPlantao = mo + 1;
+            let yrPlantao = yr;
+            if(moPlantao > 11) { moPlantao -= 12; yrPlantao++; }
+            const compPlantao = `${String(moPlantao+1).padStart(2,'0')}/${yrPlantao}`;
+            const strPlantao = `${months[moPlantao].toUpperCase()}/${yrPlantao}`;
+
             // Injeção visual das Flags
             document.getElementById('flagUnimed').innerText = strUnimed;
-            document.getElementById('flagPlant').innerText = strAnt;
+            document.getElementById('flagPlant').innerText = strPlantao;
             document.getElementById('flagRepasse').innerText = strRepasse;
             
             // Flags de Impressão
             const printU = document.getElementById('flagUnimedPrint');
             if (printU) printU.innerText = strUnimed;
             const printP = document.getElementById('flagPlantPrint');
-            if (printP) printP.innerText = strAnt;
+            if (printP) printP.innerText = strPlantao;
             const printR = document.getElementById('flagRepassePrint');
             if (printR) printR.innerText = strRepasse;
 
@@ -551,18 +576,18 @@
             
             try {
                 // ------------------------------------------------
-                // 1. SALA MÉDICA (Plantões) - Busca no MÊS ANTERIOR
+                // 1. SALA MÉDICA (Plantões) - Busca no MÊS SELECIONADO + 1
                 // ------------------------------------------------
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
                 const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
-                const holidaysAnt = getHolidays(yrAnt);
-                const daysInMonthAnt = new Date(yrAnt, moAnt+1, 0).getDate();
+                const holidaysPlantao = getHolidays(yrPlantao);
+                const daysInMonthPlantao = new Date(yrPlantao, moPlantao+1, 0).getDate();
 
                 for (let ep of endpoints) {
                     try {
                         let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
-                        let searchId = tabName === 'eco' ? `${yrAnt}-${String(moAnt+1).padStart(2,'0')}` : `${yrAnt}-${String(moAnt+1).padStart(2,'0')}-${tabName}`;
+                        let searchId = tabName === 'eco' ? `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}` : `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}-${tabName}`;
                         
                         const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (r.ok) {
@@ -578,11 +603,11 @@
                             }
 
                             if (dbShifts[docId]) {
-                                for (let i = 1; i <= daysInMonthAnt; i++) {
+                                for (let i = 1; i <= daysInMonthPlantao; i++) {
                                     const val = dbShifts[docId][i];
-                                    const d = new Date(yrAnt, moAnt, i, 12, 0, 0);
-                                    const isoDateStr = `${yrAnt}-${String(moAnt+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                                    const isHol = !!holidaysAnt[isoDateStr];
+                                    const d = new Date(yrPlantao, moPlantao, i, 12, 0, 0);
+                                    const isoDateStr = `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                                    const isHol = !!holidaysPlantao[isoDateStr];
                                     const isWk = d.getDay()===0||d.getDay()===6;
                                     
                                     if(val && val !== 'S') {
@@ -633,12 +658,12 @@
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').toUpperCase();
 
-                    // TRATAMENTO PARTICULAR (Aplicações) - Busca no MÊS ANTERIOR
+                    // TRATAMENTO PARTICULAR (Aplicações) - Busca no MÊS SELECIONADO + 1
                     if (tipoReg.includes('particular') && procNormalizado.includes('APLICA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === compAnt) {
+                            if (vComp === compPlantao) {
                                 const alreadyExists = dadosFiltrados.some(d => {
                                     try {
                                         let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
@@ -667,12 +692,12 @@
                             }
                         }
                     } 
-                    // CONSULTA PARTICULAR - Busca no MÊS ANTERIOR
+                    // CONSULTA PARTICULAR - Busca no MÊS SELECIONADO + 1
                     else if (tipoReg.includes('particular') && !procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === compAnt) {
+                            if (vComp === compPlantao) {
                                 if (v.medico && v.medico.toUpperCase() === doctorName) {
                                     atendimentosConsultaPart++;
                                     valorConsultaParticular += parseCurrency(v.valor_final || v.valor || 0);
@@ -769,6 +794,7 @@
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     
+                    // Pula se o médico selecionado no Dashboard não tem vínculo com o paciente
                     if (pat.pId !== docId && pat.eId !== docId) return;
 
                     const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
