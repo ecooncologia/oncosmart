@@ -275,7 +275,11 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filterType = document.getElementById('filterType').value;
 
-            let items = Object.entries(proceduresList).map(([id, p]) => ({ id, ...p }));
+            // 💡 CORREÇÃO DO CONFLITO DE IDENTIDADE:
+            // Cria um array de itens garantindo que a Chave do Banco seja sempre preservada em `unique_key`
+            let items = Object.entries(proceduresList).map(([key, p]) => {
+                return { ...p, unique_key: key };
+            });
 
             if (searchTerm) items = items.filter(p => (p.nome || "").toLowerCase().includes(searchTerm));
             if (filterType) items = items.filter(p => p.tipo === filterType);
@@ -310,20 +314,20 @@
                     tipoLabel = 'Todos';
                 }
 
-                // USO DO DATA-ID PARA BLINDAGEM DE CARACTERES ESPECIAIS NO ONCLICK
+                // USO DO "unique_key" PARA EVITAR CONFLITO NO ONCLICK E NO CHECKBOX
                 list.innerHTML += `
                     <tr>
                         <td style="text-align: center;">
-                            <input type="checkbox" class="proc-checkbox" value="${p.id}">
+                            <input type="checkbox" class="proc-checkbox" value="${p.unique_key}">
                         </td>
                         <td><span class="badge-type ${tipoClass}">${tipoLabel}</span></td>
                         <td style="font-weight: 500; color: #374151;">${p.nome}</td>
                         <td style="font-weight:bold; color: #00855B;">${fmt(tot)}</td>
                         <td class="actions-cell">
-                            <button class="btn-icon btn-edit" data-id="${p.id}" onclick="editProc(this.dataset.id)" title="Editar">
+                            <button class="btn-icon btn-edit" data-id="${p.unique_key}" onclick="editProc(this.dataset.id)" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn-icon btn-delete" data-id="${p.id}" onclick="deleteProc(this.dataset.id)" title="Excluir">
+                            <button class="btn-icon btn-delete" data-id="${p.unique_key}" onclick="deleteProc(this.dataset.id)" title="Excluir">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
