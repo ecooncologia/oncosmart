@@ -108,11 +108,11 @@
         .bg-atual { background-color: #eff6ff; } /* Azul bebê */
         .bg-futuro { background-color: #ecfccb; } /* Verde clarinho */
         
-        /* TOOLTIPS DISCRETOS */
+        /* TOOLTIPS DISCRETOS (Agora abrem para baixo para não sumir atrás dos filtros) */
         .info-tip { position: relative; display: inline-block; margin-left: 6px; cursor: help; color: rgba(255,255,255,0.7); transition: 0.2s; }
         .info-tip:hover { color: #fff; }
-        .info-tip .tip-text { visibility: hidden; width: 260px; background-color: #1f2937; color: #f9fafb; text-align: left; border-radius: 8px; padding: 12px; position: absolute; z-index: 100; bottom: 130%; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: normal; line-height: 1.5; opacity: 0; transition: opacity 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); white-space: normal; letter-spacing: normal; text-transform: none; }
-        .info-tip .tip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: #1f2937 transparent transparent transparent; }
+        .info-tip .tip-text { visibility: hidden; width: 260px; background-color: #1f2937; color: #f9fafb; text-align: left; border-radius: 8px; padding: 12px; position: absolute; z-index: 9999; top: 150%; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: normal; line-height: 1.5; opacity: 0; transition: opacity 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); white-space: normal; letter-spacing: normal; text-transform: none; }
+        .info-tip .tip-text::after { content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: transparent transparent #1f2937 transparent; }
         .info-tip:hover .tip-text { visibility: visible; opacity: 1; }
     </style>
 </head>
@@ -774,8 +774,10 @@
                 
                 const thAtual = document.getElementById('thRepasseAtual');
                 const thFuturo = document.getElementById('thRepasseFuturo');
+                
+                // Aplica a Tag apenas no ATUAL e limpa o FUTURO
                 if (thAtual) thAtual.innerHTML = `Repasse<br>${tagHtml}`;
-                if (thFuturo) thFuturo.innerHTML = `Repasse<br>${tagHtml}`;
+                if (thFuturo) thFuturo.innerHTML = `Repasse`;
             }
 
             const filterPatient = document.getElementById('filterPatient').value.toUpperCase();
