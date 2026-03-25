@@ -20,7 +20,7 @@
         .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; }
         
         /* Controles do Topo */
-        .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
+        .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
         .input-group { display: flex; flex-direction: column; gap: 6px; }
@@ -28,7 +28,7 @@
         .input-field { padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; color: #374151; height: 42px; outline: none; transition: 0.2s; background: #f9fafb; cursor: pointer; }
         .input-field:focus { border-color: #00995D; background: #fff; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
         
-        .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: 20px;}
         .btn-print:hover { background: #374151; transform: translateY(-2px); }
 
         .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
@@ -123,6 +123,7 @@
             
             .no-print { display: none !important; }
             .print-only { display: inline-block !important; font-weight: 800; color: #111827; }
+            .print-only-flex { display: flex !important; }
             
             .giant-list-card { page-break-before: always !important; break-before: page !important; margin-top: 0 !important; border: none !important; box-shadow: none !important; }
             .giant-list-card .detail-header { justify-content: center !important; font-size: 16px !important; border-bottom: 2px solid #00995D !important; margin-bottom: 10px; padding: 0 0 10px 0 !important; background: transparent !important;}
@@ -139,7 +140,7 @@
         <div id="global-nav"></div>
 
         <div class="controls">
-            <div class="controls-group">
+            <div class="controls-group" style="flex-wrap: nowrap;">
                 <div class="input-group" style="width: 320px;">
                     <label class="label-title">Selecione o Médico</label>
                     <select id="dashSelectDoctor" class="input-field"></select>
@@ -153,6 +154,19 @@
                     <select id="dashSelectYear" class="input-field"></select>
                 </div>
             </div>
+
+            <div id="dashFlags" style="display: none; flex-direction: column; gap: 8px; border-left: 2px solid #e5e7eb; padding-left: 20px; margin-left: auto;">
+                <div style="font-size: 11px; font-weight: 800; color: #0284c7; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-notes-medical" style="width: 14px;"></i> Comp. Unimed: <span id="flagUnimed" style="color: #111827; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">-</span>
+                </div>
+                <div style="font-size: 11px; font-weight: 800; color: #b45309; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-stethoscope" style="width: 14px;"></i> Comp. Plantão/Part: <span id="flagPlant" style="color: #111827; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">-</span>
+                </div>
+                <div style="font-size: 11px; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-hand-holding-usd" style="width: 14px;"></i> Mês de Repasse: <span id="flagRepasse" style="color: #111827; background: #dcfce7; padding: 2px 6px; border-radius: 4px;">-</span>
+                </div>
+            </div>
+
             <button class="btn-print" onclick="window.print()">
                 <i class="fas fa-print"></i> Imprimir Painel
             </button>
@@ -167,6 +181,12 @@
                         <h1><i class="fas fa-file-invoice-dollar"></i> Relatório de Honorários</h1>
                         <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Período: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
                     </div>
+                </div>
+                
+                <div class="print-only-flex" style="display: none; flex-direction: column; gap: 4px; align-items: flex-end; font-size: 10px; font-weight: bold;">
+                    <div style="color: #0284c7;">Comp. Unimed: <span id="flagUnimedPrint" style="color: #000;">-</span></div>
+                    <div style="color: #b45309;">Comp. Plantões/Part: <span id="flagPlantPrint" style="color: #000;">-</span></div>
+                    <div style="color: #166534;">Mês de Repasse: <span id="flagRepassePrint" style="color: #000;">-</span></div>
                 </div>
             </div>
 
@@ -490,11 +510,33 @@
 
             if (!docId) {
                 document.getElementById('modernDashboard').style.display = 'none';
+                document.getElementById('dashFlags').style.display = 'none';
                 return;
             }
 
             document.getElementById('modernDashboard').style.display = 'block';
+            document.getElementById('dashFlags').style.display = 'flex';
             
+            // 💡 CÁLCULO E PREENCHIMENTO DAS 3 FLAGS INFORMATIVAS
+            const compStrDisplay = `${months[mo].toUpperCase()}/${yr}`;
+            let repMo = mo + 2;
+            let repYr = yr;
+            if(repMo > 11) { repMo -= 12; repYr++; }
+            const repStrDisplay = `${months[repMo].toUpperCase()}/${repYr}`;
+
+            // Na Tela
+            document.getElementById('flagUnimed').innerText = compStrDisplay;
+            document.getElementById('flagPlant').innerText = compStrDisplay;
+            document.getElementById('flagRepasse').innerText = repStrDisplay;
+            
+            // Na Impressão
+            const printU = document.getElementById('flagUnimedPrint');
+            if (printU) printU.innerText = compStrDisplay;
+            const printP = document.getElementById('flagPlantPrint');
+            if (printP) printP.innerText = compStrDisplay;
+            const printR = document.getElementById('flagRepassePrint');
+            if (printR) printR.innerText = repStrDisplay;
+
             document.getElementById('inpConvQtd').value = "0";
             document.getElementById('inpConvValor').value = "0.00";
             document.getElementById('printConvQtd').innerText = "0";
