@@ -20,7 +20,7 @@
         .container { width: 100%; max-width: 100%; margin: 0 auto; padding: 20px 40px; }
         
         /* Controles do Topo */
-        .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
+        .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; border: 1px solid #f9fafb; position: relative; z-index: 10;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
         .input-group { display: flex; flex-direction: column; gap: 6px; }
@@ -28,7 +28,7 @@
         .input-field { padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; color: #374151; height: 42px; outline: none; transition: 0.2s; background: #f9fafb; cursor: pointer; }
         .input-field:focus { border-color: #00995D; background: #fff; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
         
-        .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-print { background: #4b5563; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: 20px;}
         .btn-print:hover { background: #374151; transform: translateY(-2px); }
 
         .modern-dashboard { display: none; animation: slideUp 0.4s ease-out; }
@@ -123,6 +123,7 @@
             
             .no-print { display: none !important; }
             .print-only { display: inline-block !important; font-weight: 800; color: #111827; }
+            .print-only-flex { display: flex !important; }
             
             .giant-list-card { page-break-before: always !important; break-before: page !important; margin-top: 0 !important; border: none !important; box-shadow: none !important; }
             .giant-list-card .detail-header { justify-content: center !important; font-size: 16px !important; border-bottom: 2px solid #00995D !important; margin-bottom: 10px; padding: 0 0 10px 0 !important; background: transparent !important;}
@@ -139,7 +140,7 @@
         <div id="global-nav"></div>
 
         <div class="controls">
-            <div class="controls-group">
+            <div class="controls-group" style="flex-wrap: nowrap;">
                 <div class="input-group" style="width: 320px;">
                     <label class="label-title">Selecione o Médico</label>
                     <select id="dashSelectDoctor" class="input-field"></select>
@@ -153,6 +154,19 @@
                     <select id="dashSelectYear" class="input-field"></select>
                 </div>
             </div>
+
+            <div id="dashFlags" style="display: none; flex-direction: column; gap: 8px; border-left: 2px solid #e5e7eb; padding-left: 20px; margin-left: auto;">
+                <div style="font-size: 11px; font-weight: 800; color: #0284c7; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-notes-medical" style="width: 14px;"></i> Comp. Unimed: <span id="flagUnimed" style="color: #111827; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">-</span>
+                </div>
+                <div style="font-size: 11px; font-weight: 800; color: #b45309; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-stethoscope" style="width: 14px;"></i> Comp. Plantão/Part: <span id="flagPlant" style="color: #111827; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">-</span>
+                </div>
+                <div style="font-size: 11px; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-hand-holding-usd" style="width: 14px;"></i> Mês de Repasse: <span id="flagRepasse" style="color: #111827; background: #dcfce7; padding: 2px 6px; border-radius: 4px;">-</span>
+                </div>
+            </div>
+
             <button class="btn-print" onclick="window.print()">
                 <i class="fas fa-print"></i> Imprimir Painel
             </button>
@@ -165,8 +179,14 @@
                     <img src="https://imgur.com/nWWyEBG.png" alt="Logo Eco" class="print-logo">
                     <div>
                         <h1><i class="fas fa-file-invoice-dollar"></i> Relatório de Honorários</h1>
-                        <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Período: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
+                        <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Período Selecionado: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
                     </div>
+                </div>
+                
+                <div class="print-only-flex" style="display: none; flex-direction: column; gap: 4px; align-items: flex-end; font-size: 10px; font-weight: bold;">
+                    <div style="color: #0284c7;">Comp. Unimed: <span id="flagUnimedPrint" style="color: #000;">-</span></div>
+                    <div style="color: #b45309;">Comp. Plantões/Part: <span id="flagPlantPrint" style="color: #000;">-</span></div>
+                    <div style="color: #166534;">Mês de Repasse: <span id="flagRepassePrint" style="color: #000;">-</span></div>
                 </div>
             </div>
 
@@ -490,11 +510,46 @@
 
             if (!docId) {
                 document.getElementById('modernDashboard').style.display = 'none';
+                document.getElementById('dashFlags').style.display = 'none';
                 return;
             }
 
             document.getElementById('modernDashboard').style.display = 'block';
+            document.getElementById('dashFlags').style.display = 'flex';
             
+            // ------------------------------------------------
+            // 💡 CALCULO DE COMPETÊNCIAS E FLAGS
+            // ------------------------------------------------
+            // Unimed = Mês Selecionado
+            const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
+            const strUnimed = `${months[mo].toUpperCase()}/${yr}`;
+
+            // Mês de Repasse = Mês Selecionado + 2
+            let moRep = mo + 2;
+            let yrRep = yr;
+            if(moRep > 11) { moRep -= 12; yrRep++; }
+            const strRepasse = `${months[moRep].toUpperCase()}/${yrRep}`;
+
+            // Plantão e Particulares = Mês Anterior ao Repasse (Mês Selecionado + 1)
+            let moPlantao = mo + 1;
+            let yrPlantao = yr;
+            if(moPlantao > 11) { moPlantao -= 12; yrPlantao++; }
+            const compPlantao = `${String(moPlantao+1).padStart(2,'0')}/${yrPlantao}`;
+            const strPlantao = `${months[moPlantao].toUpperCase()}/${yrPlantao}`;
+
+            // Injeção visual das Flags
+            document.getElementById('flagUnimed').innerText = strUnimed;
+            document.getElementById('flagPlant').innerText = strPlantao;
+            document.getElementById('flagRepasse').innerText = strRepasse;
+            
+            // Flags de Impressão
+            const printU = document.getElementById('flagUnimedPrint');
+            if (printU) printU.innerText = strUnimed;
+            const printP = document.getElementById('flagPlantPrint');
+            if (printP) printP.innerText = strPlantao;
+            const printR = document.getElementById('flagRepassePrint');
+            if (printR) printR.innerText = strRepasse;
+
             document.getElementById('inpConvQtd').value = "0";
             document.getElementById('inpConvValor').value = "0.00";
             document.getElementById('printConvQtd').innerText = "0";
@@ -517,24 +572,22 @@
             const doctor = doctors[docId];
             const doctorName = doctor.nome.toUpperCase();
             document.getElementById('lblDocName').innerText = doctorName;
-            document.getElementById('lblPeriod').innerText = `${months[mo]} ${yr}`.toUpperCase();
+            document.getElementById('lblPeriod').innerText = strUnimed;
             
-            const compStr = `${String(mo+1).padStart(2,'0')}/${yr}`;
-
             try {
                 // ------------------------------------------------
-                // 1. SALA MÉDICA (Plantões)
+                // 1. SALA MÉDICA (Plantões) - Busca no MÊS SELECIONADO + 1
                 // ------------------------------------------------
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
                 const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
-                const holidays = getHolidays(yr);
-                const daysInMonth = new Date(yr, mo+1, 0).getDate();
+                const holidaysPlantao = getHolidays(yrPlantao);
+                const daysInMonthPlantao = new Date(yrPlantao, moPlantao+1, 0).getDate();
 
                 for (let ep of endpoints) {
                     try {
                         let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
-                        let searchId = tabName === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${tabName}`;
+                        let searchId = tabName === 'eco' ? `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}` : `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}-${tabName}`;
                         
                         const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (r.ok) {
@@ -550,11 +603,11 @@
                             }
 
                             if (dbShifts[docId]) {
-                                for (let i = 1; i <= daysInMonth; i++) {
+                                for (let i = 1; i <= daysInMonthPlantao; i++) {
                                     const val = dbShifts[docId][i];
-                                    const d = new Date(yr, mo, i, 12, 0, 0);
-                                    const isoDateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                                    const isHol = !!holidays[isoDateStr];
+                                    const d = new Date(yrPlantao, moPlantao, i, 12, 0, 0);
+                                    const isoDateStr = `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                                    const isHol = !!holidaysPlantao[isoDateStr];
                                     const isWk = d.getDay()===0||d.getDay()===6;
                                     
                                     if(val && val !== 'S') {
@@ -582,7 +635,7 @@
 
 
                 // ------------------------------------------------
-                // 2. INJEÇÃO DE DADOS (Idêntico ao medical-repass)
+                // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
                 // ------------------------------------------------
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
@@ -591,7 +644,9 @@
                 let vendasData = resSales.ok ? normalizeData(await resSales.json()) : {};
                 
                 let arrayBot = Object.values(unimedData);
-                let dadosFiltrados = arrayBot.filter(r => r.competencia === compStr);
+                
+                // Unimed filtra pelo Mês Selecionado
+                let dadosFiltrados = arrayBot.filter(r => r.competencia === compUnimed);
 
                 let valorConsultaParticular = 0; 
                 let atendimentosConsultaPart = 0;
@@ -603,11 +658,12 @@
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').toUpperCase();
 
+                    // TRATAMENTO PARTICULAR (Aplicações) - Busca no MÊS SELECIONADO + 1
                     if (tipoReg.includes('particular') && procNormalizado.includes('APLICA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === compStr) {
+                            if (vComp === compPlantao) {
                                 const alreadyExists = dadosFiltrados.some(d => {
                                     try {
                                         let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
@@ -628,17 +684,20 @@
                                         valor_pago: parseFloat(v.valor_final || v.valor || 0),
                                         quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                         tipo: 'PARTICULAR',
-                                        custo_errado: v.custo_errado || 0, // Injeta o custo Atual
+                                        custo_errado: v.custo_errado || 0,
+                                        custo_informado: v.custo_informado || 0,
                                         dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                     });
                                 }
                             }
                         }
-                    } else if (tipoReg.includes('particular') && !procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
+                    } 
+                    // CONSULTA PARTICULAR - Busca no MÊS SELECIONADO + 1
+                    else if (tipoReg.includes('particular') && !procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === compStr) {
+                            if (vComp === compPlantao) {
                                 if (v.medico && v.medico.toUpperCase() === doctorName) {
                                     atendimentosConsultaPart++;
                                     valorConsultaParticular += parseCurrency(v.valor_final || v.valor || 0);
@@ -652,15 +711,17 @@
                 let excelData = dadosFiltrados.map(row => {
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     
-                    // REFLETINDO O CENÁRIO ATUAL (CUSTO ERRADO DO BANCO)
-                    let custoAtual = row.custo_errado !== undefined && row.custo_errado !== null 
+                    // TRAVA DE SEGURANÇA DO "CENÁRIO ATUAL"
+                    // Tenta usar o custo_errado (que é a base do Atual). Se for 0, resgata o custo_informado (regra antiga).
+                    let custo_informado_antigo = row.custo_informado || extras.custo_informado || 0;
+                    
+                    let custoAtual = (row.custo_errado !== undefined && row.custo_errado !== null && parseFloat(row.custo_errado) > 0)
                         ? parseFloat(row.custo_errado) 
-                        : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
+                        : parseFloat(custo_informado_antigo);
 
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // A Trava de Aço: Se tem 'virt_part' no ID ou veio de venda_particular, força a ser Particular
                     let isPart = false;
                     let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
                     if (tipoStr === 'PARTICULAR' || tipoStr.includes('PARTICULAR')) isPart = true;
@@ -676,7 +737,7 @@
                         data: dataNormalized, 
                         tipo: tipoStr, 
                         isParticular: isPart, 
-                        custo_informado: parseFloat(custoAtual) // Usando o custo ATUAL na tela
+                        custo_informado: parseFloat(custoAtual) // Usando a blindagem anti-zero para manter o repasse igual ao antigo
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -745,6 +806,8 @@
                     pat.items.forEach(item => {
                         let fatItem = Number(item.valor.toFixed(2));
                         let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                        
+                        // O Custo Total aqui agora tem a blindagem, nunca vai zerar indevidamente
                         let custoUnitario = Number(item.custo_informado || 0);
                         let custoTotalItem = Number((custoUnitario * item.mg).toFixed(2));
                         let lucroItem = Number((fatItem - impItem - custoTotalItem).toFixed(2));
@@ -810,7 +873,7 @@
                         listaRenderPacienteHtmlMap.set(pat.name, {
                             nome: pat.name,
                             html: `<tr>
-                                <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compStr}</td>
+                                <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compUnimed}</td>
                                 <td style="font-weight: 600; text-align:center; color: #111827;">${pat.name}</td>
                                 <td style="text-align:center;">${badges.join(' ')}</td>
                             </tr>`
