@@ -107,6 +107,13 @@
         /* Classes de Fundo Suave para as Colunas Específicas */
         .bg-atual { background-color: #eff6ff; } /* Azul bebê */
         .bg-futuro { background-color: #ecfccb; } /* Verde clarinho */
+        
+        /* TOOLTIPS DISCRETOS */
+        .info-tip { position: relative; display: inline-block; margin-left: 6px; cursor: help; color: rgba(255,255,255,0.7); transition: 0.2s; }
+        .info-tip:hover { color: #fff; }
+        .info-tip .tip-text { visibility: hidden; width: 260px; background-color: #1f2937; color: #f9fafb; text-align: left; border-radius: 8px; padding: 12px; position: absolute; z-index: 100; bottom: 130%; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: normal; line-height: 1.5; opacity: 0; transition: opacity 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); white-space: normal; letter-spacing: normal; text-transform: none; }
+        .info-tip .tip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: #1f2937 transparent transparent transparent; }
+        .info-tip:hover .tip-text { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body>
@@ -280,17 +287,27 @@
                                 <th rowspan="2" style="text-align:right;">Fat. Analisado</th>
                                 <th rowspan="2" style="text-align:right; border-right: 1px solid rgba(255,255,255,0.2);">Imposto</th>
                                 
-                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2);">CENÁRIO ATUAL</th>
-                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2);">CENÁRIO FUTURO</th>
+                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2);">
+                                    CENÁRIO ATUAL
+                                    <div class="info-tip"><i class="fas fa-info-circle"></i>
+                                        <span class="tip-text"><b>Como é calculado:</b><br>Utiliza o custo de medicamento originalmente lançado para abater do faturamento, refletindo o repasse atual da clínica.</span>
+                                    </div>
+                                </th>
+                                <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                    CENÁRIO FUTURO
+                                    <div class="info-tip"><i class="fas fa-info-circle"></i>
+                                        <span class="tip-text"><b>Como é calculado:</b><br>Utiliza o custo correto/atualizado do medicamento inserido na tabela para simular a projeção de repasse ideal.</span>
+                                    </div>
+                                </th>
                             </tr>
                             <tr>
                                 <th style="text-align:right; color:white;">Custo Total</th>
                                 <th style="text-align:right; color:white;">Lucro Líq.</th>
-                                <th style="text-align:center; color:white; border-right: 1px solid rgba(255,255,255,0.2);">Repasse</th>
+                                <th id="thRepasseAtual" style="text-align:center; color:white; border-right: 1px solid rgba(255,255,255,0.2);">Repasse</th>
                                 
                                 <th style="text-align:right; color:white;">Custo Total</th>
                                 <th style="text-align:right; color:white;">Lucro Líq.</th>
-                                <th style="text-align:center; color:white;">Repasse</th>
+                                <th id="thRepasseFuturo" style="text-align:center; color:white;">Repasse</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -740,6 +757,26 @@
 
         function renderAnalysisTable() {
             let activeElId = document.activeElement ? document.activeElement.id : null;
+
+            // 💡 CÁLCULO E INJEÇÃO DA TAG DE REPASSE MÊS
+            const mesSelUnimed = parseInt(document.getElementById('selMonthUnimed').value);
+            const anoSelUnimed = parseInt(document.getElementById('selYearUnimed').value);
+            
+            if (!isNaN(mesSelUnimed) && !isNaN(anoSelUnimed)) {
+                let repasseMo = mesSelUnimed + 2;
+                let repasseYr = anoSelUnimed;
+                if (repasseMo > 11) {
+                    repasseMo -= 12;
+                    repasseYr++;
+                }
+                const monthName = months[repasseMo].toUpperCase();
+                const tagHtml = `<div style="font-size:9px; background:rgba(0,0,0,0.2); padding:3px 6px; border-radius:4px; margin-top:5px; display:inline-block; font-weight:bold; letter-spacing: 0.5px; line-height:1;"><i class="fas fa-calendar-check"></i> REPASSADO EM: <span style="color:#fef08a;">${monthName}/${repasseYr}</span></div>`;
+                
+                const thAtual = document.getElementById('thRepasseAtual');
+                const thFuturo = document.getElementById('thRepasseFuturo');
+                if (thAtual) thAtual.innerHTML = `Repasse<br>${tagHtml}`;
+                if (thFuturo) thFuturo.innerHTML = `Repasse<br>${tagHtml}`;
+            }
 
             const filterPatient = document.getElementById('filterPatient').value.toUpperCase();
             const filterRepasseDoc = document.getElementById('filterRepasseDoctor').value; 
