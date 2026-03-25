@@ -179,7 +179,7 @@
                     <img src="https://imgur.com/nWWyEBG.png" alt="Logo Eco" class="print-logo">
                     <div>
                         <h1><i class="fas fa-file-invoice-dollar"></i> Relatório de Honorários</h1>
-                        <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Período: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
+                        <p>Profissional: <strong id="lblDocName" style="color:#111827;">-</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Período Selecionado: <strong id="lblPeriod" style="color:#111827;">-</strong></p>
                     </div>
                 </div>
                 
@@ -434,31 +434,6 @@
             return h; 
         }
 
-        function normalizeDate(d) {
-            if (!d) return "";
-            if (typeof d === 'number') {
-                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
-                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
-            }
-            let str = String(d).trim();
-            if (!str) return ""; 
-            
-            if (str.includes('T')) str = str.split('T')[0];
-            if (str.includes('-')) {
-                let p = str.split('-');
-                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            if (str.includes('/')) {
-                let p = str.split('/');
-                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
-                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-                }
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            return str;
-        }
-
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('dashboard-repasse', 'Painel de Honorários');
             const now = new Date(); 
@@ -517,25 +492,38 @@
             document.getElementById('modernDashboard').style.display = 'block';
             document.getElementById('dashFlags').style.display = 'flex';
             
-            // 💡 CÁLCULO E PREENCHIMENTO DAS 3 FLAGS INFORMATIVAS
-            const compStrDisplay = `${months[mo].toUpperCase()}/${yr}`;
-            let repMo = mo + 2;
-            let repYr = yr;
-            if(repMo > 11) { repMo -= 12; repYr++; }
-            const repStrDisplay = `${months[repMo].toUpperCase()}/${repYr}`;
+            // ------------------------------------------------
+            // 💡 CALCULO DE COMPETÊNCIAS E FLAGS
+            // ------------------------------------------------
+            // Unimed = Mês Selecionado
+            const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
+            const strUnimed = `${months[mo].toUpperCase()}/${yr}`;
 
-            // Na Tela
-            document.getElementById('flagUnimed').innerText = compStrDisplay;
-            document.getElementById('flagPlant').innerText = compStrDisplay;
-            document.getElementById('flagRepasse').innerText = repStrDisplay;
+            // Plantão e Particulares = Mês Anterior
+            let moAnt = mo - 1;
+            let yrAnt = yr;
+            if(moAnt < 0) { moAnt = 11; yrAnt--; }
+            const compAnt = `${String(moAnt+1).padStart(2,'0')}/${yrAnt}`;
+            const strAnt = `${months[moAnt].toUpperCase()}/${yrAnt}`;
+
+            // Mês de Repasse = Mês Selecionado + 2
+            let moRep = mo + 2;
+            let yrRep = yr;
+            if(moRep > 11) { moRep -= 12; yrRep++; }
+            const strRepasse = `${months[moRep].toUpperCase()}/${yrRep}`;
+
+            // Injeção visual das Flags
+            document.getElementById('flagUnimed').innerText = strUnimed;
+            document.getElementById('flagPlant').innerText = strAnt;
+            document.getElementById('flagRepasse').innerText = strRepasse;
             
-            // Na Impressão
+            // Flags de Impressão
             const printU = document.getElementById('flagUnimedPrint');
-            if (printU) printU.innerText = compStrDisplay;
+            if (printU) printU.innerText = strUnimed;
             const printP = document.getElementById('flagPlantPrint');
-            if (printP) printP.innerText = compStrDisplay;
+            if (printP) printP.innerText = strAnt;
             const printR = document.getElementById('flagRepassePrint');
-            if (printR) printR.innerText = repStrDisplay;
+            if (printR) printR.innerText = strRepasse;
 
             document.getElementById('inpConvQtd').value = "0";
             document.getElementById('inpConvValor').value = "0.00";
@@ -559,24 +547,22 @@
             const doctor = doctors[docId];
             const doctorName = doctor.nome.toUpperCase();
             document.getElementById('lblDocName').innerText = doctorName;
-            document.getElementById('lblPeriod').innerText = `${months[mo]} ${yr}`.toUpperCase();
+            document.getElementById('lblPeriod').innerText = strUnimed;
             
-            const compStr = `${String(mo+1).padStart(2,'0')}/${yr}`;
-
             try {
                 // ------------------------------------------------
-                // 1. SALA MÉDICA (Plantões)
+                // 1. SALA MÉDICA (Plantões) - Busca no MÊS ANTERIOR
                 // ------------------------------------------------
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
                 const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
-                const holidays = getHolidays(yr);
-                const daysInMonth = new Date(yr, mo+1, 0).getDate();
+                const holidaysAnt = getHolidays(yrAnt);
+                const daysInMonthAnt = new Date(yrAnt, moAnt+1, 0).getDate();
 
                 for (let ep of endpoints) {
                     try {
                         let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
-                        let searchId = tabName === 'eco' ? `${yr}-${String(mo+1).padStart(2,'0')}` : `${yr}-${String(mo+1).padStart(2,'0')}-${tabName}`;
+                        let searchId = tabName === 'eco' ? `${yrAnt}-${String(moAnt+1).padStart(2,'0')}` : `${yrAnt}-${String(moAnt+1).padStart(2,'0')}-${tabName}`;
                         
                         const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (r.ok) {
@@ -592,11 +578,11 @@
                             }
 
                             if (dbShifts[docId]) {
-                                for (let i = 1; i <= daysInMonth; i++) {
+                                for (let i = 1; i <= daysInMonthAnt; i++) {
                                     const val = dbShifts[docId][i];
-                                    const d = new Date(yr, mo, i, 12, 0, 0);
-                                    const isoDateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                                    const isHol = !!holidays[isoDateStr];
+                                    const d = new Date(yrAnt, moAnt, i, 12, 0, 0);
+                                    const isoDateStr = `${yrAnt}-${String(moAnt+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                                    const isHol = !!holidaysAnt[isoDateStr];
                                     const isWk = d.getDay()===0||d.getDay()===6;
                                     
                                     if(val && val !== 'S') {
@@ -624,7 +610,7 @@
 
 
                 // ------------------------------------------------
-                // 2. INJEÇÃO DE DADOS (Idêntico ao medical-repass)
+                // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
                 // ------------------------------------------------
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
@@ -633,7 +619,9 @@
                 let vendasData = resSales.ok ? normalizeData(await resSales.json()) : {};
                 
                 let arrayBot = Object.values(unimedData);
-                let dadosFiltrados = arrayBot.filter(r => r.competencia === compStr);
+                
+                // Unimed filtra pelo Mês Selecionado
+                let dadosFiltrados = arrayBot.filter(r => r.competencia === compUnimed);
 
                 let valorConsultaParticular = 0; 
                 let atendimentosConsultaPart = 0;
@@ -645,11 +633,12 @@
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').toUpperCase();
 
+                    // TRATAMENTO PARTICULAR (Aplicações) - Busca no MÊS ANTERIOR
                     if (tipoReg.includes('particular') && procNormalizado.includes('APLICA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === compStr) {
+                            if (vComp === compAnt) {
                                 const alreadyExists = dadosFiltrados.some(d => {
                                     try {
                                         let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
@@ -670,17 +659,20 @@
                                         valor_pago: parseFloat(v.valor_final || v.valor || 0),
                                         quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                         tipo: 'PARTICULAR',
-                                        custo_errado: v.custo_errado || 0, // Injeta o custo Atual
+                                        custo_errado: v.custo_errado || 0,
+                                        custo_informado: v.custo_informado || 0,
                                         dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                     });
                                 }
                             }
                         }
-                    } else if (tipoReg.includes('particular') && !procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
+                    } 
+                    // CONSULTA PARTICULAR - Busca no MÊS ANTERIOR
+                    else if (tipoReg.includes('particular') && !procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === compStr) {
+                            if (vComp === compAnt) {
                                 if (v.medico && v.medico.toUpperCase() === doctorName) {
                                     atendimentosConsultaPart++;
                                     valorConsultaParticular += parseCurrency(v.valor_final || v.valor || 0);
@@ -694,15 +686,17 @@
                 let excelData = dadosFiltrados.map(row => {
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     
-                    // REFLETINDO O CENÁRIO ATUAL (CUSTO ERRADO DO BANCO)
-                    let custoAtual = row.custo_errado !== undefined && row.custo_errado !== null 
+                    // TRAVA DE SEGURANÇA DO "CENÁRIO ATUAL"
+                    // Tenta usar o custo_errado (que é a base do Atual). Se for 0, resgata o custo_informado (regra antiga).
+                    let custo_informado_antigo = row.custo_informado || extras.custo_informado || 0;
+                    
+                    let custoAtual = (row.custo_errado !== undefined && row.custo_errado !== null && parseFloat(row.custo_errado) > 0)
                         ? parseFloat(row.custo_errado) 
-                        : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
+                        : parseFloat(custo_informado_antigo);
 
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // A Trava de Aço: Se tem 'virt_part' no ID ou veio de venda_particular, força a ser Particular
                     let isPart = false;
                     let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
                     if (tipoStr === 'PARTICULAR' || tipoStr.includes('PARTICULAR')) isPart = true;
@@ -718,7 +712,7 @@
                         data: dataNormalized, 
                         tipo: tipoStr, 
                         isParticular: isPart, 
-                        custo_informado: parseFloat(custoAtual) // Usando o custo ATUAL na tela
+                        custo_informado: parseFloat(custoAtual) // Usando a blindagem anti-zero para manter o repasse igual ao antigo
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -775,7 +769,6 @@
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     
-                    // Pula se o médico selecionado no Dashboard não tem vínculo com o paciente
                     if (pat.pId !== docId && pat.eId !== docId) return;
 
                     const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
@@ -787,6 +780,8 @@
                     pat.items.forEach(item => {
                         let fatItem = Number(item.valor.toFixed(2));
                         let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                        
+                        // O Custo Total aqui agora tem a blindagem, nunca vai zerar indevidamente
                         let custoUnitario = Number(item.custo_informado || 0);
                         let custoTotalItem = Number((custoUnitario * item.mg).toFixed(2));
                         let lucroItem = Number((fatItem - impItem - custoTotalItem).toFixed(2));
@@ -852,7 +847,7 @@
                         listaRenderPacienteHtmlMap.set(pat.name, {
                             nome: pat.name,
                             html: `<tr>
-                                <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compStr}</td>
+                                <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${datesStr || compUnimed}</td>
                                 <td style="font-weight: 600; text-align:center; color: #111827;">${pat.name}</td>
                                 <td style="text-align:center;">${badges.join(' ')}</td>
                             </tr>`
