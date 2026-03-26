@@ -39,7 +39,8 @@ const APP_PAGES = [
     
     { id: 'helpdesk', label: 'Helpdesk', file: 'helpdesk.html', perm: 'helpdesk' },
     { id: 'kanban', label: 'Trello', file: 'kanban.html', perm: 'kanban' },
-    { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood' }
+    { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood' },
+    { id: 'marketing', label: 'Canvas', file: 'gerador-imagens.html', perm: 'admin' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
@@ -50,7 +51,7 @@ const MENU_SECTORS = [
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: [] }, // Em breve
-    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'atas'] }
+    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'atas', 'marketing'] }
 ];
 
 // Injeta o CSS do Menu Suspenso (Dropdown)
