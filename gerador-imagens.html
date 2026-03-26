@@ -27,6 +27,8 @@
         .btn-primary:hover { background: #007a4a; }
         .btn-danger { background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
+        .btn-secondary:hover { background: #475569; }
 
         /* Galeria de Templates */
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
@@ -66,7 +68,8 @@
         
         .field-body { padding: 15px; display: block; }
         .field-box.minimized .field-body { display: none; }
-        .field-box.minimized .field-header { border-bottom-color: transparent; }
+        .field-box.minimized .field-header { border-bottom-color: transparent; background: #f1f5f9; border-color: #e2e8f0;}
+        .field-box.minimized .field-header h5 { color: #475569; }
 
         .toggle-container { display: flex; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 20px; flex-shrink: 0;}
         .toggle-btn { flex: 1; padding: 12px; border: none; background: none; font-weight: bold; color: #6b7280; cursor: pointer; transition: 0.2s; font-size: 14px;}
@@ -87,11 +90,14 @@
 
         <div class="controls">
             <h2 style="margin: 0; color: #1f2937; font-size: 20px;"><i class="fas fa-magic"></i> Gerador de Artes Oficiais</h2>
-            <div>
+            <div style="display: flex; gap: 10px;">
+                <button id="btnAdminFont" class="btn-secondary" style="display: none;" onclick="triggerFontUpload()"><i class="fas fa-font"></i> Subir Nova Fonte</button>
                 <button id="btnAdminNew" class="btn-primary" style="display: none;" onclick="openAdminPanel()"><i class="fas fa-plus"></i> Novo Template</button>
-                <button id="btnBackGallery" class="btn-primary" style="display: none; background: #6b7280;" onclick="showGallery()"><i class="fas fa-arrow-left"></i> Voltar à Galeria</button>
+                <button id="btnBackGallery" class="btn-secondary" style="display: none;" onclick="showGallery()"><i class="fas fa-arrow-left"></i> Voltar à Galeria</button>
             </div>
         </div>
+        
+        <input type="file" id="fontUploader" accept=".ttf, .otf, .woff, .woff2" style="display: none;" onchange="handleFontUpload(event)">
 
         <div id="galleryView" class="gallery">
             <p style="grid-column: 1/-1; text-align: center; color: #6b7280;"><i class="fas fa-spinner fa-spin"></i> Carregando templates...</p>
@@ -162,7 +168,7 @@
         
         // Estado do Admin
         let editingTemplateId = null;
-        let adminCampos = []; // Array de objetos contendo as configurações dos textos
+        let adminCampos = []; 
         let adminBgImageSrc = null;
         let adminImgObj = new Image();
         
@@ -177,7 +183,8 @@
         let currentGender = 'M';
         let userImgObj = new Image();
 
-        const FONTS = [
+        // Fontes Nativas + Fontes do Banco
+        let FONTS = [
             { name: "Montserrat", family: "'Montserrat', sans-serif" },
             { name: "Arial", family: "Arial, sans-serif" },
             { name: "Roboto", family: "'Roboto', sans-serif" },
@@ -185,13 +192,18 @@
             { name: "Playfair Display", family: "'Playfair Display', serif" },
             { name: "Great Vibes (Cursiva)", family: "'Great Vibes', cursive" }
         ];
+        
+        let customFontsArray = []; // Array cru para salvar no banco
 
         async function startApp() {
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('marketing', 'Gerador de Artes');
                 checkAdmin();
                 setupDragAndDrop();
+                await loadCustomFonts(); // Carrega as fontes do BD primeiro
                 await loadTemplates();
+                // Força as fontes a carregarem no canvas
+                document.fonts.ready.then(() => { if(adminBgImageSrc) drawAdminCanvas(); });
             } else {
                 setTimeout(startApp, 100);
             }
@@ -207,8 +219,79 @@
                 if (perms.admin === true || perms.marketing_admin === true) {
                     isAdmin = true;
                     document.getElementById('btnAdminNew').style.display = 'flex';
+                    document.getElementById('btnAdminFont').style.display = 'flex';
                 }
             }
+        }
+
+        // ==========================================
+        // GESTÃO DE FONTES EXTERNAS NO BD
+        // ==========================================
+        async function loadCustomFonts() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.marketing_fonts && data.marketing_fonts.fonts) {
+                        customFontsArray = data.marketing_fonts.fonts;
+                        
+                        // Injeta as fontes do banco no navegador
+                        for (let f of customFontsArray) {
+                            const fontFace = new FontFace(f.name, `url(${f.base64})`);
+                            await fontFace.load();
+                            document.fonts.add(fontFace);
+                            FONTS.push({ name: `${f.name} (Custom)`, family: `'${f.name}'` });
+                        }
+                    }
+                }
+            } catch(e) { console.error("Erro ao carregar fontes customizadas", e); }
+        }
+
+        function triggerFontUpload() {
+            document.getElementById('fontUploader').click();
+        }
+
+        function handleFontUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const fontName = prompt("Digite um nome para esta fonte (ex: Minha Fonte Elegante):");
+            if (!fontName || fontName.trim() === '') {
+                event.target.value = ''; // Reseta o input
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result;
+                
+                customFontsArray.push({ name: fontName.trim(), base64: base64 });
+                
+                try {
+                    // Salva no Banco
+                    await fetch(`${API_BASE_URL}/system_configs`, {
+                        method: 'POST',
+                        headers: API_HEADERS,
+                        body: JSON.stringify({ id_firebase: 'marketing_fonts', fonts: customFontsArray })
+                    });
+
+                    // Aplica no Navegador imediatamente
+                    const fontFace = new FontFace(fontName.trim(), `url(${base64})`);
+                    await fontFace.load();
+                    document.fonts.add(fontFace);
+                    FONTS.push({ name: `${fontName.trim()} (Custom)`, family: `'${fontName.trim()}'` });
+                    
+                    alert('Fonte adicionada e salva com sucesso!');
+                    if(document.getElementById('adminPanel').style.display === 'block') {
+                        renderAdminFieldsUI(); 
+                        drawAdminCanvas();
+                    }
+                } catch(err) {
+                    alert("Erro ao salvar a fonte no banco de dados.");
+                }
+                event.target.value = ''; // Reseta
+            };
+            reader.readAsDataURL(file);
         }
 
         // ==========================================
@@ -273,7 +356,11 @@
             document.getElementById('editorView').style.display = 'none';
             document.getElementById('galleryView').style.display = 'grid';
             document.getElementById('btnBackGallery').style.display = 'none';
-            if (isAdmin) document.getElementById('btnAdminNew').style.display = 'flex';
+            
+            if (isAdmin) {
+                document.getElementById('btnAdminNew').style.display = 'flex';
+                document.getElementById('btnAdminFont').style.display = 'flex';
+            }
         }
 
         // ==========================================
@@ -294,6 +381,7 @@
             document.getElementById('editorView').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnAdminFont').style.display = 'none';
             document.getElementById('btnBackGallery').style.display = 'flex';
         }
 
@@ -304,12 +392,16 @@
             
             document.getElementById('adminPanelTitle').innerHTML = 'Editando: ' + tpl.nome;
             document.getElementById('tplName').value = tpl.nome;
-            document.getElementById('tplImage').value = ''; // Limpa o input file
+            document.getElementById('tplImage').value = ''; 
             
             adminBgImageSrc = tpl.bg_image;
-            // Clona os campos para não alterar a memória até salvar, e força todos a começarem minimizados
+            
+            // CORREÇÃO DO BUG: Clona e INJETA IDs nos campos antigos caso não tenham
             adminCampos = JSON.parse(JSON.stringify(tpl.campos || []));
-            adminCampos.forEach(c => c.collapsed = true);
+            adminCampos.forEach(c => {
+                c.collapsed = true; // Força minimizar
+                if (!c.id) c.id = generateFieldId(); // Salvação!
+            });
 
             renderAdminFieldsUI();
 
@@ -324,6 +416,7 @@
             document.getElementById('galleryView').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnAdminFont').style.display = 'none';
             document.getElementById('btnBackGallery').style.display = 'flex';
         }
 
@@ -348,7 +441,7 @@
         function clearAdminCanvas() {
             const canvas = document.getElementById('adminCanvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 400; // placeholder size
+            canvas.width = 400; 
             canvas.height = 300;
             ctx.clearRect(0,0,canvas.width,canvas.height);
         }
@@ -406,10 +499,10 @@
             const container = document.getElementById('adminFieldsContainer');
             container.innerHTML = '';
 
-            adminCampos.forEach((c, index) => {
+            adminCampos.forEach((c) => {
                 const isMinimized = c.collapsed ? 'minimized' : '';
                 const iconTgl = c.collapsed ? 'fa-chevron-down' : 'fa-chevron-up';
-                const titleText = c.collapsed ? `${c.label} (Salvo)` : `Editando: ${c.label}`;
+                const titleText = c.collapsed ? `${c.label}` : `Editando: ${c.label}`;
 
                 let fontsOptions = FONTS.map(f => `<option value="${f.family}" ${c.font === f.family ? 'selected' : ''}>${f.name}</option>`).join('');
 
@@ -468,7 +561,7 @@
                         <label class="form-label" style="color: #be185d;">Regra Feminina (Use {texto})</label>
                         <input type="text" class="form-control" value="${c.text_f}" oninput="updateFieldValue('${c.id}', 'text_f', this.value)">
                         
-                        <button class="btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="toggleFieldCollapse('${c.id}')"><i class="fas fa-check"></i> Salvar e Minimizar</button>
+                        <button class="btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="toggleFieldCollapse('${c.id}')"><i class="fas fa-compress-alt"></i> Salvar e Minimizar Campo</button>
                     </div>
                 </div>`;
             });
@@ -488,7 +581,7 @@
             ctx.drawImage(adminImgObj, 0, 0);
 
             // Desenha os campos textuais
-            adminCampos.forEach((c, index) => {
+            adminCampos.forEach((c) => {
                 const textToDraw = c.text_m.replace('{texto}', c.label);
                 const fontStr = `bold ${c.size}px ${c.font || "'Montserrat', sans-serif"}`;
                 
@@ -502,7 +595,7 @@
                 
                 // Salva a largura aproximada para o cálculo de colisão do Mouse (Hitbox)
                 c.cachedWidth = ctx.measureText(textToDraw).width;
-                c.cachedHeight = c.size; // Altura aproximada baseada no tamanho da fonte
+                c.cachedHeight = c.size; 
             });
         }
 
@@ -517,7 +610,6 @@
                 const mouseX = (e.clientX - rect.left) * scaleX;
                 const mouseY = (e.clientY - rect.top) * scaleY;
 
-                // Checa de trás pra frente (para pegar o que está por cima visualmente)
                 for (let i = adminCampos.length - 1; i >= 0; i--) {
                     const c = adminCampos[i];
                     if (!c.cachedWidth) continue;
@@ -543,7 +635,13 @@
                         dragIndex = i;
                         dragOffsetX = mouseX - c.x;
                         dragOffsetY = mouseY - c.y;
-                        return; // Para no primeiro que achar
+                        
+                        // Abre automaticamente o campo que está sendo arrastado
+                        if(adminCampos[i].collapsed) {
+                            adminCampos[i].collapsed = false;
+                            renderAdminFieldsUI();
+                        }
+                        return; 
                     }
                 }
             });
@@ -561,7 +659,6 @@
                     c.x = Math.round(mouseX - dragOffsetX);
                     c.y = Math.round(mouseY - dragOffsetY);
 
-                    // Atualiza os inputs na tela sem recarregar o UI inteiro para não perder o foco
                     const inX = document.getElementById(`uiX_${c.id}`);
                     const inY = document.getElementById(`uiY_${c.id}`);
                     if(inX) inX.value = c.x;
@@ -584,6 +681,7 @@
 
             const payloadCampos = adminCampos.map(c => {
                 return {
+                    id: c.id, // Salva o ID agora
                     label: c.label,
                     text_m: c.text_m,
                     text_f: c.text_f,
@@ -633,6 +731,7 @@
             document.getElementById('adminPanel').style.display = 'none';
             document.getElementById('editorView').style.display = 'block';
             document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnAdminFont').style.display = 'none';
             document.getElementById('btnBackGallery').style.display = 'flex';
 
             document.getElementById('useTplName').innerText = currentTemplate.nome;
