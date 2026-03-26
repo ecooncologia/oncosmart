@@ -55,9 +55,11 @@
         .admin-panel { display: none; background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 15px; }
         .form-label { display: block; font-size: 12px; font-weight: bold; color: #4b5563; margin-bottom: 5px; text-transform: uppercase; }
-        .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none; font-family: inherit; }
         .form-control:focus { border-color: #00995D; box-shadow: 0 0 0 2px rgba(0,153,93,0.1); }
         
+        textarea.form-control { resize: vertical; min-height: 60px; }
+
         .field-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; transition: 0.3s; }
         .field-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #dcfce7; cursor: pointer; border-bottom: 1px solid transparent; }
         .field-header h5 { margin: 0; font-size: 13px; color: #166534; display: flex; align-items: center; gap: 8px; }
@@ -115,7 +117,7 @@
                     <div class="form-group">
                         <label class="form-label">Imagem de Fundo (PNG/JPG)</label>
                         <input type="file" id="tplImage" class="form-control" accept="image/*" onchange="previewAdminImage(event)">
-                        <small style="color: #6b7280; font-size: 11px;">Se estiver editando, deixe em branco para manter a imagem atual.</small>
+                        <small style="color: #6b7280; font-size: 11px;">O sistema reduzirá a imagem automaticamente para evitar travamentos.</small>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 10px;">
@@ -125,7 +127,7 @@
                     
                     <div id="adminFieldsContainer" style="flex: 1; overflow-y: auto; padding-right: 5px;"></div>
 
-                    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 15px; font-size: 16px; padding: 12px;" onclick="saveTemplate()"><i class="fas fa-save"></i> Salvar Template no Banco</button>
+                    <button class="btn-primary" id="btnSaveTemplate" style="width: 100%; justify-content: center; margin-top: 15px; font-size: 16px; padding: 12px;" onclick="saveTemplate()"><i class="fas fa-save"></i> Salvar Template no Banco</button>
                 </div>
                 
                 <div style="background: #f9fafb; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
@@ -193,16 +195,15 @@
             { name: "Great Vibes (Cursiva)", family: "'Great Vibes', cursive" }
         ];
         
-        let customFontsArray = []; // Array cru para salvar no banco
+        let customFontsArray = []; 
 
         async function startApp() {
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('marketing', 'Gerador de Artes');
                 checkAdmin();
                 setupDragAndDrop();
-                await loadCustomFonts(); // Carrega as fontes do BD primeiro
+                await loadCustomFonts(); 
                 await loadTemplates();
-                // Força as fontes a carregarem no canvas
                 document.fonts.ready.then(() => { if(adminBgImageSrc) drawAdminCanvas(); });
             } else {
                 setTimeout(startApp, 100);
@@ -225,6 +226,60 @@
         }
 
         // ==========================================
+        // TEXT WRAPPING (QUEBRA DE LINHA) NO CANVAS
+        // ==========================================
+        function drawFieldText(ctx, c, textToDraw) {
+            const weight = c.isBold ? "bold" : "normal";
+            ctx.font = `${weight} ${c.size}px ${c.font || "'Montserrat', sans-serif"}`;
+            ctx.fillStyle = c.color;
+            ctx.textAlign = c.align || "center";
+            ctx.textBaseline = "middle";
+
+            const lineHeight = c.size * 1.2;
+            const maxWidth = c.maxWidth || 0;
+
+            let lines = [];
+            
+            // Permite quebra de linha manual com \n ou via campo MaxWidth
+            const paragraphs = textToDraw.split('\n');
+            
+            if (maxWidth > 0) {
+                for (let p = 0; p < paragraphs.length; p++) {
+                    let words = paragraphs[p].split(' ');
+                    let currentLine = words[0];
+
+                    for (let i = 1; i < words.length; i++) {
+                        let word = words[i];
+                        let width = ctx.measureText(currentLine + " " + word).width;
+                        if (width < maxWidth) {
+                            currentLine += " " + word;
+                        } else {
+                            lines.push(currentLine);
+                            currentLine = word;
+                        }
+                    }
+                    lines.push(currentLine);
+                }
+            } else {
+                lines = paragraphs;
+            }
+
+            // Centraliza o bloco de texto inteiro verticalmente
+            let startY = c.y - ((lines.length - 1) * lineHeight) / 2;
+            let maxLineWidth = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                let lw = ctx.measureText(lines[i]).width;
+                if (lw > maxLineWidth) maxLineWidth = lw;
+                ctx.fillText(lines[i], c.x, startY + (i * lineHeight));
+            }
+
+            // Salva o tamanho do bloco para o Hitbox do Mouse (Drag and Drop)
+            c.cachedWidth = maxWidth > 0 ? maxWidth : maxLineWidth;
+            c.cachedHeight = lines.length * lineHeight;
+        }
+
+        // ==========================================
         // GESTÃO DE FONTES EXTERNAS NO BD
         // ==========================================
         async function loadCustomFonts() {
@@ -235,7 +290,6 @@
                     if (data.marketing_fonts && data.marketing_fonts.fonts) {
                         customFontsArray = data.marketing_fonts.fonts;
                         
-                        // Injeta as fontes do banco no navegador
                         for (let f of customFontsArray) {
                             const fontFace = new FontFace(f.name, `url(${f.base64})`);
                             await fontFace.load();
@@ -247,9 +301,7 @@
             } catch(e) { console.error("Erro ao carregar fontes customizadas", e); }
         }
 
-        function triggerFontUpload() {
-            document.getElementById('fontUploader').click();
-        }
+        function triggerFontUpload() { document.getElementById('fontUploader').click(); }
 
         function handleFontUpload(event) {
             const file = event.target.files[0];
@@ -257,39 +309,33 @@
             
             const fontName = prompt("Digite um nome para esta fonte (ex: Minha Fonte Elegante):");
             if (!fontName || fontName.trim() === '') {
-                event.target.value = ''; // Reseta o input
+                event.target.value = ''; 
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const base64 = e.target.result;
-                
                 customFontsArray.push({ name: fontName.trim(), base64: base64 });
                 
                 try {
-                    // Salva no Banco
                     await fetch(`${API_BASE_URL}/system_configs`, {
                         method: 'POST',
                         headers: API_HEADERS,
                         body: JSON.stringify({ id_firebase: 'marketing_fonts', fonts: customFontsArray })
                     });
 
-                    // Aplica no Navegador imediatamente
                     const fontFace = new FontFace(fontName.trim(), `url(${base64})`);
                     await fontFace.load();
                     document.fonts.add(fontFace);
                     FONTS.push({ name: `${fontName.trim()} (Custom)`, family: `'${fontName.trim()}'` });
                     
-                    alert('Fonte adicionada e salva com sucesso!');
+                    alert('Fonte adicionada com sucesso!');
                     if(document.getElementById('adminPanel').style.display === 'block') {
-                        renderAdminFieldsUI(); 
-                        drawAdminCanvas();
+                        renderAdminFieldsUI(); drawAdminCanvas();
                     }
-                } catch(err) {
-                    alert("Erro ao salvar a fonte no banco de dados.");
-                }
-                event.target.value = ''; // Reseta
+                } catch(err) { alert("Erro ao salvar a fonte."); }
+                event.target.value = ''; 
             };
             reader.readAsDataURL(file);
         }
@@ -396,11 +442,13 @@
             
             adminBgImageSrc = tpl.bg_image;
             
-            // CORREÇÃO DO BUG: Clona e INJETA IDs nos campos antigos caso não tenham
+            // Força clonagem segura
             adminCampos = JSON.parse(JSON.stringify(tpl.campos || []));
             adminCampos.forEach(c => {
-                c.collapsed = true; // Força minimizar
-                if (!c.id) c.id = generateFieldId(); // Salvação!
+                c.collapsed = true; 
+                if (!c.id) c.id = generateFieldId(); 
+                if (c.isBold === undefined) c.isBold = true; 
+                if (c.maxWidth === undefined) c.maxWidth = 0;
             });
 
             renderAdminFieldsUI();
@@ -426,14 +474,34 @@
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                adminBgImageSrc = e.target.result;
-                adminImgObj.onload = function() {
-                    const canvas = document.getElementById('adminCanvas');
-                    canvas.width = adminImgObj.width;
-                    canvas.height = adminImgObj.height;
-                    drawAdminCanvas();
+                const img = new Image();
+                img.onload = function() {
+                    // COMPRESSÃO AUTOMÁTICA PARA EVITAR ESTOURAR O BANCO (MAX 1920x1080)
+                    const maxW = 1920, maxH = 1080;
+                    let w = img.width, h = img.height;
+                    
+                    if (w > maxW || h > maxH) {
+                        const ratio = Math.min(maxW / w, maxH / h);
+                        w *= ratio; h *= ratio;
+                    }
+                    
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = w; tempCanvas.height = h;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0, w, h);
+                    
+                    // Comprime para JPEG qualidade 85%
+                    adminBgImageSrc = tempCanvas.toDataURL("image/jpeg", 0.85);
+                    
+                    adminImgObj.onload = function() {
+                        const canvas = document.getElementById('adminCanvas');
+                        canvas.width = adminImgObj.width;
+                        canvas.height = adminImgObj.height;
+                        drawAdminCanvas();
+                    }
+                    adminImgObj.src = adminBgImageSrc;
                 }
-                adminImgObj.src = adminBgImageSrc;
+                img.src = e.target.result;
             }
             reader.readAsDataURL(file);
         }
@@ -446,7 +514,6 @@
             ctx.clearRect(0,0,canvas.width,canvas.height);
         }
 
-        // --- Gestão do Array de Campos UI ---
         function generateFieldId() {
             return 'fld_' + Math.random().toString(36).substr(2, 9);
         }
@@ -463,7 +530,9 @@
                 size: 60,
                 align: 'center',
                 font: "'Montserrat', sans-serif",
-                collapsed: false // Abre expandido
+                isBold: true,
+                maxWidth: 0,
+                collapsed: false
             });
             renderAdminFieldsUI();
             drawAdminCanvas();
@@ -486,7 +555,7 @@
         function updateFieldValue(id, prop, value) {
             const campo = adminCampos.find(c => c.id === id);
             if (campo) {
-                if (prop === 'x' || prop === 'y' || prop === 'size') {
+                if (prop === 'x' || prop === 'y' || prop === 'size' || prop === 'maxWidth') {
                     campo[prop] = parseInt(value) || 0;
                 } else {
                     campo[prop] = value;
@@ -546,22 +615,35 @@
                             </div>
                         </div>
                         
-                        <div class="form-group" style="margin-bottom:10px;">
-                            <label class="form-label">Alinhamento do Texto</label>
-                            <select class="form-control" onchange="updateFieldValue('${c.id}', 'align', this.value)">
-                                <option value="center" ${c.align==='center'?'selected':''}>Centralizado (Recomendado)</option>
-                                <option value="left" ${c.align==='left'?'selected':''}>Alinhado à Esquerda</option>
-                                <option value="right" ${c.align==='right'?'selected':''}>Alinhado à Direita</option>
-                            </select>
+                        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap: wrap;">
+                            <div style="flex:1; min-width:100px;">
+                                <label class="form-label">Estilo</label>
+                                <select class="form-control" onchange="updateFieldValue('${c.id}', 'isBold', this.value === 'true')">
+                                    <option value="true" ${c.isBold ? 'selected' : ''}>Negrito</option>
+                                    <option value="false" ${!c.isBold ? 'selected' : ''}>Normal</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; min-width:100px;">
+                                <label class="form-label">Alinhamento</label>
+                                <select class="form-control" onchange="updateFieldValue('${c.id}', 'align', this.value)">
+                                    <option value="center" ${c.align==='center'?'selected':''}>Centro</option>
+                                    <option value="left" ${c.align==='left'?'selected':''}>Esquerda</option>
+                                    <option value="right" ${c.align==='right'?'selected':''}>Direita</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; min-width:100px;">
+                                <label class="form-label">Largura Máx. (px)</label>
+                                <input type="number" class="form-control" value="${c.maxWidth || 0}" placeholder="0 = Infinito" oninput="updateFieldValue('${c.id}', 'maxWidth', this.value)" title="0 = Sem quebra de linha. Se colocar um valor, o texto irá quebrar formando parágrafos automaticamente.">
+                            </div>
                         </div>
 
                         <label class="form-label" style="color: #0284c7;">Regra Masculina (Use {texto})</label>
-                        <input type="text" class="form-control" style="margin-bottom:10px;" value="${c.text_m}" oninput="updateFieldValue('${c.id}', 'text_m', this.value)">
+                        <textarea class="form-control" style="margin-bottom:10px;" oninput="updateFieldValue('${c.id}', 'text_m', this.value)">${c.text_m}</textarea>
 
                         <label class="form-label" style="color: #be185d;">Regra Feminina (Use {texto})</label>
-                        <input type="text" class="form-control" value="${c.text_f}" oninput="updateFieldValue('${c.id}', 'text_f', this.value)">
+                        <textarea class="form-control" oninput="updateFieldValue('${c.id}', 'text_f', this.value)">${c.text_f}</textarea>
                         
-                        <button class="btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="toggleFieldCollapse('${c.id}')"><i class="fas fa-compress-alt"></i> Salvar e Minimizar Campo</button>
+                        <button class="btn-primary" style="width:100%; justify-content:center; margin-top:15px; padding:12px; background: #e2e8f0; color: #1e293b;" onclick="toggleFieldCollapse('${c.id}')"><i class="fas fa-compress-alt"></i> Salvar e Minimizar Campo</button>
                     </div>
                 </div>`;
             });
@@ -576,26 +658,13 @@
             
             if (!adminBgImageSrc || !adminImgObj.width) return;
 
-            // Limpa e redesenha o fundo
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(adminImgObj, 0, 0);
 
-            // Desenha os campos textuais
-            adminCampos.forEach((c) => {
+            // Chama a função centralizada que desenha o texto e faz a quebra (Wrapping)
+            adminCampos.forEach(c => {
                 const textToDraw = c.text_m.replace('{texto}', c.label);
-                const fontStr = `bold ${c.size}px ${c.font || "'Montserrat', sans-serif"}`;
-                
-                ctx.font = fontStr;
-                ctx.fillStyle = c.color;
-                ctx.textAlign = c.align || "center";
-                ctx.textBaseline = "middle";
-
-                // Desenha o texto
-                ctx.fillText(textToDraw, c.x, c.y);
-                
-                // Salva a largura aproximada para o cálculo de colisão do Mouse (Hitbox)
-                c.cachedWidth = ctx.measureText(textToDraw).width;
-                c.cachedHeight = c.size; 
+                drawFieldText(ctx, c, textToDraw);
             });
         }
 
@@ -621,7 +690,7 @@
                     } else if (c.align === 'right') {
                         leftX = c.x - c.cachedWidth;
                         rightX = c.x;
-                    } else { // left
+                    } else { 
                         leftX = c.x;
                         rightX = c.x + c.cachedWidth;
                     }
@@ -629,14 +698,12 @@
                     const topY = c.y - (c.cachedHeight / 2);
                     const bottomY = c.y + (c.cachedHeight / 2);
 
-                    // Deu HIT no texto!
                     if (mouseX >= leftX && mouseX <= rightX && mouseY >= topY && mouseY <= bottomY) {
                         isDragging = true;
                         dragIndex = i;
                         dragOffsetX = mouseX - c.x;
                         dragOffsetY = mouseY - c.y;
                         
-                        // Abre automaticamente o campo que está sendo arrastado
                         if(adminCampos[i].collapsed) {
                             adminCampos[i].collapsed = false;
                             renderAdminFieldsUI();
@@ -681,7 +748,7 @@
 
             const payloadCampos = adminCampos.map(c => {
                 return {
-                    id: c.id, // Salva o ID agora
+                    id: c.id, 
                     label: c.label,
                     text_m: c.text_m,
                     text_f: c.text_f,
@@ -690,24 +757,38 @@
                     color: c.color,
                     size: c.size,
                     align: c.align,
-                    font: c.font
+                    font: c.font,
+                    isBold: c.isBold,
+                    maxWidth: c.maxWidth
                 };
             });
 
             const id = editingTemplateId || `tpl_${Date.now()}`;
             const payload = { id_firebase: id, nome: nome, bg_image: adminBgImageSrc, campos: payloadCampos };
 
+            const btn = document.getElementById('btnSaveTemplate');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            btn.disabled = true;
+
             try {
-                await fetch(`${API_BASE_URL}/templates_imagens`, {
-                    method: 'POST',
+                // Força o ID no Endpoint (PUT para editar, POST para criar novo)
+                const method = editingTemplateId ? 'PUT' : 'POST';
+                const url = editingTemplateId ? `${API_BASE_URL}/templates_imagens/${editingTemplateId}` : `${API_BASE_URL}/templates_imagens`;
+
+                await fetch(url, {
+                    method: method,
                     headers: API_HEADERS,
                     body: JSON.stringify(payload)
                 });
+                
                 alert(editingTemplateId ? 'Template atualizado com sucesso!' : 'Template criado com sucesso!');
                 showGallery();
                 await loadTemplates();
             } catch(e) {
-                alert('Erro ao salvar no banco.');
+                alert('Erro ao salvar no banco. A imagem pode ser muito pesada.');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-save"></i> Salvar Template no Banco';
+                btn.disabled = false;
             }
         }
 
@@ -755,7 +836,7 @@
                     container.innerHTML += `
                         <div class="form-group" style="margin-top: 15px;">
                             <label class="form-label">${campo.label}</label>
-                            <input type="text" id="userInput_${index}" class="form-control" style="border: 2px solid #cbd5e1; font-size:16px;" placeholder="Digite aqui..." onkeyup="renderUserCanvas()">
+                            <textarea id="userInput_${index}" class="form-control" style="border: 2px solid #cbd5e1; font-size:16px; height:80px;" placeholder="Digite aqui..." onkeyup="renderUserCanvas()"></textarea>
                         </div>
                     `;
                 });
@@ -791,12 +872,7 @@
                     let regraAplicada = currentGender === 'M' ? campo.text_m : campo.text_f;
                     let textoFinal = regraAplicada.replace('{texto}', textoDigitado);
 
-                    ctx.font = `bold ${campo.size || 60}px ${campo.font || "'Montserrat', sans-serif"}`;
-                    ctx.fillStyle = campo.color || "#000000";
-                    ctx.textAlign = campo.align || "center";
-                    ctx.textBaseline = "middle";
-
-                    ctx.fillText(textoFinal, campo.x, campo.y);
+                    drawFieldText(ctx, campo, textoFinal);
                 });
             }
         }
