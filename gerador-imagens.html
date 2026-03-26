@@ -7,6 +7,11 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
     <script>
         const versaoApp = Date.now();
         document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
@@ -24,17 +29,22 @@
         .btn-danger:hover { background: #b91c1c; }
 
         /* Galeria de Templates */
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .template-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; cursor: pointer; border: 2px solid transparent; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .template-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; cursor: pointer; border: 2px solid transparent; display: flex; flex-direction: column; }
         .template-card:hover { transform: translateY(-5px); border-color: #00995D; box-shadow: 0 10px 15px rgba(0,153,93,0.1); }
-        .template-img { width: 100%; height: 250px; object-fit: cover; background: #e5e7eb; }
-        .template-info { padding: 15px; text-align: center; font-weight: bold; color: #374151; }
-        .admin-delete-btn { width: 100%; background: #fee2e2; color: #dc2626; border: none; padding: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .template-img { width: 100%; height: 200px; object-fit: cover; background: #e5e7eb; border-bottom: 1px solid #eee; }
+        .template-info { padding: 15px; text-align: center; font-weight: bold; color: #374151; font-size: 14px; flex: 1; display: flex; align-items: center; justify-content: center; }
+        .admin-actions-bar { display: flex; border-top: 1px solid #eee; }
+        .admin-action-btn { flex: 1; border: none; padding: 10px; cursor: pointer; font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s;}
+        .admin-action-btn.edit { background: #f0f9ff; color: #0284c7; }
+        .admin-action-btn.edit:hover { background: #e0f2fe; }
+        .admin-action-btn.delete { background: #fef2f2; color: #dc2626; border-left: 1px solid #eee; }
+        .admin-action-btn.delete:hover { background: #fee2e2; }
 
         /* Painel de Edição (Usuário) */
         .editor-container { display: none; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
         .editor-grid { display: grid; grid-template-columns: 350px 1fr; min-height: 500px; }
-        .editor-sidebar { background: #f8fafc; padding: 20px; border-right: 1px solid #e5e7eb; }
+        .editor-sidebar { background: #f8fafc; padding: 20px; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column;}
         .editor-canvas-area { padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #e2e8f0; }
         
         canvas { max-width: 100%; max-height: 70vh; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 8px; }
@@ -43,14 +53,27 @@
         .admin-panel { display: none; background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 15px; }
         .form-label { display: block; font-size: 12px; font-weight: bold; color: #4b5563; margin-bottom: 5px; text-transform: uppercase; }
-        .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none; }
+        .form-control:focus { border-color: #00995D; box-shadow: 0 0 0 2px rgba(0,153,93,0.1); }
         
-        .field-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; }
-        .remove-field { position: absolute; top: 10px; right: 10px; color: #dc2626; cursor: pointer; background: none; border: none; font-size: 16px; }
+        .field-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; transition: 0.3s; }
+        .field-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #dcfce7; cursor: pointer; border-bottom: 1px solid transparent; }
+        .field-header h5 { margin: 0; font-size: 13px; color: #166534; display: flex; align-items: center; gap: 8px; }
+        .field-header-actions { display: flex; gap: 10px; }
+        .btn-field-action { background: none; border: none; cursor: pointer; color: #6b7280; font-size: 14px; transition: 0.2s; }
+        .btn-field-action:hover { color: #111827; }
+        .btn-field-action.delete:hover { color: #dc2626; }
+        
+        .field-body { padding: 15px; display: block; }
+        .field-box.minimized .field-body { display: none; }
+        .field-box.minimized .field-header { border-bottom-color: transparent; }
 
-        .toggle-container { display: flex; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-        .toggle-btn { flex: 1; padding: 10px; border: none; background: none; font-weight: bold; color: #6b7280; cursor: pointer; transition: 0.2s; }
+        .toggle-container { display: flex; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 20px; flex-shrink: 0;}
+        .toggle-btn { flex: 1; padding: 12px; border: none; background: none; font-weight: bold; color: #6b7280; cursor: pointer; transition: 0.2s; font-size: 14px;}
         .toggle-btn.active { background: #00995D; color: white; }
+
+        .admin-canvas-wrapper { position: relative; cursor: grab; display: inline-block; }
+        .admin-canvas-wrapper:active { cursor: grabbing; }
 
         @media (max-width: 768px) {
             .editor-grid { grid-template-columns: 1fr; }
@@ -65,7 +88,7 @@
         <div class="controls">
             <h2 style="margin: 0; color: #1f2937; font-size: 20px;"><i class="fas fa-magic"></i> Gerador de Artes Oficiais</h2>
             <div>
-                <button id="btnAdminNew" class="btn-primary" style="display: none;" onclick="toggleAdminPanel()"><i class="fas fa-plus"></i> Novo Template (Admin)</button>
+                <button id="btnAdminNew" class="btn-primary" style="display: none;" onclick="openAdminPanel()"><i class="fas fa-plus"></i> Novo Template</button>
                 <button id="btnBackGallery" class="btn-primary" style="display: none; background: #6b7280;" onclick="showGallery()"><i class="fas fa-arrow-left"></i> Voltar à Galeria</button>
             </div>
         </div>
@@ -75,10 +98,10 @@
         </div>
 
         <div id="adminPanel" class="admin-panel">
-            <h3 style="margin-top: 0; color: #00855B; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Configurar Novo Template</h3>
+            <h3 id="adminPanelTitle" style="margin-top: 0; color: #00855B; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Configurar Template</h3>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div>
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
+                <div style="display: flex; flex-direction: column; max-height: 700px;">
                     <div class="form-group">
                         <label class="form-label">Nome do Template</label>
                         <input type="text" id="tplName" class="form-control" placeholder="Ex: Boas Vindas Recepção">
@@ -86,20 +109,26 @@
                     <div class="form-group">
                         <label class="form-label">Imagem de Fundo (PNG/JPG)</label>
                         <input type="file" id="tplImage" class="form-control" accept="image/*" onchange="previewAdminImage(event)">
+                        <small style="color: #6b7280; font-size: 11px;">Se estiver editando, deixe em branco para manter a imagem atual.</small>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-                        <h4 style="margin: 0;">Campos de Texto</h4>
-                        <button class="btn-primary" style="padding: 5px 10px; font-size: 12px;" onclick="addAdminField()"><i class="fas fa-plus"></i> Adicionar Campo</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #1f2937;">Campos de Texto</h4>
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="addAdminField()"><i class="fas fa-plus"></i> Novo Campo</button>
                     </div>
-                    <div id="adminFieldsContainer" style="margin-top: 10px; max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
+                    
+                    <div id="adminFieldsContainer" style="flex: 1; overflow-y: auto; padding-right: 5px;"></div>
 
-                    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 20px; font-size: 16px;" onclick="saveTemplate()"><i class="fas fa-save"></i> Salvar Template no Banco</button>
+                    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 15px; font-size: 16px; padding: 12px;" onclick="saveTemplate()"><i class="fas fa-save"></i> Salvar Template no Banco</button>
                 </div>
                 
-                <div style="background: #f9fafb; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center;">
-                    <p style="font-size: 12px; color: #6b7280; text-align: center; margin-top: 0;">Preview da Imagem<br><b>Dica:</b> Digite os valores (X e Y) de onde o texto deve aparecer.</p>
-                    <canvas id="adminCanvas" style="max-height: 450px; background: white; border: 1px solid #ccc;"></canvas>
+                <div style="background: #f9fafb; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
+                    <div style="background: #e0f2fe; color: #0369a1; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 10px; text-align: center; width: 100%;">
+                        <i class="fas fa-hand-pointer"></i> Arraste os textos com o mouse para posicionar na arte!
+                    </div>
+                    <div class="admin-canvas-wrapper" id="canvasWrapper">
+                        <canvas id="adminCanvas"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -114,9 +143,9 @@
                         <button id="btnFem" class="toggle-btn" onclick="setGender('F')"><i class="fas fa-venus"></i> Feminino</button>
                     </div>
 
-                    <div id="userInputsContainer"></div>
+                    <div id="userInputsContainer" style="flex: 1; overflow-y: auto;"></div>
 
-                    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 30px; font-size: 16px; padding: 15px;" onclick="downloadImage()"><i class="fas fa-download"></i> Baixar Imagem</button>
+                    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 15px; font-size: 16px; padding: 15px;" onclick="downloadImage()"><i class="fas fa-download"></i> Baixar Imagem Gerada</button>
                 </div>
                 
                 <div class="editor-canvas-area">
@@ -130,17 +159,38 @@
     <script>
         let templates = {};
         let isAdmin = false;
-        let adminFieldsCount = 0;
-        let adminBgImage = null;
         
+        // Estado do Admin
+        let editingTemplateId = null;
+        let adminCampos = []; // Array de objetos contendo as configurações dos textos
+        let adminBgImageSrc = null;
+        let adminImgObj = new Image();
+        
+        // Estado do Drag & Drop
+        let isDragging = false;
+        let dragIndex = -1;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        
+        // Estado do Usuário
         let currentTemplate = null;
         let currentGender = 'M';
-        let userBgImage = null;
+        let userImgObj = new Image();
+
+        const FONTS = [
+            { name: "Montserrat", family: "'Montserrat', sans-serif" },
+            { name: "Arial", family: "Arial, sans-serif" },
+            { name: "Roboto", family: "'Roboto', sans-serif" },
+            { name: "Open Sans", family: "'Open Sans', sans-serif" },
+            { name: "Playfair Display", family: "'Playfair Display', serif" },
+            { name: "Great Vibes (Cursiva)", family: "'Great Vibes', cursive" }
+        ];
 
         async function startApp() {
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('marketing', 'Gerador de Artes');
                 checkAdmin();
+                setupDragAndDrop();
                 await loadTemplates();
             } else {
                 setTimeout(startApp, 100);
@@ -154,7 +204,7 @@
             if (userJson) {
                 const user = JSON.parse(userJson);
                 const perms = user.permissoes || {};
-                if (perms.admin === true) {
+                if (perms.admin === true || perms.marketing_admin === true) {
                     isAdmin = true;
                     document.getElementById('btnAdminNew').style.display = 'flex';
                 }
@@ -162,7 +212,7 @@
         }
 
         // ==========================================
-        // MOTOR DE BANCO DE DADOS (CARREGAR E SALVAR)
+        // LISTAGEM E NAVEGAÇÃO
         // ==========================================
         async function loadTemplates() {
             const gallery = document.getElementById('galleryView');
@@ -197,83 +247,25 @@
 
             keys.forEach(id => {
                 const tpl = templates[id];
-                const delBtn = isAdmin ? `<button class="admin-delete-btn" onclick="deleteTemplate(event, '${id}')"><i class="fas fa-trash"></i> Excluir Template</button>` : '';
+                let adminBar = '';
+                
+                if (isAdmin) {
+                    adminBar = `
+                        <div class="admin-actions-bar">
+                            <button class="admin-action-btn edit" onclick="editTemplate(event, '${id}')"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="admin-action-btn delete" onclick="deleteTemplate(event, '${id}')"><i class="fas fa-trash"></i> Excluir</button>
+                        </div>
+                    `;
+                }
                 
                 gallery.innerHTML += `
                     <div class="template-card" onclick="openEditor('${id}')">
                         <img src="${tpl.bg_image}" class="template-img">
                         <div class="template-info">${tpl.nome}</div>
-                        ${delBtn}
+                        ${adminBar}
                     </div>
                 `;
             });
-        }
-
-        async function saveTemplate() {
-            const nome = document.getElementById('tplName').value;
-            if (!nome || !adminBgImage) return alert('Preencha o nome e selecione uma imagem de fundo!');
-
-            const campos = [];
-            for (let i = 1; i <= adminFieldsCount; i++) {
-                const box = document.getElementById(`fbox_${i}`);
-                if (box) {
-                    campos.push({
-                        label: document.getElementById(`fLabel_${i}`).value,
-                        text_m: document.getElementById(`fMasc_${i}`).value,
-                        text_f: document.getElementById(`fFem_${i}`).value,
-                        x: parseInt(document.getElementById(`fX_${i}`).value) || 0,
-                        y: parseInt(document.getElementById(`fY_${i}`).value) || 0,
-                        color: document.getElementById(`fColor_${i}`).value,
-                        size: parseInt(document.getElementById(`fSize_${i}`).value) || 40,
-                        align: document.getElementById(`fAlign_${i}`).value
-                    });
-                }
-            }
-
-            const id = `tpl_${Date.now()}`;
-            const payload = { id_firebase: id, nome: nome, bg_image: adminBgImage, campos: campos };
-
-            try {
-                await fetch(`${API_BASE_URL}/templates_imagens`, {
-                    method: 'POST',
-                    headers: API_HEADERS,
-                    body: JSON.stringify(payload)
-                });
-                alert('Template salvo com sucesso!');
-                showGallery();
-                await loadTemplates();
-            } catch(e) {
-                alert('Erro ao salvar no banco.');
-            }
-        }
-
-        async function deleteTemplate(event, id) {
-            event.stopPropagation();
-            if(!confirm('Certeza que deseja excluir este template?')) return;
-            try {
-                await fetch(`${API_BASE_URL}/templates_imagens/${id}`, { method: 'DELETE', headers: API_HEADERS });
-                await loadTemplates();
-            } catch(e) { alert('Erro ao excluir'); }
-        }
-
-        // ==========================================
-        // PAINEL DE ADMINISTRAÇÃO (CRIAÇÃO)
-        // ==========================================
-        function toggleAdminPanel() {
-            document.getElementById('galleryView').style.display = 'none';
-            document.getElementById('editorView').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            document.getElementById('btnAdminNew').style.display = 'none';
-            document.getElementById('btnBackGallery').style.display = 'flex';
-            
-            document.getElementById('tplName').value = '';
-            document.getElementById('tplImage').value = '';
-            document.getElementById('adminFieldsContainer').innerHTML = '';
-            adminFieldsCount = 0;
-            adminBgImage = null;
-            const canvas = document.getElementById('adminCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0,canvas.width,canvas.height);
         }
 
         function showGallery() {
@@ -284,80 +276,354 @@
             if (isAdmin) document.getElementById('btnAdminNew').style.display = 'flex';
         }
 
+        // ==========================================
+        // PAINEL DE ADMINISTRAÇÃO (CRIAÇÃO / EDIÇÃO)
+        // ==========================================
+        function openAdminPanel() {
+            editingTemplateId = null;
+            document.getElementById('adminPanelTitle').innerHTML = 'Configurar Novo Template';
+            document.getElementById('tplName').value = '';
+            document.getElementById('tplImage').value = '';
+            adminBgImageSrc = null;
+            adminCampos = [];
+            
+            clearAdminCanvas();
+            renderAdminFieldsUI();
+            
+            document.getElementById('galleryView').style.display = 'none';
+            document.getElementById('editorView').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnBackGallery').style.display = 'flex';
+        }
+
+        function editTemplate(event, id) {
+            event.stopPropagation();
+            editingTemplateId = id;
+            const tpl = templates[id];
+            
+            document.getElementById('adminPanelTitle').innerHTML = 'Editando: ' + tpl.nome;
+            document.getElementById('tplName').value = tpl.nome;
+            document.getElementById('tplImage').value = ''; // Limpa o input file
+            
+            adminBgImageSrc = tpl.bg_image;
+            // Clona os campos para não alterar a memória até salvar, e força todos a começarem minimizados
+            adminCampos = JSON.parse(JSON.stringify(tpl.campos || []));
+            adminCampos.forEach(c => c.collapsed = true);
+
+            renderAdminFieldsUI();
+
+            adminImgObj.onload = function() {
+                const canvas = document.getElementById('adminCanvas');
+                canvas.width = adminImgObj.width;
+                canvas.height = adminImgObj.height;
+                drawAdminCanvas();
+            }
+            adminImgObj.src = adminBgImageSrc;
+
+            document.getElementById('galleryView').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnBackGallery').style.display = 'flex';
+        }
+
         function previewAdminImage(event) {
             const file = event.target.files[0];
             if (!file) return;
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                adminBgImage = e.target.result; // Base64
-                
-                // Desenha no canvas para preview visual
-                const img = new Image();
-                img.onload = function() {
+                adminBgImageSrc = e.target.result;
+                adminImgObj.onload = function() {
                     const canvas = document.getElementById('adminCanvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
+                    canvas.width = adminImgObj.width;
+                    canvas.height = adminImgObj.height;
+                    drawAdminCanvas();
                 }
-                img.src = adminBgImage;
+                adminImgObj.src = adminBgImageSrc;
             }
             reader.readAsDataURL(file);
         }
 
+        function clearAdminCanvas() {
+            const canvas = document.getElementById('adminCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400; // placeholder size
+            canvas.height = 300;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+        }
+
+        // --- Gestão do Array de Campos UI ---
+        function generateFieldId() {
+            return 'fld_' + Math.random().toString(36).substr(2, 9);
+        }
+
         function addAdminField() {
-            adminFieldsCount++;
-            const id = adminFieldsCount;
+            adminCampos.push({
+                id: generateFieldId(),
+                label: 'Novo Campo',
+                text_m: '{texto}',
+                text_f: '{texto}',
+                x: adminImgObj.width ? adminImgObj.width / 2 : 200,
+                y: adminImgObj.height ? adminImgObj.height / 2 : 150,
+                color: '#00855B',
+                size: 60,
+                align: 'center',
+                font: "'Montserrat', sans-serif",
+                collapsed: false // Abre expandido
+            });
+            renderAdminFieldsUI();
+            drawAdminCanvas();
+        }
+
+        function removeAdminField(id) {
+            adminCampos = adminCampos.filter(c => c.id !== id);
+            renderAdminFieldsUI();
+            drawAdminCanvas();
+        }
+
+        function toggleFieldCollapse(id) {
+            const campo = adminCampos.find(c => c.id === id);
+            if (campo) {
+                campo.collapsed = !campo.collapsed;
+                renderAdminFieldsUI();
+            }
+        }
+
+        function updateFieldValue(id, prop, value) {
+            const campo = adminCampos.find(c => c.id === id);
+            if (campo) {
+                if (prop === 'x' || prop === 'y' || prop === 'size') {
+                    campo[prop] = parseInt(value) || 0;
+                } else {
+                    campo[prop] = value;
+                }
+                drawAdminCanvas();
+            }
+        }
+
+        function renderAdminFieldsUI() {
             const container = document.getElementById('adminFieldsContainer');
-            
-            const html = `
-            <div class="field-box" id="fbox_${id}">
-                <button class="remove-field" onclick="document.getElementById('fbox_${id}').remove()"><i class="fas fa-times"></i></button>
-                <div class="form-group">
-                    <label class="form-label">Nome do Campo (Para o Usuário)</label>
-                    <input type="text" id="fLabel_${id}" class="form-control" placeholder="Ex: Digite o Nome" value="Nome">
-                </div>
-                
-                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #d1d5db; margin-bottom: 10px;">
-                    <label class="form-label" style="color: #00855B;">Posição na Imagem (Em Pixels)</label>
-                    <div style="display:flex; gap:10px;">
-                        <input type="number" id="fX_${id}" class="form-control" placeholder="Eixo X (Horizontal)" value="500">
-                        <input type="number" id="fY_${id}" class="form-control" placeholder="Eixo Y (Vertical)" value="500">
-                    </div>
-                </div>
+            container.innerHTML = '';
 
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <div style="flex:1;">
-                        <label class="form-label">Tamanho da Fonte</label>
-                        <input type="number" id="fSize_${id}" class="form-control" value="60">
-                    </div>
-                    <div style="flex:1;">
-                        <label class="form-label">Cor</label>
-                        <input type="color" id="fColor_${id}" class="form-control" value="#00855B" style="padding:0; height:38px;">
-                    </div>
-                    <div style="flex:1;">
-                        <label class="form-label">Alinhamento</label>
-                        <select id="fAlign_${id}" class="form-control">
-                            <option value="center">Centralizado</option>
-                            <option value="left">Esquerda</option>
-                            <option value="right">Direita</option>
-                        </select>
-                    </div>
-                </div>
+            adminCampos.forEach((c, index) => {
+                const isMinimized = c.collapsed ? 'minimized' : '';
+                const iconTgl = c.collapsed ? 'fa-chevron-down' : 'fa-chevron-up';
+                const titleText = c.collapsed ? `${c.label} (Salvo)` : `Editando: ${c.label}`;
 
-                <label class="form-label" style="color: #0284c7;">Regra Masculina (Use {texto} para injetar)</label>
-                <input type="text" id="fMasc_${id}" class="form-control" style="margin-bottom:10px;" placeholder="Ex: Bem-vindo, {texto}!" value="{texto}">
+                let fontsOptions = FONTS.map(f => `<option value="${f.family}" ${c.font === f.family ? 'selected' : ''}>${f.name}</option>`).join('');
 
-                <label class="form-label" style="color: #be185d;">Regra Feminina (Use {texto} para injetar)</label>
-                <input type="text" id="fFem_${id}" class="form-control" placeholder="Ex: Bem-vinda, {texto}!" value="{texto}">
-            </div>`;
-            
-            container.insertAdjacentHTML('beforeend', html);
+                container.innerHTML += `
+                <div class="field-box ${isMinimized}">
+                    <div class="field-header" onclick="toggleFieldCollapse('${c.id}')">
+                        <h5><i class="fas fa-font"></i> ${titleText}</h5>
+                        <div class="field-header-actions">
+                            <button class="btn-field-action" title="Minimizar/Expandir"><i class="fas ${iconTgl}"></i></button>
+                            <button class="btn-field-action delete" title="Excluir Campo" onclick="event.stopPropagation(); removeAdminField('${c.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="field-body">
+                        <div class="form-group">
+                            <label class="form-label">Nome do Campo (Para o Usuário)</label>
+                            <input type="text" class="form-control" value="${c.label}" oninput="updateFieldValue('${c.id}', 'label', this.value)">
+                        </div>
+                        
+                        <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #d1d5db; margin-bottom: 10px;">
+                            <label class="form-label" style="color: #00855B;">Posição (Atualizada ao arrastar na imagem)</label>
+                            <div style="display:flex; gap:10px;">
+                                <input type="number" id="uiX_${c.id}" class="form-control" placeholder="Eixo X" value="${c.x}" oninput="updateFieldValue('${c.id}', 'x', this.value)">
+                                <input type="number" id="uiY_${c.id}" class="form-control" placeholder="Eixo Y" value="${c.y}" oninput="updateFieldValue('${c.id}', 'y', this.value)">
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap: wrap;">
+                            <div style="flex:1; min-width:80px;">
+                                <label class="form-label">Tamanho</label>
+                                <input type="number" class="form-control" value="${c.size}" oninput="updateFieldValue('${c.id}', 'size', this.value)">
+                            </div>
+                            <div style="flex:1; min-width:50px;">
+                                <label class="form-label">Cor</label>
+                                <input type="color" class="form-control" value="${c.color}" style="padding:0; height:38px; cursor:pointer;" oninput="updateFieldValue('${c.id}', 'color', this.value)">
+                            </div>
+                            <div style="flex:2; min-width:120px;">
+                                <label class="form-label">Fonte</label>
+                                <select class="form-control" onchange="updateFieldValue('${c.id}', 'font', this.value)">
+                                    ${fontsOptions}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label class="form-label">Alinhamento do Texto</label>
+                            <select class="form-control" onchange="updateFieldValue('${c.id}', 'align', this.value)">
+                                <option value="center" ${c.align==='center'?'selected':''}>Centralizado (Recomendado)</option>
+                                <option value="left" ${c.align==='left'?'selected':''}>Alinhado à Esquerda</option>
+                                <option value="right" ${c.align==='right'?'selected':''}>Alinhado à Direita</option>
+                            </select>
+                        </div>
+
+                        <label class="form-label" style="color: #0284c7;">Regra Masculina (Use {texto})</label>
+                        <input type="text" class="form-control" style="margin-bottom:10px;" value="${c.text_m}" oninput="updateFieldValue('${c.id}', 'text_m', this.value)">
+
+                        <label class="form-label" style="color: #be185d;">Regra Feminina (Use {texto})</label>
+                        <input type="text" class="form-control" value="${c.text_f}" oninput="updateFieldValue('${c.id}', 'text_f', this.value)">
+                        
+                        <button class="btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="toggleFieldCollapse('${c.id}')"><i class="fas fa-check"></i> Salvar e Minimizar</button>
+                    </div>
+                </div>`;
+            });
         }
 
         // ==========================================
-        // PAINEL DE USO (GERADOR FINAL)
+        // LÓGICA DO CANVAS E DRAG & DROP (ADMIN)
+        // ==========================================
+        function drawAdminCanvas() {
+            const canvas = document.getElementById('adminCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!adminBgImageSrc || !adminImgObj.width) return;
+
+            // Limpa e redesenha o fundo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(adminImgObj, 0, 0);
+
+            // Desenha os campos textuais
+            adminCampos.forEach((c, index) => {
+                const textToDraw = c.text_m.replace('{texto}', c.label);
+                const fontStr = `bold ${c.size}px ${c.font || "'Montserrat', sans-serif"}`;
+                
+                ctx.font = fontStr;
+                ctx.fillStyle = c.color;
+                ctx.textAlign = c.align || "center";
+                ctx.textBaseline = "middle";
+
+                // Desenha o texto
+                ctx.fillText(textToDraw, c.x, c.y);
+                
+                // Salva a largura aproximada para o cálculo de colisão do Mouse (Hitbox)
+                c.cachedWidth = ctx.measureText(textToDraw).width;
+                c.cachedHeight = c.size; // Altura aproximada baseada no tamanho da fonte
+            });
+        }
+
+        function setupDragAndDrop() {
+            const canvas = document.getElementById('adminCanvas');
+            
+            canvas.addEventListener('mousedown', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+
+                // Checa de trás pra frente (para pegar o que está por cima visualmente)
+                for (let i = adminCampos.length - 1; i >= 0; i--) {
+                    const c = adminCampos[i];
+                    if (!c.cachedWidth) continue;
+
+                    let leftX, rightX;
+                    if (c.align === 'center') {
+                        leftX = c.x - (c.cachedWidth / 2);
+                        rightX = c.x + (c.cachedWidth / 2);
+                    } else if (c.align === 'right') {
+                        leftX = c.x - c.cachedWidth;
+                        rightX = c.x;
+                    } else { // left
+                        leftX = c.x;
+                        rightX = c.x + c.cachedWidth;
+                    }
+
+                    const topY = c.y - (c.cachedHeight / 2);
+                    const bottomY = c.y + (c.cachedHeight / 2);
+
+                    // Deu HIT no texto!
+                    if (mouseX >= leftX && mouseX <= rightX && mouseY >= topY && mouseY <= bottomY) {
+                        isDragging = true;
+                        dragIndex = i;
+                        dragOffsetX = mouseX - c.x;
+                        dragOffsetY = mouseY - c.y;
+                        return; // Para no primeiro que achar
+                    }
+                }
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                if (isDragging && dragIndex > -1) {
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    
+                    const mouseX = (e.clientX - rect.left) * scaleX;
+                    const mouseY = (e.clientY - rect.top) * scaleY;
+
+                    const c = adminCampos[dragIndex];
+                    c.x = Math.round(mouseX - dragOffsetX);
+                    c.y = Math.round(mouseY - dragOffsetY);
+
+                    // Atualiza os inputs na tela sem recarregar o UI inteiro para não perder o foco
+                    const inX = document.getElementById(`uiX_${c.id}`);
+                    const inY = document.getElementById(`uiY_${c.id}`);
+                    if(inX) inX.value = c.x;
+                    if(inY) inY.value = c.y;
+
+                    drawAdminCanvas();
+                }
+            });
+
+            canvas.addEventListener('mouseup', function() { isDragging = false; dragIndex = -1; });
+            canvas.addEventListener('mouseout', function() { isDragging = false; dragIndex = -1; });
+        }
+
+        // ==========================================
+        // SALVAMENTO NO BANCO
+        // ==========================================
+        async function saveTemplate() {
+            const nome = document.getElementById('tplName').value.trim();
+            if (!nome || !adminBgImageSrc) return alert('Preencha o nome e selecione uma imagem de fundo!');
+
+            const payloadCampos = adminCampos.map(c => {
+                return {
+                    label: c.label,
+                    text_m: c.text_m,
+                    text_f: c.text_f,
+                    x: c.x,
+                    y: c.y,
+                    color: c.color,
+                    size: c.size,
+                    align: c.align,
+                    font: c.font
+                };
+            });
+
+            const id = editingTemplateId || `tpl_${Date.now()}`;
+            const payload = { id_firebase: id, nome: nome, bg_image: adminBgImageSrc, campos: payloadCampos };
+
+            try {
+                await fetch(`${API_BASE_URL}/templates_imagens`, {
+                    method: 'POST',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+                alert(editingTemplateId ? 'Template atualizado com sucesso!' : 'Template criado com sucesso!');
+                showGallery();
+                await loadTemplates();
+            } catch(e) {
+                alert('Erro ao salvar no banco.');
+            }
+        }
+
+        async function deleteTemplate(event, id) {
+            event.stopPropagation();
+            if(!confirm('Certeza que deseja excluir este template permanentemente?')) return;
+            try {
+                await fetch(`${API_BASE_URL}/templates_imagens/${id}`, { method: 'DELETE', headers: API_HEADERS });
+                await loadTemplates();
+            } catch(e) { alert('Erro ao excluir'); }
+        }
+
+        // ==========================================
+        // PAINEL DE USO (GERADOR FINAL PARA USUÁRIOS)
         // ==========================================
         function openEditor(id) {
             currentTemplate = templates[id];
@@ -374,17 +640,14 @@
             document.getElementById('btnMasc').classList.add('active');
             document.getElementById('btnFem').classList.remove('active');
 
-            // Carrega imagem no canvas do usuário
-            userBgImage = new Image();
-            userBgImage.onload = function() {
+            userImgObj.onload = function() {
                 const canvas = document.getElementById('userCanvas');
-                canvas.width = userBgImage.width;
-                canvas.height = userBgImage.height;
-                renderUserCanvas(); // Desenha a primeira vez
+                canvas.width = userImgObj.width;
+                canvas.height = userImgObj.height;
+                renderUserCanvas(); 
             }
-            userBgImage.src = currentTemplate.bg_image;
+            userImgObj.src = currentTemplate.bg_image;
 
-            // Cria os inputs dinâmicos
             const container = document.getElementById('userInputsContainer');
             container.innerHTML = '';
             
@@ -413,34 +676,27 @@
         }
 
         function renderUserCanvas() {
-            if (!userBgImage || !currentTemplate) return;
+            if (!userImgObj.width || !currentTemplate) return;
             
             const canvas = document.getElementById('userCanvas');
             const ctx = canvas.getContext('2d');
             
-            // Desenha o fundo limpo
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(userBgImage, 0, 0);
+            ctx.drawImage(userImgObj, 0, 0);
 
-            // Escreve os textos
             if (currentTemplate.campos) {
                 currentTemplate.campos.forEach((campo, index) => {
                     const inputEl = document.getElementById(`userInput_${index}`);
                     let textoDigitado = inputEl ? inputEl.value : "";
                     
-                    // Aplica a regra de gênero
                     let regraAplicada = currentGender === 'M' ? campo.text_m : campo.text_f;
-                    
-                    // Injeta a palavra digitada no lugar do {texto}
                     let textoFinal = regraAplicada.replace('{texto}', textoDigitado);
 
-                    // Configura a caneta
-                    ctx.font = `bold ${campo.size}px "Segoe UI", Arial, sans-serif`;
-                    ctx.fillStyle = campo.color;
+                    ctx.font = `bold ${campo.size || 60}px ${campo.font || "'Montserrat', sans-serif"}`;
+                    ctx.fillStyle = campo.color || "#000000";
                     ctx.textAlign = campo.align || "center";
                     ctx.textBaseline = "middle";
 
-                    // Escreve na foto
                     ctx.fillText(textoFinal, campo.x, campo.y);
                 });
             }
