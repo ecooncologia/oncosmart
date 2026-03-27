@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Artes - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; max-width: 1400px; margin: 0 auto; }
+        
+        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .btn-primary { background: #00995D; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
+        .btn-primary:hover { background: #007a4a; }
+        .btn-danger { background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
+        .btn-secondary:hover { background: #475569; }
+
+        /* Galeria de Templates */
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .template-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; cursor: pointer; border: 2px solid transparent; display: flex; flex-direction: column; }
+        .template-card:hover { transform: translateY(-5px); border-color: #00995D; box-shadow: 0 10px 15px rgba(0,153,93,0.1); }
+        .template-img { width: 100%; height: 200px; object-fit: cover; background: #e5e7eb; border-bottom: 1px solid #eee; }
+        .template-info { padding: 15px; text-align: center; font-weight: bold; color: #374151; font-size: 14px; flex: 1; display: flex; align-items: center; justify-content: center; }
+        .admin-actions-bar { display: flex; border-top: 1px solid #eee; }
+        .admin-action-btn { flex: 1; border: none; padding: 10px; cursor: pointer; font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s;}
+        .admin-action-btn.edit { background: #f0f9ff; color: #0284c7; }
+        .admin-action-btn.edit:hover { background: #e0f2fe; }
+        .admin-action-btn.delete { background: #fef2f2; color: #dc2626; border-left: 1px solid #eee; }
+        .admin-action-btn.delete:hover { background: #fee2e2; }
+
+        /* Painel de Edição (Usuário) */
+        .editor-container { display: none; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        .editor-grid { display: grid; grid-template-columns: 350px 1fr; min-height: 500px; }
+        .editor-sidebar { background: #f8fafc; padding: 20px; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column;}
+        .editor-canvas-area { padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #e2e8f0; }
+        
+        canvas { max-width: 100%; max-height: 70vh; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 8px; }
+
+        /* Painel de Criação (Admin) */
+        .admin-panel { display: none; background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 12px; font-weight: bold; color: #4b5563; margin-bottom: 5px; text-transform: uppercase; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none; font-family: inherit; }
+        .form-control:focus { border-color: #00995D; box-shadow: 0 0 0 2px rgba(0,153,93,0.1); }
+        
+        textarea.form-control { resize: vertical; min-height: 60px; }
+
+        .field-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; transition: 0.3s; }
+        .field-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #dcfce7; cursor: pointer; border-bottom: 1px solid transparent; }
+        .field-header h5 { margin: 0; font-size: 13px; color: #166534; display: flex; align-items: center; gap: 8px; }
+        .field-header-actions { display: flex; gap: 10px; }
+        .btn-field-action { background: none; border: none; cursor: pointer; color: #6b7280; font-size: 14px; transition: 0.2s; }
+        .btn-field-action:hover { color: #111827; }
+        .btn-field-action.delete:hover { color: #dc2626; }
+        
+        .field-body { padding: 15px; display: block; }
+        .field-box.minimized .field-body { display: none; }
+        .field-box.minimized .field-header { border-bottom-color: transparent; background: #f1f5f9; border-color: #e2e8f0;}
+        .field-box.minimized .field-header h5 { color: #475569; }
+
+        .toggle-container { display: flex; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 20px; flex-shrink: 0;}
+        .toggle-btn { flex: 1; padding: 12px; border: none; background: none; font-weight: bold; color: #6b7280; cursor: pointer; transition: 0.2s; font-size: 14px;}
+        .toggle-btn.active { background: #00995D; color: white; }
+
+        .admin-canvas-wrapper { position: relative; cursor: grab; display: inline-block; }
+        .admin-canvas-wrapper:active { cursor: grabbing; }
+
+        @media (max-width: 768px) {
+            .editor-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="controls">
+            <h2 style="margin: 0; color: #1f2937; font-size: 20px;"><i class="fas fa-magic"></i> Gerador de Artes Oficiais</h2>
+            <div style="display: flex; gap: 10px;">
+                <button id="btnAdminFont" class="btn-secondary" style="display: none;" onclick="triggerFontUpload()"><i class="fas fa-font"></i> Subir Nova Fonte</button>
+                <button id="btnAdminNew" class="btn-primary" style="display: none;" onclick="openAdminPanel()"><i class="fas fa-plus"></i> Novo Template</button>
+                <button id="btnBackGallery" class="btn-secondary" style="display: none;" onclick="showGallery()"><i class="fas fa-arrow-left"></i> Voltar à Galeria</button>
+            </div>
+        </div>
+        
+        <input type="file" id="fontUploader" accept=".ttf, .otf, .woff, .woff2" style="display: none;" onchange="handleFontUpload(event)">
+
+        <div id="galleryView" class="gallery">
+            <p style="grid-column: 1/-1; text-align: center; color: #6b7280;"><i class="fas fa-spinner fa-spin"></i> Carregando templates...</p>
+        </div>
+
+        <div id="adminPanel" class="admin-panel">
+            <h3 id="adminPanelTitle" style="margin-top: 0; color: #00855B; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Configurar Template</h3>
+            
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
+                <div style="display: flex; flex-direction: column; max-height: 700px;">
+                    <div class="form-group">
+                        <label class="form-label">Nome do Template</label>
+                        <input type="text" id="tplName" class="form-control" placeholder="Ex: Boas Vindas Recepção">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Imagem de Fundo (PNG/JPG)</label>
+                        <input type="file" id="tplImage" class="form-control" accept="image/*" onchange="previewAdminImage(event)">
+                        <small style="color: #6b7280; font-size: 11px;">O sistema reduzirá a imagem automaticamente para evitar travamentos.</small>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #1f2937;">Campos de Texto</h4>
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="addAdminField()"><i class="fas fa-plus"></i> Novo Campo</button>
+                    </div>
+                    
+                    <div id="adminFieldsContainer" style="flex: 1; overflow-y: auto; padding-right: 5px;"></div>
+
+                    <button class="btn-primary" id="btnSaveTemplate" style="width: 100%; justify-content: center; margin-top: 15px; font-size: 16px; padding: 12px;" onclick="saveTemplate()"><i class="fas fa-save"></i> Salvar Template no Banco</button>
+                </div>
+                
+                <div style="background: #f9fafb; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
+                    <div style="background: #e0f2fe; color: #0369a1; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 10px; text-align: center; width: 100%;">
+                        <i class="fas fa-hand-pointer"></i> Arraste os textos com o mouse para posicionar na arte!
+                    </div>
+                    <div class="admin-canvas-wrapper" id="canvasWrapper">
+                        <canvas id="adminCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="editorView" class="editor-container">
+            <div class="editor-grid">
+                <div class="editor-sidebar">
+                    <h3 id="useTplName" style="margin-top: 0; color: #1f2937;">-</h3>
+                    
+                    <div class="toggle-container">
+                        <button id="btnMasc" class="toggle-btn active" onclick="setGender('M')"><i class="fas fa-mars"></i> Masculino</button>
+                        <button id="btnFem" class="toggle-btn" onclick="setGender('F')"><i class="fas fa-venus"></i> Feminino</button>
+                    </div>
+
+                    <div id="userInputsContainer" style="flex: 1; overflow-y: auto;"></div>
+
+                    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 15px; font-size: 16px; padding: 15px;" onclick="downloadImage()"><i class="fas fa-download"></i> Baixar Imagem Gerada</button>
+                </div>
+                
+                <div class="editor-canvas-area">
+                    <canvas id="userCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let templates = {};
+        let isAdmin = false;
+        
+        // Estado do Admin
+        let editingTemplateId = null;
+        let adminCampos = []; 
+        let adminBgImageSrc = null;
+        let adminImgObj = new Image();
+        
+        // Estado do Drag & Drop
+        let isDragging = false;
+        let dragIndex = -1;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        
+        // Estado do Usuário
+        let currentTemplate = null;
+        let currentGender = 'M';
+        let userImgObj = new Image();
+
+        // Fontes Nativas + Fontes do Banco
+        let FONTS = [
+            { name: "Montserrat", family: "'Montserrat', sans-serif" },
+            { name: "Arial", family: "Arial, sans-serif" },
+            { name: "Roboto", family: "'Roboto', sans-serif" },
+            { name: "Open Sans", family: "'Open Sans', sans-serif" },
+            { name: "Playfair Display", family: "'Playfair Display', serif" },
+            { name: "Great Vibes (Cursiva)", family: "'Great Vibes', cursive" }
+        ];
+        
+        let customFontsArray = []; 
+
+        async function startApp() {
+            if (typeof initGlobal !== 'undefined') {
+                initGlobal('marketing', 'Gerador de Artes');
+                checkAdmin();
+                setupDragAndDrop();
+                await loadCustomFonts(); 
+                await loadTemplates();
+                document.fonts.ready.then(() => { if(adminBgImageSrc) drawAdminCanvas(); });
+            } else {
+                setTimeout(startApp, 100);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', startApp);
+
+        function checkAdmin() {
+            const userJson = localStorage.getItem('ecoUser');
+            if (userJson) {
+                const user = JSON.parse(userJson);
+                const perms = user.permissoes || {};
+                if (perms.admin === true || perms.marketing_admin === true) {
+                    isAdmin = true;
+                    document.getElementById('btnAdminNew').style.display = 'flex';
+                    document.getElementById('btnAdminFont').style.display = 'flex';
+                }
+            }
+        }
+
+        // ==========================================
+        // TEXT WRAPPING (QUEBRA DE LINHA) NO CANVAS
+        // ==========================================
+        function drawFieldText(ctx, c, textToDraw) {
+            const weight = c.isBold ? "bold" : "normal";
+            ctx.font = `${weight} ${c.size}px ${c.font || "'Montserrat', sans-serif"}`;
+            ctx.fillStyle = c.color;
+            ctx.textAlign = c.align || "center";
+            ctx.textBaseline = "middle";
+
+            const lineHeight = c.size * 1.2;
+            const maxWidth = c.maxWidth || 0;
+
+            let lines = [];
+            
+            // Permite quebra de linha manual com \n ou via campo MaxWidth
+            const paragraphs = textToDraw.split('\n');
+            
+            if (maxWidth > 0) {
+                for (let p = 0; p < paragraphs.length; p++) {
+                    let words = paragraphs[p].split(' ');
+                    let currentLine = words[0];
+
+                    for (let i = 1; i < words.length; i++) {
+                        let word = words[i];
+                        let width = ctx.measureText(currentLine + " " + word).width;
+                        if (width < maxWidth) {
+                            currentLine += " " + word;
+                        } else {
+                            lines.push(currentLine);
+                            currentLine = word;
+                        }
+                    }
+                    lines.push(currentLine);
+                }
+            } else {
+                lines = paragraphs;
+            }
+
+            // Centraliza o bloco de texto inteiro verticalmente
+            let startY = c.y - ((lines.length - 1) * lineHeight) / 2;
+            let maxLineWidth = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                let lw = ctx.measureText(lines[i]).width;
+                if (lw > maxLineWidth) maxLineWidth = lw;
+                ctx.fillText(lines[i], c.x, startY + (i * lineHeight));
+            }
+
+            // Salva o tamanho do bloco para o Hitbox do Mouse (Drag and Drop)
+            c.cachedWidth = maxWidth > 0 ? maxWidth : maxLineWidth;
+            c.cachedHeight = lines.length * lineHeight;
+        }
+
+        // ==========================================
+        // GESTÃO DE FONTES EXTERNAS NO BD
+        // ==========================================
+        async function loadCustomFonts() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.marketing_fonts && data.marketing_fonts.fonts) {
+                        customFontsArray = data.marketing_fonts.fonts;
+                        
+                        for (let f of customFontsArray) {
+                            const fontFace = new FontFace(f.name, `url(${f.base64})`);
+                            await fontFace.load();
+                            document.fonts.add(fontFace);
+                            FONTS.push({ name: `${f.name} (Custom)`, family: `'${f.name}'` });
+                        }
+                    }
+                }
+            } catch(e) { console.error("Erro ao carregar fontes customizadas", e); }
+        }
+
+        function triggerFontUpload() { document.getElementById('fontUploader').click(); }
+
+        function handleFontUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const fontName = prompt("Digite um nome para esta fonte (ex: Minha Fonte Elegante):");
+            if (!fontName || fontName.trim() === '') {
+                event.target.value = ''; 
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result;
+                customFontsArray.push({ name: fontName.trim(), base64: base64 });
+                
+                try {
+                    await fetch(`${API_BASE_URL}/system_configs`, {
+                        method: 'POST',
+                        headers: API_HEADERS,
+                        body: JSON.stringify({ id_firebase: 'marketing_fonts', fonts: customFontsArray })
+                    });
+
+                    const fontFace = new FontFace(fontName.trim(), `url(${base64})`);
+                    await fontFace.load();
+                    document.fonts.add(fontFace);
+                    FONTS.push({ name: `${fontName.trim()} (Custom)`, family: `'${fontName.trim()}'` });
+                    
+                    alert('Fonte adicionada com sucesso!');
+                    if(document.getElementById('adminPanel').style.display === 'block') {
+                        renderAdminFieldsUI(); drawAdminCanvas();
+                    }
+                } catch(err) { alert("Erro ao salvar a fonte."); }
+                event.target.value = ''; 
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ==========================================
+        // LISTAGEM E NAVEGAÇÃO
+        // ==========================================
+        async function loadTemplates() {
+            const gallery = document.getElementById('galleryView');
+            try {
+                const res = await fetch(`${API_BASE_URL}/templates_imagens`, { headers: API_HEADERS });
+                if (res.ok) {
+                    const rawData = await res.json();
+                    templates = {};
+                    Object.entries(rawData).forEach(([key, val]) => {
+                        let parsed = val;
+                        if (typeof val === 'string') { try { parsed = JSON.parse(val); } catch(e){} }
+                        templates[key] = parsed;
+                    });
+                    renderGallery();
+                } else {
+                    gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #6b7280;">Nenhum template cadastrado ainda.</p>';
+                }
+            } catch(e) {
+                gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #dc2626;">Erro ao carregar banco de dados.</p>';
+            }
+        }
+
+        function renderGallery() {
+            const gallery = document.getElementById('galleryView');
+            gallery.innerHTML = '';
+            
+            const keys = Object.keys(templates);
+            if (keys.length === 0) {
+                gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #6b7280;">Nenhum template cadastrado ainda.</p>';
+                return;
+            }
+
+            keys.forEach(id => {
+                const tpl = templates[id];
+                let adminBar = '';
+                
+                if (isAdmin) {
+                    adminBar = `
+                        <div class="admin-actions-bar">
+                            <button class="admin-action-btn edit" onclick="editTemplate(event, '${id}')"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="admin-action-btn delete" onclick="deleteTemplate(event, '${id}')"><i class="fas fa-trash"></i> Excluir</button>
+                        </div>
+                    `;
+                }
+                
+                gallery.innerHTML += `
+                    <div class="template-card" onclick="openEditor('${id}')">
+                        <img src="${tpl.bg_image}" class="template-img">
+                        <div class="template-info">${tpl.nome}</div>
+                        ${adminBar}
+                    </div>
+                `;
+            });
+        }
+
+        function showGallery() {
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('editorView').style.display = 'none';
+            document.getElementById('galleryView').style.display = 'grid';
+            document.getElementById('btnBackGallery').style.display = 'none';
+            
+            if (isAdmin) {
+                document.getElementById('btnAdminNew').style.display = 'flex';
+                document.getElementById('btnAdminFont').style.display = 'flex';
+            }
+        }
+
+        // ==========================================
+        // PAINEL DE ADMINISTRAÇÃO (CRIAÇÃO / EDIÇÃO)
+        // ==========================================
+        function openAdminPanel() {
+            editingTemplateId = null;
+            document.getElementById('adminPanelTitle').innerHTML = 'Configurar Novo Template';
+            document.getElementById('tplName').value = '';
+            document.getElementById('tplImage').value = '';
+            adminBgImageSrc = null;
+            adminCampos = [];
+            
+            clearAdminCanvas();
+            renderAdminFieldsUI();
+            
+            document.getElementById('galleryView').style.display = 'none';
+            document.getElementById('editorView').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnAdminFont').style.display = 'none';
+            document.getElementById('btnBackGallery').style.display = 'flex';
+        }
+
+        function editTemplate(event, id) {
+            event.stopPropagation();
+            editingTemplateId = id;
+            const tpl = templates[id];
+            
+            document.getElementById('adminPanelTitle').innerHTML = 'Editando: ' + tpl.nome;
+            document.getElementById('tplName').value = tpl.nome;
+            document.getElementById('tplImage').value = ''; 
+            
+            adminBgImageSrc = tpl.bg_image;
+            
+            // Força clonagem segura
+            adminCampos = JSON.parse(JSON.stringify(tpl.campos || []));
+            adminCampos.forEach(c => {
+                c.collapsed = true; 
+                if (!c.id) c.id = generateFieldId(); 
+                if (c.isBold === undefined) c.isBold = true; 
+                if (c.maxWidth === undefined) c.maxWidth = 0;
+            });
+
+            renderAdminFieldsUI();
+
+            adminImgObj.onload = function() {
+                const canvas = document.getElementById('adminCanvas');
+                canvas.width = adminImgObj.width;
+                canvas.height = adminImgObj.height;
+                drawAdminCanvas();
+            }
+            adminImgObj.src = adminBgImageSrc;
+
+            document.getElementById('galleryView').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnAdminFont').style.display = 'none';
+            document.getElementById('btnBackGallery').style.display = 'flex';
+        }
+
+        function previewAdminImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // COMPRESSÃO AUTOMÁTICA PARA EVITAR ESTOURAR O BANCO (MAX 1920x1080)
+                    const maxW = 1920, maxH = 1080;
+                    let w = img.width, h = img.height;
+                    
+                    if (w > maxW || h > maxH) {
+                        const ratio = Math.min(maxW / w, maxH / h);
+                        w *= ratio; h *= ratio;
+                    }
+                    
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = w; tempCanvas.height = h;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0, w, h);
+                    
+                    // Comprime para JPEG qualidade 85%
+                    adminBgImageSrc = tempCanvas.toDataURL("image/jpeg", 0.85);
+                    
+                    adminImgObj.onload = function() {
+                        const canvas = document.getElementById('adminCanvas');
+                        canvas.width = adminImgObj.width;
+                        canvas.height = adminImgObj.height;
+                        drawAdminCanvas();
+                    }
+                    adminImgObj.src = adminBgImageSrc;
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function clearAdminCanvas() {
+            const canvas = document.getElementById('adminCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400; 
+            canvas.height = 300;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+        }
+
+        function generateFieldId() {
+            return 'fld_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function addAdminField() {
+            adminCampos.push({
+                id: generateFieldId(),
+                label: 'Novo Campo',
+                text_m: '{texto}',
+                text_f: '{texto}',
+                x: adminImgObj.width ? adminImgObj.width / 2 : 200,
+                y: adminImgObj.height ? adminImgObj.height / 2 : 150,
+                color: '#00855B',
+                size: 60,
+                align: 'center',
+                font: "'Montserrat', sans-serif",
+                isBold: true,
+                maxWidth: 0,
+                collapsed: false
+            });
+            renderAdminFieldsUI();
+            drawAdminCanvas();
+        }
+
+        function removeAdminField(id) {
+            adminCampos = adminCampos.filter(c => c.id !== id);
+            renderAdminFieldsUI();
+            drawAdminCanvas();
+        }
+
+        function toggleFieldCollapse(id) {
+            const campo = adminCampos.find(c => c.id === id);
+            if (campo) {
+                campo.collapsed = !campo.collapsed;
+                renderAdminFieldsUI();
+            }
+        }
+
+        function updateFieldValue(id, prop, value) {
+            const campo = adminCampos.find(c => c.id === id);
+            if (campo) {
+                if (prop === 'x' || prop === 'y' || prop === 'size' || prop === 'maxWidth') {
+                    campo[prop] = parseInt(value) || 0;
+                } else {
+                    campo[prop] = value;
+                }
+                drawAdminCanvas();
+            }
+        }
+
+        function renderAdminFieldsUI() {
+            const container = document.getElementById('adminFieldsContainer');
+            container.innerHTML = '';
+
+            adminCampos.forEach((c) => {
+                const isMinimized = c.collapsed ? 'minimized' : '';
+                const iconTgl = c.collapsed ? 'fa-chevron-down' : 'fa-chevron-up';
+                const titleText = c.collapsed ? `${c.label}` : `Editando: ${c.label}`;
+
+                let fontsOptions = FONTS.map(f => `<option value="${f.family}" ${c.font === f.family ? 'selected' : ''}>${f.name}</option>`).join('');
+
+                container.innerHTML += `
+                <div class="field-box ${isMinimized}">
+                    <div class="field-header" onclick="toggleFieldCollapse('${c.id}')">
+                        <h5><i class="fas fa-font"></i> ${titleText}</h5>
+                        <div class="field-header-actions">
+                            <button class="btn-field-action" title="Minimizar/Expandir"><i class="fas ${iconTgl}"></i></button>
+                            <button class="btn-field-action delete" title="Excluir Campo" onclick="event.stopPropagation(); removeAdminField('${c.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="field-body">
+                        <div class="form-group">
+                            <label class="form-label">Nome do Campo (Para o Usuário)</label>
+                            <input type="text" class="form-control" value="${c.label}" oninput="updateFieldValue('${c.id}', 'label', this.value)">
+                        </div>
+                        
+                        <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #d1d5db; margin-bottom: 10px;">
+                            <label class="form-label" style="color: #00855B;">Posição (Atualizada ao arrastar na imagem)</label>
+                            <div style="display:flex; gap:10px;">
+                                <input type="number" id="uiX_${c.id}" class="form-control" placeholder="Eixo X" value="${c.x}" oninput="updateFieldValue('${c.id}', 'x', this.value)">
+                                <input type="number" id="uiY_${c.id}" class="form-control" placeholder="Eixo Y" value="${c.y}" oninput="updateFieldValue('${c.id}', 'y', this.value)">
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap: wrap;">
+                            <div style="flex:1; min-width:80px;">
+                                <label class="form-label">Tamanho</label>
+                                <input type="number" class="form-control" value="${c.size}" oninput="updateFieldValue('${c.id}', 'size', this.value)">
+                            </div>
+                            <div style="flex:1; min-width:50px;">
+                                <label class="form-label">Cor</label>
+                                <input type="color" class="form-control" value="${c.color}" style="padding:0; height:38px; cursor:pointer;" oninput="updateFieldValue('${c.id}', 'color', this.value)">
+                            </div>
+                            <div style="flex:2; min-width:120px;">
+                                <label class="form-label">Fonte</label>
+                                <select class="form-control" onchange="updateFieldValue('${c.id}', 'font', this.value)">
+                                    ${fontsOptions}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap: wrap;">
+                            <div style="flex:1; min-width:100px;">
+                                <label class="form-label">Estilo</label>
+                                <select class="form-control" onchange="updateFieldValue('${c.id}', 'isBold', this.value === 'true')">
+                                    <option value="true" ${c.isBold ? 'selected' : ''}>Negrito</option>
+                                    <option value="false" ${!c.isBold ? 'selected' : ''}>Normal</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; min-width:100px;">
+                                <label class="form-label">Alinhamento</label>
+                                <select class="form-control" onchange="updateFieldValue('${c.id}', 'align', this.value)">
+                                    <option value="center" ${c.align==='center'?'selected':''}>Centro</option>
+                                    <option value="left" ${c.align==='left'?'selected':''}>Esquerda</option>
+                                    <option value="right" ${c.align==='right'?'selected':''}>Direita</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; min-width:100px;">
+                                <label class="form-label">Largura Máx. (px)</label>
+                                <input type="number" class="form-control" value="${c.maxWidth || 0}" placeholder="0 = Infinito" oninput="updateFieldValue('${c.id}', 'maxWidth', this.value)" title="0 = Sem quebra de linha. Se colocar um valor, o texto irá quebrar formando parágrafos automaticamente.">
+                            </div>
+                        </div>
+
+                        <label class="form-label" style="color: #0284c7;">Regra Masculina (Use {texto})</label>
+                        <textarea class="form-control" style="margin-bottom:10px;" oninput="updateFieldValue('${c.id}', 'text_m', this.value)">${c.text_m}</textarea>
+
+                        <label class="form-label" style="color: #be185d;">Regra Feminina (Use {texto})</label>
+                        <textarea class="form-control" oninput="updateFieldValue('${c.id}', 'text_f', this.value)">${c.text_f}</textarea>
+                        
+                        <button class="btn-primary" style="width:100%; justify-content:center; margin-top:15px; padding:12px; background: #e2e8f0; color: #1e293b;" onclick="toggleFieldCollapse('${c.id}')"><i class="fas fa-compress-alt"></i> Salvar e Minimizar Campo</button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        // ==========================================
+        // LÓGICA DO CANVAS E DRAG & DROP (ADMIN)
+        // ==========================================
+        function drawAdminCanvas() {
+            const canvas = document.getElementById('adminCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!adminBgImageSrc || !adminImgObj.width) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(adminImgObj, 0, 0);
+
+            // Chama a função centralizada que desenha o texto e faz a quebra (Wrapping)
+            adminCampos.forEach(c => {
+                const textToDraw = c.text_m.replace('{texto}', c.label);
+                drawFieldText(ctx, c, textToDraw);
+            });
+        }
+
+        function setupDragAndDrop() {
+            const canvas = document.getElementById('adminCanvas');
+            
+            canvas.addEventListener('mousedown', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+
+                for (let i = adminCampos.length - 1; i >= 0; i--) {
+                    const c = adminCampos[i];
+                    if (!c.cachedWidth) continue;
+
+                    let leftX, rightX;
+                    if (c.align === 'center') {
+                        leftX = c.x - (c.cachedWidth / 2);
+                        rightX = c.x + (c.cachedWidth / 2);
+                    } else if (c.align === 'right') {
+                        leftX = c.x - c.cachedWidth;
+                        rightX = c.x;
+                    } else { 
+                        leftX = c.x;
+                        rightX = c.x + c.cachedWidth;
+                    }
+
+                    const topY = c.y - (c.cachedHeight / 2);
+                    const bottomY = c.y + (c.cachedHeight / 2);
+
+                    if (mouseX >= leftX && mouseX <= rightX && mouseY >= topY && mouseY <= bottomY) {
+                        isDragging = true;
+                        dragIndex = i;
+                        dragOffsetX = mouseX - c.x;
+                        dragOffsetY = mouseY - c.y;
+                        
+                        if(adminCampos[i].collapsed) {
+                            adminCampos[i].collapsed = false;
+                            renderAdminFieldsUI();
+                        }
+                        return; 
+                    }
+                }
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                if (isDragging && dragIndex > -1) {
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    
+                    const mouseX = (e.clientX - rect.left) * scaleX;
+                    const mouseY = (e.clientY - rect.top) * scaleY;
+
+                    const c = adminCampos[dragIndex];
+                    c.x = Math.round(mouseX - dragOffsetX);
+                    c.y = Math.round(mouseY - dragOffsetY);
+
+                    const inX = document.getElementById(`uiX_${c.id}`);
+                    const inY = document.getElementById(`uiY_${c.id}`);
+                    if(inX) inX.value = c.x;
+                    if(inY) inY.value = c.y;
+
+                    drawAdminCanvas();
+                }
+            });
+
+            canvas.addEventListener('mouseup', function() { isDragging = false; dragIndex = -1; });
+            canvas.addEventListener('mouseout', function() { isDragging = false; dragIndex = -1; });
+        }
+
+        // ==========================================
+        // SALVAMENTO NO BANCO
+        // ==========================================
+        async function saveTemplate() {
+            const nome = document.getElementById('tplName').value.trim();
+            if (!nome || !adminBgImageSrc) return alert('Preencha o nome e selecione uma imagem de fundo!');
+
+            const payloadCampos = adminCampos.map(c => {
+                return {
+                    id: c.id, 
+                    label: c.label,
+                    text_m: c.text_m,
+                    text_f: c.text_f,
+                    x: c.x,
+                    y: c.y,
+                    color: c.color,
+                    size: c.size,
+                    align: c.align,
+                    font: c.font,
+                    isBold: c.isBold,
+                    maxWidth: c.maxWidth
+                };
+            });
+
+            const id = editingTemplateId || `tpl_${Date.now()}`;
+            const payload = { id_firebase: id, nome: nome, bg_image: adminBgImageSrc, campos: payloadCampos };
+
+            const btn = document.getElementById('btnSaveTemplate');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            btn.disabled = true;
+
+            try {
+                // Força o ID no Endpoint (PUT para editar, POST para criar novo)
+                const method = editingTemplateId ? 'PUT' : 'POST';
+                const url = editingTemplateId ? `${API_BASE_URL}/templates_imagens/${editingTemplateId}` : `${API_BASE_URL}/templates_imagens`;
+
+                await fetch(url, {
+                    method: method,
+                    headers: API_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+                
+                alert(editingTemplateId ? 'Template atualizado com sucesso!' : 'Template criado com sucesso!');
+                showGallery();
+                await loadTemplates();
+            } catch(e) {
+                alert('Erro ao salvar no banco. A imagem pode ser muito pesada.');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-save"></i> Salvar Template no Banco';
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteTemplate(event, id) {
+            event.stopPropagation();
+            if(!confirm('Certeza que deseja excluir este template permanentemente?')) return;
+            try {
+                await fetch(`${API_BASE_URL}/templates_imagens/${id}`, { method: 'DELETE', headers: API_HEADERS });
+                await loadTemplates();
+            } catch(e) { alert('Erro ao excluir'); }
+        }
+
+        // ==========================================
+        // PAINEL DE USO (GERADOR FINAL PARA USUÁRIOS)
+        // ==========================================
+        function openEditor(id) {
+            currentTemplate = templates[id];
+            if (!currentTemplate) return;
+
+            document.getElementById('galleryView').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('editorView').style.display = 'block';
+            document.getElementById('btnAdminNew').style.display = 'none';
+            document.getElementById('btnAdminFont').style.display = 'none';
+            document.getElementById('btnBackGallery').style.display = 'flex';
+
+            document.getElementById('useTplName').innerText = currentTemplate.nome;
+            currentGender = 'M';
+            document.getElementById('btnMasc').classList.add('active');
+            document.getElementById('btnFem').classList.remove('active');
+
+            userImgObj.onload = function() {
+                const canvas = document.getElementById('userCanvas');
+                canvas.width = userImgObj.width;
+                canvas.height = userImgObj.height;
+                renderUserCanvas(); 
+            }
+            userImgObj.src = currentTemplate.bg_image;
+
+            const container = document.getElementById('userInputsContainer');
+            container.innerHTML = '';
+            
+            if (currentTemplate.campos) {
+                currentTemplate.campos.forEach((campo, index) => {
+                    container.innerHTML += `
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label class="form-label">${campo.label}</label>
+                            <textarea id="userInput_${index}" class="form-control" style="border: 2px solid #cbd5e1; font-size:16px; height:80px;" placeholder="Digite aqui..." onkeyup="renderUserCanvas()"></textarea>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function setGender(g) {
+            currentGender = g;
+            if (g === 'M') {
+                document.getElementById('btnMasc').classList.add('active');
+                document.getElementById('btnFem').classList.remove('active');
+            } else {
+                document.getElementById('btnMasc').classList.remove('active');
+                document.getElementById('btnFem').classList.add('active');
+            }
+            renderUserCanvas();
+        }
+
+        function renderUserCanvas() {
+            if (!userImgObj.width || !currentTemplate) return;
+            
+            const canvas = document.getElementById('userCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(userImgObj, 0, 0);
+
+            if (currentTemplate.campos) {
+                currentTemplate.campos.forEach((campo, index) => {
+                    const inputEl = document.getElementById(`userInput_${index}`);
+                    let textoDigitado = inputEl ? inputEl.value : "";
+                    
+                    let regraAplicada = currentGender === 'M' ? campo.text_m : campo.text_f;
+                    let textoFinal = regraAplicada.replace('{texto}', textoDigitado);
+
+                    drawFieldText(ctx, campo, textoFinal);
+                });
+            }
+        }
+
+        function downloadImage() {
+            const canvas = document.getElementById('userCanvas');
+            const link = document.createElement('a');
+            link.download = `Arte_${currentTemplate.nome}_${Date.now()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }
+    </script>
+</body>
+</html>
