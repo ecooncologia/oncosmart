@@ -333,7 +333,7 @@
         let shifts = {};
         let pacientesDb = {};
         let dbProcedimentos = {}; 
-        let oracleDataCache = []; // NOVO: Armazena o JSON do Oracle
+        let oracleDataCache = []; // Armazena o JSON do Oracle
         let patListToPrint = []; 
         
         let expandedRows = new Set();
@@ -354,31 +354,6 @@
                 } else { normalized[key] = val; }
             }); 
             return normalized;
-        }
-
-        function normalizeDate(d) {
-            if (!d) return "";
-            if (typeof d === 'number') {
-                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
-                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
-            }
-            let str = String(d).trim();
-            if (!str) return ""; 
-            
-            if (str.includes('T')) str = str.split('T')[0];
-            if (str.includes('-')) {
-                let p = str.split('-');
-                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            if (str.includes('/')) {
-                let p = str.split('/');
-                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
-                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-                }
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            return str;
         }
 
         function getComissaoInfo(pId, eId) {
@@ -555,16 +530,20 @@
                 const anoSelecionado = document.getElementById('selYearUnimed').value;
                 const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
-                // 🚀 AGORA ELE PUXA DO ORACLE AO MESMO TEMPO
+                console.log(`[Frontend] Requisitando dados da competência: ${competenciaAlvo}`);
+
                 const [resUnimed, resVendas, resOracle] = await Promise.all([
                     fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/custos_oracle`, { headers: API_HEADERS }).catch(() => ({ok: false})) // Impede de travar tudo se o Oracle cair
+                    // 🚀 PASSA A COMPETÊNCIA PARA O BACKEND FILTRAR A VIEW
+                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
                 ]);
 
                 const unimedData = resUnimed.ok ? normalizeData(await resUnimed.json()) : {};
                 const vendasData = resVendas.ok ? normalizeData(await resVendas.json()) : {};
+                
                 oracleDataCache = resOracle.ok ? await resOracle.json() : [];
+                console.log(`[Frontend] Oracle retornou ${oracleDataCache.length} itens do Tasy para a memória.`);
 
                 let arrayBot = Object.values(unimedData);
                 let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
@@ -626,7 +605,7 @@
                                     tipo: 'PARTICULAR',
                                     custo_correto: parseFloat(v.custo_correto || 0),
                                     custo_errado: parseFloat(v.custo_errado || 0),
-                                    dados_extras: { codigo_tuss: v.codigo_tuss || null } // Prepara pro TUSS se houver
+                                    dados_extras: { codigo_tuss: v.codigo_tuss || null }
                                 });
                             }
                         }
@@ -652,23 +631,34 @@
                     let custoCorreto = row.custo_correto !== undefined ? parseFloat(row.custo_correto) : (extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : (row.custo_informado || extras.custo_informado || 0));
                     let custoErrado = row.custo_errado !== undefined ? parseFloat(row.custo_errado) : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
 
-                    // 💡 INTEGRAÇÃO ORACLE AUTOMÁTICA
-                    // Pega o Código TUSS que veio da planilha (pelo robô)
+                    // 💡 LÓGICA DE CRUZAMENTO TUSS COM O ORACLE
                     let codigoTuss = extras.codigo_tuss || extras.tuss || null;
                     let isFromOracle = false;
 
-                    if ((!custoCorreto || custoCorreto === 0) && codigoTuss && oracleDataCache.length > 0) {
-                        // Varre o Oracle procurando a miligrama desse TUSS
-                        let oracleItem = oracleDataCache.find(o => 
-                            String(o.CD_TUSS) === String(codigoTuss) || 
-                            String(o.CODIGO_TUSS) === String(codigoTuss) || 
-                            String(o.TUSS) === String(codigoTuss) ||
-                            String(o.CD_PRODUTO) === String(codigoTuss)
-                        );
+                    if (codigoTuss && oracleDataCache.length > 0) {
+                        console.log(`🔍 Buscando TUSS: [${codigoTuss}] do medicamento [${row.descricao}] no cache do Oracle...`);
+                        
+                        let oracleItem = oracleDataCache.find(o => {
+                            if (oracleDataCache.indexOf(o) === 0) {
+                                console.log(`👉 As colunas que o Tasy devolveu foram:`, Object.keys(o).join(', '));
+                            }
+                            
+                            // Tenta bater com várias possibilidades de nome de coluna do Tasy
+                            let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').trim();
+                            return tasyTuss === String(codigoTuss).trim();
+                        });
                         
                         if (oracleItem) {
-                            custoCorreto = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
-                            isFromOracle = true; // Marca que achou automático
+                            let custoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
+                            console.log(`✅ MATCH PERFEITO! TUSS: ${codigoTuss} encontrado no Tasy. Custo Unitário: R$ ${custoAchado}`);
+                            
+                            // Se o banco local estava zerado, nós adotamos o valor do Oracle
+                            if (!custoCorreto || custoCorreto === 0) {
+                                custoCorreto = custoAchado;
+                                isFromOracle = true;
+                            }
+                        } else {
+                            console.log(`❌ ALERTA: O TUSS ${codigoTuss} existe na Unimed, mas NÃO FOI ENCONTRADO na view do Oracle.`);
                         }
                     }
 
@@ -719,7 +709,6 @@
                             opdivoMap[key].custo_correto = Math.max(opdivoMap[key].custo_correto, item.custo_correto);
                             opdivoMap[key].custo_errado = Math.max(opdivoMap[key].custo_errado, item.custo_errado);
                             
-                            // Se algum fragmento veio do Oracle, marca o bloco inteiro
                             if (item.isFromOracle) opdivoMap[key].isFromOracle = true;
                             if (item.tuss && !opdivoMap[key].tuss) opdivoMap[key].tuss = item.tuss;
                         }
@@ -745,7 +734,7 @@
             if (itemObj) {
                 if (tipo === 'correto') {
                     itemObj.custo_correto = novoValor;
-                    itemObj.isFromOracle = false; // Se o cara digitou na mão, tira a label do Oracle
+                    itemObj.isFromOracle = false; 
                 } else {
                     itemObj.custo_errado = novoValor;
                 }
