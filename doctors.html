@@ -43,6 +43,11 @@
         
         /* Grid flexível para caber todas as opções novas */
         .options-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        
+        /* Estilização para o campo de input numérico da porcentagem */
+        .perc-input { border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; width: 60px; text-align: center; font-weight: bold; margin-top: 5px; outline: none; }
+        .perc-input:focus { border-color: #00995D; box-shadow: 0 0 0 2px rgba(0, 153, 93, 0.1); }
+        .perc-wrapper { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #4b5563; font-weight: bold; background: #f9fafb; padding: 6px; border-radius: 6px; margin-top: 4px; border: 1px solid #e5e7eb;}
 
         @media (max-width: 1024px) { 
             .content-grid { grid-template-columns: 1fr; } 
@@ -139,26 +144,39 @@
                             </div>
 
                             <div class="form-group">
-                                <label style="color:#be185d; font-weight:bold;">É Prescritor?</label>
-                                <select id="doctorPrescritor" class="form-control" style="border-color:#be185d;">
-                                    <option value="sim">Sim</option>
-                                    <option value="nao" selected>Não</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label style="color:#c2410c; font-weight:bold;">É Encaminhador?</label>
-                                <select id="doctorEncaminhador" class="form-control" style="border-color:#c2410c;">
-                                    <option value="sim">Sim</option>
-                                    <option value="nao" selected>Não</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
                                 <label style="color:#00995D; font-weight:bold;">Repasse?</label>
                                 <select id="doctorRepasse" class="form-control" style="border-color:#00995D;">
                                     <option value="sim">Sim</option>
                                     <option value="nao" selected>Não</option>
                                 </select>
+                            </div>
+                            
+                            <div class="form-group"></div>
+                        </div>
+
+                        <div style="background: #fdf2f8; border: 1px dashed #fbcfe8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="margin: 0 0 10px 0; color: #be185d; font-size: 13px;"><i class="fas fa-hand-holding-usd"></i> Configuração de Comissões</h4>
+                            <div class="form-row" style="margin-bottom: 0;">
+                                <div class="form-group">
+                                    <label style="color:#be185d; font-weight:bold;">É Prescritor?</label>
+                                    <select id="doctorPrescritor" class="form-control" style="border-color:#be185d;" onchange="togglePercInput('prescritor')">
+                                        <option value="sim">Sim</option>
+                                        <option value="nao" selected>Não</option>
+                                    </select>
+                                    <div id="wrapPercPrescritor" class="perc-wrapper" style="display: none;">
+                                        Taxa Padrão: <input type="number" step="0.01" id="percPrescritor" class="perc-input" value="12.50"> %
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label style="color:#c2410c; font-weight:bold;">É Encaminhador?</label>
+                                    <select id="doctorEncaminhador" class="form-control" style="border-color:#c2410c;" onchange="togglePercInput('encaminhador')">
+                                        <option value="sim">Sim</option>
+                                        <option value="nao" selected>Não</option>
+                                    </select>
+                                    <div id="wrapPercEncaminhador" class="perc-wrapper" style="display: none;">
+                                        Taxa Padrão: <input type="number" step="0.01" id="percEncaminhador" class="perc-input" value="12.50"> %
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -216,6 +234,17 @@
             }
         });
 
+        // Função visual para esconder/mostrar as caixinhas de % conforme a seleção
+        function togglePercInput(tipo) {
+            const val = document.getElementById(`doctor${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).value;
+            const wrap = document.getElementById(`wrapPerc${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+            if(val === 'sim') {
+                wrap.style.display = 'flex';
+            } else {
+                wrap.style.display = 'none';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => { 
             initGlobal('doctors', 'Profissionais'); 
             loadDoctors(); 
@@ -242,7 +271,10 @@
                 vita: document.getElementById('doctorVita').value,
                 cirurgiao: document.getElementById('doctorCirurgiao').value,
                 prescritor: document.getElementById('doctorPrescritor').value,
-                encaminhador: document.getElementById('doctorEncaminhador').value
+                encaminhador: document.getElementById('doctorEncaminhador').value,
+                // NOVOS CAMPOS SALVOS AQUI
+                perc_prescritor: parseFloat(document.getElementById('percPrescritor').value) || 0,
+                perc_encaminhador: parseFloat(document.getElementById('percEncaminhador').value) || 0
             };
             
             const id = document.getElementById('editingDoctorId').value;
@@ -304,8 +336,12 @@
                 const v = d.vita==='sim' ? '<span class="badge vita">Vita</span>' : ''; 
                 const cir = d.cirurgiao==='sim' ? '<span class="badge cirurgiao">Cirurgião</span>' : ''; 
                 
-                const prescritor = d.prescritor === 'sim' ? '<span class="badge prescritor">Prescritor</span>' : '';
-                const encaminhador = d.encaminhador === 'sim' ? '<span class="badge encaminhador">Encaminhador</span>' : '';
+                // CRIAÇÃO DOS BADGES VISUAIS COM A PORCENTAGEM (SE FOR SIM)
+                let prescritorText = d.prescritor === 'sim' ? `Prescritor (${d.perc_prescritor || 12.5}%)` : '';
+                const prescritor = d.prescritor === 'sim' ? `<span class="badge prescritor">${prescritorText}</span>` : '';
+                
+                let encaminhadorText = d.encaminhador === 'sim' ? `Encaminhador (${d.perc_encaminhador || 12.5}%)` : '';
+                const encaminhador = d.encaminhador === 'sim' ? `<span class="badge encaminhador">${encaminhadorText}</span>` : '';
                 
                 const r = d.repasse==='sim' ? '<span class="badge sim" style="background:#d1fae5; color:#065f46;">SIM</span>' : '<span class="badge nao">NÃO</span>';
 
@@ -316,7 +352,7 @@
 
                 // Tratamento de Categoria para visual e retrocompatibilidade
                 let catBadge = '';
-                let cat = d.categoria || 'medico'; // Garante que os antigos sejam médicos
+                let cat = d.categoria || 'medico'; 
                 
                 if(cat === 'psicologo') {
                     catBadge = '<span class="badge cat-psicologo"><i class="fas fa-brain"></i> Psicólogo</span>';
@@ -326,7 +362,7 @@
                     catBadge = '<span class="badge cat-medico"><i class="fas fa-user-md"></i> Médico</span>';
                 }
 
-                // Mascara o celular na tela (formata se tiver 11 digitos)
+                // Mascara o celular na tela
                 let foneTela = d.telefone || 'S/N';
                 if(foneTela.length === 11) {
                     foneTela = `(${foneTela.substring(0,2)}) ${foneTela.substring(2,7)}-${foneTela.substring(7,11)}`;
@@ -370,22 +406,35 @@
             document.getElementById('doctorLiminar').value = d.liminar||'nao';
             document.getElementById('doctorRepasse').value = d.repasse || 'nao';
             
-            document.getElementById('doctorEco').value = d.eco || 'sim'; // Padrão é sim
+            document.getElementById('doctorEco').value = d.eco || 'sim'; 
             document.getElementById('doctorVita').value = d.vita || 'nao'; 
             document.getElementById('doctorCirurgiao').value = d.cirurgiao || 'nao'; 
             
             document.getElementById('doctorPrescritor').value = d.prescritor || 'nao';
+            document.getElementById('percPrescritor').value = d.perc_prescritor !== undefined ? d.perc_prescritor : 12.50;
+            togglePercInput('prescritor'); // Mostra/Esconde
+
             document.getElementById('doctorEncaminhador').value = d.encaminhador || 'nao';
+            document.getElementById('percEncaminhador').value = d.perc_encaminhador !== undefined ? d.perc_encaminhador : 12.50;
+            togglePercInput('encaminhador'); // Mostra/Esconde
 
             document.getElementById('editingDoctorId').value = id;
             document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editando Profissional';
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
             document.getElementById('cancelBtn').style.display = 'block';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function resetForm() {
             document.getElementById('doctorForm').reset();
             document.getElementById('doctorCategory').dispatchEvent(new Event('change'));
+            
+            document.getElementById('percPrescritor').value = "12.50";
+            document.getElementById('percEncaminhador').value = "12.50";
+            togglePercInput('prescritor');
+            togglePercInput('encaminhador');
+
             document.getElementById('editingDoctorId').value = '';
             document.getElementById('formTitle').innerHTML = '<i class="fas fa-user-md"></i> Novo Profissional';
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Salvar';
