@@ -284,19 +284,19 @@
                             <tr>
                                 <th rowspan="2" style="width: 40px;"></th>
                                 <th rowspan="2">Paciente / Carteirinha</th>
-                                <th rowspan="2" style="text-align:right;">Fat. Analisado</th>
+                                <th rowspan="2" style="text-align:right;">Fat. Medicamento<br><span style="font-size:10px; font-weight:normal; opacity:0.8;">Base de Repasse</span></th>
                                 <th rowspan="2" style="text-align:right; border-right: 1px solid rgba(255,255,255,0.2);">Imposto</th>
                                 
                                 <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2); z-index: 20;">
                                     CENÁRIO ATUAL
                                     <div class="info-tip"><i class="fas fa-info-circle"></i>
-                                        <span class="tip-text"><b>Como é calculado:</b><br>Divide o valor do frasco inteiro pela quantidade que o paciente <b>usou</b>. Isso distorce e infla o custo unitário (mg/ml), pois embute o desperdício do frasco no valor da miligrama."</span>
+                                        <span class="tip-text"><b>Cálculo Atual (Antigo):</b><br>Divide o valor do frasco inteiro (arredondado) pela quantidade que o paciente <b>usou</b>. Isso distorce e infla o custo unitário (mg/ml), pois embute o desperdício do frasco no valor da miligrama.</span>
                                     </div>
                                 </th>
                                 <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2); z-index: 20;">
                                     CENÁRIO FUTURO
                                     <div class="info-tip"><i class="fas fa-info-circle"></i>
-                                        <span class="tip-text"><b>Como é calculado:</b><br>Divide o preço do frasco pela sua <b>capacidade total</b>. Isso reflete o custo unitário real e exato (mg/ml) do medicamento, corrigindo a distorção financeira do método anterior.</span>
+                                        <span class="tip-text"><b>Cálculo Futuro (Correto):</b><br>Divide o preço do frasco pela sua <b>capacidade total</b>. Isso reflete o custo unitário real e exato (mg/ml) do medicamento, corrigindo a distorção financeira do método anterior.</span>
                                     </div>
                                 </th>
                             </tr>
@@ -328,6 +328,7 @@
         let doctors = {};
         let shifts = {};
         let pacientesDb = {};
+        let dbProcedimentos = {}; // Para carregar os custos dos particulares
         let patListToPrint = []; 
         
         let expandedRows = new Set();
@@ -456,12 +457,14 @@
                         elUnimed.value = mesPassado; 
                     }
 
+                    // NOVO: Carrega procedimentos antes para a regra do Particular
+                    await loadProcedimentos();
+
                     await loadDoctors();
                     await loadPacientesDb();
                     renderRepasseTable(); 
                     fetchBotData();       
                 } else {
-                    // Tenta de novo em 100ms se o global.js atrasar
                     setTimeout(startApp, 100);
                 }
             } catch(e) {
@@ -515,6 +518,16 @@
             }
         }
 
+        // NOVO: Carrega os Procedimentos do BD para puxar o valor do Medicamento
+        async function loadProcedimentos() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
+                if(res.ok) {
+                    dbProcedimentos = normalizeData(await res.json());
+                }
+            } catch(err) { console.error("Erro ao carregar procedimentos:", err); }
+        }
+
         async function loadDoctors() { 
             try { 
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
@@ -563,6 +576,7 @@
                 let arrayBot = Object.values(unimedData);
                 let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
 
+                // --- PROCESSANDO VENDAS PARTICULARES ---
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -594,6 +608,24 @@
                             });
                             
                             if (!alreadyExists) {
+                                // MÁGICA: Buscar o valor do "Custo Medicamento" da tabela de Procedimentos
+                                let valorBaseParaComissao = 0;
+                                let procIdVinculado = v.procedimento_id;
+                                
+                                if (procIdVinculado && dbProcedimentos[procIdVinculado]) {
+                                    // Se achou o procedimento exato, pega a coluna custo_medicamento
+                                    valorBaseParaComissao = parseFloat(dbProcedimentos[procIdVinculado].custo_medicamento || 0);
+                                } else {
+                                    // Fallback: Busca pelo nome do procedimento
+                                    let dbProcNameMatch = Object.values(dbProcedimentos).find(p => String(p.nome).trim().toUpperCase() === String(v.procedimento).trim().toUpperCase());
+                                    if (dbProcNameMatch) {
+                                        valorBaseParaComissao = parseFloat(dbProcNameMatch.custo_medicamento || 0);
+                                    } else {
+                                        // Último Fallback: se não achar de jeito nenhum, usa o valor final da venda
+                                        valorBaseParaComissao = parseFloat(v.valor_final || 0);
+                                    }
+                                }
+
                                 dadosFiltrados.push({
                                     id: 'virt_part_' + vId, 
                                     paciente: String(v.paciente).toUpperCase().trim(),
@@ -601,7 +633,7 @@
                                     competencia: vComp,
                                     carteirinha: '',
                                     descricao: `Aplicação Particular - ${v.procedimento}`,
-                                    valor_pago: parseFloat(v.valor_final || 0),
+                                    valor_pago: valorBaseParaComissao, // 💡 O repasse agora será baseado apenas neste valor!
                                     quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                     tipo: 'PARTICULAR',
                                     custo_correto: parseFloat(v.custo_correto || 0),
@@ -853,7 +885,9 @@
 
                 pat.items.forEach(item => {
                     let fatItem = Number(item.valor.toFixed(2));
-                    let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                    
+                    // IMPORTANTE: Particular não tem imposto retido igual a Unimed. 
+                    let impItem = item.tipo === 'PARTICULAR' ? 0 : Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                     
                     // CENÁRIO CORRETO (FUTURO - C)
                     let custoTotalC = Number((item.custo_correto * item.mg).toFixed(2));
@@ -1087,7 +1121,11 @@
                     let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado neste cenário."' : '';
                     
                     let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-                    let impVisual = `<span style="${styleCorte}">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    
+                    // Mostra o imposto como zero se for Particular
+                    let impVisualStr = item.impItem === 0 ? "0,00" : `- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    let impVisual = `<span style="${styleCorte}; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</span>`;
+                    
                     let subBadgeOrigem = item.tipo === 'PARTICULAR' ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
                     
                     // HTML Cenário Errado (ATUAL)
@@ -1119,7 +1157,7 @@
                         <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem}</td>
                         <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</td>
-                        <td style="text-align:right; color:#dc2626;">${impVisual}</td>
+                        <td style="text-align:right;">${impVisual}</td>
                         
                         <td style="text-align:center;">${inputE}</td>
                         <td style="text-align:right;">${custoTotalEVis}</td>
@@ -1267,13 +1305,14 @@
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
                     let tagOrigem = item.tipo === 'PARTICULAR' ? ' (PART)' : '';
+                    let impVisualStr = item.impItem === 0 ? "0,00" : `- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
 
                     html += `<tr>
                         <td style="text-align:center; ${styleCorte}">${item.data}</td>
                         <td style="${styleCorte}">${item.medicamento}${tagOrigem}</td>
                         <td style="text-align:center; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:right; color:#dc2626;">- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:right; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</td>
                         
                         <td style="text-align:center; color:#4b5563;">R$ ${item.custo_errado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
                         <td style="text-align:right; font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'};">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
