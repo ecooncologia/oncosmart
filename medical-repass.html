@@ -328,7 +328,7 @@
         let doctors = {};
         let shifts = {};
         let pacientesDb = {};
-        let dbProcedimentos = {}; // Para carregar os custos dos particulares
+        let dbProcedimentos = {}; 
         let patListToPrint = []; 
         
         let expandedRows = new Set();
@@ -376,26 +376,18 @@
             return str;
         }
 
-        function getComissaoInfo(pName, eName) {
+        // 💡 NOVA FUNÇÃO DE COMISSÃO (DINÂMICA)
+        function getComissaoInfo(pId, eId) {
             let percP = 0;
             let percE = 0;
             
-            const grupoMama = [
-                'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
-                'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
-                'FLAVIA KURODA', 'IRIS RABINOVICH', 'ISABELA MONTEIRO SOARES', 
-                'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO',
-                'MAIKOL'
-            ];
-
-            const isSpecial = (name) => {
-                if(!name) return false;
-                let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                return grupoMama.some(m => upper.includes(m));
-            };
-
-            if (pName) percP = 12.50; 
-            if (eName) percE = isSpecial(eName) ? 37.50 : 12.50; 
+            if (pId && doctors[pId]) {
+                percP = doctors[pId].perc_prescritor !== undefined ? parseFloat(doctors[pId].perc_prescritor) : 12.50;
+            }
+            
+            if (eId && doctors[eId]) {
+                percE = doctors[eId].perc_encaminhador !== undefined ? parseFloat(doctors[eId].perc_encaminhador) : 12.50;
+            }
 
             return { percP, percE, totalPerc: percP + percE };
         }
@@ -424,9 +416,6 @@
             return h; 
         }
 
-        // ==========================================
-        // INICIALIZAÇÃO BLINDADA (ANTIFALHA)
-        // ==========================================
         async function startApp() {
             try {
                 if (typeof initGlobal !== 'undefined') {
@@ -457,9 +446,7 @@
                         elUnimed.value = mesPassado; 
                     }
 
-                    // NOVO: Carrega procedimentos antes para a regra do Particular
                     await loadProcedimentos();
-
                     await loadDoctors();
                     await loadPacientesDb();
                     renderRepasseTable(); 
@@ -518,7 +505,6 @@
             }
         }
 
-        // NOVO: Carrega os Procedimentos do BD para puxar o valor do Medicamento
         async function loadProcedimentos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
@@ -576,7 +562,6 @@
                 let arrayBot = Object.values(unimedData);
                 let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
 
-                // --- PROCESSANDO VENDAS PARTICULARES ---
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -608,20 +593,16 @@
                             });
                             
                             if (!alreadyExists) {
-                                // MÁGICA: Buscar o valor do "Custo Medicamento" da tabela de Procedimentos
                                 let valorBaseParaComissao = 0;
                                 let procIdVinculado = v.procedimento_id;
                                 
                                 if (procIdVinculado && dbProcedimentos[procIdVinculado]) {
-                                    // Se achou o procedimento exato, pega a coluna custo_medicamento
                                     valorBaseParaComissao = parseFloat(dbProcedimentos[procIdVinculado].custo_medicamento || 0);
                                 } else {
-                                    // Fallback: Busca pelo nome do procedimento
                                     let dbProcNameMatch = Object.values(dbProcedimentos).find(p => String(p.nome).trim().toUpperCase() === String(v.procedimento).trim().toUpperCase());
                                     if (dbProcNameMatch) {
                                         valorBaseParaComissao = parseFloat(dbProcNameMatch.custo_medicamento || 0);
                                     } else {
-                                        // Último Fallback: se não achar de jeito nenhum, usa o valor final da venda
                                         valorBaseParaComissao = parseFloat(v.valor_final || 0);
                                     }
                                 }
@@ -633,7 +614,7 @@
                                     competencia: vComp,
                                     carteirinha: '',
                                     descricao: `Aplicação Particular - ${v.procedimento}`,
-                                    valor_pago: valorBaseParaComissao, // 💡 O repasse agora será baseado apenas neste valor!
+                                    valor_pago: valorBaseParaComissao,
                                     quantidade: parseFloat(v.aplicacoes_realizadas || 1),
                                     tipo: 'PARTICULAR',
                                     custo_correto: parseFloat(v.custo_correto || 0),
@@ -790,7 +771,6 @@
         function renderAnalysisTable() {
             let activeElId = document.activeElement ? document.activeElement.id : null;
 
-            // 💡 CÁLCULO E INJEÇÃO DA TAG DE REPASSE MÊS
             const mesSelUnimed = parseInt(document.getElementById('selMonthUnimed').value);
             const anoSelUnimed = parseInt(document.getElementById('selYearUnimed').value);
             
@@ -807,7 +787,6 @@
                 const thAtual = document.getElementById('thRepasseAtual');
                 const thFuturo = document.getElementById('thRepasseFuturo');
                 
-                // Aplica a Tag apenas no ATUAL e limpa o FUTURO
                 if (thAtual) thAtual.innerHTML = `Repasse<br>${tagHtml}`;
                 if (thFuturo) thFuturo.innerHTML = `Repasse`;
             }
@@ -881,26 +860,21 @@
                     return;
                 }
 
-                const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
+                const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
 
                 pat.items.forEach(item => {
                     let fatItem = Number(item.valor.toFixed(2));
-                    
-                    // IMPORTANTE: Particular não tem imposto retido igual a Unimed. 
                     let impItem = item.tipo === 'PARTICULAR' ? 0 : Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                     
-                    // CENÁRIO CORRETO (FUTURO - C)
                     let custoTotalC = Number((item.custo_correto * item.mg).toFixed(2));
                     let lucroC = Number((fatItem - impItem - custoTotalC).toFixed(2));
                     let repPC = 0, repEC = 0;
 
-                    // CENÁRIO ERRADO (ATUAL - E)
                     let custoTotalE = Number((item.custo_errado * item.mg).toFixed(2));
                     let lucroE = Number((fatItem - impItem - custoTotalE).toFixed(2));
                     let repPE = 0, repEE = 0;
 
                     let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
-                    
                     let canP = !!pat.pId; 
                     let canE = !!pat.eId; 
 
@@ -915,13 +889,11 @@
                         }
                     }
 
-                    // Calculando Comissões Correto
                     if (lucroC > 0) {
                         repPC = canP ? Number((lucroC * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                         repEC = canE ? Number((lucroC * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
                     }
 
-                    // Calculando Comissões Errado
                     if (lucroE > 0) {
                         repPE = canP ? Number((lucroE * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                         repEE = canE ? Number((lucroE * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
@@ -1009,7 +981,6 @@
                 return; 
             }
 
-            // ATUALIZAÇÃO KPI DASHBOARD COM CENÁRIO E DIFERENÇA
             document.getElementById('dashUnimedTotal').innerText = sumUnimedGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashImpostoTotal').innerText = sumImpostoGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             
@@ -1034,9 +1005,8 @@
             let htmlBuffer = "";
             
             patListToPrint.forEach((pat, idx) => {
-                const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
+                const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
                 
-                // Badges Correto (Futuro)
                 let repasseP_valC = pat.repasseP_Total; 
                 let repasseE_valC = pat.repasseE_Total;
                 let repasseBadgeC = '';
@@ -1047,7 +1017,6 @@
                     if (repasseE_valC > 0) repasseBadgeC += `<div class="encaminhador">E: ${comissaoInfo.percE}% (R$ ${repasseE_valC.toLocaleString('pt-BR',{minimumFractionDigits:2})})</div>`;
                 }
 
-                // Badges Errado (Atual)
                 let repasseP_valE = pat.repasseP_TotalE; 
                 let repasseE_valE = pat.repasseE_TotalE;
                 let repasseBadgeE = '';
@@ -1122,13 +1091,11 @@
                     
                     let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     
-                    // Mostra o imposto como zero se for Particular
                     let impVisualStr = item.impItem === 0 ? "0,00" : `- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
                     let impVisual = `<span style="${styleCorte}; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</span>`;
                     
                     let subBadgeOrigem = item.tipo === 'PARTICULAR' ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
                     
-                    // HTML Cenário Errado (ATUAL)
                     let classCustoE = item.custo_errado === 0 ? 'alerta-zero' : '';
                     let inputE = `<input type="number" step="0.0001" id="custoE-${item.id}" class="input-custo ${classCustoE}" value="${item.custo_errado > 0 ? item.custo_errado : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'errado', this)">`;
                     let custoTotalEVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
@@ -1140,7 +1107,6 @@
                         if (!repEHtml) repEHtml = '-';
                     }
 
-                    // HTML Cenário Correto (FUTURO)
                     let classCustoC = item.custo_correto === 0 ? 'alerta-zero' : '';
                     let inputC = `<input type="number" step="0.0001" id="custoC-${item.id}" class="input-custo ${classCustoC}" value="${item.custo_correto > 0 ? item.custo_correto : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'correto', this)">`;
                     let custoTotalCVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
@@ -1157,7 +1123,7 @@
                         <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem}</td>
                         <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</td>
-                        <td style="text-align:right;">${impVisual}</td>
+                        <td style="text-align:right; color:#dc2626;">${impVisual}</td>
                         
                         <td style="text-align:center;">${inputE}</td>
                         <td style="text-align:right;">${custoTotalEVis}</td>
@@ -1261,7 +1227,7 @@
             let sumPdfLucroC = 0; let sumPdfRepasseC = 0;
 
             patListToPrint.forEach(pat => {
-                const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
+                const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
                 
                 sumPdfLucroC += pat.lucroGlobalPaciente;
                 sumPdfRepasseC += (pat.repasseP_Total + pat.repasseE_Total);
