@@ -702,12 +702,15 @@
                             let matchTuss = (tasyTuss === cleanUnimedTuss);
                             if (!matchTuss) return false;
 
-                            // Bate Carteirinha (Se existir na Unimed e no Tasy)
+                            // Bate Carteirinha (Removendo o último digito da Carteirinha do Tasy)
                             let matchCart = true;
-                            let tasyCart = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
+                            let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
+                            
+                            // Remove o último dígito
+                            let tasyCart = tasyCartRaw.length > 0 ? tasyCartRaw.slice(0, -1) : '';
                             
                             if (tasyCart && cleanUnimedCart) {
-                                matchCart = tasyCart.includes(cleanUnimedCart) || cleanUnimedCart.includes(tasyCart);
+                                matchCart = tasyCart === cleanUnimedCart || tasyCart.includes(cleanUnimedCart) || cleanUnimedCart.includes(tasyCart);
                             }
 
                             // Bate Data com margem de 10 dias
