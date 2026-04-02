@@ -578,7 +578,6 @@
                 const [resUnimed, resVendas, resOracle] = await Promise.all([
                     fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
-                    // 💡 AGORA VOLTOU A SER GET NORMAL!
                     fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
                 ]);
 
@@ -705,7 +704,7 @@
 
                             // Bate Carteirinha (Se existir na Unimed e no Tasy)
                             let matchCart = true;
-                            let tasyCart = String(o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
+                            let tasyCart = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                             
                             if (tasyCart && cleanUnimedCart) {
                                 matchCart = tasyCart.includes(cleanUnimedCart) || cleanUnimedCart.includes(tasyCart);
