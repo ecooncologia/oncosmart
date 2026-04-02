@@ -30,7 +30,8 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between;}
+        .controls { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px;}
+        .controls-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: space-between; width: 100%; }
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
         .input-group { margin-bottom: 0; display: flex; flex-direction: column; }
@@ -39,9 +40,15 @@
         
         .input-custo { border-radius: 4px; padding: 6px; width: 80px; font-weight: bold; outline: none; transition: 0.2s; background: #fff; text-align: center; border: 1px solid #d1d5db; color:#374151; }
         .input-custo:focus { box-shadow: 0 0 0 2px #bae6fd; border-color: #0284c7;}
-        
-        /* ALERTA VISUAL PARA CUSTO ZERO */
         .alerta-zero { background-color: #fef08a !important; border: 2px solid #eab308 !important; color: #854d0e !important; }
+
+        /* LEGENDA NO FILTRO */
+        .legend-container { display: flex; flex-direction: column; gap: 6px; padding-left: 15px; border-left: 2px solid #e5e7eb; justify-content: center; margin-left: 5px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; color: #4b5563; }
+        .legend-val { padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 11px; }
+        .leg-unimed { background: #e0f2fe; color: #0284c7; }
+        .leg-plantao { background: #fef3c7; color: #b45309; }
+        .leg-repasse { background: #dcfce7; color: #166534; }
 
         .sub-tabs-container { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
         .sub-tab-btn { background: #f3f4f6; border: 1px solid #e5e7eb; border-bottom: none; padding: 10px 20px; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 8px 8px 0 0; transition: 0.2s; white-space: nowrap; }
@@ -104,18 +111,15 @@
         .scale-table th.th-fixa { position: sticky; left: 0; z-index: 30; background: #00995D; width: 250px; height: 38px; }
         .weekend-col { background-color: #f8fafc; } .holiday-col { background-color: #fef2f2 !important; color: #dc2626; font-weight: bold; }
         
-        /* Classes de Fundo Suave para as Colunas Específicas */
-        .bg-atual { background-color: #eff6ff; } /* Azul bebê */
-        .bg-futuro { background-color: #ecfccb; } /* Verde clarinho */
+        .bg-atual { background-color: #eff6ff; }
+        .bg-futuro { background-color: #ecfccb; }
         
-        /* TOOLTIPS DISCRETOS */
         .info-tip { position: relative; display: inline-block; margin-left: 6px; cursor: help; color: rgba(255,255,255,0.7); transition: 0.2s; }
         .info-tip:hover { color: #fff; }
         .info-tip .tip-text { visibility: hidden; width: 260px; background-color: #1f2937; color: #f9fafb; text-align: left; border-radius: 8px; padding: 12px; position: absolute; z-index: 9999; top: 150%; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: normal; line-height: 1.5; opacity: 0; transition: opacity 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); white-space: normal; letter-spacing: normal; text-transform: none; }
         .info-tip .tip-text::after { content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: transparent transparent #1f2937 transparent; }
         .info-tip:hover .tip-text { visibility: visible; opacity: 1; }
         
-        /* TUSS BADGE */
         .tuss-badge { font-size: 9px; color: #6b7280; font-weight: bold; background: #f3f4f6; padding: 2px 5px; border-radius: 4px; border: 1px solid #e5e7eb; display: inline-block; margin-top: 4px; }
         .tuss-oracle-success { color: #059669; background: #d1fae5; border-color: #a7f3d0; }
     </style>
@@ -132,28 +136,30 @@
 
         <div id="tab-plantao" class="tab-content active">
             <div class="controls">
-                <div class="controls-group">
-                    <div class="input-group" style="width: 120px;">
-                        <label class="label-title">Mês da Escala</label>
-                        <select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                <div class="controls-row">
+                    <div class="controls-group">
+                        <div class="input-group" style="width: 120px;">
+                            <label class="label-title">Mês da Escala</label>
+                            <select id="selMonthPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                        </div>
+                        <div class="input-group" style="width: 90px;">
+                            <label class="label-title">Ano</label>
+                            <select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select>
+                        </div>
+                        <div class="input-group" style="min-width: 250px;">
+                            <label class="label-title">Filtrar Médico</label>
+                            <select id="filterDoctorPlantao" class="input-field" onchange="renderRepasseTable()">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="total-box">
+                            Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span>
+                        </div>
                     </div>
-                    <div class="input-group" style="width: 90px;">
-                        <label class="label-title">Ano</label>
-                        <select id="selYearPlantao" class="input-field" onchange="renderRepasseTable()"></select>
-                    </div>
-                    <div class="input-group" style="min-width: 250px;">
-                        <label class="label-title">Filtrar Médico</label>
-                        <select id="filterDoctorPlantao" class="input-field" onchange="renderRepasseTable()">
-                            <option value="">Todos</option>
-                        </select>
-                    </div>
-                    <div class="total-box">
-                        Total Geral: <span id="grandTotal" style="margin-left: 5px;">R$ 0,00</span>
-                    </div>
+                    <button class="btn-print" onclick="generatePlantaoPDF()">
+                        <i class="fas fa-print"></i> Imprimir Escala
+                    </button>
                 </div>
-                <button class="btn-print" onclick="generatePlantaoPDF()">
-                    <i class="fas fa-print"></i> Imprimir Escala
-                </button>
             </div>
             
             <div class="sub-tabs-container">
@@ -243,41 +249,58 @@
             </div>
             
             <div class="controls">
-                <div class="controls-group">
-                    <div class="input-group" style="width: 140px;">
-                        <label class="label-title">Mês da Fatura</label>
-                        <select id="selMonthUnimed" class="input-field" onchange="fetchBotData()"></select>
-                    </div>
-                    <div class="input-group" style="width: 100px;">
-                        <label class="label-title">Ano</label>
-                        <select id="selYearUnimed" class="input-field" onchange="fetchBotData()"></select>
-                    </div>
-                    
-                    <div class="input-group" style="width: 180px;">
-                        <label class="label-title">Origem do Repasse</label>
-                        <select id="filterOrigemRepasse" class="input-field" onchange="renderAnalysisTable()">
-                            <option value="todos">Todas as Origens</option>
-                            <option value="unimed">Somente Unimed</option>
-                            <option value="particular">Somente Particular</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group" style="width: 250px;">
-                        <label class="label-title">Filtrar por Médico (Vínculo)</label>
-                        <select id="filterRepasseDoctor" class="input-field" onchange="renderAnalysisTable()">
-                            <option value="">Todos os Médicos</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group" style="width: 250px;">
-                        <label class="label-title">Buscar Paciente / Carteirinha</label>
-                        <input type="text" id="filterPatient" class="input-field" placeholder="Digite o nome..." onkeyup="renderAnalysisTable()">
+                <div class="controls-row">
+                    <div class="controls-group">
+                        <div class="input-group" style="width: 140px;">
+                            <label class="label-title">Mês da Fatura</label>
+                            <select id="selMonthUnimed" class="input-field" onchange="updateLegend()"></select>
+                        </div>
+                        <div class="input-group" style="width: 100px;">
+                            <label class="label-title">Ano</label>
+                            <select id="selYearUnimed" class="input-field" onchange="updateLegend()"></select>
+                        </div>
+                        <div class="input-group" style="justify-content: flex-end;">
+                            <button class="btn-print" onclick="fetchBotData()" style="background: #0284c7;">
+                                <i class="fas fa-search"></i> Buscar Dados
+                            </button>
+                        </div>
+                        
+                        <div class="legend-container" id="repassLegend" style="display:none;">
+                            <div class="legend-item"><i class="fas fa-file-medical" style="color:#0284c7; width:15px; text-align:center;"></i> Comp. Unimed: <span class="legend-val leg-unimed" id="legUnimedVal">-</span></div>
+                            <div class="legend-item"><i class="fas fa-stethoscope" style="color:#b45309; width:15px; text-align:center;"></i> Comp. Plantão/Part: <span class="legend-val leg-plantao" id="legPlantaoVal">-</span></div>
+                            <div class="legend-item"><i class="fas fa-hand-holding-usd" style="color:#166534; width:15px; text-align:center;"></i> Mês de Repasse: <span class="legend-val leg-repasse" id="legRepasseVal">-</span></div>
+                        </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-print" onclick="generateUnimedPDF()">
-                        <i class="fas fa-file-pdf"></i> Exportar Auditoria
-                    </button>
+                
+                <div class="controls-row" style="margin-top: 5px; padding-top: 15px; border-top: 1px solid #f3f4f6;">
+                    <div class="controls-group">
+                        <div class="input-group" style="width: 180px;">
+                            <label class="label-title">Origem do Repasse</label>
+                            <select id="filterOrigemRepasse" class="input-field" onchange="renderAnalysisTable()">
+                                <option value="todos">Todas as Origens</option>
+                                <option value="unimed">Somente Unimed</option>
+                                <option value="particular">Somente Particular</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group" style="width: 250px;">
+                            <label class="label-title">Filtrar por Médico (Vínculo)</label>
+                            <select id="filterRepasseDoctor" class="input-field" onchange="renderAnalysisTable()">
+                                <option value="">Todos os Médicos</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group" style="width: 250px;">
+                            <label class="label-title">Buscar Paciente / Carteirinha</label>
+                            <input type="text" id="filterPatient" class="input-field" placeholder="Digite o nome..." onkeyup="renderAnalysisTable()">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-print" onclick="generateUnimedPDF()">
+                            <i class="fas fa-file-pdf"></i> Exportar Auditoria
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -316,7 +339,7 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="10" style="text-align:center; padding:40px; color:#999;"><i class="fas fa-spinner fa-spin"></i> Carregando dados...</td>
+                                <td colspan="10" style="text-align:center; padding:40px; color:#999;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -354,6 +377,22 @@
                 } else { normalized[key] = val; }
             }); 
             return normalized;
+        }
+
+        function updateLegend() {
+            const mesSel = parseInt(document.getElementById('selMonthUnimed').value);
+            const anoSel = parseInt(document.getElementById('selYearUnimed').value);
+            
+            if (isNaN(mesSel) || isNaN(anoSel)) return;
+
+            let dUnimed = new Date(anoSel, mesSel, 1);
+            let dPlantao = new Date(anoSel, mesSel + 1, 1);
+            let dRepasse = new Date(anoSel, mesSel + 2, 1);
+
+            document.getElementById('legUnimedVal').innerText = `${months[dUnimed.getMonth()].toUpperCase()}/${dUnimed.getFullYear()}`;
+            document.getElementById('legPlantaoVal').innerText = `${months[dPlantao.getMonth()].toUpperCase()}/${dPlantao.getFullYear()}`;
+            document.getElementById('legRepasseVal').innerText = `${months[dRepasse.getMonth()].toUpperCase()}/${dRepasse.getFullYear()}`;
+            document.getElementById('repassLegend').style.display = 'flex';
         }
 
         function getComissaoInfo(pId, eId) {
@@ -425,11 +464,14 @@
                         elUnimed.value = mesPassado; 
                     }
 
+                    updateLegend();
+                    
                     await loadProcedimentos();
                     await loadDoctors();
                     await loadPacientesDb();
+                    
+                    // A aba de plantões puxa direto. A aba da Unimed aguarda o clique no Buscar
                     renderRepasseTable(); 
-                    fetchBotData();       
                 } else {
                     setTimeout(startApp, 100);
                 }
@@ -522,6 +564,7 @@
         }
 
         async function fetchBotData() {
+            updateLegend();
             const tbody = document.querySelector('#dataTable tbody'); 
             if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Sincronizando com Tasy, Unimed e Banco de Dados...</td></tr>';
             
@@ -535,7 +578,6 @@
                 const [resUnimed, resVendas, resOracle] = await Promise.all([
                     fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
-                    // 🚀 PASSA A COMPETÊNCIA PARA O BACKEND FILTRAR A VIEW
                     fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
                 ]);
 
@@ -631,39 +673,60 @@
                     let custoCorreto = row.custo_correto !== undefined ? parseFloat(row.custo_correto) : (extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : (row.custo_informado || extras.custo_informado || 0));
                     let custoErrado = row.custo_errado !== undefined ? parseFloat(row.custo_errado) : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
 
-                    // 💡 LÓGICA DE CRUZAMENTO TUSS COM O ORACLE
+                    let dataNormalized = row.data_atendimento || "-";
+                    if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
+
+                    // 💡 LÓGICA DE CRUZAMENTO TUSS (NORMALIZADO) COM O ORACLE (NORMALIZADO) + CARTEIRINHA
                     let codigoTuss = extras.codigo_tuss || extras.tuss || null;
+                    let cleanUnimedTuss = codigoTuss ? String(codigoTuss).replace(/\D/g, '') : null;
+                    let cleanUnimedCart = String(row.carteirinha || '').replace(/\D/g, '');
+                    
+                    let uniDateObj = null;
+                    if (dataNormalized.includes('/')) {
+                        let p = dataNormalized.split('/'); uniDateObj = new Date(p[2], p[1]-1, p[0]);
+                    } else if (dataNormalized.includes('-')) {
+                        let p = dataNormalized.split('-'); uniDateObj = new Date(p[0], p[1]-1, p[2]);
+                    }
+
                     let isFromOracle = false;
 
-                    if (codigoTuss && oracleDataCache.length > 0) {
-                        console.log(`🔍 Buscando TUSS: [${codigoTuss}] do medicamento [${row.descricao}] no cache do Oracle...`);
-                        
+                    if (cleanUnimedTuss && oracleDataCache.length > 0) {
                         let oracleItem = oracleDataCache.find(o => {
-                            if (oracleDataCache.indexOf(o) === 0) {
-                                console.log(`👉 As colunas que o Tasy devolveu foram:`, Object.keys(o).join(', '));
-                            }
+                            let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
+                            let matchTuss = (tasyTuss === cleanUnimedTuss);
+                            if (!matchTuss) return false;
+
+                            let matchCart = true;
+                            let tasyCart = String(o.CARTEIRINHA || o.CD_CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                             
-                            // Tenta bater com várias possibilidades de nome de coluna do Tasy
-                            let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').trim();
-                            return tasyTuss === String(codigoTuss).trim();
+                            if (tasyCart && cleanUnimedCart) {
+                                matchCart = tasyCart.includes(cleanUnimedCart) || cleanUnimedCart.includes(tasyCart);
+                            }
+
+                            let matchDate = true;
+                            let tasyDateStr = o.DT_ATENDIMENTO || o.DATA_ATENDIMENTO || o.DT_LIBERACAO || null;
+                            if (tasyDateStr && uniDateObj) {
+                                let tDate = new Date(tasyDateStr);
+                                if (!isNaN(tDate.getTime())) {
+                                    let diffDays = Math.ceil(Math.abs(uniDateObj - tDate) / (1000 * 60 * 60 * 24));
+                                    if (diffDays > 10) matchDate = false;
+                                }
+                            }
+
+                            return matchCart && matchDate;
                         });
                         
                         if (oracleItem) {
                             let custoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
-                            console.log(`✅ MATCH PERFEITO! TUSS: ${codigoTuss} encontrado no Tasy. Custo Unitário: R$ ${custoAchado}`);
                             
-                            // Se o banco local estava zerado, nós adotamos o valor do Oracle
                             if (!custoCorreto || custoCorreto === 0) {
                                 custoCorreto = custoAchado;
                                 isFromOracle = true;
                             }
                         } else {
-                            console.log(`❌ ALERTA: O TUSS ${codigoTuss} existe na Unimed, mas NÃO FOI ENCONTRADO na view do Oracle.`);
+                            console.log(`❌ ALERTA: O TUSS Normalizado [${cleanUnimedTuss}] existe na Unimed, mas NÃO BATEU (Tuss/Cart/Data) na view do Oracle.`);
                         }
                     }
-
-                    let dataNormalized = row.data_atendimento || "-";
-                    if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
                     return {
                         id: row.id || row.id_firebase, 
@@ -797,32 +860,31 @@
 
         function renderAnalysisTable() {
             let activeElId = document.activeElement ? document.activeElement.id : null;
-
-            const mesSelUnimed = parseInt(document.getElementById('selMonthUnimed').value);
-            const anoSelUnimed = parseInt(document.getElementById('selYearUnimed').value);
             
-            if (!isNaN(mesSelUnimed) && !isNaN(anoSelUnimed)) {
-                let repasseMo = mesSelUnimed + 2;
-                let repasseYr = anoSelUnimed;
-                if (repasseMo > 11) {
-                    repasseMo -= 12;
-                    repasseYr++;
-                }
-                const monthName = months[repasseMo].toUpperCase();
-                const tagHtml = `<div style="font-size:9px; background:rgba(0,0,0,0.2); padding:3px 6px; border-radius:4px; margin-top:5px; display:inline-block; font-weight:bold; letter-spacing: 0.5px; line-height:1;"><i class="fas fa-calendar-check"></i> REPASSADO EM: <span style="color:#fef08a;">${monthName}/${repasseYr}</span></div>`;
+            const tbody = document.querySelector('#dataTable tbody');
+
+            // Se os dados estiverem vazios (tela recém aberta) e o usuário tentar buscar:
+            if (excelData.length === 0) {
+                document.getElementById('dashUnimedTotal').innerText = "R$ 0,00";
+                document.getElementById('dashImpostoTotal').innerText = "R$ 0,00";
+                document.getElementById('dashCustoTotalAtual').innerText = "R$ 0,00";
+                document.getElementById('dashCustoTotalFuturo').innerText = "R$ 0,00";
+                document.getElementById('dashCustoDiff').innerText = "R$ 0,00";
+                document.getElementById('dashLucroTotalAtual').innerText = "R$ 0,00";
+                document.getElementById('dashLucroTotalFuturo').innerText = "R$ 0,00";
+                document.getElementById('dashLucroDiff').innerText = "R$ 0,00";
+                document.getElementById('dashRepasseTotalAtual').innerText = "R$ 0,00";
+                document.getElementById('dashRepasseTotalFuturo').innerText = "R$ 0,00";
+                document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
                 
-                const thAtual = document.getElementById('thRepasseAtual');
-                const thFuturo = document.getElementById('thRepasseFuturo');
-                
-                if (thAtual) thAtual.innerHTML = `Repasse<br>${tagHtml}`;
-                if (thFuturo) thFuturo.innerHTML = `Repasse`;
+                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</td></tr>'; 
+                return;
             }
 
             const filterPatient = document.getElementById('filterPatient').value.toUpperCase();
             const filterRepasseDoc = document.getElementById('filterRepasseDoctor').value; 
             const filterOrigem = document.getElementById('filterOrigemRepasse').value; 
             
-            const tbody = document.querySelector('#dataTable tbody');
             const patientsTableObj = {};
             
             let sumUnimedGlobal = 0; 
@@ -883,7 +945,6 @@
                     return;
                 }
 
-                // 💡 CORREÇÃO: Forçando ambos os lados para texto (String)
                 if (filterRepasseDoc && String(pat.pId) !== String(filterRepasseDoc) && String(pat.eId) !== String(filterRepasseDoc)) {
                     delete patientsTableObj[key];
                     return;
@@ -893,8 +954,6 @@
 
                 pat.items.forEach(item => {
                     let fatItem = Number(item.valor.toFixed(2));
-                    
-                    // 💡 CORREÇÃO: O imposto agora é subtraído IGUALMENTE para UNIMED e PARTICULAR
                     let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                     
                     let custoTotalC = Number((item.custo_correto * item.mg).toFixed(2));
@@ -945,7 +1004,6 @@
 
                     let isVisibleForFilter = false;
                     
-                    // 💡 CORREÇÃO: Forçando ambos os lados para texto (String)
                     if (filterRepasseDoc) {
                         if (String(pat.pId) === String(filterRepasseDoc) && canP) isVisibleForFilter = true;
                         if (String(pat.eId) === String(filterRepasseDoc) && canE) isVisibleForFilter = true;
@@ -967,7 +1025,6 @@
                         pat.lucroGlobalPacienteE += lucroE;
                     }
 
-                    // 💡 CORREÇÃO: Forçando ambos os lados para texto (String)
                     if (filterRepasseDoc) {
                         if (String(pat.pId) === String(filterRepasseDoc)) { pat.repasseP_Total += repPC; pat.repasseP_TotalE += repPE; }
                         if (String(pat.eId) === String(filterRepasseDoc)) { pat.repasseE_Total += repEC; pat.repasseE_TotalE += repEE; }
