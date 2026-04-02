@@ -566,30 +566,26 @@
         async function fetchBotData() {
             updateLegend();
             const tbody = document.querySelector('#dataTable tbody'); 
-            if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Sincronizando com Tasy, Unimed e Banco de Dados...</td></tr>';
+            if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>1/2: Buscando dados da Unimed e Particulares...</td></tr>';
             
             try {
                 const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
                 const anoSelecionado = document.getElementById('selYearUnimed').value;
                 const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
 
-                console.log(`[Frontend] Requisitando dados da competência: ${competenciaAlvo}`);
-
-                const [resUnimed, resVendas, resOracle] = await Promise.all([
+                // 1. Busca Dados Locais
+                const [resUnimed, resVendas] = await Promise.all([
                     fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
+                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS })
                 ]);
 
                 const unimedData = resUnimed.ok ? normalizeData(await resUnimed.json()) : {};
                 const vendasData = resVendas.ok ? normalizeData(await resVendas.json()) : {};
                 
-                oracleDataCache = resOracle.ok ? await resOracle.json() : [];
-                console.log(`[Frontend] Oracle retornou ${oracleDataCache.length} itens do Tasy para a memória.`);
-
                 let arrayBot = Object.values(unimedData);
                 let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
 
+                // Mescla Vendas Particulares
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -660,6 +656,24 @@
                     return;
                 }
 
+                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-database" style="font-size: 20px; color: #0284c7;"></i><br><br>2/2: Cruzando dados com o Tasy (Oracle)...</td></tr>';
+
+                // 2. Extrai Lista Única de TUSS e Manda pro Oracle (Filtrando no Banco)
+                let uniqueTuss = [...new Set(dadosFiltrados.map(d => {
+                    let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : d.dados_extras;
+                    let t = ext?.codigo_tuss || ext?.tuss || null;
+                    return t ? String(t).replace(/\D/g, '') : null;
+                }).filter(Boolean))];
+
+                const reqHeaders = Object.assign({}, API_HEADERS, { 'Content-Type': 'application/json' });
+                const resOracle = await fetch(`${API_BASE_URL}/custos_oracle`, {
+                    method: 'POST',
+                    headers: reqHeaders,
+                    body: JSON.stringify({ mesAno: competenciaAlvo, tussList: uniqueTuss })
+                }).catch(() => ({ok: false}));
+
+                oracleDataCache = resOracle.ok ? await resOracle.json() : [];
+
                 let rawExcelData = dadosFiltrados.map(row => {
                     let originais = [];
                     let extras = {};
@@ -696,6 +710,7 @@
                             let matchTuss = (tasyTuss === cleanUnimedTuss);
                             if (!matchTuss) return false;
 
+                            // Bate Carteirinha (Se existir na Unimed e no Tasy)
                             let matchCart = true;
                             let tasyCart = String(o.CARTEIRINHA || o.CD_CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                             
@@ -703,6 +718,7 @@
                                 matchCart = tasyCart.includes(cleanUnimedCart) || cleanUnimedCart.includes(tasyCart);
                             }
 
+                            // Bate Data com margem de 10 dias
                             let matchDate = true;
                             let tasyDateStr = o.DT_ATENDIMENTO || o.DATA_ATENDIMENTO || o.DT_LIBERACAO || null;
                             if (tasyDateStr && uniDateObj) {
@@ -724,7 +740,7 @@
                                 isFromOracle = true;
                             }
                         } else {
-                            console.log(`❌ ALERTA: O TUSS Normalizado [${cleanUnimedTuss}] existe na Unimed, mas NÃO BATEU (Tuss/Cart/Data) na view do Oracle.`);
+                            console.log(`❌ ALERTA TASY: O TUSS Unimed [${cleanUnimedTuss}] do Paciente [${row.paciente}] bateu, mas foi recusado por Cart/Data divergente.`);
                         }
                     }
 
