@@ -682,60 +682,48 @@
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // 💡 LÓGICA DE CRUZAMENTO TUSS (NORMALIZADO) COM O ORACLE (NORMALIZADO) + CARTEIRINHA + DATA
+                    // 💡 LÓGICA DE CRUZAMENTO TUSS (NORMALIZADO) COM O ORACLE (NORMALIZADO) + CARTEIRINHA
                     let codigoTuss = extras.codigo_tuss || extras.tuss || null;
                     let cleanUnimedTuss = codigoTuss ? String(codigoTuss).replace(/\D/g, '') : null;
                     let cleanUnimedCart = String(row.carteirinha || '').replace(/\D/g, '');
                     
-                    let uniDateObj = null;
-                    if (dataNormalized.includes('/')) {
-                        let p = dataNormalized.split('/'); uniDateObj = new Date(p[2], p[1]-1, p[0]);
-                    } else if (dataNormalized.includes('-')) {
-                        let p = dataNormalized.split('-'); uniDateObj = new Date(p[0], p[1]-1, p[2]);
-                    }
-
                     let isFromOracle = false;
 
                     if (cleanUnimedTuss && oracleDataCache.length > 0) {
-                        let oracleItem = oracleDataCache.find(o => {
-                            let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
-                            let matchTuss = (tasyTuss === cleanUnimedTuss);
-                            if (!matchTuss) return false;
-
-                            // Bate Carteirinha (Removendo o último digito da Carteirinha do Tasy)
-                            let matchCart = true;
-                            let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
-                            
-                            // Remove o último dígito
-                            let tasyCart = tasyCartRaw.length > 0 ? tasyCartRaw.slice(0, -1) : '';
-                            
-                            if (tasyCart && cleanUnimedCart) {
-                                matchCart = tasyCart === cleanUnimedCart || tasyCart.includes(cleanUnimedCart) || cleanUnimedCart.includes(tasyCart);
-                            }
-
-                            // Bate Data com margem de 10 dias
-                            let matchDate = true;
-                            let tasyDateStr = o.DT_ATENDIMENTO || o.DATA_ATENDIMENTO || o.DT_LIBERACAO || null;
-                            if (tasyDateStr && uniDateObj) {
-                                let tDate = new Date(tasyDateStr);
-                                if (!isNaN(tDate.getTime())) {
-                                    let diffDays = Math.ceil(Math.abs(uniDateObj - tDate) / (1000 * 60 * 60 * 24));
-                                    if (diffDays > 10) matchDate = false;
-                                }
-                            }
-
-                            return matchCart && matchDate;
-                        });
                         
-                        if (oracleItem) {
-                            let custoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
-                            
-                            if (!custoCorreto || custoCorreto === 0) {
-                                custoCorreto = custoAchado;
-                                isFromOracle = true;
+                        // Pegar todos que batem o TUSS primeiro
+                        let candidates = oracleDataCache.filter(o => {
+                            let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
+                            return tasyTuss === cleanUnimedTuss;
+                        });
+
+                        if (candidates.length > 0) {
+                            let oracleItem = candidates.find(o => {
+                                // Bate Carteirinha flexível (inclui validação da original, cortada e includes)
+                                let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
+                                let tasyCartSliced = tasyCartRaw.length > 0 ? tasyCartRaw.slice(0, -1) : '';
+
+                                if (!cleanUnimedCart) return true; // Se a Unimed não mandou cart, aceita o primeiro que bater o TUSS
+
+                                return tasyCartRaw === cleanUnimedCart || 
+                                       tasyCartRaw.includes(cleanUnimedCart) || 
+                                       cleanUnimedCart.includes(tasyCartRaw) || 
+                                       tasyCartSliced === cleanUnimedCart ||
+                                       cleanUnimedCart.includes(tasyCartSliced);
+                            });
+
+                            if (oracleItem) {
+                                let custoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
+                                if (!custoCorreto || custoCorreto === 0) {
+                                    custoCorreto = custoAchado;
+                                    isFromOracle = true;
+                                }
+                            } else {
+                                // Raio-X do Erro!
+                                let o = candidates[0]; // Pega o primeiro que bateu o TUSS para mostrar o motivo de recusar
+                                let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
+                                console.log(`❌ DE-PARA FALHOU [${row.paciente}]: TUSS [${cleanUnimedTuss}] bateu, mas Carteirinha divergiu. \nUnimed mandou: '${cleanUnimedCart}' \nTasy devolveu: '${tasyCartRaw}'`);
                             }
-                        } else {
-                            console.log(`❌ ALERTA DE-PARA: O TUSS Normalizado [${cleanUnimedTuss}] do paciente [${row.paciente}] (Cart: ${cleanUnimedCart}) bateu no Tasy, mas foi recusado por divergência de Carteirinha ou Data.`);
                         }
                     }
 
