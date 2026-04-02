@@ -893,7 +893,9 @@
 
                 pat.items.forEach(item => {
                     let fatItem = Number(item.valor.toFixed(2));
-                    let impItem = item.tipo === 'PARTICULAR' ? 0 : Number((fatItem * IMPOSTO_TAXA).toFixed(2));
+                    
+                    // 💡 CORREÇÃO: O imposto agora é subtraído IGUALMENTE para UNIMED e PARTICULAR
+                    let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                     
                     let custoTotalC = Number((item.custo_correto * item.mg).toFixed(2));
                     let lucroC = Number((fatItem - impItem - custoTotalC).toFixed(2));
