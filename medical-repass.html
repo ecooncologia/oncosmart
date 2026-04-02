@@ -882,7 +882,9 @@
                     delete patientsTableObj[key];
                     return;
                 }
-                if (filterRepasseDoc && pat.pId !== filterRepasseDoc && pat.eId !== filterRepasseDoc) {
+
+                // 💡 CORREÇÃO: Forçando ambos os lados para texto (String)
+                if (filterRepasseDoc && String(pat.pId) !== String(filterRepasseDoc) && String(pat.eId) !== String(filterRepasseDoc)) {
                     delete patientsTableObj[key];
                     return;
                 }
@@ -940,9 +942,11 @@
                     item.repEE = repEE;
 
                     let isVisibleForFilter = false;
+                    
+                    // 💡 CORREÇÃO: Forçando ambos os lados para texto (String)
                     if (filterRepasseDoc) {
-                        if (pat.pId === filterRepasseDoc && canP) isVisibleForFilter = true;
-                        if (pat.eId === filterRepasseDoc && canE) isVisibleForFilter = true;
+                        if (String(pat.pId) === String(filterRepasseDoc) && canP) isVisibleForFilter = true;
+                        if (String(pat.eId) === String(filterRepasseDoc) && canE) isVisibleForFilter = true;
                     } else {
                         if (!isTaxa) isVisibleForFilter = true;
                         if (isTaxa && hasGrazielly) isVisibleForFilter = true; 
@@ -961,9 +965,10 @@
                         pat.lucroGlobalPacienteE += lucroE;
                     }
 
+                    // 💡 CORREÇÃO: Forçando ambos os lados para texto (String)
                     if (filterRepasseDoc) {
-                        if (pat.pId === filterRepasseDoc) { pat.repasseP_Total += repPC; pat.repasseP_TotalE += repPE; }
-                        if (pat.eId === filterRepasseDoc) { pat.repasseE_Total += repEC; pat.repasseE_TotalE += repEE; }
+                        if (String(pat.pId) === String(filterRepasseDoc)) { pat.repasseP_Total += repPC; pat.repasseP_TotalE += repPE; }
+                        if (String(pat.eId) === String(filterRepasseDoc)) { pat.repasseE_Total += repEC; pat.repasseE_TotalE += repEE; }
                     } else {
                         pat.repasseP_Total += repPC;
                         pat.repasseE_Total += repEC;
@@ -1384,7 +1389,7 @@
                 if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
                 if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
                 return false;
-            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=> (a[1].nome||'').localeCompare(b[1].nome||''))
+            }).filter(([id, d]) => filterDoc === "" || String(id) === String(filterDoc)).sort((a,b)=> (a[1].nome||'').localeCompare(b[1].nome||''))
             .forEach(([id, doc]) => { 
                 let userTotal = 0; let countShifts = 0; let row = `<tr><td class="col-fixa">${doc.nome}</td>`; 
                 for (let i = 1; i <= days; i++) { 
@@ -1451,7 +1456,7 @@
                 if (currentShiftTab.startsWith('vita') && d.vita === 'sim') return true;
                 if (currentShiftTab === 'cirurgioes' && d.cirurgiao === 'sim') return true;
                 return false;
-            }).filter(([id, d]) => filterDoc === "" || id === filterDoc).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
+            }).filter(([id, d]) => filterDoc === "" || String(id) === String(filterDoc)).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''))
             .forEach(([id, doc]) => { 
                 let userTotal = 0; let countShifts = 0; let row = ''; let hasValue = false; 
                 for (let i = 1; i <= daysInMonth; i++) { 
