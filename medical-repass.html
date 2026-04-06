@@ -566,7 +566,7 @@
         async function fetchBotData() {
             updateLegend();
             const tbody = document.querySelector('#dataTable tbody'); 
-            if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Buscando dados da Unimed e Tasy... Isso pode levar alguns segundos.</td></tr>';
+            if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Buscando dados da Unimed e Tasy... Isso pode levar alguns segundos.</span></td></tr>';
             
             try {
                 const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
@@ -682,47 +682,73 @@
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // 💡 LÓGICA DE CRUZAMENTO TUSS (NORMALIZADO) COM O ORACLE (NORMALIZADO) + CARTEIRINHA
+                    // ==============================================================
+                    // ⭐ NOVA ORDEM DE DE-PARA: PRIORIZA CARTEIRINHA, DEPOIS TUSS ⭐
+                    // ==============================================================
                     let codigoTuss = extras.codigo_tuss || extras.tuss || null;
-                    let cleanUnimedTuss = codigoTuss ? String(codigoTuss).replace(/\D/g, '') : null;
                     let cleanUnimedCart = String(row.carteirinha || '').replace(/\D/g, '');
+                    let cleanUnimedTuss = codigoTuss ? String(codigoTuss).replace(/\D/g, '') : null;
                     
                     let isFromOracle = false;
 
-                    if (cleanUnimedTuss && oracleDataCache.length > 0) {
+                    if (oracleDataCache.length > 0) {
+                        let oracleItem = null;
                         
-                        // Pegar todos que batem o TUSS primeiro
-                        let candidates = oracleDataCache.filter(o => {
-                            let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
-                            return tasyTuss === cleanUnimedTuss;
-                        });
-
-                        if (candidates.length > 0) {
-                            let oracleItem = candidates.find(o => {
-                                // Bate Carteirinha flexível (inclui validação da original, cortada e includes)
+                        // 1º PRIORIDADE: Buscar pela CARTEIRINHA (exata, ou com includes)
+                        if (cleanUnimedCart) {
+                            // Procura primeiro batendo carteirinha exata
+                            oracleItem = oracleDataCache.find(o => {
                                 let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                                 let tasyCartSliced = tasyCartRaw.length > 0 ? tasyCartRaw.slice(0, -1) : '';
-
-                                if (!cleanUnimedCart) return true; // Se a Unimed não mandou cart, aceita o primeiro que bater o TUSS
-
+                                
                                 return tasyCartRaw === cleanUnimedCart || 
                                        tasyCartRaw.includes(cleanUnimedCart) || 
                                        cleanUnimedCart.includes(tasyCartRaw) || 
                                        tasyCartSliced === cleanUnimedCart ||
                                        cleanUnimedCart.includes(tasyCartSliced);
                             });
-
+                            
                             if (oracleItem) {
-                                let custoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
-                                if (!custoCorreto || custoCorreto === 0) {
-                                    custoCorreto = custoAchado;
-                                    isFromOracle = true;
-                                }
+                                console.log(`✅ DE-PARA SUCESSO (CARTEIRINHA) [${row.paciente}]: Carteirinha '${cleanUnimedCart}' encontrada no Tasy.`);
                             } else {
-                                // Raio-X do Erro!
-                                let o = candidates[0]; // Pega o primeiro que bateu o TUSS para mostrar o motivo de recusar
-                                let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
-                                console.log(`❌ DE-PARA FALHOU [${row.paciente}]: TUSS [${cleanUnimedTuss}] bateu, mas Carteirinha divergiu. \nUnimed mandou: '${cleanUnimedCart}' \nTasy devolveu: '${tasyCartRaw}'`);
+                                console.log(`⚠️ DE-PARA CARTEIRINHA FALHOU [${row.paciente}]: Carteirinha '${cleanUnimedCart}' NÃO encontrada no Tasy. Tentando por TUSS...`);
+                            }
+                        }
+                        
+                        // 2º PRIORIDADE: Se não achou pela Carteirinha, busca pelo TUSS
+                        if (!oracleItem && cleanUnimedTuss) {
+                            oracleItem = oracleDataCache.find(o => {
+                                let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
+                                return tasyTuss === cleanUnimedTuss;
+                            });
+                            
+                            if (oracleItem) {
+                                console.log(`✅ DE-PARA SUCESSO (TUSS) [${row.paciente}]: TUSS '${cleanUnimedTuss}' encontrado no Tasy (Carteirinha falhou).`);
+                            } else {
+                                console.log(`❌ DE-PARA FALHOU (TUSS) [${row.paciente}]: TUSS '${cleanUnimedTuss}' NÃO encontrado no Tasy após falha da Carteirinha.`);
+                            }
+                        } else if (!oracleItem && !cleanUnimedCart && cleanUnimedTuss) {
+                            // Caso não tenha carteirinha, tenta direto pelo TUSS
+                            oracleItem = oracleDataCache.find(o => {
+                                let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
+                                return tasyTuss === cleanUnimedTuss;
+                            });
+                            
+                            if (oracleItem) {
+                                console.log(`✅ DE-PARA SUCESSO (TUSS) [${row.paciente}]: TUSS '${cleanUnimedTuss}' encontrado no Tasy (sem carteirinha informada).`);
+                            } else {
+                                console.log(`❌ DE-PARA FALHOU (TUSS) [${row.paciente}]: TUSS '${cleanUnimedTuss}' NÃO encontrado no Tasy (sem carteirinha).`);
+                            }
+                        } else if (!oracleItem && !cleanUnimedCart && !cleanUnimedTuss) {
+                            console.log(`⚠️ DE-PARA IMPOSSÍVEL [${row.paciente}]: Sem Carteirinha e sem TUSS para realizar o cruzamento.`);
+                        }
+                        
+                        // Se encontrou em qualquer uma das tentativas, aplica o custo
+                        if (oracleItem) {
+                            let custoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
+                            if (!custoCorreto || custoCorreto === 0) {
+                                custoCorreto = custoAchado;
+                                isFromOracle = true;
                             }
                         }
                     }
@@ -784,7 +810,7 @@
             } catch (err) {
                 excelData = [];
                 renderAnalysisTable();
-                if(tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #dc2626; padding: 30px;"><i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</td></tr>`;
+                if(tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #dc2626; padding: 30px;"><i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</span></td></tr>`;
             }
         }
 
@@ -876,7 +902,7 @@
                 document.getElementById('dashRepasseTotalFuturo').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
                 
-                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</td></tr>'; 
+                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</span></td></tr>'; 
                 return;
             }
 
@@ -1067,7 +1093,7 @@
                 document.getElementById('dashRepasseTotalFuturo').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
                 
-                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</td></tr>'; 
+                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</span></td></tr>'; 
                 return; 
             }
 
@@ -1135,17 +1161,17 @@
                             ${pat.name} ${badgesOrigem}<br>
                             <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span><br>
                             <div style="margin-top:6px;">${docHtml}</div>
-                        </td> 
-                        <td style="text-align:right; font-weight:600; color:#0284c7;">R$ ${pat.fatPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td> 
-                        <td style="text-align:right; font-weight:600; color:#dc2626; border-right: 1px solid rgba(0,0,0,0.1);"> - R$ ${pat.impostoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                         </span> 
+                        <td style="text-align:right; font-weight:600; color:#0284c7;">R$ ${pat.fatPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span> 
+                        <td style="text-align:right; font-weight:600; color:#dc2626; border-right: 1px solid rgba(0,0,0,0.1);"> - R$ ${pat.impostoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                         
-                        <td style="text-align:right; font-weight:600; color:#4b5563;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPacienteE >= 0 ? '#0369a1' : '#b91c1c'};" class="bg-atual">R$ ${pat.lucroGlobalPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:center;" class="bg-atual">${repasseBadgeE}</td>
+                        <td style="text-align:right; font-weight:600; color:#4b5563;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                        <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPacienteE >= 0 ? '#0369a1' : '#b91c1c'};" class="bg-atual">R$ ${pat.lucroGlobalPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                        <td style="text-align:center;" class="bg-atual">${repasseBadgeE}</span>
 
-                        <td style="text-align:right; font-weight:600; color:#4b5563;">- R$ ${pat.custoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPaciente >= 0 ? '#166534' : '#b91c1c'};" class="bg-futuro">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:center;" class="bg-futuro">${repasseBadgeC}</td>
+                        <td style="text-align:right; font-weight:600; color:#4b5563;">- R$ ${pat.custoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                        <td style="text-align:right; font-weight:600; color:${pat.lucroGlobalPaciente >= 0 ? '#166534' : '#b91c1c'};" class="bg-futuro">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                        <td style="text-align:center;" class="bg-futuro">${repasseBadgeC}</span>
                     </tr>
                     <tr id="L1-${idx}" class="row-detail ${isExpanded}"><td colspan="10"><table class="nested-table">
                         <thead>
@@ -1218,40 +1244,40 @@
                     }
 
                     htmlBuffer += `<tr ${titleTooltip}>
-                        <td style="text-align:center; ${styleCorte}">${item.data}</td>
-                        <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem} ${tagTuss}</td>
-                        <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</td>
-                        <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</td>
-                        <td style="text-align:right; color:#dc2626;">${impVisual}</td>
+                        <td style="text-align:center; ${styleCorte}">${item.data}</span>
+                        <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem} ${tagTuss}</span>
+                        <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</span>
+                        <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</span>
+                        <td style="text-align:right; color:#dc2626;">${impVisual}</span>
                         
-                        <td style="text-align:center;">${inputE}</td>
-                        <td style="text-align:right;">${custoTotalEVis}</td>
-                        <td style="text-align:right;" class="bg-atual">${lucroEVis}</td>
-                        <td style="text-align:center; border-right:1px solid rgba(0,0,0,0.1);" class="bg-atual">${repEHtml}</td>
+                        <td style="text-align:center;">${inputE}</span>
+                        <td style="text-align:right;">${custoTotalEVis}</span>
+                        <td style="text-align:right;" class="bg-atual">${lucroEVis}</span>
+                        <td style="text-align:center; border-right:1px solid rgba(0,0,0,0.1);" class="bg-atual">${repEHtml}</span>
 
-                        <td style="text-align:center;">${inputC}</td>
-                        <td style="text-align:right;">${custoTotalCVis}</td>
-                        <td style="text-align:right;" class="bg-futuro">${lucroCVis}</td>
-                        <td style="text-align:center;" class="bg-futuro">${repCHtml}</td>
+                        <td style="text-align:center;">${inputC}</span>
+                        <td style="text-align:right;">${custoTotalCVis}</span>
+                        <td style="text-align:right;" class="bg-futuro">${lucroCVis}</span>
+                        <td style="text-align:center;" class="bg-futuro">${repCHtml}</span>
                     </tr>`;
 
                     if (item.originais && item.originais.length > 0) {
                         item.originais.forEach(sub => {
                             htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
-                                <td style="border-bottom:none;"></td>
-                                <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</td>
-                                <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
-                                <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                <td style="border-right:1px solid rgba(0,0,0,0.1);"></td>
+                                <td style="border-bottom:none;"></span>
+                                <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</span>
+                                <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
+                                <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                                <td style="border-right:1px solid rgba(0,0,0,0.1);"></span>
                                 
-                                <td></td><td></td><td class="bg-atual"></td><td class="bg-atual" style="border-right:1px solid rgba(0,0,0,0.1);"></td>
-                                <td></td><td></td><td class="bg-futuro"></td><td class="bg-futuro"></td>
+                                <td></span><td></span><td class="bg-atual"></span><td class="bg-atual" style="border-right:1px solid rgba(0,0,0,0.1);"></span>
+                                <td></span><td></span><td class="bg-futuro"></span><td class="bg-futuro"></span>
                             </tr>`;
                         });
                     }
                 });
                 
-                htmlBuffer += `</tbody></table></td></tr>`;
+                htmlBuffer += `</tbody></td></span></tr>`;
             });
             
             if(tbody) tbody.innerHTML = htmlBuffer;
@@ -1347,17 +1373,17 @@
                 if (!repStringE) repStringE = '0%';
 
                 html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
-                    <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${rolesStr}</span></td>
-                    <td style="text-align:right; color:#0284c7;">R$ ${pat.fatPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td style="text-align:right; color:#dc2626;">- R$ ${pat.impostoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${rolesStr}</span></span>
+                    <td style="text-align:right; color:#0284c7;">R$ ${pat.fatPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                    <td style="text-align:right; color:#dc2626;">- R$ ${pat.impostoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                     
-                    <td style="text-align:right; color:#4b5563;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td style="text-align:right; color:#0369a1;">R$ ${pat.lucroGlobalPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td style="text-align:center;">${repStringE}</td>
+                    <td style="text-align:right; color:#4b5563;">- R$ ${pat.custoPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                    <td style="text-align:right; color:#0369a1;">R$ ${pat.lucroGlobalPacienteE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                    <td style="text-align:center;">${repStringE}</span>
 
-                    <td style="text-align:right; color:#4b5563;">- R$ ${pat.custoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td style="text-align:right; color:#166534;">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td style="text-align:center;">${repStringC}</td>
+                    <td style="text-align:right; color:#4b5563;">- R$ ${pat.custoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                    <td style="text-align:right; color:#166534;">R$ ${pat.lucroGlobalPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                    <td style="text-align:center;">${repStringC}</span>
                 </tr>`;
                 
                 html += `<tr><td colspan="9" style="padding:0; border:none;"><table class="sub-table" style="width:98%; margin: 4px auto; border: 1px solid #ccc;">`;
@@ -1373,17 +1399,17 @@
                     let impVisualStr = item.impItem === 0 ? "0,00" : `- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
 
                     html += `<tr>
-                        <td style="text-align:center; ${styleCorte}">${item.data}</td>
-                        <td style="${styleCorte}">${item.medicamento}${tagOrigem}</td>
-                        <td style="text-align:center; ${styleCorte}">${qtdFormatada}</td>
-                        <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="text-align:right; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</td>
+                        <td style="text-align:center; ${styleCorte}">${item.data}</span>
+                        <td style="${styleCorte}">${item.medicamento}${tagOrigem}</span>
+                        <td style="text-align:center; ${styleCorte}">${qtdFormatada}</span>
+                        <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                        <td style="text-align:right; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</span>
                         
-                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_errado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
-                        <td style="text-align:right; font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'};">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_errado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</span>
+                        <td style="text-align:right; font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'};">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
 
-                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_correto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</td>
-                        <td style="text-align:right; font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'};">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_correto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</span>
+                        <td style="text-align:right; font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'};">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                     </tr>`;
                 });
 
@@ -1391,9 +1417,9 @@
             });
             
             html += `<tr>
-                <td colspan="4" style="text-align:right; font-size:14px; font-weight:bold; color:#00855B; padding:10px;">TOTAIS GERAIS DO FILTRO (CENÁRIO FUTURO):</td>
-                <td style="text-align:right; font-size:14px; font-weight:bold; color:#166534; padding:10px;">R$ ${sumPdfLucroC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                <td colspan="4" style="text-align:left; font-size:14px; font-weight:bold; color:#7e22ce; padding:10px;">R$ ${sumPdfRepasseC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                <td colspan="4" style="text-align:right; font-size:14px; font-weight:bold; color:#00855B; padding:10px;">TOTAIS GERAIS DO FILTRO (CENÁRIO FUTURO):</span>
+                <td style="text-align:right; font-size:14px; font-weight:bold; color:#166534; padding:10px;">R$ ${sumPdfLucroC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+                <td colspan="4" style="text-align:left; font-size:14px; font-weight:bold; color:#7e22ce; padding:10px;">R$ ${sumPdfRepasseC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
             </tr>`;
             
             html += `</tbody></table></body><script>window.onload=()=>{window.print();}<\/script></html>`;
@@ -1471,7 +1497,7 @@
                 if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
             
-            if (b === '') b = `<tr><td colspan="${days+3}" style="text-align:center; padding:20px; color:#6b7280;">Nenhuma escala encontrada para este filtro.</td></tr>`;
+            if (b === '') b = `<tr><td colspan="${days+3}" style="text-align:center; padding:20px; color:#6b7280;">Nenhuma escala encontrada para este filtro.</span></tr>`;
             document.querySelector('#repTable tbody').innerHTML = b; 
             document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
         }
@@ -1533,15 +1559,15 @@
                     userTotal += money; 
                     
                     const bg = isHol ? '#FEF2F2' : (isWk ? '#F1F5F9' : '#FFF'); 
-                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money > 0 ? money : ''}</td>`; 
+                    row += `<td style="background:${bg}; border:1px solid #ccc; font-size:9px;">${money > 0 ? money : ''}</span>`; 
                 } 
                 if (hasValue || Object.keys(shifts[id] || {}).length > 0) { 
                     totalGeral += userTotal; 
-                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</td>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</td><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`; 
+                    tbody += `<tr><td style="font-weight:bold; text-align:left; border:1px solid #ccc; padding:3px;">${doc.nome}</span>${row}<td style="background:#f0f0f0; border:1px solid #ccc; font-weight:bold; font-size:10px;">${countShifts}</span><td style="background:#E6FFFA; border:1px solid #ccc; font-weight:bold; font-size:10px;">${userTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span></tr>`; 
                 } 
             }); 
             
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><table><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
+            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><tr><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
             win.document.write(html); 
             win.document.close(); 
         }
