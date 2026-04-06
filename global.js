@@ -41,10 +41,7 @@ const APP_PAGES = [
     { id: 'kanban', label: 'Trello', file: 'kanban.html', perm: 'kanban' },
     { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood' },
     
-    // CORREÇÃO: 'perm' agora é 'marketing' para obedecer a caixinha na tela de Admin!
     { id: 'marketing', label: 'Gerador de Artes', file: 'gerador-imagens.html', perm: 'marketing' },
-
-    // 💡 NOVA PÁGINA ADICIONADA AQUI:
     { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas' }
 ];
 
@@ -54,96 +51,160 @@ const MENU_SECTORS = [
     { name: "Recepção", icon: "fas fa-concierge-bell", pages: ['transporte', 'stenci', 'selos', 'tuss'] },
     { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts'] },
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
-    { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
-    
-    // 💡 PÁGINA INSERIDA DENTRO DA CENTRAL DE GUIAS:
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] }, 
-    
+    { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
     { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing'] }
 ];
 
-// Injeta o CSS do Menu Suspenso (Dropdown)
+// 💡 NOVO ESTILO: BARRA LATERAL FIXA (SIDEBAR) ESTILO SAAS 
 function injectMenuStyles() {
     if(document.getElementById('smart-menu-styles')) return;
     const style = document.createElement('style');
     style.id = 'smart-menu-styles';
     style.innerHTML = `
-        /* Fundo Colorido Gradiente da Nav Global com formato de Pílula */
-        .smart-nav-container { 
-            display: flex; 
-            justify-content: center; /* Centraliza os setores */
-            gap: 12px; 
-            padding: 12px 30px; 
-            background: linear-gradient(135deg, #00855B 0%, #00593D 100%); 
-            flex-wrap: wrap; 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15); 
-            border-bottom: 3px solid #004d34; 
-            border-radius: 16px; /* Cantos arredondados combinando com os painéis */
-            margin-top: 15px; /* Distância do cabeçalho */
-            margin-bottom: 25px; /* Distância do conteúdo da página */
+        /* CONTAINER PRINCIPAL DA BARRA LATERAL */
+        #global-nav { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 260px; 
+            height: 100vh; 
+            background: linear-gradient(180deg, #00855B 0%, #004d34 100%); 
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1); 
+            z-index: 1000;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            transition: 0.3s;
         }
         
-        .smart-dropdown { position: relative; display: inline-block; }
+        /* SCROLLBAR CUSTOMIZADA (Fininha e Discreta) */
+        #global-nav::-webkit-scrollbar { width: 5px; }
+        #global-nav::-webkit-scrollbar-track { background: transparent; }
+        #global-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        #global-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+        /* ÁREA DA LOGO NO TOPO DO MENU */
+        .sidebar-logo-area {
+            padding: 25px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+        }
+        .sidebar-logo-area img { max-width: 140px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+        /* BOTÃO MESTRE DOS SETORES (Acordeão) */
+        .smart-dropdown { margin-bottom: 5px; padding: 0 15px; }
+        .smart-dropbtn { 
+            width: 100%;
+            background: transparent; 
+            color: rgba(255,255,255,0.85); 
+            padding: 12px 15px; 
+            font-size: 13px; 
+            font-weight: 700; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            transition: 0.2s; 
+        }
+        .smart-dropbtn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         
-        /* Botões dos Setores */
-        .smart-dropbtn { background: rgba(255, 255, 255, 0.15); color: #ffffff; padding: 10px 18px; font-size: 13px; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap; backdrop-filter: blur(5px); }
-        .smart-dropbtn:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); transform: translateY(-1px); }
+        .sector-title { display: flex; align-items: center; gap: 12px; }
+        .sector-title i { font-size: 16px; width: 20px; text-align: center; }
+
+        /* STATUS ATIVO (Quando a página aberta pertence a este setor) */
+        .smart-dropdown.active-sector .smart-dropbtn { 
+            background: rgba(255, 255, 255, 0.2); 
+            color: #ffffff; 
+            font-weight: 800;
+        }
+
+        /* CAIXA DE SUB-ITENS (Páginas) */
+        .smart-dropdown-content { 
+            display: none; 
+            flex-direction: column;
+            gap: 2px;
+            padding: 5px 0 5px 35px; /* Recuo para mostrar que está dentro */
+            overflow: hidden; 
+        }
+        .smart-dropdown-content.show { display: flex; animation: slideDown 0.3s ease-out; }
         
-        /* Setor que está com a página aberta fica Branco com texto Verde */
-        .smart-dropdown.active-sector .smart-dropbtn { background: #ffffff; color: #00855B; border-color: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transform: none; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ITEM DA PÁGINA (Link) */
+        .smart-drop-item { 
+            padding: 10px 15px; 
+            text-decoration: none; 
+            color: rgba(255,255,255,0.7); 
+            font-size: 12px; 
+            font-weight: 600; 
+            border: none; 
+            background: transparent; 
+            cursor: pointer; 
+            text-align: left; 
+            width: 100%; 
+            border-radius: 6px;
+            transition: 0.2s;
+            position: relative;
+        }
+        .smart-drop-item:hover { color: white; background: rgba(255,255,255,0.05); }
         
-        /* Caixa do Dropdown */
-        .smart-dropdown-content { display: none; position: absolute; background-color: #ffffff; min-width: 230px; box-shadow: 0px 15px 35px rgba(0,0,0,0.2); z-index: 9999; border-radius: 10px; border: 1px solid #e5e7eb; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 8px; overflow: hidden; }
-        
-        /* Classe que o JS vai usar para abrir no clique */
-        .smart-dropdown-content.show { display: block; animation: dropFade 0.2s ease-out; }
-        
-        @keyframes dropFade { from { opacity: 0; margin-top: 0px; } to { opacity: 1; margin-top: 8px; } }
-        
-        /* Itens dentro do Menu */
-        .smart-drop-item { padding: 14px 20px; text-decoration: none; display: block; color: #374151; font-size: 13px; font-weight: 600; border: none; border-bottom: 1px solid #f3f4f6; transition: 0.2s; cursor: pointer; text-align: left; background: none; width: 100%; }
-        .smart-drop-item:last-child { border-bottom: none; }
-        .smart-drop-item:hover { background-color: #f0fdf4; color: #00855B; padding-left: 26px; }
-        .smart-drop-item.active { background-color: #ecfdf5; color: #00855B; border-left: 4px solid #00855B; }
-        
-        /* Mobile View Ajustes */
-        @media (max-width: 768px) {
-            .smart-nav-container { flex-direction: column; align-items: stretch; padding: 15px; border-radius: 12px; }
-            .smart-dropdown { width: 100%; }
-            .smart-dropbtn { justify-content: space-between; width: 100%; }
-            .smart-dropdown-content { position: static; box-shadow: none; border: none; border-left: 2px solid rgba(255,255,255,0.3); margin-left: 10px; margin-top: 5px; border-radius: 8px; background-color: rgba(255,255,255,0.95); transform: none; }
+        /* PÁGINA ATUAL ABERTA */
+        .smart-drop-item.active { 
+            color: white; 
+            font-weight: 800; 
+            background: rgba(255,255,255,0.15); 
+        }
+        .smart-drop-item.active::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #10b981;
+        }
+
+        /* AJUSTES PARA CELULAR (Vira um menu gaveta inferior ou tela inteira - Opcional) */
+        @media (max-width: 900px) {
+            #global-nav { position: relative; width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; }
+            .sidebar-logo-area { display: none; }
         }
     `;
     document.head.appendChild(style);
 }
 
-// Funções para Controle do Menu por Clique
+// Funções para Controle do Acordeão (Sanfona)
 window.toggleSmartMenu = function(id, event) {
-    event.stopPropagation(); // Evita que o clique feche imediatamente
+    event.stopPropagation();
     
-    // Pega o menu que foi clicado
     const targetMenu = document.getElementById(id);
+    const iconChevron = event.currentTarget.querySelector('.fa-chevron-down, .fa-chevron-right');
     const isCurrentlyOpen = targetMenu.classList.contains('show');
 
-    // Fecha todos os outros menus primeiro
+    // Comportamento moderno: Fechar outras gavetas ao abrir uma nova
     document.querySelectorAll('.smart-dropdown-content').forEach(el => {
         el.classList.remove('show');
     });
+    document.querySelectorAll('.smart-dropbtn .fa-chevron-down').forEach(el => {
+        el.classList.replace('fa-chevron-down', 'fa-chevron-right');
+    });
 
-    // Se o menu clicado NÃO estava aberto, abre ele
     if (!isCurrentlyOpen) {
         targetMenu.classList.add('show');
+        if(iconChevron) iconChevron.classList.replace('fa-chevron-right', 'fa-chevron-down');
     }
 };
-
-// Fecha qualquer menu se o usuário clicar fora
-window.addEventListener('click', function(event) {
-    if (!event.target.matches('.smart-dropbtn') && !event.target.closest('.smart-dropbtn')) {
-        document.querySelectorAll('.smart-dropdown-content.show').forEach(el => {
-            el.classList.remove('show');
-        });
-    }
-});
 
 async function initGlobal(currentPageId, pageTitle) {
     try {
@@ -189,11 +250,12 @@ function renderHeader(user, title, photoSrc) {
 
     let avatarHTML = (photoSrc) 
         ? `<img src="${photoSrc}" style="width:100%; height:100%; object-fit:cover;">` 
-        : `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;font-weight:bold; color: #00995D;">${displayName.charAt(0)}</div>`;
+        : `<span>${displayName.charAt(0)}</span>`;
 
+    // 💡 O cabeçalho agora ficou menor, pois a Logo foi para a barra lateral!
     headerEl.innerHTML = `
         <div class="header-logo"><img src="https://i.imgur.com/kpCeqqJ.png" alt="ECO"></div>
-        <div class="header-center"><h1>ONCO SMART</h1><p>${title}</p></div>
+        <div class="header-center"><p>${title}</p></div>
         <div class="user-profile">
             <div class="user-info"><div class="user-greeting">${greeting},</div><div class="user-name">${displayName}</div></div>
             <div class="user-avatar">${avatarHTML}</div>
@@ -206,9 +268,7 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
     let perms = user.permissoes || {}; 
     
     try {
-        const res = await fetch(`${API_BASE_URL}/usuarios`, {
-            headers: API_HEADERS
-        });
+        const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
         
         if (res.ok) {
             const allUsers = await res.json();
@@ -220,19 +280,21 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
                 localStorage.setItem('ecoUser', JSON.stringify(user));
             }
         }
-    } catch(e) {
-        console.error("Falha ao buscar usuários:", e);
-    }
+    } catch(e) { console.error("Falha ao buscar usuários:", e); }
 
     injectMenuStyles();
 
     const nav = document.getElementById('global-nav');
     if(!nav) return;
     
-    let html = '<div class="smart-nav-container">';
+    // 💡 INSERE A LOGO DA CLÍNICA NO TOPO DA BARRA LATERAL
+    let html = `
+        <div class="sidebar-logo-area">
+            <img src="https://i.imgur.com/kpCeqqJ.png" alt="ONCO SMART">
+        </div>
+    `;
     let hasVisibleMenu = false;
     
-    // RENDERIZAÇÃO DOS SETORES EM DROPDOWNS (Clique em vez de Hover)
     MENU_SECTORS.forEach((sector, index) => {
         let sectorHtml = '';
         let sectorHasVisiblePages = false;
@@ -243,7 +305,7 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
             if (!page) return;
 
             let show = false;
-            if (page.id === 'helpdesk') show = true; // Liberado para todos
+            if (page.id === 'helpdesk') show = true; 
             else if (page.id === 'admin') show = (perms.admin === true);
             else show = (perms[page.perm] === true);
 
@@ -259,33 +321,35 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
             }
         });
 
-        // Gera um ID único para cada menu dropdown
         const dropId = 'dropMenu' + index;
 
-        // Se o usuário tiver pelo menos 1 página liberada nesse setor, exibe o botão do setor
         if (sectorHasVisiblePages) {
             const sectorActiveClass = isSectorActive ? 'active-sector' : '';
+            // Se o setor estiver ativo, o ícone já nasce apontando para baixo e o menu aberto
+            const iconChevron = isSectorActive ? 'fa-chevron-down' : 'fa-chevron-right';
+            const showClass = isSectorActive ? 'show' : '';
+
             html += `
             <div class="smart-dropdown ${sectorActiveClass}">
                 <button class="smart-dropbtn" onclick="toggleSmartMenu('${dropId}', event)">
-                    <i class="${sector.icon}"></i> ${sector.name} &nbsp;<i class="fas fa-chevron-down" style="font-size:10px; opacity:0.8;"></i>
+                    <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
+                    <i class="fas ${iconChevron}" style="font-size:10px; opacity:0.6;"></i>
                 </button>
-                <div id="${dropId}" class="smart-dropdown-content">
+                <div id="${dropId}" class="smart-dropdown-content ${showClass}">
                     ${sectorHtml}
                 </div>
             </div>`;
         } else if (sector.pages.length === 0 && perms.admin === true) {
-            // Mostra o placeholder "Em breve" apenas para o Admin
             html += `
             <div class="smart-dropdown">
                 <button class="smart-dropbtn" style="opacity: 0.5; cursor: not-allowed;">
-                    <i class="${sector.icon}"></i> ${sector.name} <small>(Em breve)</small>
+                    <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
+                    <small style="font-size: 9px; background: rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 4px;">Em breve</small>
                 </button>
             </div>`;
         }
     });
     
-    html += '</div>';
     nav.innerHTML = html;
 
     // --- ROTEADOR (BLOQUEIO DE ACESSO INDEVIDO) ---
