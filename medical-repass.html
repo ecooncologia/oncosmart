@@ -42,6 +42,10 @@
         .input-custo:focus { box-shadow: 0 0 0 2px #bae6fd; border-color: #0284c7;}
         .alerta-zero { background-color: #fef08a !important; border: 2px solid #eab308 !important; color: #854d0e !important; }
 
+        /* Estilo para linha do paciente com custo pendente */
+        .row-parent.custo-pendente { background-color: #fffbeb !important; border-left: 4px solid #f59e0b; }
+        .row-parent.custo-pendente:hover { background-color: #fef3c7 !important; }
+
         .legend-container { display: flex; flex-direction: column; gap: 6px; padding-left: 15px; border-left: 2px solid #e5e7eb; justify-content: center; margin-left: 5px; }
         .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; color: #4b5563; }
         .legend-val { padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 11px; }
@@ -316,7 +320,7 @@
                                 <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2); z-index: 20;">
                                     CENÁRIO ATUAL
                                     <div class="info-tip"><i class="fas fa-info-circle"></i>
-                                        <span class="tip-text"><b>Cálculo Atual (Antigo):</b><br>Divide o valor do frasco inteiro (arredondado) pela quantidade que o paciente <b>usou</b>. Isso distorce e infla o custo unitário (mg/ml), pois embute o desperdício do frasco no valor da miligrama.</span>
+                                        <span class="tip-text"><b>Cálculo Atual (Antigo):</b><br>Utiliza o CUSTO_ANTIGO vindo do Tasy/Oracle, que representa o método de cálculo anterior.</span>
                                     </div>
                                 </th>
                                 <th colspan="3" style="text-align:center; color:white; border-bottom: 1px solid rgba(255,255,255,0.2); z-index: 20;">
@@ -674,14 +678,14 @@
                     if (row.itens_originais) originais = row.itens_originais;
                     else if (extras.itens_originais) originais = extras.itens_originais;
 
-                    let custoCorreto = row.custo_correto !== undefined ? parseFloat(row.custo_correto) : (extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : (row.custo_informado || extras.custo_informado || 0));
-                    let custoErrado = row.custo_errado !== undefined ? parseFloat(row.custo_errado) : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
+                    let custoFuturo = row.custo_correto !== undefined ? parseFloat(row.custo_correto) : (extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : (row.custo_informado || extras.custo_informado || 0));
+                    let custoAtual = row.custo_errado !== undefined ? parseFloat(row.custo_errado) : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
 
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
                     // ==============================================================
-                    // ⭐ NOVA ORDEM DE DE-PARA: PRIORIZA CARTEIRINHA, DEPOIS TUSS ⭐
+                    // ⭐ DE-PARA: PRIORIZA CARTEIRINHA, DEPOIS TUSS ⭐
                     // ==============================================================
                     let codigoTuss = extras.codigo_tuss || extras.tuss || null;
                     let cleanUnimedCart = String(row.carteirinha || '').replace(/\D/g, '');
@@ -739,12 +743,19 @@
                             console.log(`⚠️ DE-PARA IMPOSSÍVEL [${row.paciente}]: Sem Carteirinha e sem TUSS para realizar o cruzamento.`);
                         }
                         
-                        // Se encontrou em qualquer uma das tentativas, aplica o custo
+                        // Se encontrou, preenche os dois custos (FUTURO e ATUAL)
                         if (oracleItem) {
-                            let custoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
-                            if (!custoCorreto || custoCorreto === 0) {
-                                custoCorreto = custoAchado;
+                            // CUSTO FUTURO (cenário novo) - com 2 casas decimais
+                            let custoFuturoAchado = parseFloat(oracleItem.VL_CUSTO_UNITARIO_MANIP || oracleItem.vl_custo_unitario_manip || 0);
+                            if (!custoFuturo || custoFuturo === 0) {
+                                custoFuturo = parseFloat(custoFuturoAchado.toFixed(2));
                                 isFromOracle = true;
+                            }
+                            
+                            // CUSTO ATUAL (CUSTO_ANTIGO) - com 2 casas decimais
+                            let custoAtualAchado = parseFloat(oracleItem.CUSTO_ANTIGO || oracleItem.custo_antigo || oracleItem.VL_CUSTO_ANTIGO || 0);
+                            if (custoAtualAchado > 0 && (!custoAtual || custoAtual === 0)) {
+                                custoAtual = parseFloat(custoAtualAchado.toFixed(2));
                             }
                         }
                     }
@@ -760,14 +771,14 @@
                         competencia: row.competencia,
                         tipo: String(row.tipo || "MED").toUpperCase(), 
                         originais: originais,
-                        custo_correto: parseFloat(custoCorreto),
-                        custo_errado: parseFloat(custoErrado),
+                        custo_correto: parseFloat(custoFuturo.toFixed(2)), // Cenário FUTURO (2 casas)
+                        custo_errado: parseFloat(custoAtual.toFixed(2)),    // Cenário ATUAL (2 casas)
                         tuss: codigoTuss,
                         isFromOracle: isFromOracle
                     };
                 });
 
-                // Agrupar dados (sem filtrar nada - TODOS os pacientes devem aparecer)
+                // Agrupar dados
                 let groupedData = [];
                 let opdivoMap = {};
 
@@ -815,7 +826,7 @@
 
         async function updateCustoManual(id_item, tipo, inputElement) {
             let strVal = String(inputElement.value).replace(',', '.');
-            const novoValor = parseFloat(strVal) || 0;
+            const novoValor = parseFloat(parseFloat(strVal).toFixed(2)) || 0;
             
             const itemObj = excelData.find(d => String(d.id) === String(id_item));
             if (itemObj) {
@@ -882,6 +893,20 @@
             } catch(e) { console.error('Erro ao salvar no BD SQL:', e); }
         }
 
+        // Verifica se o médico é Grazielly ou tem vínculo com ela (carona)
+        function isGraziellyOrCarona(pId, eId, pName, eName) {
+            // Verifica se o prescritor ou encaminhador é Grazielly
+            if ((pName && pName.toUpperCase().includes('GRAZIELLY')) || 
+                (eName && eName.toUpperCase().includes('GRAZIELLY'))) {
+                return true;
+            }
+            
+            // Verifica se o médico tem vínculo com Grazielly (carona)
+            // Isso seria verificado através de alguma configuração no banco
+            // Por enquanto, vamos considerar que se não for Grazielly, não aparece taxa
+            return false;
+        }
+
         function renderAnalysisTable() {
             let activeElId = document.activeElement ? document.activeElement.id : null;
             
@@ -921,7 +946,7 @@
             let sumLucroGlobalE = 0;
             let sumRepasseGlobalE = 0;
 
-            // Primeiro, agrupar todos os itens por paciente (sem filtrar nada ainda)
+            // Primeiro, agrupar todos os itens por paciente
             excelData.forEach(d => {
                 let isParticular = d.tipo === 'PARTICULAR';
                 
@@ -936,7 +961,8 @@
                         fatPaciente: 0, impostoPaciente: 0, 
                         custoPaciente: 0, lucroGlobalPaciente: 0, repasseP_Total: 0, repasseE_Total: 0,
                         custoPacienteE: 0, lucroGlobalPacienteE: 0, repasseP_TotalE: 0, repasseE_TotalE: 0,
-                        hasUnimed: false, hasParticular: false
+                        hasUnimed: false, hasParticular: false,
+                        hasMissingCusto: false // Flag para indicar se falta custo
                     };
                 }
                 
@@ -971,11 +997,10 @@
                     return;
                 }
 
-                // Filtro de médico (apenas para exibição, não para remover o paciente)
-                let hasMatchingDoctor = false;
+                // Filtro de médico
                 if (filterRepasseDoc) {
-                    hasMatchingDoctor = (pat.pId && String(pat.pId) === String(filterRepasseDoc)) || 
-                                        (pat.eId && String(pat.eId) === String(filterRepasseDoc));
+                    let hasMatchingDoctor = (pat.pId && String(pat.pId) === String(filterRepasseDoc)) || 
+                                            (pat.eId && String(pat.eId) === String(filterRepasseDoc));
                     if (!hasMatchingDoctor) {
                         delete patientsTableObj[key];
                         return;
@@ -983,6 +1008,7 @@
                 }
 
                 const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
+                const hasGrazielly = isGraziellyOrCarona(pat.pId, pat.eId, pat.pName, pat.eName);
 
                 pat.items.forEach(item => {
                     let fatItem = Number(item.valor.toFixed(2));
@@ -1000,15 +1026,15 @@
                     let canP = !!pat.pId; 
                     let canE = !!pat.eId; 
 
-                    let hasGrazielly = false;
-                    if (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
-                    if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) hasGrazielly = true;
+                    // REGRA DAS TAXAS: só aparece se for Grazielly ou quem tem vínculo (carona)
+                    if (isTaxa && !hasGrazielly) {
+                        canP = false;
+                        canE = false;
+                    }
 
-                    if (isTaxa) {
-                        if (!hasGrazielly) {
-                            canP = false;
-                            canE = false;
-                        }
+                    // Verificar se falta custo (zero ou não definido)
+                    if (item.custo_correto === 0 || item.custo_errado === 0) {
+                        pat.hasMissingCusto = true;
                     }
 
                     if (lucroC > 0) {
@@ -1034,7 +1060,7 @@
                     item.repPE = repPE;
                     item.repEE = repEE;
 
-                    // Itens sempre são visíveis para contabilização, exceto taxas sem Grazielly
+                    // Verificar se item deve ser contabilizado (taxas só entram se for Grazielly)
                     let isVisibleForCalculation = true;
                     if (isTaxa && !hasGrazielly) {
                         isVisibleForCalculation = false;
@@ -1053,7 +1079,7 @@
                         pat.lucroGlobalPacienteE += lucroE;
                     }
 
-                    // Repasses sempre somam (mesmo se cortado visualmente)
+                    // Repasses sempre somam
                     pat.repasseP_Total += repPC;
                     pat.repasseE_Total += repEC;
                     pat.repasseP_TotalE += repPE;
@@ -1120,6 +1146,8 @@
             
             patListToPrint.forEach((pat, idx) => {
                 const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
+                // Adiciona classe CSS se faltar custo
+                const rowClass = pat.hasMissingCusto ? 'row-parent custo-pendente' : 'row-parent';
                 
                 let repasseP_valC = pat.repasseP_Total; 
                 let repasseE_valC = pat.repasseE_Total;
@@ -1152,8 +1180,11 @@
 
                 let isExpanded = expandedRows.has(idx) ? 'expanded' : '';
                 let isRotated = expandedRows.has(idx) ? 'rotate' : '';
+                
+                // Adicionar tooltip se faltar custo
+                const missingCustoTooltip = pat.hasMissingCusto ? 'title="⚠️ Este paciente possui itens com custo pendente (valor zero). Clique para verificar e preencher manualmente."' : '';
 
-                htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
+                htmlBuffer += `<tr class="${rowClass}" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))" ${missingCustoTooltip}>
                         <td style="text-align:center;"><button class="btn-toggle ${isRotated}"><i class="fas fa-chevron-right"></i></button></span>
                         <td style="font-weight:bold; color: #1f2937;">
                             ${pat.name} ${badgesOrigem}<br>
@@ -1197,9 +1228,8 @@
                     return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
                 }).forEach((item) => {
                     let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
-                    // Não ocultar itens por isCortado - apenas mostrar com estilo riscado
                     let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #9ca3af;' : '';
-                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado nos totais."' : '';
+                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado nos totais (apenas para Dra Grazielly e caronas)."' : '';
                     
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     
@@ -1220,7 +1250,7 @@
                     }
 
                     let classCustoE = item.custo_errado === 0 ? 'alerta-zero' : '';
-                    let inputE = `<input type="number" step="0.0001" id="custoE-${item.id}" class="input-custo ${classCustoE}" value="${item.custo_errado > 0 ? item.custo_errado : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'errado', this)">`;
+                    let inputE = `<input type="number" step="0.01" id="custoE-${item.id}" class="input-custo ${classCustoE}" value="${item.custo_errado > 0 ? item.custo_errado.toFixed(2) : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'errado', this)">`;
                     let custoTotalEVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let lucroEVis = `<span style="font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let repEHtml = '';
@@ -1229,7 +1259,7 @@
                     if (!repEHtml) repEHtml = '-';
 
                     let classCustoC = item.custo_correto === 0 ? 'alerta-zero' : '';
-                    let inputC = `<input type="number" step="0.0001" id="custoC-${item.id}" class="input-custo ${classCustoC}" value="${item.custo_correto > 0 ? item.custo_correto : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'correto', this)">`;
+                    let inputC = `<input type="number" step="0.01" id="custoC-${item.id}" class="input-custo ${classCustoC}" value="${item.custo_correto > 0 ? item.custo_correto.toFixed(2) : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'correto', this)">`;
                     let custoTotalCVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let lucroCVis = `<span style="font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let repCHtml = '';
@@ -1311,6 +1341,7 @@
                 th, td { border: 1px solid #ccc; padding: 4px; text-align: left; } 
                 th { background: #00855B !important; color: white !important; font-size: 10px; text-align:center;} 
                 .sub-table th { background: #f1f5f9 !important; color: #333 !important; font-size: 9px; }
+                .custo-pendente-row { background-color: #fffbeb !important; }
             </style></head><body>`;
             
             html += `<div class="header-row">
@@ -1325,7 +1356,7 @@
                             <p><i class="fas fa-user-md"></i> Filtro: ${docNameExport}</p>
                         </div>
                     </div>`;
-            html += `<tr><thead>
+            html += `<table><thead>
                 <tr>
                     <th rowspan="2">Paciente / Carteirinha</th>
                     <th rowspan="2">Fat. Analisado</th>
@@ -1347,6 +1378,7 @@
 
             patListToPrint.forEach(pat => {
                 const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
+                const rowBgStyle = pat.hasMissingCusto ? 'background-color: #fffbeb;' : '';
                 
                 sumPdfLucroC += pat.lucroGlobalPaciente;
                 sumPdfRepasseC += (pat.repasseP_Total + pat.repasseE_Total);
@@ -1366,7 +1398,7 @@
                 if (pat.repasseE_TotalE > 0) repStringE += `E: ${comissaoInfo.percE}% (R$ ${pat.repasseE_TotalE.toLocaleString('pt-BR',{minimumFractionDigits:2})})`;
                 if (!repStringE) repStringE = '0%';
 
-                html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px;">
+                html += `<tr style="background:#e2e8f0; font-weight:bold; font-size:11px; ${rowBgStyle}">
                     <td>${pat.name} <br><span style="font-weight:normal; font-size:9px;">(Cart: ${pat.carteirinha || '-'})</span><br><span style="color:#00855B; font-size:9px;">${rolesStr}</span></span>
                     <td style="text-align:right; color:#0284c7;">R$ ${pat.fatPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                     <td style="text-align:right; color:#dc2626;">- R$ ${pat.impostoPaciente.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
@@ -1399,15 +1431,15 @@
                         <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                         <td style="text-align:right; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</span>
                         
-                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_errado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</span>
+                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_errado.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                         <td style="text-align:right; font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'};">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
 
-                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_correto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:4})}</span>
+                        <td style="text-align:center; color:#4b5563;">R$ ${item.custo_correto.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                         <td style="text-align:right; font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'};">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                     </tr>`;
                 });
 
-                html += `<tr></span></tr>`;
+                html += `<td></span></tr>`;
             });
             
             html += `<tr>
@@ -1523,7 +1555,7 @@
                 const color = isHol ? '#DC2626' : '#333'; 
                 thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
             } 
-            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL (R$)</th></tr>'; 
+            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL (R$)</th></td>'; 
             
             let tbody = ''; 
             let totalGeral = 0; 
@@ -1561,7 +1593,7 @@
                 } 
             }); 
             
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><tr><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
+            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><td><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
             win.document.write(html); 
             win.document.close(); 
         }
