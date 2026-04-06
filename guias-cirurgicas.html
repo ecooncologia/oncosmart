@@ -54,7 +54,6 @@
 
         .action-btns { display: flex; gap: 10px; justify-content: center; }
         
-        /* BOTÕES DE AÇÃO JÁ COLORIDOS */
         .btn-icon { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; padding: 6px 8px; display: flex; align-items: center; justify-content: center; }
         .btn-icon.status { color: #d97706; }
         .btn-icon.attach { color: #8b5cf6; }
@@ -86,17 +85,14 @@
         .btn-cancel { background: #e2e8f0; color: #475569; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-cancel:hover { background: #cbd5e1; }
 
-        /* Menu de Status Rápido */
         .status-list { display: flex; flex-direction: column; gap: 10px; }
         .status-option { padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: #fff; }
         .status-option:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .status-option.active { border-width: 2px; }
         
-        /* Lista de Anexos */
         .anexo-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
         .anexo-item a { color: #0284c7; font-weight: 600; text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 8px;}
         .anexo-item a:hover { text-decoration: underline; }
-        .anexo-del { color: #dc2626; background: none; border: none; cursor: pointer; padding: 5px; }
         .file-upload-wrapper { border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; background: #f8fafc; cursor: pointer; transition: 0.2s; margin-top: 15px; position: relative;}
         .file-upload-wrapper:hover { border-color: #00855B; background: #f0fdf4; }
         .file-upload-wrapper input[type="file"] { position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0; cursor: pointer; }
@@ -291,11 +287,11 @@
     <div class="modal-overlay" id="statusModal">
         <div class="modal-content small">
             <div class="modal-header" style="background: #f8fafc; color: #1e293b; border-bottom: 2px solid #e2e8f0;">
-                <h3 style="font-size: 15px;"><i class="fas fa-exchange-alt" style="color: #00855B;"></i> Atualizar Status da Guia</h3>
+                <h3 style="font-size: 15px;"><i class="fas fa-exchange-alt" style="color: #00855B;"></i> Atualizar Status</h3>
                 <button class="close-modal" style="color: #64748b;" onclick="closeModal('statusModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 12px; color: #64748b; margin-top: 0;">Selecione o novo status para o paciente <strong id="statusPacienteNome" style="color: #0f172a;"></strong>:</p>
+                <p style="font-size: 12px; color: #64748b; margin-top: 0;">Novo status para <strong id="statusPacienteNome" style="color: #0f172a;"></strong>:</p>
                 <input type="hidden" id="statusGuiaId">
                 <div class="status-list" id="statusOptionsContainer">
                     </div>
@@ -340,18 +336,15 @@
             { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check' }
         ];
 
-        // Inicialização
         async function startApp() {
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('guias_cirurgicas', 'Guias Cirúrgicas');
                 
-                // Configura anos no filtro
                 const curY = new Date().getFullYear();
                 const selAno = document.getElementById('filterAno');
                 for(let i = curY - 2; i <= curY + 2; i++) { selAno.add(new Option(i, i)); }
                 selAno.value = curY;
 
-                // Identifica usuário logado
                 const userSession = localStorage.getItem('ecoUser');
                 if(userSession) {
                     try {
@@ -371,7 +364,6 @@
         }
         document.addEventListener('DOMContentLoaded', startApp);
 
-        // Carrega Procedimentos (Dropdown)
         async function loadProcedimentos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
@@ -383,8 +375,6 @@
                         rawList.push(p);
                     });
                     
-                    // Prepara para o futuro filtro de "Guias"
-                    // procedimentosList = rawList.filter(p => p.tipo && p.tipo.toLowerCase() === 'guia');
                     procedimentosList = rawList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
                     
                     const select = document.getElementById('procedimento');
@@ -393,10 +383,9 @@
                         select.innerHTML += `<option value="${p.nome}">${p.nome}</option>`;
                     });
                 }
-            } catch(e) { console.error("Erro procedimentos:", e); }
+            } catch(e) {}
         }
 
-        // Carrega Médicos (Dropdowns)
         async function loadMedicos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
@@ -416,10 +405,9 @@
                         selFiltro.innerHTML += `<option value="${m.nome}">${m.nome}</option>`;
                     });
                 }
-            } catch(e) { console.error("Erro médicos:", e); }
+            } catch(e) {}
         }
 
-        // Busca Dados das Guias
         async function loadGuias() {
             try {
                 const res = await fetch(`${API_BASE_URL}/${API_TABLE}`, { headers: API_HEADERS });
@@ -433,7 +421,6 @@
                 });
                 guiasData.sort((a, b) => new Date(b.data_envio || 0) - new Date(a.data_envio || 0));
                 
-                // Preenche filtro de responsáveis
                 const responsaveisUnicos = [...new Set(guiasData.map(g => g.responsavel).filter(Boolean))];
                 const selResp = document.getElementById('filterResp');
                 selResp.innerHTML = '<option value="todos">Todos</option>';
@@ -441,12 +428,10 @@
 
                 filterTable();
             } catch (err) {
-                console.error(err);
                 document.querySelector('#guiasTable tbody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626;">Erro ao carregar dados.</td></tr>`;
             }
         }
 
-        // Renderiza e Filtra a Tabela
         function filterTable() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const mesSel = document.getElementById('filterMes').value;
@@ -456,55 +441,48 @@
 
             const filtered = guiasData.filter(g => {
                 let match = true;
-                
                 if (term) {
                     const textStr = `${g.paciente||''} ${g.procedimento||''} ${g.hospital||''} ${g.numero_guia||''}`.toLowerCase();
                     if (!textStr.includes(term)) match = false;
                 }
-                
                 if (mesSel !== 'todos' && g.data_envio) {
-                    const p = g.data_envio.split('-'); // YYYY-MM-DD
+                    const p = g.data_envio.split('-');
                     if (p[1] !== mesSel || p[0] !== anoSel) match = false;
                 } else if (mesSel === 'todos' && g.data_envio) {
                     if (g.data_envio.split('-')[0] !== anoSel) match = false;
                 }
-
                 if (medSel !== 'todos' && g.medico !== medSel) match = false;
                 if (respSel !== 'todos' && g.responsavel !== respSel) match = false;
-
                 return match;
             });
-
             renderTable(filtered);
         }
 
-        // Retorna a cor e estilo do Convênio
         function getConvenioBadge(convenio) {
-            let bg = '#f1f5f9', color = '#475569'; // Default
+            let bg = '#f1f5f9', color = '#475569', border = '#e2e8f0'; 
             let conv = String(convenio).toLowerCase();
             
             if(conv.includes('unimed')) { bg = '#dcfce7'; color = '#166534'; border = '#bbf7d0'; } 
             else if(conv.includes('bradesco')) { bg = '#fee2e2'; color = '#dc2626'; border = '#fecaca'; }
-            else if(conv.includes('sul')) { bg = '#e0f2fe'; color = '#0284c7'; border = '#bae6fd'; } 
+            else if(conv.includes('sulamérica') || conv.includes('sulamerica')) { bg = '#e0f2fe'; color = '#0284c7'; border = '#bae6fd'; } 
             else if(conv.includes('amil')) { bg = '#f3e8ff'; color = '#7e22ce'; border = '#e9d5ff'; } 
             else if(conv.includes('cassi')) { bg = '#fef3c7'; color = '#d97706'; border = '#fde68a'; } 
             else if(conv.includes('particular')) { bg = '#e2e8f0'; color = '#1e293b'; border = '#cbd5e1'; } 
-            else { border = '#e2e8f0'; }
 
             return `<span class="status-badge" style="background:${bg}; color:${color}; border:1px solid ${border};">${convenio || '-'}</span>`;
         }
 
-        // Retorna o ícone da Forma de Envio
+        // 💡 Correção dos Ícones e cor azul claro (#0ea5e9) pro e-mail
         function getEnvioInfo(forma) {
             if(!forma) return '';
-            let icon = 'fa-paper-plane';
+            let icon = 'fas fa-paper-plane';
             let color = '#64748b';
             let str = String(forma).toLowerCase();
             
-            if(str.includes('e-mail') || str.includes('email')) { icon = 'fa-envelope'; color = '#ea4335'; }
+            if(str.includes('e-mail') || str.includes('email')) { icon = 'fas fa-envelope'; color = '#0ea5e9'; }
             else if(str.includes('whatsapp')) { icon = 'fab fa-whatsapp'; color = '#25D366'; }
-            else if(str.includes('portal')) { icon = 'fa-laptop-medical'; color = '#0284c7'; }
-            else if(str.includes('físico') || str.includes('malote')) { icon = 'fa-box'; color = '#d97706'; }
+            else if(str.includes('portal')) { icon = 'fas fa-laptop-medical'; color = '#0284c7'; }
+            else if(str.includes('físico') || str.includes('malote')) { icon = 'fas fa-box'; color = '#d97706'; }
 
             return `<div style="font-size:10px; color:${color}; margin-top:4px; font-weight:600;"><i class="${icon}"></i> ${forma}</div>`;
         }
@@ -568,6 +546,7 @@
                     </tr>
                 `;
 
+                // 💡 Linha da observação visível e colada na linha principal
                 if (hasObs) {
                     html += `
                         <tr class="obs-row" style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
@@ -590,7 +569,6 @@
             return `<span class="status-badge st-enviado"><i class="fas fa-info-circle"></i> ${status}</span>`;
         }
 
-        // Funções dos Modais principais
         function openModal(id = null) {
             document.getElementById('guiaForm').reset();
             document.getElementById('guia_id').value = '';
@@ -634,7 +612,6 @@
             setTimeout(() => modal.style.display = 'none', 300);
         }
 
-        // SALVAR GUIA (DADOS)
         async function saveGuia() {
             const form = document.getElementById('guiaForm');
             if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -648,7 +625,6 @@
             const novoStatus = document.getElementById('status').value;
             let hist = guiaAnterior.historico_status || [];
 
-            // Se for novo ou mudou o status, registra no histórico
             if (!id || guiaAnterior.status !== novoStatus) {
                 hist.push({
                     status: novoStatus,
@@ -671,7 +647,7 @@
                 status: novoStatus,
                 observacao: document.getElementById('observacao').value,
                 historico_status: hist,
-                anexos: guiaAnterior.anexos || [], // Mantém anexos existentes
+                anexos: guiaAnterior.anexos || [],
                 atualizado_em: new Date().toISOString()
             };
 
@@ -690,14 +666,14 @@
             finally { btn.innerHTML = originalText; btn.disabled = false; }
         }
 
-        // MODAL DE STATUS RÁPIDO DINÂMICO
+        // 💡 Correção do comportamento "Atualizando" no status
         function openStatusModal(id, pacienteNome) {
             document.getElementById('statusGuiaId').value = id;
             document.getElementById('statusPacienteNome').innerText = pacienteNome;
             
             const guia = guiasData.find(g => g.id_firebase === id);
             const container = document.getElementById('statusOptionsContainer');
-            container.innerHTML = ''; // Limpa opções antigas
+            container.innerHTML = ''; 
 
             statusConfig.forEach(st => {
                 const isActive = (guia && guia.status === st.name) ? 'active' : '';
@@ -707,7 +683,6 @@
                     </div>
                 `;
             });
-
             showModalElement('statusModal');
         }
 
@@ -731,7 +706,10 @@
             guia.historico_status = hist;
             guia.atualizado_em = new Date().toISOString();
 
-            // Bloqueio visual seguro (apenas o botão clicado gira)
+            // Bloqueia toda a lista de botões para evitar duplo clique
+            document.querySelectorAll('.status-option').forEach(el => el.style.pointerEvents = 'none');
+            
+            // Muda APENAS o botão clicado
             const textSpan = btnElement.querySelector('.st-text');
             const iconEl = btnElement.querySelector('i');
             const originalText = textSpan.innerText;
@@ -745,11 +723,14 @@
                     method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia)
                 });
                 closeModal('statusModal');
-                filterTable(); // Atualiza tela localmente rápido
+                
+                // Força o recarregamento total silencioso para garantir que a data apareça embaixo do status
+                await loadGuias(); 
             } catch(e) { 
                 alert("Erro ao atualizar status."); 
                 iconEl.className = originalIconClass;
                 textSpan.innerText = originalText;
+                document.querySelectorAll('.status-option').forEach(el => el.style.pointerEvents = 'auto');
             }
         }
 
@@ -760,6 +741,31 @@
             showModalElement('anexosModal');
         }
 
+        // 💡 Função de Visualização nativa do navegador (Sem download obrigatório)
+        window.visualizarAnexo = function(guiaId, anexoIdx) {
+            const guia = guiasData.find(g => g.id_firebase === guiaId);
+            if(!guia || !guia.anexos || !guia.anexos[anexoIdx]) return;
+            
+            const anx = guia.anexos[anexoIdx];
+            
+            try {
+                let arr = anx.base64.split(',');
+                let mime = arr[0].match(/:(.*?);/)[1];
+                let bstr = atob(arr[1]);
+                let n = bstr.length;
+                let u8arr = new Uint8Array(n);
+                while(n--){
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                let blob = new Blob([u8arr], {type: mime});
+                let url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch(e) {
+                alert("Erro ao visualizar o anexo. Tente usar o botão de Download.");
+            }
+        };
+
+        // 💡 Renderização da lista de anexos com o botão Visualizar (Olho)
         function renderAnexosList(id) {
             const guia = guiasData.find(g => g.id_firebase === id);
             const container = document.getElementById('listaAnexos');
@@ -773,8 +779,14 @@
                     let icone = anx.nome.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image';
                     container.innerHTML += `
                         <div class="anexo-item">
-                            <a href="${anx.base64}" download="${anx.nome}"><i class="fas ${icone}"></i> ${anx.nome}</a>
-                            <button class="anexo-del" onclick="deleteAttachment('${id}', ${idx})" title="Excluir anexo"><i class="fas fa-trash"></i></button>
+                            <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 60%;">
+                                <i class="fas ${icone}" style="color:#64748b;"></i> ${anx.nome}
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-sm" style="background:#e0f2fe; color:#0284c7; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="visualizarAnexo('${id}', ${idx})" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                <a href="${anx.base64}" download="${anx.nome}" class="btn-sm" style="background:#dcfce7; color:#166534; text-decoration:none; padding:6px 10px; border-radius:4px; display:flex; align-items:center;" title="Baixar"><i class="fas fa-download"></i></a>
+                                <button class="btn-sm" style="background:#fee2e2; color:#dc2626; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="deleteAttachment('${id}', ${idx})" title="Excluir"><i class="fas fa-trash"></i></button>
+                            </div>
                         </div>
                     `;
                 });
@@ -785,7 +797,6 @@
             const file = inputEl.files[0];
             if(!file) return;
 
-            // Bloqueio de tamanho (2MB = 2 * 1024 * 1024) para não travar o banco/API
             if (file.size > 2097152) {
                 alert("O arquivo é muito grande! O limite máximo é de 2MB. Compacte o PDF ou envie uma imagem menor.");
                 inputEl.value = '';
@@ -837,7 +848,6 @@
             }
         }
 
-        // DELETAR GUIA
         async function deleteGuia(id) {
             if (!confirm('Tem certeza que deseja excluir toda essa guia cirúrgica do sistema? Essa ação não pode ser desfeita.')) return;
             try {
@@ -863,13 +873,11 @@
             let tbodyHtml = '';
             let totalVal = 0;
 
-            // Extrair dados diretamente das linhas renderizadas na tela (respeitando o filtro atual)
             const rows = Array.from(tbody.querySelectorAll('tr.main-row'));
             rows.forEach(tr => {
                 const cols = tr.querySelectorAll('td');
                 if(cols.length < 7) return; 
                 
-                // Limpa o HTML interno para extrair só o texto puro pro PDF
                 let dt = cols[0].innerHTML.split('<div')[0].replace(/<[^>]*>?/gm, '').trim(); 
                 let p = cols[1].innerHTML.split('<br>')[0].replace(/<[^>]*>?/gm, '').trim(); 
                 let m = cols[1].innerText.split('\n')[1] || ''; 
@@ -881,7 +889,6 @@
                 let valNum = parseFloat(valStr) || 0;
                 totalVal += valNum;
 
-                // Localiza se essa linha possui uma "obs-row" logo abaixo dela
                 let nextRow = tr.nextElementSibling;
                 let obsHtml = '';
                 if(nextRow && nextRow.classList.contains('obs-row')) {
