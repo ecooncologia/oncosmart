@@ -42,7 +42,6 @@
         .input-custo:focus { box-shadow: 0 0 0 2px #bae6fd; border-color: #0284c7;}
         .alerta-zero { background-color: #fef08a !important; border: 2px solid #eab308 !important; color: #854d0e !important; }
 
-        /* LEGENDA NO FILTRO */
         .legend-container { display: flex; flex-direction: column; gap: 6px; padding-left: 15px; border-left: 2px solid #e5e7eb; justify-content: center; margin-left: 5px; }
         .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; color: #4b5563; }
         .legend-val { padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 11px; }
@@ -339,7 +338,7 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="10" style="text-align:center; padding:40px; color:#999;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</td>
+                                <td colspan="10" style="text-align:center; padding:40px; color:#999;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -356,7 +355,7 @@
         let shifts = {};
         let pacientesDb = {};
         let dbProcedimentos = {}; 
-        let oracleDataCache = []; // Armazena o JSON do Oracle
+        let oracleDataCache = []; 
         let patListToPrint = []; 
         
         let expandedRows = new Set();
@@ -470,7 +469,6 @@
                     await loadDoctors();
                     await loadPacientesDb();
                     
-                    // A aba de plantões puxa direto. A aba da Unimed aguarda o clique no Buscar
                     renderRepasseTable(); 
                 } else {
                     setTimeout(startApp, 100);
@@ -694,9 +692,8 @@
                     if (oracleDataCache.length > 0) {
                         let oracleItem = null;
                         
-                        // 1º PRIORIDADE: Buscar pela CARTEIRINHA (exata, ou com includes)
+                        // 1º PRIORIDADE: Buscar pela CARTEIRINHA
                         if (cleanUnimedCart) {
-                            // Procura primeiro batendo carteirinha exata
                             oracleItem = oracleDataCache.find(o => {
                                 let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                                 let tasyCartSliced = tasyCartRaw.length > 0 ? tasyCartRaw.slice(0, -1) : '';
@@ -728,7 +725,6 @@
                                 console.log(`❌ DE-PARA FALHOU (TUSS) [${row.paciente}]: TUSS '${cleanUnimedTuss}' NÃO encontrado no Tasy após falha da Carteirinha.`);
                             }
                         } else if (!oracleItem && !cleanUnimedCart && cleanUnimedTuss) {
-                            // Caso não tenha carteirinha, tenta direto pelo TUSS
                             oracleItem = oracleDataCache.find(o => {
                                 let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
                                 return tasyTuss === cleanUnimedTuss;
@@ -771,6 +767,7 @@
                     };
                 });
 
+                // Agrupar dados (sem filtrar nada - TODOS os pacientes devem aparecer)
                 let groupedData = [];
                 let opdivoMap = {};
 
@@ -806,8 +803,10 @@
                 });
 
                 excelData = groupedData;
+                console.log(`[Frontend] Total de itens processados: ${excelData.length}`);
                 renderAnalysisTable();
             } catch (err) {
+                console.error("Erro ao buscar dados:", err);
                 excelData = [];
                 renderAnalysisTable();
                 if(tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #dc2626; padding: 30px;"><i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom:10px; display:block;"></i>${err.message}</span></td></tr>`;
@@ -888,7 +887,6 @@
             
             const tbody = document.querySelector('#dataTable tbody');
 
-            // Se os dados estiverem vazios (tela recém aberta) e o usuário tentar buscar:
             if (excelData.length === 0) {
                 document.getElementById('dashUnimedTotal').innerText = "R$ 0,00";
                 document.getElementById('dashImpostoTotal').innerText = "R$ 0,00";
@@ -923,6 +921,7 @@
             let sumLucroGlobalE = 0;
             let sumRepasseGlobalE = 0;
 
+            // Primeiro, agrupar todos os itens por paciente (sem filtrar nada ainda)
             excelData.forEach(d => {
                 let isParticular = d.tipo === 'PARTICULAR';
                 
@@ -962,17 +961,25 @@
                 patientsTableObj[p].items.push(d);
             });
 
+            // Agora aplicar os filtros e calcular
             Object.keys(patientsTableObj).forEach(key => {
                 let pat = patientsTableObj[key];
                 
+                // Filtro de paciente/carteirinha
                 if (filterPatient && !key.includes(filterPatient) && !(pat.carteirinha || '').includes(filterPatient)) {
                     delete patientsTableObj[key];
                     return;
                 }
 
-                if (filterRepasseDoc && String(pat.pId) !== String(filterRepasseDoc) && String(pat.eId) !== String(filterRepasseDoc)) {
-                    delete patientsTableObj[key];
-                    return;
+                // Filtro de médico (apenas para exibição, não para remover o paciente)
+                let hasMatchingDoctor = false;
+                if (filterRepasseDoc) {
+                    hasMatchingDoctor = (pat.pId && String(pat.pId) === String(filterRepasseDoc)) || 
+                                        (pat.eId && String(pat.eId) === String(filterRepasseDoc));
+                    if (!hasMatchingDoctor) {
+                        delete patientsTableObj[key];
+                        return;
+                    }
                 }
 
                 const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
@@ -1027,19 +1034,15 @@
                     item.repPE = repPE;
                     item.repEE = repEE;
 
-                    let isVisibleForFilter = false;
-                    
-                    if (filterRepasseDoc) {
-                        if (String(pat.pId) === String(filterRepasseDoc) && canP) isVisibleForFilter = true;
-                        if (String(pat.eId) === String(filterRepasseDoc) && canE) isVisibleForFilter = true;
-                    } else {
-                        if (!isTaxa) isVisibleForFilter = true;
-                        if (isTaxa && hasGrazielly) isVisibleForFilter = true; 
+                    // Itens sempre são visíveis para contabilização, exceto taxas sem Grazielly
+                    let isVisibleForCalculation = true;
+                    if (isTaxa && !hasGrazielly) {
+                        isVisibleForCalculation = false;
                     }
+                    
+                    item.isCortado = !isVisibleForCalculation;
 
-                    item.isCortado = !isVisibleForFilter;
-
-                    if (isVisibleForFilter) {
+                    if (isVisibleForCalculation) {
                         pat.fatPaciente += fatItem;
                         pat.impostoPaciente += impItem;
                         
@@ -1050,21 +1053,12 @@
                         pat.lucroGlobalPacienteE += lucroE;
                     }
 
-                    if (filterRepasseDoc) {
-                        if (String(pat.pId) === String(filterRepasseDoc)) { pat.repasseP_Total += repPC; pat.repasseP_TotalE += repPE; }
-                        if (String(pat.eId) === String(filterRepasseDoc)) { pat.repasseE_Total += repEC; pat.repasseE_TotalE += repEE; }
-                    } else {
-                        pat.repasseP_Total += repPC;
-                        pat.repasseE_Total += repEC;
-                        pat.repasseP_TotalE += repPE;
-                        pat.repasseE_TotalE += repEE;
-                    }
+                    // Repasses sempre somam (mesmo se cortado visualmente)
+                    pat.repasseP_Total += repPC;
+                    pat.repasseE_Total += repEC;
+                    pat.repasseP_TotalE += repPE;
+                    pat.repasseE_TotalE += repEE;
                 });
-
-                if (filterRepasseDoc && pat.repasseP_Total === 0 && pat.repasseE_Total === 0 && pat.fatPaciente === 0) {
-                    delete patientsTableObj[key];
-                    return;
-                }
 
                 sumUnimedGlobal += pat.fatPaciente;
                 sumImpostoGlobal += pat.impostoPaciente;
@@ -1079,6 +1073,8 @@
             });
             
             patListToPrint = Object.values(patientsTableObj).sort((a,b) => a.name.localeCompare(b.name));
+            
+            console.log(`[Render] Total de pacientes a serem exibidos: ${patListToPrint.length}`);
             
             if (patListToPrint.length === 0) { 
                 document.getElementById('dashUnimedTotal').innerText = "R$ 0,00";
@@ -1097,6 +1093,7 @@
                 return; 
             }
 
+            // Atualizar cards de dashboard
             document.getElementById('dashUnimedTotal').innerText = sumUnimedGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashImpostoTotal').innerText = sumImpostoGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             
@@ -1118,6 +1115,7 @@
             document.getElementById('dashRepasseDiff').innerText = (diffRepasse > 0 ? '+' : '') + diffRepasse.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashRepasseDiff').style.color = diffRepasse === 0 ? '#6b7280' : (diffRepasse > 0 ? '#10b981' : '#ef4444'); 
 
+            // Construir HTML da tabela
             let htmlBuffer = "";
             
             patListToPrint.forEach((pat, idx) => {
@@ -1156,7 +1154,7 @@
                 let isRotated = expandedRows.has(idx) ? 'rotate' : '';
 
                 htmlBuffer += `<tr class="row-parent" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))">
-                        <td style="text-align:center;"><button class="btn-toggle ${isRotated}"><i class="fas fa-chevron-right"></i></button></td>
+                        <td style="text-align:center;"><button class="btn-toggle ${isRotated}"><i class="fas fa-chevron-right"></i></button></span>
                         <td style="font-weight:bold; color: #1f2937;">
                             ${pat.name} ${badgesOrigem}<br>
                             <span style="font-size: 10px; color: #6b7280; font-weight: normal;">Cart: ${pat.carteirinha || 'Não informada'}</span><br>
@@ -1199,11 +1197,11 @@
                     return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
                 }).forEach((item) => {
                     let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
-                    if (item.isCortado && isTaxa) return; 
-
+                    // Não ocultar itens por isCortado - apenas mostrar com estilo riscado
+                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #9ca3af;' : '';
+                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado nos totais."' : '';
+                    
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
-                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado neste cenário."' : '';
                     
                     let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     
@@ -1226,26 +1224,22 @@
                     let custoTotalEVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let lucroEVis = `<span style="font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let repEHtml = '';
-                    if (item.isCortado) { repEHtml = `<span style="color:#9ca3af; font-size:10px;">Riscado</span>`; } else {
-                        if (item.repPE > 0) repEHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
-                        if (item.repEE > 0) repEHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
-                        if (!repEHtml) repEHtml = '-';
-                    }
+                    if (item.repPE > 0) repEHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                    if (item.repEE > 0) repEHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                    if (!repEHtml) repEHtml = '-';
 
                     let classCustoC = item.custo_correto === 0 ? 'alerta-zero' : '';
                     let inputC = `<input type="number" step="0.0001" id="custoC-${item.id}" class="input-custo ${classCustoC}" value="${item.custo_correto > 0 ? item.custo_correto : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'correto', this)">`;
                     let custoTotalCVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let lucroCVis = `<span style="font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let repCHtml = '';
-                    if (item.isCortado) { repCHtml = `<span style="color:#9ca3af; font-size:10px;">Riscado</span>`; } else {
-                        if (item.repPC > 0) repCHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
-                        if (item.repEC > 0) repCHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
-                        if (!repCHtml) repCHtml = '-';
-                    }
+                    if (item.repPC > 0) repCHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                    if (item.repEC > 0) repCHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+                    if (!repCHtml) repCHtml = '-';
 
                     htmlBuffer += `<tr ${titleTooltip}>
                         <td style="text-align:center; ${styleCorte}">${item.data}</span>
-                        <td style="font-weight:600; color:${item.isCortado ? '#dc2626' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem} ${tagTuss}</span>
+                        <td style="font-weight:600; color:${item.isCortado ? '#9ca3af' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem} ${tagTuss}</span>
                         <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</span>
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</span>
                         <td style="text-align:right; color:#dc2626;">${impVisual}</span>
@@ -1277,7 +1271,7 @@
                     }
                 });
                 
-                htmlBuffer += `</tbody></td></span></tr>`;
+                htmlBuffer += `</tbody></table></span></tr>`;
             });
             
             if(tbody) tbody.innerHTML = htmlBuffer;
@@ -1331,7 +1325,7 @@
                             <p><i class="fas fa-user-md"></i> Filtro: ${docNameExport}</p>
                         </div>
                     </div>`;
-            html += `<table><thead>
+            html += `<tr><thead>
                 <tr>
                     <th rowspan="2">Paciente / Carteirinha</th>
                     <th rowspan="2">Fat. Analisado</th>
@@ -1413,7 +1407,7 @@
                     </tr>`;
                 });
 
-                html += `</table></td></tr>`;
+                html += `<tr></span></tr>`;
             });
             
             html += `<tr>
