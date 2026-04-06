@@ -125,6 +125,8 @@
         
         .tuss-badge { font-size: 9px; color: #6b7280; font-weight: bold; background: #f3f4f6; padding: 2px 5px; border-radius: 4px; border: 1px solid #e5e7eb; display: inline-block; margin-top: 4px; }
         .tuss-oracle-success { color: #059669; background: #d1fae5; border-color: #a7f3d0; }
+        
+        .hidden-item { display: none; }
     </style>
 </head>
 <body>
@@ -893,17 +895,23 @@
             } catch(e) { console.error('Erro ao salvar no BD SQL:', e); }
         }
 
-        // Verifica se o médico é Grazielly ou tem vínculo com ela (carona)
-        function isGraziellyOrCarona(pId, eId, pName, eName) {
-            // Verifica se o prescritor ou encaminhador é Grazielly
-            if ((pName && pName.toUpperCase().includes('GRAZIELLY')) || 
-                (eName && eName.toUpperCase().includes('GRAZIELLY'))) {
+        // Verifica se o paciente tem vínculo com a Dra Grazielly (prescritora ou encaminhadora)
+        function hasGrazielly(pat) {
+            // Verifica pelo nome do prescritor
+            if (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')) {
                 return true;
             }
-            
-            // Verifica se o médico tem vínculo com Grazielly (carona)
-            // Isso seria verificado através de alguma configuração no banco
-            // Por enquanto, vamos considerar que se não for Grazielly, não aparece taxa
+            // Verifica pelo nome do encaminhador
+            if (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) {
+                return true;
+            }
+            // Verifica pelo ID (caso o nome não esteja disponível)
+            if (pat.pId && doctors[pat.pId] && doctors[pat.pId].nome && doctors[pat.pId].nome.toUpperCase().includes('GRAZIELLY')) {
+                return true;
+            }
+            if (pat.eId && doctors[pat.eId] && doctors[pat.eId].nome && doctors[pat.eId].nome.toUpperCase().includes('GRAZIELLY')) {
+                return true;
+            }
             return false;
         }
 
@@ -925,7 +933,7 @@
                 document.getElementById('dashRepasseTotalFuturo').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
                 
-                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</span></td></tr>'; 
+                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;"><i class="fas fa-filter"></i> Aguardando Busca. Selecione o Mês da Fatura e clique em Buscar Dados.</span></td></td>'; 
                 return;
             }
 
@@ -962,7 +970,7 @@
                         custoPaciente: 0, lucroGlobalPaciente: 0, repasseP_Total: 0, repasseE_Total: 0,
                         custoPacienteE: 0, lucroGlobalPacienteE: 0, repasseP_TotalE: 0, repasseE_TotalE: 0,
                         hasUnimed: false, hasParticular: false,
-                        hasMissingCusto: false // Flag para indicar se falta custo
+                        hasMissingCusto: false
                     };
                 }
                 
@@ -1008,7 +1016,23 @@
                 }
 
                 const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
-                const hasGrazielly = isGraziellyOrCarona(pat.pId, pat.eId, pat.pName, pat.eName);
+                const temGrazielly = hasGrazielly(pat);
+
+                // Filtrar os itens: se for TAXA e NÃO tiver Grazielly, remove o item completamente
+                pat.items = pat.items.filter(item => {
+                    let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
+                    if (isTaxa && !temGrazielly) {
+                        console.log(`[Taxa Ocultada] Paciente ${pat.name} - Item: ${item.medicamento} - Motivo: Dra Grazielly não vinculada`);
+                        return false; // Remove o item da lista
+                    }
+                    return true;
+                });
+
+                // Se após filtrar não restou nenhum item, remove o paciente
+                if (pat.items.length === 0) {
+                    delete patientsTableObj[key];
+                    return;
+                }
 
                 pat.items.forEach(item => {
                     let fatItem = Number(item.valor.toFixed(2));
@@ -1022,17 +1046,10 @@
                     let lucroE = Number((fatItem - impItem - custoTotalE).toFixed(2));
                     let repPE = 0, repEE = 0;
 
-                    let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
                     let canP = !!pat.pId; 
                     let canE = !!pat.eId; 
 
-                    // REGRA DAS TAXAS: só aparece se for Grazielly ou quem tem vínculo (carona)
-                    if (isTaxa && !hasGrazielly) {
-                        canP = false;
-                        canE = false;
-                    }
-
-                    // Verificar se falta custo (zero ou não definido)
+                    // Verificar se falta custo
                     if (item.custo_correto === 0 || item.custo_errado === 0) {
                         pat.hasMissingCusto = true;
                     }
@@ -1060,26 +1077,17 @@
                     item.repPE = repPE;
                     item.repEE = repEE;
 
-                    // Verificar se item deve ser contabilizado (taxas só entram se for Grazielly)
-                    let isVisibleForCalculation = true;
-                    if (isTaxa && !hasGrazielly) {
-                        isVisibleForCalculation = false;
-                    }
+                    // Todos os itens restantes são contabilizados
+                    pat.fatPaciente += fatItem;
+                    pat.impostoPaciente += impItem;
                     
-                    item.isCortado = !isVisibleForCalculation;
+                    pat.custoPaciente += custoTotalC;
+                    pat.lucroGlobalPaciente += lucroC;
 
-                    if (isVisibleForCalculation) {
-                        pat.fatPaciente += fatItem;
-                        pat.impostoPaciente += impItem;
-                        
-                        pat.custoPaciente += custoTotalC;
-                        pat.lucroGlobalPaciente += lucroC;
+                    pat.custoPacienteE += custoTotalE;
+                    pat.lucroGlobalPacienteE += lucroE;
 
-                        pat.custoPacienteE += custoTotalE;
-                        pat.lucroGlobalPacienteE += lucroE;
-                    }
-
-                    // Repasses sempre somam
+                    // Repasses
                     pat.repasseP_Total += repPC;
                     pat.repasseE_Total += repEC;
                     pat.repasseP_TotalE += repPE;
@@ -1115,7 +1123,7 @@
                 document.getElementById('dashRepasseTotalFuturo').innerText = "R$ 0,00";
                 document.getElementById('dashRepasseDiff').innerText = "R$ 0,00";
                 
-                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</span></td></tr>'; 
+                if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#6b7280; padding:30px;">Nenhum resultado encontrado para os filtros atuais.</span></td></table>'; 
                 return; 
             }
 
@@ -1146,7 +1154,6 @@
             
             patListToPrint.forEach((pat, idx) => {
                 const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
-                // Adiciona classe CSS se faltar custo
                 const rowClass = pat.hasMissingCusto ? 'row-parent custo-pendente' : 'row-parent';
                 
                 let repasseP_valC = pat.repasseP_Total; 
@@ -1181,7 +1188,6 @@
                 let isExpanded = expandedRows.has(idx) ? 'expanded' : '';
                 let isRotated = expandedRows.has(idx) ? 'rotate' : '';
                 
-                // Adicionar tooltip se faltar custo
                 const missingCustoTooltip = pat.hasMissingCusto ? 'title="⚠️ Este paciente possui itens com custo pendente (valor zero). Clique para verificar e preencher manualmente."' : '';
 
                 htmlBuffer += `<tr class="${rowClass}" onclick="if(!event.target.closest('input') && !event.target.closest('button')) toggleLevel1(${idx}, this.querySelector('.btn-toggle'))" ${missingCustoTooltip}>
@@ -1227,16 +1233,12 @@
                     let pa = a.data.split('/'); let pb = b.data.split('/');
                     return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
                 }).forEach((item) => {
-                    let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
-                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #9ca3af;' : '';
-                    let titleTooltip = item.isCortado ? 'title="TAXA/ITEM não contabilizado nos totais (apenas para Dra Grazielly e caronas)."' : '';
-                    
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     
-                    let fatVisual = `<span style="${styleCorte}">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let fatVisual = `R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
                     
                     let impVisualStr = item.impItem === 0 ? "0,00" : `- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                    let impVisual = `<span style="${styleCorte}; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</span>`;
+                    let impVisual = `<span style="color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</span>`;
                     
                     let subBadgeOrigem = item.tipo === 'PARTICULAR' ? `<span style="font-size:9px; color:#b45309; background:#fef3c7; padding:1px 4px; border-radius:4px; margin-left:5px;">Particular</span>` : '';
                     
@@ -1251,8 +1253,8 @@
 
                     let classCustoE = item.custo_errado === 0 ? 'alerta-zero' : '';
                     let inputE = `<input type="number" step="0.01" id="custoE-${item.id}" class="input-custo ${classCustoE}" value="${item.custo_errado > 0 ? item.custo_errado.toFixed(2) : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'errado', this)">`;
-                    let custoTotalEVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-                    let lucroEVis = `<span style="font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let custoTotalEVis = `- R$ ${item.custoTotalE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    let lucroEVis = `<span style="font-weight:bold; color:${item.lucroE >= 0 ? '#0369a1' : '#dc2626'};">R$ ${item.lucroE.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let repEHtml = '';
                     if (item.repPE > 0) repEHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
                     if (item.repEE > 0) repEHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEE.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
@@ -1260,17 +1262,17 @@
 
                     let classCustoC = item.custo_correto === 0 ? 'alerta-zero' : '';
                     let inputC = `<input type="number" step="0.01" id="custoC-${item.id}" class="input-custo ${classCustoC}" value="${item.custo_correto > 0 ? item.custo_correto.toFixed(2) : ''}" placeholder="R$ 0,00" onchange="updateCustoManual('${item.id}', 'correto', this)">`;
-                    let custoTotalCVis = `<span style="${styleCorte}; color:#4b5563;">- R$ ${item.custoTotalC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-                    let lucroCVis = `<span style="font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'}; ${styleCorte}">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+                    let custoTotalCVis = `- R$ ${item.custoTotalC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    let lucroCVis = `<span style="font-weight:bold; color:${item.lucroC >= 0 ? '#166534' : '#dc2626'};">R$ ${item.lucroC.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
                     let repCHtml = '';
                     if (item.repPC > 0) repCHtml += `<div style="font-size:10px; color:#be185d;">P: R$ ${item.repPC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
                     if (item.repEC > 0) repCHtml += `<div style="font-size:10px; color:#c2410c;">E: R$ ${item.repEC.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
                     if (!repCHtml) repCHtml = '-';
 
-                    htmlBuffer += `<tr ${titleTooltip}>
-                        <td style="text-align:center; ${styleCorte}">${item.data}</span>
-                        <td style="font-weight:600; color:${item.isCortado ? '#9ca3af' : '#00855B'}; ${styleCorte}">${item.medicamento} ${subBadgeOrigem} ${tagTuss}</span>
-                        <td style="text-align:center; font-weight:bold; ${styleCorte}">${qtdFormatada}</span>
+                    htmlBuffer += `<tr>
+                        <td style="text-align:center;">${item.data}</span>
+                        <td style="font-weight:600; color:#00855B;">${item.medicamento} ${subBadgeOrigem} ${tagTuss}</span>
+                        <td style="text-align:center; font-weight:bold;">${qtdFormatada}</span>
                         <td style="text-align:right; font-weight:500; color:#0284c7;">${fatVisual}</span>
                         <td style="text-align:right; color:#dc2626;">${impVisual}</span>
                         
@@ -1287,11 +1289,11 @@
 
                     if (item.originais && item.originais.length > 0) {
                         item.originais.forEach(sub => {
-                            htmlBuffer += `<tr class="sub-item-row" ${titleTooltip}>
+                            htmlBuffer += `<tr class="sub-item-row">
                                 <td style="border-bottom:none;"></span>
-                                <td style="padding-left: 20px; ${styleCorte}">↳ ${sub.descricao}</span>
-                                <td style="text-align:center; ${styleCorte}">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
-                                <td style="text-align:right; ${styleCorte}; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                                <td style="padding-left: 20px;">↳ ${sub.descricao}</span>
+                                <td style="text-align:center;">${sub.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
+                                <td style="text-align:right; color:#0284c7;">R$ ${sub.valor.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                                 <td style="border-right:1px solid rgba(0,0,0,0.1);"></span>
                                 
                                 <td></span><td></span><td class="bg-atual"></span><td class="bg-atual" style="border-right:1px solid rgba(0,0,0,0.1);"></span>
@@ -1416,18 +1418,14 @@
                 html += `<tr><th style="width:10%;">Data Atend.</th><th style="text-align:left;">Descrição / Medicamento</th><th style="width:5%;">Qtd</th><th style="width:10%;">Faturamento</th><th style="width:10%;">Imposto</th><th style="width:10%;">Custo Unit. (ATUAL)</th><th style="width:10%;">Lucro (ATUAL)</th><th style="width:10%;">Custo Unit. (FUTURO)</th><th style="width:10%;">Lucro (FUTURO)</th></tr>`;
                 
                 pat.items.forEach(item => {
-                    let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
-                    if (item.isCortado && isTaxa) return; 
-
                     let qtdFormatada = item.mg.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-                    let styleCorte = item.isCortado ? 'text-decoration: line-through; color: #dc2626;' : '';
                     let tagOrigem = item.tipo === 'PARTICULAR' ? ' (PART)' : '';
                     let impVisualStr = item.impItem === 0 ? "0,00" : `- R$ ${item.impItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}`;
 
                     html += `<tr>
-                        <td style="text-align:center; ${styleCorte}">${item.data}</span>
-                        <td style="${styleCorte}">${item.medicamento}${tagOrigem}</span>
-                        <td style="text-align:center; ${styleCorte}">${qtdFormatada}</span>
+                        <td style="text-align:center;">${item.data}</span>
+                        <td>${item.medicamento}${tagOrigem}</span>
+                        <td style="text-align:center;">${qtdFormatada}</span>
                         <td style="text-align:right; color:#0284c7;">R$ ${item.fatItem.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                         <td style="text-align:right; color:${item.impItem === 0 ? '#9ca3af' : '#dc2626'};">${impVisualStr}</span>
                         
@@ -1439,7 +1437,7 @@
                     </tr>`;
                 });
 
-                html += `<td></span></tr>`;
+                html += `<table></span></tr>`;
             });
             
             html += `<tr>
@@ -1523,7 +1521,7 @@
                 if(userTotal > 0 || Object.keys(shifts[id] || {}).length > 0) b += row; 
             }); 
             
-            if (b === '') b = `<tr><td colspan="${days+3}" style="text-align:center; padding:20px; color:#6b7280;">Nenhuma escala encontrada para este filtro.</span></tr>`;
+            if (b === '') b = `<td><td colspan="${days+3}" style="text-align:center; padding:20px; color:#6b7280;">Nenhuma escala encontrada para este filtro.</span></table>`;
             document.querySelector('#repTable tbody').innerHTML = b; 
             document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2, style:'currency',currency:'BRL'}); 
         }
@@ -1555,7 +1553,7 @@
                 const color = isHol ? '#DC2626' : '#333'; 
                 thead += `<th style="background:${bg}; color:${color}; font-size:9px; padding:2px; border:1px solid #ccc;">${i}</th>`; 
             } 
-            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL (R$)</th></td>'; 
+            thead += '<th style="border:1px solid #ccc; width:40px;">QTD</th><th style="border:1px solid #ccc; width:70px;">TOTAL (R$)</th></tr>'; 
             
             let tbody = ''; 
             let totalGeral = 0; 
@@ -1593,7 +1591,7 @@
                 } 
             }); 
             
-            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><td><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
+            const html = `<html><head><title>${pdfTitle} - ${periodStr}</title><style>@page { size: landscape; margin: 10mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } .header-row img { height: 75px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; } th, td { border: 1px solid #ccc; padding: 2px; text-align: center; height: 20px; overflow:hidden; } th { background: #00855B !important; color: white !important; font-size: 9px; }</style></head><body><div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${pdfTitle}</h1><p>Referência: ${periodStr}</p></div></div><tr><thead>${thead}</thead><tbody>${tbody}</tbody></table><div style="margin-top:20px; text-align:right; font-size:16px; font-weight:bold; color:#00855B;">TOTAL GERAL: R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2})}</div><script>window.onload = function() { window.print(); }<\/script></body></html>`; 
             win.document.write(html); 
             win.document.close(); 
         }
