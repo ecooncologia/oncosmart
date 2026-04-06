@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Guias Cirúrgicas - ONCO SMART</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        
+        .header-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); gap: 15px; }
+        .header-actions h2 { margin: 0; color: #00855B; display: flex; align-items: center; gap: 10px; }
+        
+        .btn-success { background: #00855B; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-success:hover { background: #006644; }
+        
+        .controls-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; width: 100%; background: #fff; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { font-size: 11px; font-weight: 700; color: #4b5563; text-transform: uppercase; }
+        .filter-select { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: #f8fafc; color: #1e293b; min-width: 150px; }
+        .filter-select:focus { border-color: #00855B; }
+        
+        .search-bar { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; width: 250px; font-size: 13px; outline: none; background: #f8fafc; }
+        .search-bar:focus { border-color: #00855B; box-shadow: 0 0 0 2px rgba(0,133,91,0.2); }
+
+        .btn-print { background: #4b5563; color: white; border: none; padding: 9px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; height: 36px;}
+        .btn-print:hover { background: #374151; }
+
+        .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        .table-responsive { overflow-x: auto; max-height: 65vh; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #f8fafc; color: #475569; padding: 12px 15px; text-align: left; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; font-weight: 800; }
+        .data-table td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+        .data-table tr:hover { background-color: #f8fafc; }
+
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+        .st-enviado { background: #e0f2fe; color: #0284c7; }
+        .st-aguardando { background: #fef3c7; color: #d97706; }
+        .st-recebido { background: #cffafe; color: #0369a1; }
+        .st-pendente { background: #fee2e2; color: #dc2626; }
+        .st-autorizado { background: #dcfce7; color: #166534; }
+        .st-agendada { background: #f3e8ff; color: #7e22ce; }
+        .status-date { display: block; font-size: 9px; color: #94a3b8; margin-top: 4px; font-weight: 600; }
+
+        .action-btns { display: flex; gap: 10px; justify-content: center; }
+        
+        .btn-icon { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; padding: 6px 8px; display: flex; align-items: center; justify-content: center; }
+        .btn-icon.status { color: #d97706; }
+        .btn-icon.attach { color: #8b5cf6; }
+        .btn-icon.edit { color: #0284c7; }
+        .btn-icon.delete { color: #dc2626; }
+        .btn-icon:hover { opacity: 0.8; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(3px); }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content { background: white; width: 90%; max-width: 800px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: 90vh; }
+        .modal-content.small { max-width: 400px; }
+        .modal-header { padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #00855B; color: white; border-radius: 12px 12px 0 0; }
+        .modal-header h3 { margin: 0; font-size: 16px; }
+        .close-modal { background: none; border: none; color: white; font-size: 20px; cursor: pointer; opacity: 0.8; transition: 0.2s; }
+        .close-modal:hover { opacity: 1; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; border-radius: 0 0 12px 12px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group.full-width { grid-column: span 2; }
+        .form-label { font-size: 12px; font-weight: 700; color: #475569; }
+        .form-input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; color: #1e293b; outline: none; transition: 0.2s; font-family: inherit; background: #fff;}
+        .form-input:focus { border-color: #00855B; box-shadow: 0 0 0 3px rgba(0,133,91,0.1); }
+        .form-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+        textarea.form-input { resize: vertical; min-height: 80px; }
+
+        .btn-cancel { background: #e2e8f0; color: #475569; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-cancel:hover { background: #cbd5e1; }
+
+        .status-list { display: flex; flex-direction: column; gap: 10px; }
+        .status-option { padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: #fff; }
+        .status-option:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .status-option.active { border-width: 2px; }
+        
+        .anexo-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
+        .anexo-item a { color: #0284c7; font-weight: 600; text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 8px;}
+        .anexo-item a:hover { text-decoration: underline; }
+        .file-upload-wrapper { border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; background: #f8fafc; cursor: pointer; transition: 0.2s; margin-top: 15px; position: relative;}
+        .file-upload-wrapper:hover { border-color: #00855B; background: #f0fdf4; }
+        .file-upload-wrapper input[type="file"] { position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="header-actions">
+            <h2><i class="fas fa-notes-medical"></i> Controle de Guias Cirúrgicas</h2>
+            <button class="btn-success" onclick="openModal()">
+                <i class="fas fa-plus"></i> Nova Guia
+            </button>
+        </div>
+
+        <div class="controls-row">
+            <div class="input-group">
+                <label>Buscar Paciente / Guia</label>
+                <input type="text" id="searchInput" class="search-bar" placeholder="Digite para filtrar..." onkeyup="filterTable()">
+            </div>
+            <div class="input-group">
+                <label>Mês de Envio</label>
+                <select id="filterMes" class="filter-select" onchange="filterTable()">
+                    <option value="todos">Todos os Meses</option>
+                    <option value="01">Janeiro</option>
+                    <option value="02">Fevereiro</option>
+                    <option value="03">Março</option>
+                    <option value="04">Abril</option>
+                    <option value="05">Maio</option>
+                    <option value="06">Junho</option>
+                    <option value="07">Julho</option>
+                    <option value="08">Agosto</option>
+                    <option value="09">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Ano</label>
+                <select id="filterAno" class="filter-select" onchange="filterTable()"></select>
+            </div>
+            <div class="input-group">
+                <label>Médico Responsável</label>
+                <select id="filterMedico" class="filter-select" onchange="filterTable()">
+                    <option value="todos">Todos os Médicos</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Responsável (Emissão)</label>
+                <select id="filterResp" class="filter-select" onchange="filterTable()">
+                    <option value="todos">Todos</option>
+                </select>
+            </div>
+            <div class="input-group" style="margin-left: auto;">
+                <button class="btn-print" onclick="generatePDF()">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="sheet-container">
+            <div class="table-responsive">
+                <table class="data-table" id="guiasTable">
+                    <thead>
+                        <tr>
+                            <th>Data Envio</th>
+                            <th>Paciente</th>
+                            <th>Procedimento</th>
+                            <th>Convênio / Part.</th>
+                            <th>Hospital</th>
+                            <th>Status da Guia</th>
+                            <th style="text-align: right;">Valor (R$)</th>
+                            <th style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="8" style="text-align:center; padding: 30px; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Carregando guias...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="guiaModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Cadastrar Nova Guia</h3>
+                <button class="close-modal" onclick="closeModal('guiaModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="guiaForm">
+                    <input type="hidden" id="guia_id">
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Data do Envio</label>
+                            <input type="date" id="data_envio" class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Status Inicial</label>
+                            <select id="status" class="form-input" required>
+                                <option value="Enviado">Enviado</option>
+                                <option value="Aguardando confirmação">Aguardando confirmação</option>
+                                <option value="Recebido pelo hospital">Recebido pelo hospital</option>
+                                <option value="Pendente de documento">Pendente de documento</option>
+                                <option value="Autorizado">Autorizado</option>
+                                <option value="Cirurgia agendada">Cirurgia agendada</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Paciente</label>
+                            <input type="text" id="paciente" class="form-input" placeholder="Nome completo do paciente" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Médico Responsável</label>
+                            <select id="medico" class="form-input" required>
+                                <option value="">Selecione o Médico...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Hospital</label>
+                            <input type="text" id="hospital" class="form-input" placeholder="Ex: Hospital Vita" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tipo (Convênio ou Particular)</label>
+                            <select id="convenio" class="form-input" required>
+                                <option value="">Selecione...</option>
+                                <option value="Particular">Particular</option>
+                                <option value="Unimed">Unimed</option>
+                                <option value="Bradesco">Bradesco Saúde</option>
+                                <option value="SulAmérica">SulAmérica</option>
+                                <option value="Amil">Amil</option>
+                                <option value="Cassi">Cassi</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Valor Estimado (R$)</label>
+                            <input type="number" step="0.01" id="valor" class="form-input" placeholder="0,00">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Procedimento Cirúrgico</label>
+                            <select id="procedimento" class="form-input" required>
+                                <option value="">Carregando procedimentos...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Nº da Guia / Senha</label>
+                            <input type="text" id="numero_guia" class="form-input" placeholder="Ex: 123456789">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Forma de Envio</label>
+                            <select id="forma_envio" class="form-input">
+                                <option value="E-mail">E-mail</option>
+                                <option value="Portal do Convênio">Portal do Convênio</option>
+                                <option value="Físico / Malote">Físico / Malote</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Responsável pelo Envio (Logado)</label>
+                            <input type="text" id="responsavel" class="form-input" disabled>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Observação</label>
+                            <textarea id="observacao" class="form-input" placeholder="Anotações adicionais, pendências, materiais especiais..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('guiaModal')">Cancelar</button>
+                <button class="btn-success" onclick="saveGuia()"><i class="fas fa-save"></i> Salvar Guia</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="statusModal">
+        <div class="modal-content small">
+            <div class="modal-header" style="background: #f8fafc; color: #1e293b; border-bottom: 2px solid #e2e8f0;">
+                <h3 style="font-size: 15px;"><i class="fas fa-exchange-alt" style="color: #00855B;"></i> Atualizar Status</h3>
+                <button class="close-modal" style="color: #64748b;" onclick="closeModal('statusModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 12px; color: #64748b; margin-top: 0;">Novo status para <strong id="statusPacienteNome" style="color: #0f172a;"></strong>:</p>
+                <input type="hidden" id="statusGuiaId">
+                <div class="status-list" id="statusOptionsContainer">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="anexosModal">
+        <div class="modal-content small">
+            <div class="modal-header" style="background: #f8fafc; color: #1e293b; border-bottom: 2px solid #e2e8f0;">
+                <h3 style="font-size: 15px;"><i class="fas fa-paperclip" style="color: #8b5cf6;"></i> Documentos da Guia</h3>
+                <button class="close-modal" style="color: #64748b;" onclick="closeModal('anexosModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="anexosGuiaId">
+                <div id="listaAnexos">
+                    </div>
+                
+                <div class="file-upload-wrapper">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #94a3b8; margin-bottom: 10px;"></i>
+                    <div style="font-size: 13px; font-weight: 600; color: #475569;">Clique aqui para anexar documento</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">PDF, JPG ou PNG (Máx 2MB)</div>
+                    <input type="file" id="fileInput" accept=".pdf, image/jpeg, image/png" onchange="uploadAttachment(this)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_TABLE = 'guias_cirurgicas';
+        let guiasData = [];
+        let procedimentosList = [];
+        let medicosList = [];
+        let userLogged = {};
+
+        const statusConfig = [
+            { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane' },
+            { name: 'Aguardando confirmação', class: 'st-aguardando', icon: 'fa-clock' },
+            { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user' },
+            { name: 'Pendente de documento', class: 'st-pendente', icon: 'fa-exclamation-triangle' },
+            { name: 'Autorizado', class: 'st-autorizado', icon: 'fa-check-circle' },
+            { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check' }
+        ];
+
+        async function startApp() {
+            if (typeof initGlobal !== 'undefined') {
+                initGlobal('guias_cirurgicas', 'Guias Cirúrgicas');
+                
+                const curY = new Date().getFullYear();
+                const selAno = document.getElementById('filterAno');
+                for(let i = curY - 2; i <= curY + 2; i++) { selAno.add(new Option(i, i)); }
+                selAno.value = curY;
+
+                const userSession = localStorage.getItem('ecoUser');
+                if(userSession) {
+                    try {
+                        userLogged = JSON.parse(userSession);
+                        document.getElementById('responsavel').value = userLogged.nome || 'Usuário Desconhecido';
+                    } catch(e){}
+                }
+
+                await Promise.all([
+                    loadProcedimentos(),
+                    loadMedicos(),
+                    loadGuias()
+                ]);
+            } else {
+                setTimeout(startApp, 100);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', startApp);
+
+        async function loadProcedimentos() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    let rawList = [];
+                    Object.entries(data).forEach(([key, val]) => {
+                        let p = typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val);
+                        rawList.push(p);
+                    });
+                    
+                    procedimentosList = rawList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+                    
+                    const select = document.getElementById('procedimento');
+                    select.innerHTML = '<option value="">Selecione o Procedimento...</option>';
+                    procedimentosList.forEach(p => {
+                        select.innerHTML += `<option value="${p.nome}">${p.nome}</option>`;
+                    });
+                }
+            } catch(e) {}
+        }
+
+        async function loadMedicos() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    Object.entries(data).forEach(([key, val]) => {
+                        let m = typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val);
+                        medicosList.push(m);
+                    });
+                    medicosList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+                    
+                    const selForm = document.getElementById('medico');
+                    const selFiltro = document.getElementById('filterMedico');
+                    
+                    medicosList.forEach(m => {
+                        selForm.innerHTML += `<option value="${m.nome}">${m.nome}</option>`;
+                        selFiltro.innerHTML += `<option value="${m.nome}">${m.nome}</option>`;
+                    });
+                }
+            } catch(e) {}
+        }
+
+        async function loadGuias() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/${API_TABLE}`, { headers: API_HEADERS });
+                if (!res.ok) throw new Error('Falha ao carregar');
+                const data = await res.json();
+                
+                guiasData = Object.values(data).map(item => {
+                    let obj = typeof item.dados_extras === 'string' ? JSON.parse(item.dados_extras) : (item.dados_extras || item);
+                    obj.id_firebase = item.id_firebase || obj.id_firebase;
+                    return obj;
+                });
+                guiasData.sort((a, b) => new Date(b.data_envio || 0) - new Date(a.data_envio || 0));
+                
+                const responsaveisUnicos = [...new Set(guiasData.map(g => g.responsavel).filter(Boolean))];
+                const selResp = document.getElementById('filterResp');
+                selResp.innerHTML = '<option value="todos">Todos</option>';
+                responsaveisUnicos.sort().forEach(r => selResp.innerHTML += `<option value="${r}">${r}</option>`);
+
+                filterTable();
+            } catch (err) {
+                document.querySelector('#guiasTable tbody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626;">Erro ao carregar dados.</td></tr>`;
+            }
+        }
+
+        function filterTable() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const mesSel = document.getElementById('filterMes').value;
+            const anoSel = document.getElementById('filterAno').value;
+            const medSel = document.getElementById('filterMedico').value;
+            const respSel = document.getElementById('filterResp').value;
+
+            const filtered = guiasData.filter(g => {
+                let match = true;
+                if (term) {
+                    const textStr = `${g.paciente||''} ${g.procedimento||''} ${g.hospital||''} ${g.numero_guia||''}`.toLowerCase();
+                    if (!textStr.includes(term)) match = false;
+                }
+                if (mesSel !== 'todos' && g.data_envio) {
+                    const p = g.data_envio.split('-');
+                    if (p[1] !== mesSel || p[0] !== anoSel) match = false;
+                } else if (mesSel === 'todos' && g.data_envio) {
+                    if (g.data_envio.split('-')[0] !== anoSel) match = false;
+                }
+                if (medSel !== 'todos' && g.medico !== medSel) match = false;
+                if (respSel !== 'todos' && g.responsavel !== respSel) match = false;
+                return match;
+            });
+            renderTable(filtered);
+        }
+
+        function getConvenioBadge(convenio) {
+            let bg = '#f1f5f9', color = '#475569', border = '#e2e8f0'; 
+            let conv = String(convenio).toLowerCase();
+            
+            if(conv.includes('unimed')) { bg = '#dcfce7'; color = '#166534'; border = '#bbf7d0'; } 
+            else if(conv.includes('bradesco')) { bg = '#fee2e2'; color = '#dc2626'; border = '#fecaca'; }
+            else if(conv.includes('sulamérica') || conv.includes('sulamerica')) { bg = '#e0f2fe'; color = '#0284c7'; border = '#bae6fd'; } 
+            else if(conv.includes('amil')) { bg = '#f3e8ff'; color = '#7e22ce'; border = '#e9d5ff'; } 
+            else if(conv.includes('cassi')) { bg = '#fef3c7'; color = '#d97706'; border = '#fde68a'; } 
+            else if(conv.includes('particular')) { bg = '#e2e8f0'; color = '#1e293b'; border = '#cbd5e1'; } 
+
+            return `<span class="status-badge" style="background:${bg}; color:${color}; border:1px solid ${border};">${convenio || '-'}</span>`;
+        }
+
+        // 💡 Correção dos Ícones e cor azul claro (#0ea5e9) pro e-mail
+        function getEnvioInfo(forma) {
+            if(!forma) return '';
+            let icon = 'fas fa-paper-plane';
+            let color = '#64748b';
+            let str = String(forma).toLowerCase();
+            
+            if(str.includes('e-mail') || str.includes('email')) { icon = 'fas fa-envelope'; color = '#0ea5e9'; }
+            else if(str.includes('whatsapp')) { icon = 'fab fa-whatsapp'; color = '#25D366'; }
+            else if(str.includes('portal')) { icon = 'fas fa-laptop-medical'; color = '#0284c7'; }
+            else if(str.includes('físico') || str.includes('malote')) { icon = 'fas fa-box'; color = '#d97706'; }
+
+            return `<div style="font-size:10px; color:${color}; margin-top:4px; font-weight:600;"><i class="${icon}"></i> ${forma}</div>`;
+        }
+
+        function renderTable(data) {
+            const tbody = document.querySelector('#guiasTable tbody');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 30px; color:#64748b;">Nenhuma guia encontrada para este filtro.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            data.forEach(g => {
+                const dataFormatada = g.data_envio ? g.data_envio.split('-').reverse().join('/') : '-';
+                const valorFormatado = g.valor ? parseFloat(g.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '0,00';
+                
+                let hist = g.historico_status || [];
+                let lastUpdate = hist.length > 0 ? hist[hist.length-1].data : g.atualizado_em;
+                let dateStr = '';
+                if(lastUpdate) {
+                    const d = new Date(lastUpdate);
+                    if(!isNaN(d.getTime())) {
+                        dateStr = `Atualizado: ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}<br>por ${hist.length > 0 ? hist[hist.length-1].usuario.split(' ')[0] : (g.responsavel || 'Sistema')}`;
+                    }
+                }
+
+                let badgeHtml = getStatusBadge(g.status);
+                let convenioHtml = getConvenioBadge(g.convenio);
+                let envioHtml = getEnvioInfo(g.forma_envio);
+                
+                let anexoQtd = (g.anexos && g.anexos.length > 0) ? `<span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; font-size:9px; border-radius:50%; width:14px; height:14px; display:flex; align-items:center; justify-content:center;">${g.anexos.length}</span>` : '';
+
+                let hasObs = g.observacao && g.observacao.trim() !== '';
+
+                html += `
+                    <tr class="main-row" style="${hasObs ? 'border-bottom: none;' : ''}">
+                        <td style="font-weight: 600;">
+                            ${dataFormatada}
+                            ${envioHtml}
+                        </td>
+                        <td style="font-weight: 700; color: #0f172a;">${g.paciente || '-'} <br><span style="font-weight:normal; font-size:10px; color:#64748b;">Dr(a). ${g.medico || '-'}</span></td>
+                        <td style="font-size: 11px;">${g.procedimento || '-'}</td>
+                        <td>${convenioHtml}</td>
+                        <td>${g.hospital || '-'}</td>
+                        <td>
+                            ${badgeHtml}
+                            <span class="status-date">${dateStr}</span>
+                        </td>
+                        <td style="text-align: right; font-weight: bold; color: ${g.valor > 0 ? '#00855B' : '#94a3b8'};">R$ ${valorFormatado}</td>
+                        <td style="text-align: center;">
+                            <div class="action-btns">
+                                <button class="btn-icon status" onclick="openStatusModal('${g.id_firebase}', '${(g.paciente||'').replace(/'/g, "\\'")}')" title="Mudar Status"><i class="fas fa-sync-alt"></i></button>
+                                <button class="btn-icon attach" style="position:relative;" onclick="openAnexosModal('${g.id_firebase}')" title="Anexos">
+                                    <i class="fas fa-paperclip"></i>
+                                    ${anexoQtd}
+                                </button>
+                                <button class="btn-icon edit" onclick="openModal('${g.id_firebase}')" title="Editar Dados"><i class="fas fa-edit"></i></button>
+                                <button class="btn-icon delete" onclick="deleteGuia('${g.id_firebase}')" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                // 💡 Linha da observação visível e colada na linha principal
+                if (hasObs) {
+                    html += `
+                        <tr class="obs-row" style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <td colspan="8" style="padding: 8px 15px 15px 15px; font-size: 11px; color: #475569;">
+                                <i class="fas fa-sticky-note" style="color: #94a3b8; margin-right: 5px;"></i> <strong>Observação:</strong> ${g.observacao}
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+            tbody.innerHTML = html;
+        }
+
+        function getStatusBadge(status) {
+            if (!status) return '-';
+            let st = statusConfig.find(s => s.name === status);
+            if(st) {
+                return `<span class="status-badge ${st.class}"><i class="fas ${st.icon}"></i> ${st.name}</span>`;
+            }
+            return `<span class="status-badge st-enviado"><i class="fas fa-info-circle"></i> ${status}</span>`;
+        }
+
+        function openModal(id = null) {
+            document.getElementById('guiaForm').reset();
+            document.getElementById('guia_id').value = '';
+            document.getElementById('responsavel').value = userLogged.nome || 'Usuário Desconhecido';
+            
+            if (id) {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Guia Cirúrgica';
+                const guia = guiasData.find(g => g.id_firebase === id);
+                if (guia) {
+                    document.getElementById('guia_id').value = guia.id_firebase;
+                    document.getElementById('data_envio').value = guia.data_envio || '';
+                    document.getElementById('paciente').value = guia.paciente || '';
+                    document.getElementById('medico').value = guia.medico || '';
+                    document.getElementById('hospital').value = guia.hospital || '';
+                    document.getElementById('convenio').value = guia.convenio || '';
+                    document.getElementById('valor').value = guia.valor || '';
+                    document.getElementById('procedimento').value = guia.procedimento || '';
+                    document.getElementById('numero_guia').value = guia.numero_guia || '';
+                    document.getElementById('forma_envio').value = guia.forma_envio || 'E-mail';
+                    document.getElementById('responsavel').value = guia.responsavel || userLogged.nome;
+                    document.getElementById('status').value = guia.status || 'Enviado';
+                    document.getElementById('observacao').value = guia.observacao || '';
+                }
+            } else {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Cadastrar Nova Guia';
+                document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
+            }
+
+            showModalElement('guiaModal');
+        }
+
+        function showModalElement(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function saveGuia() {
+            const form = document.getElementById('guiaForm');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            const id = document.getElementById('guia_id').value;
+            const btn = document.querySelector('#guiaModal .btn-success');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; btn.disabled = true;
+
+            const guiaAnterior = guiasData.find(g => g.id_firebase === id) || {};
+            const novoStatus = document.getElementById('status').value;
+            let hist = guiaAnterior.historico_status || [];
+
+            if (!id || guiaAnterior.status !== novoStatus) {
+                hist.push({
+                    status: novoStatus,
+                    data: new Date().toISOString(),
+                    usuario: userLogged.nome || 'Sistema'
+                });
+            }
+
+            const payload = {
+                data_envio: document.getElementById('data_envio').value,
+                paciente: document.getElementById('paciente').value,
+                medico: document.getElementById('medico').value,
+                hospital: document.getElementById('hospital').value,
+                convenio: document.getElementById('convenio').value,
+                valor: parseFloat(document.getElementById('valor').value) || 0,
+                procedimento: document.getElementById('procedimento').value,
+                numero_guia: document.getElementById('numero_guia').value,
+                forma_envio: document.getElementById('forma_envio').value,
+                responsavel: document.getElementById('responsavel').value,
+                status: novoStatus,
+                observacao: document.getElementById('observacao').value,
+                historico_status: hist,
+                anexos: guiaAnterior.anexos || [],
+                atualizado_em: new Date().toISOString()
+            };
+
+            if (id) payload.id_firebase = id;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/${API_TABLE}${id ? '/' + id : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Erro ao salvar');
+                closeModal('guiaModal');
+                await loadGuias(); 
+            } catch (err) { alert('Erro: ' + err.message); } 
+            finally { btn.innerHTML = originalText; btn.disabled = false; }
+        }
+
+        // 💡 Correção do comportamento "Atualizando" no status
+        function openStatusModal(id, pacienteNome) {
+            document.getElementById('statusGuiaId').value = id;
+            document.getElementById('statusPacienteNome').innerText = pacienteNome;
+            
+            const guia = guiasData.find(g => g.id_firebase === id);
+            const container = document.getElementById('statusOptionsContainer');
+            container.innerHTML = ''; 
+
+            statusConfig.forEach(st => {
+                const isActive = (guia && guia.status === st.name) ? 'active' : '';
+                container.innerHTML += `
+                    <div class="status-option ${st.class} ${isActive}" onclick="confirmStatusChange('${st.name}', this)">
+                        <i class="fas ${st.icon}"></i> <span class="st-text">${st.name}</span>
+                    </div>
+                `;
+            });
+            showModalElement('statusModal');
+        }
+
+        async function confirmStatusChange(novoStatus, btnElement) {
+            const id = document.getElementById('statusGuiaId').value;
+            const guia = guiasData.find(g => g.id_firebase === id);
+            if(!guia) return;
+
+            if(guia.status === novoStatus) {
+                closeModal('statusModal'); return;
+            }
+
+            let hist = guia.historico_status || [];
+            hist.push({
+                status: novoStatus,
+                data: new Date().toISOString(),
+                usuario: userLogged.nome || 'Sistema'
+            });
+
+            guia.status = novoStatus;
+            guia.historico_status = hist;
+            guia.atualizado_em = new Date().toISOString();
+
+            // Bloqueia toda a lista de botões para evitar duplo clique
+            document.querySelectorAll('.status-option').forEach(el => el.style.pointerEvents = 'none');
+            
+            // Muda APENAS o botão clicado
+            const textSpan = btnElement.querySelector('.st-text');
+            const iconEl = btnElement.querySelector('i');
+            const originalText = textSpan.innerText;
+            const originalIconClass = iconEl.className;
+            
+            iconEl.className = 'fas fa-spinner fa-spin';
+            textSpan.innerText = ' Atualizando...';
+
+            try {
+                await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, {
+                    method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia)
+                });
+                closeModal('statusModal');
+                
+                // Força o recarregamento total silencioso para garantir que a data apareça embaixo do status
+                await loadGuias(); 
+            } catch(e) { 
+                alert("Erro ao atualizar status."); 
+                iconEl.className = originalIconClass;
+                textSpan.innerText = originalText;
+                document.querySelectorAll('.status-option').forEach(el => el.style.pointerEvents = 'auto');
+            }
+        }
+
+        // ANEXOS
+        function openAnexosModal(id) {
+            document.getElementById('anexosGuiaId').value = id;
+            renderAnexosList(id);
+            showModalElement('anexosModal');
+        }
+
+        // 💡 Função de Visualização nativa do navegador (Sem download obrigatório)
+        window.visualizarAnexo = function(guiaId, anexoIdx) {
+            const guia = guiasData.find(g => g.id_firebase === guiaId);
+            if(!guia || !guia.anexos || !guia.anexos[anexoIdx]) return;
+            
+            const anx = guia.anexos[anexoIdx];
+            
+            try {
+                let arr = anx.base64.split(',');
+                let mime = arr[0].match(/:(.*?);/)[1];
+                let bstr = atob(arr[1]);
+                let n = bstr.length;
+                let u8arr = new Uint8Array(n);
+                while(n--){
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                let blob = new Blob([u8arr], {type: mime});
+                let url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch(e) {
+                alert("Erro ao visualizar o anexo. Tente usar o botão de Download.");
+            }
+        };
+
+        // 💡 Renderização da lista de anexos com o botão Visualizar (Olho)
+        function renderAnexosList(id) {
+            const guia = guiasData.find(g => g.id_firebase === id);
+            const container = document.getElementById('listaAnexos');
+            container.innerHTML = '';
+            
+            let anexos = guia.anexos || [];
+            if(anexos.length === 0) {
+                container.innerHTML = '<p style="font-size:12px; color:#64748b; text-align:center; padding:10px;">Nenhum documento anexado ainda.</p>';
+            } else {
+                anexos.forEach((anx, idx) => {
+                    let icone = anx.nome.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image';
+                    container.innerHTML += `
+                        <div class="anexo-item">
+                            <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 60%;">
+                                <i class="fas ${icone}" style="color:#64748b;"></i> ${anx.nome}
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-sm" style="background:#e0f2fe; color:#0284c7; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="visualizarAnexo('${id}', ${idx})" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                <a href="${anx.base64}" download="${anx.nome}" class="btn-sm" style="background:#dcfce7; color:#166534; text-decoration:none; padding:6px 10px; border-radius:4px; display:flex; align-items:center;" title="Baixar"><i class="fas fa-download"></i></a>
+                                <button class="btn-sm" style="background:#fee2e2; color:#dc2626; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="deleteAttachment('${id}', ${idx})" title="Excluir"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function uploadAttachment(inputEl) {
+            const file = inputEl.files[0];
+            if(!file) return;
+
+            if (file.size > 2097152) {
+                alert("O arquivo é muito grande! O limite máximo é de 2MB. Compacte o PDF ou envie uma imagem menor.");
+                inputEl.value = '';
+                return;
+            }
+
+            const id = document.getElementById('anexosGuiaId').value;
+            const guia = guiasData.find(g => g.id_firebase === id);
+            if(!guia) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Data = e.target.result;
+                let anexos = guia.anexos || [];
+                anexos.push({
+                    nome: file.name,
+                    base64: base64Data,
+                    data_upload: new Date().toISOString()
+                });
+                
+                guia.anexos = anexos;
+                
+                try {
+                    await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, {
+                        method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia)
+                    });
+                    renderAnexosList(id);
+                    filterTable(); 
+                } catch(err) {
+                    alert("Falha ao salvar anexo.");
+                }
+            };
+            reader.readAsDataURL(file);
+            inputEl.value = ''; 
+        }
+
+        async function deleteAttachment(id, idx) {
+            if(!confirm("Excluir este anexo?")) return;
+            const guia = guiasData.find(g => g.id_firebase === id);
+            if(guia && guia.anexos) {
+                guia.anexos.splice(idx, 1);
+                try {
+                    await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, {
+                        method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia)
+                    });
+                    renderAnexosList(id);
+                    filterTable();
+                } catch(e){}
+            }
+        }
+
+        async function deleteGuia(id) {
+            if (!confirm('Tem certeza que deseja excluir toda essa guia cirúrgica do sistema? Essa ação não pode ser desfeita.')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'DELETE', headers: API_HEADERS });
+                if (!res.ok) throw new Error('Erro ao excluir');
+                await loadGuias();
+            } catch (err) { alert('Erro: ' + err.message); }
+        }
+
+        // PDF EXPORT
+        function generatePDF() {
+            const tbody = document.querySelector('#guiasTable tbody');
+            if (tbody.innerText.includes('Nenhuma guia') || tbody.innerText.includes('Carregando')) return alert("Não há dados para exportar.");
+            
+            const mesSel = document.getElementById('filterMes');
+            const anoSel = document.getElementById('filterAno').value;
+            const periodoStr = mesSel.value === 'todos' ? `Ano ${anoSel}` : `${mesSel.options[mesSel.selectedIndex].text}/${anoSel}`;
+            
+            const win = window.open('', '_blank');
+            const LOGO_URL = "https://imgur.com/nWWyEBG.png";
+            
+            let theadHtml = `<tr><th>Data Envio</th><th>Paciente</th><th>Médico</th><th>Hospital</th><th>Convênio</th><th>Status</th><th style="text-align:right;">Valor</th></tr>`;
+            let tbodyHtml = '';
+            let totalVal = 0;
+
+            const rows = Array.from(tbody.querySelectorAll('tr.main-row'));
+            rows.forEach(tr => {
+                const cols = tr.querySelectorAll('td');
+                if(cols.length < 7) return; 
+                
+                let dt = cols[0].innerHTML.split('<div')[0].replace(/<[^>]*>?/gm, '').trim(); 
+                let p = cols[1].innerHTML.split('<br>')[0].replace(/<[^>]*>?/gm, '').trim(); 
+                let m = cols[1].innerText.split('\n')[1] || ''; 
+                let proc = cols[2].innerText;
+                let conv = cols[3].innerText;
+                let hosp = cols[4].innerText;
+                let status = cols[5].innerText.split('\n')[0]; 
+                let valStr = cols[6].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                let valNum = parseFloat(valStr) || 0;
+                totalVal += valNum;
+
+                let nextRow = tr.nextElementSibling;
+                let obsHtml = '';
+                if(nextRow && nextRow.classList.contains('obs-row')) {
+                    let obsText = nextRow.innerText.replace('Observação:', '').trim();
+                    obsHtml = `<tr style="background:#f8fafc; font-size:10px;"><td colspan="7" style="color:#64748b; padding:4px 6px;"><b>Obs:</b> ${obsText}</td></tr>`;
+                }
+
+                tbodyHtml += `<tr><td>${dt}</td><td>${p}<br><span style="font-size:9px; color:#666;">${proc}</span></td><td>${m}</td><td>${hosp}</td><td>${conv}</td><td>${status}</td><td style="text-align:right;">R$ ${valNum.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`;
+                tbodyHtml += obsHtml;
+            });
+
+            let html = `<html><head><title>Relatório de Guias Cirúrgicas - ${periodoStr}</title><style>
+                @page { size: portrait; margin: 15mm; } 
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
+                .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; justify-content: space-between; } 
+                .header-left { display: flex; align-items: center; }
+                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } 
+                .header-text { margin-left: 20px; } 
+                .header-text h1 { margin: 0; color: #00855B; font-size: 18px; text-transform: uppercase; } 
+                .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } 
+                table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 20px;} 
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; } 
+                th { background: #00855B !important; color: white !important; font-size: 11px;} 
+                .total { text-align: right; font-size: 14px; font-weight: bold; color: #00855B; margin-top: 15px; }
+            </style></head><body>`;
+            
+            html += `<div class="header-row">
+                        <div class="header-left">
+                            <img src="${LOGO_URL}" alt="Logo">
+                            <div class="header-text">
+                                <h1>Controle de Guias Cirúrgicas</h1>
+                                <p>Referência: ${periodoStr}</p>
+                            </div>
+                        </div>
+                    </div>`;
+                    
+            html += `<table><thead>${theadHtml}</thead><tbody>${tbodyHtml}</tbody></table>`;
+            html += `<div class="total">VALOR TOTAL ESTIMADO: R$ ${totalVal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`;
+            html += `<script>window.onload=()=>{window.print();}<\/script></body></html>`;
+            
+            win.document.write(html); 
+            win.document.close();
+        }
+    </script>
+</body>
+</html>
