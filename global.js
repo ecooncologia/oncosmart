@@ -42,7 +42,10 @@ const APP_PAGES = [
     { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood' },
     
     // CORREÇÃO: 'perm' agora é 'marketing' para obedecer a caixinha na tela de Admin!
-    { id: 'marketing', label: 'Gerador de Artes', file: 'gerador-imagens.html', perm: 'marketing' }
+    { id: 'marketing', label: 'Gerador de Artes', file: 'gerador-imagens.html', perm: 'marketing' },
+
+    // 💡 NOVA PÁGINA ADICIONADA AQUI:
+    { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
@@ -52,7 +55,10 @@ const MENU_SECTORS = [
     { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts'] },
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
-    { name: "Central de Guias", icon: "fas fa-file-medical", pages: [] }, // Em breve
+    
+    // 💡 PÁGINA INSERIDA DENTRO DA CENTRAL DE GUIAS:
+    { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] }, 
+    
     { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing'] }
 ];
 
