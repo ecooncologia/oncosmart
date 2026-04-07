@@ -19,6 +19,7 @@
             gap: 10px;
             flex-wrap: wrap;
             margin-bottom: 24px;
+            align-items: center;
         }
 
         .stats-grid {
@@ -127,7 +128,7 @@
         .filter-bar select { max-width: 220px; }
         
         .table-container table {
-            min-width: 1200px; 
+            min-width: 900px; 
         }
 
         .protocol-tags-cell {
@@ -327,10 +328,11 @@
         .pagination button { padding: 8px 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; color: #475569; cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s; }
         .pagination button:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; }
         .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pagination button.active { background: #00855B; color: white; border-color: #00855B; }
         .pagination span { font-size: 12px; color: #64748b; font-weight: 600; }
 
         @media (max-width: 900px) {
-            .page-actions { flex-direction: column; }
+            .page-actions { flex-direction: column; align-items: stretch; }
             .filter-bar { flex-direction: column; }
             .filter-bar input, .filter-bar select { max-width: 100%; }
         }
@@ -353,6 +355,15 @@
             </button>
             <button class="btn btn-outline" onclick="loadProtocolos()">
                 <i class="fas fa-refresh"></i> Atualizar Lista
+            </button>
+
+            <div style="border-left: 2px solid #e2e8f0; height: 30px; margin: 0 5px;" id="bulkDivider" style="display:none;"></div>
+            
+            <button class="btn btn-warning" id="btnBulkTag" style="display:none;" onclick="openBulkTagModal()">
+                <i class="fas fa-tags"></i> Vincular Tag em Massa (<span id="bulkCount">0</span>)
+            </button>
+            <button class="btn btn-secondary" id="btnClearSelection" style="display:none;" onclick="clearSelection()" title="Limpar Seleção">
+                <i class="fas fa-eraser"></i>
             </button>
         </div>
 
@@ -402,21 +413,20 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Estab.</th>
-                            <th>Seq. Protocolo</th>
-                            <th>Cód. Protocolo</th>
-                            <th>Seq. Subtipo</th>
+                            <th style="width: 40px; text-align: center;">
+                                <input type="checkbox" id="selectAllCb" onclick="toggleSelectAll()" style="width: 16px; height: 16px; accent-color: #00855B; cursor: pointer;">
+                            </th>
                             <th>Nome Protocolo</th>
                             <th>Medicação (Subtipo)</th>
                             <th>Ciclos</th>
                             <th>Dias Int.</th>
-                            <th>Usuário</th>
+                            <th>Cód. Protocolo</th>
                             <th>Tags</th>
                         </tr>
                     </thead>
                     <tbody id="protocolosBody">
                         <tr>
-                            <td colspan="10" class="empty-table">
+                            <td colspan="7" class="empty-table">
                                 <i class="fas fa-database"></i>
                                 Carregando protocolos...
                             </td>
@@ -483,6 +493,29 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modalBulkTag">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal('modalBulkTag')"><i class="fas fa-times"></i></button>
+            <div class="modal-title">
+                <i class="fas fa-layer-group"></i> Aplicação em Massa
+            </div>
+            
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+                Selecione as tags que deseja aplicar aos <strong id="bulkProtocolCountDisplay" style="color:#f59e0b;">0</strong> protocolos selecionados.
+            </p>
+            
+            <div class="checkbox-list" id="bulkCheckboxListContainer">
+                </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeModal('modalBulkTag')">Cancelar</button>
+                <button class="btn btn-warning" id="btnSaveBulkTags" onclick="saveBulkTags()">
+                    <i class="fas fa-save"></i> Aplicar Tags
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modalConfirm">
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('modalConfirm')"><i class="fas fa-times"></i></button>
@@ -500,13 +533,16 @@
 
     <script>
         // =============================================
-        // ESTADO DA PÁGINA
+        // ESTADO DA PÁGINA E SELEÇÃO EM MASSA
         // =============================================
         let allProtocolos = [];
         let allTags = [];
         let filteredProtocolos = [];
         let currentPage = 1;
         const perPage = 20;
+        
+        // 💡 Armazena os IDs dos protocolos selecionados para ação em massa
+        let selectedProtocols = new Set(); 
 
         // =============================================
         // INIT
@@ -546,16 +582,9 @@
             return await res.json();
         }
 
-        // =============================================
-        // INIT TABLES (AUTO-CREATE)
-        // =============================================
         async function initTables() {
-            try {
-                await apiPost('/protocolos/init-tables');
-            } catch (e) {
-                console.error('Erro ao inicializar tabelas:', e);
-                showStatus('Erro ao inicializar tabelas no banco.', 'danger');
-            }
+            try { await apiPost('/protocolos/init-tables'); } 
+            catch (e) { console.error('Erro:', e); }
         }
 
         // =============================================
@@ -577,7 +606,7 @@
         }
 
         // =============================================
-        // TAGS
+        // TAGS GERAIS
         // =============================================
         async function loadTags() {
             try {
@@ -585,7 +614,6 @@
                 renderTags();
                 renderTagFilter();
             } catch (e) {
-                console.error('Erro ao carregar tags:', e);
                 allTags = [];
                 renderTags();
             }
@@ -596,7 +624,7 @@
             document.getElementById('statTags').textContent = allTags.length;
 
             if (allTags.length === 0) {
-                container.innerHTML = '<span style="color:#94a3b8; font-size:13px;">Nenhuma tag criada ainda. Crie a primeira abaixo.</span>';
+                container.innerHTML = '<span style="color:#94a3b8; font-size:13px;">Nenhuma tag criada ainda.</span>';
                 return;
             }
 
@@ -623,7 +651,6 @@
                 <option value="__sem_tag__">Sem Tag</option>
                 ${allTags.map(t => `<option value="${t.id}">${escHtml(t.nome)}</option>`).join('')}
             `;
-
             select.value = current;
         }
 
@@ -631,29 +658,20 @@
             const nome = document.getElementById('newTagName').value.trim();
             const cor = document.getElementById('newTagColor').value;
 
-            if (!nome) {
-                alert('Digite um nome para a tag.');
-                return;
-            }
-
-            if (allTags.some(t => t.nome.toLowerCase() === nome.toLowerCase())) {
-                alert('Já existe uma tag com esse nome.');
-                return;
-            }
+            if (!nome) return alert('Digite um nome para a tag.');
+            if (allTags.some(t => t.nome.toLowerCase() === nome.toLowerCase())) return alert('Já existe uma tag com esse nome.');
 
             try {
                 await apiPost('/protocolo-tags', { nome, cor });
                 document.getElementById('newTagName').value = '';
                 await loadTags();
-                renderProtocolosTable(); // Atualiza cores se houver
-            } catch (e) {
-                alert('Erro ao criar tag.');
-            }
+                renderProtocolosTable(); 
+            } catch (e) { alert('Erro ao criar tag.'); }
         }
 
         function confirmDeleteTag(id, nome) {
             document.getElementById('modalConfirmTitle').textContent = 'Remover Tag';
-            document.getElementById('modalConfirmText').textContent = `Deseja remover a tag "${nome}"? Todos os vínculos com protocolos também serão removidos.`;
+            document.getElementById('modalConfirmText').textContent = `Deseja remover a tag "${nome}"? Todos os vínculos também serão removidos.`;
             document.getElementById('modalConfirmBtn').onclick = () => deleteTag(id);
             openModal('modalConfirm');
         }
@@ -664,9 +682,7 @@
                 await apiDelete(`/protocolo-tags/${id}`);
                 await loadTags();
                 await loadProtocolos();
-            } catch (e) {
-                alert('Erro ao remover tag.');
-            }
+            } catch (e) { alert('Erro ao remover tag.'); }
         }
 
         // =============================================
@@ -675,11 +691,9 @@
         async function loadProtocolos() {
             try {
                 allProtocolos = await apiGet('/protocolos');
-                currentPage = 1;
                 filterProtocolos();
                 updateStats();
             } catch (e) {
-                console.error('Erro ao carregar protocolos:', e);
                 allProtocolos = [];
                 filterProtocolos();
             }
@@ -715,6 +729,9 @@
         function renderProtocolosTable() {
             const tbody = document.getElementById('protocolosBody');
 
+            // Desmarca o botão "Selecionar Todos" ao trocar de página
+            document.getElementById('selectAllCb').checked = false;
+
             const start = (currentPage - 1) * perPage;
             const end = start + perPage;
             const pageItems = filteredProtocolos.slice(start, end);
@@ -722,7 +739,7 @@
             if (pageItems.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="10" class="empty-table">
+                        <td colspan="7" class="empty-table">
                             <i class="fas fa-database"></i>
                             ${allProtocolos.length === 0 ? 'Nenhum protocolo encontrado. Sincronize com o Tasy.' : 'Nenhum resultado para o filtro aplicado.'}
                         </td>
@@ -744,17 +761,19 @@
                         </span>`;
                 }).join('');
 
+                // 💡 Verifica se este protocolo está no Set de selecionados
+                const isChecked = selectedProtocols.has(String(p.id)) ? 'checked' : '';
+
                 return `
-                    <tr>
-                        <td>${escHtml(String(p.cd_estabelecimento || '-'))}</td>
-                        <td><strong>${escHtml(String(p.seq_protocolo || p.nr_sequencia || '-'))}</strong></td>
-                        <td>${escHtml(String(p.cd_protocolo || '-'))}</td>
-                        <td>${escHtml(String(p.nr_seq_subtipo || '-'))}</td>
-                        <td>${escHtml(String(p.nm_protocolo || '-'))}</td>
+                    <tr style="${isChecked ? 'background: #f0fdf4;' : ''}">
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="row-cb" value="${p.id}" ${isChecked} onchange="updateSelection('${p.id}', this.checked)" style="width: 16px; height: 16px; accent-color: #00855B; cursor: pointer;">
+                        </td>
+                        <td><strong>${escHtml(String(p.nm_protocolo || '-'))}</strong></td>
                         <td>${escHtml(String(p.nm_subtipo || '-'))}</td>
                         <td>${escHtml(String(p.nr_ciclos || '-'))}</td>
                         <td>${escHtml(String(p.nr_dias_intervalo || '-'))}</td>
-                        <td>${escHtml(String(p.nm_usuario || '-'))}</td>
+                        <td><span style="font-size:11px; color:#64748b;">${escHtml(String(p.cd_protocolo || '-'))}</span></td>
                         <td>
                             <div class="protocol-tags-cell">
                                 ${tagsHtml}
@@ -785,7 +804,6 @@
                     <i class="fas fa-chevron-right"></i>
                 </button>
             `;
-
             container.innerHTML = html;
         }
 
@@ -798,29 +816,140 @@
 
         function updateStats() {
             document.getElementById('statTotal').textContent = allProtocolos.length;
-
             let totalVinculos = 0;
             let semTag = 0;
-
             allProtocolos.forEach(p => {
                 const tags = p.tags || [];
                 totalVinculos += tags.length;
                 if (tags.length === 0) semTag++;
             });
-
             document.getElementById('statVinculos').textContent = totalVinculos;
             document.getElementById('statSemTag').textContent = semTag;
         }
 
         // =============================================
-        // 💡 VINCULAR TAGS MULTIPLAS (MODAL)
+        // 💡 LÓGICA DE SELEÇÃO EM MASSA
+        // =============================================
+        function toggleSelectAll() {
+            const isChecked = document.getElementById('selectAllCb').checked;
+            const checkboxes = document.querySelectorAll('.row-cb');
+            
+            checkboxes.forEach(cb => {
+                cb.checked = isChecked;
+                if (isChecked) {
+                    selectedProtocols.add(cb.value);
+                    cb.closest('tr').style.background = '#f0fdf4';
+                } else {
+                    selectedProtocols.delete(cb.value);
+                    cb.closest('tr').style.background = '';
+                }
+            });
+            updateBulkButton();
+        }
+
+        function updateSelection(id, checked) {
+            if (checked) {
+                selectedProtocols.add(String(id));
+            } else {
+                selectedProtocols.delete(String(id));
+                document.getElementById('selectAllCb').checked = false; 
+            }
+            renderProtocolosTable(); // Força a atualização da cor de fundo da linha
+            updateBulkButton();
+        }
+
+        function clearSelection() {
+            selectedProtocols.clear();
+            document.getElementById('selectAllCb').checked = false;
+            renderProtocolosTable(); // Reseta os checkboxes e cores
+            updateBulkButton();
+        }
+
+        function updateBulkButton() {
+            const btnBulk = document.getElementById('btnBulkTag');
+            const btnClear = document.getElementById('btnClearSelection');
+            const countSpan = document.getElementById('bulkCount');
+            const divider = document.getElementById('bulkDivider');
+
+            if (selectedProtocols.size > 0) {
+                btnBulk.style.display = 'inline-flex';
+                btnClear.style.display = 'inline-flex';
+                divider.style.display = 'block';
+                countSpan.textContent = selectedProtocols.size;
+            } else {
+                btnBulk.style.display = 'none';
+                btnClear.style.display = 'none';
+                divider.style.display = 'none';
+            }
+        }
+
+        function openBulkTagModal() {
+            const container = document.getElementById('bulkCheckboxListContainer');
+            
+            if (allTags.length === 0) {
+                container.innerHTML = '<p style="font-size:12px; color:#94a3b8; text-align:center; padding: 20px;">Nenhuma tag criada no sistema ainda.</p>';
+            } else {
+                container.innerHTML = allTags.map(tag => {
+                    return `
+                        <label class="tag-checkbox-item">
+                            <input type="checkbox" class="modal-bulk-tag-cb" value="${tag.id}">
+                            <span>
+                                <span class="tag-dot" style="background:${tag.cor};"></span>
+                                ${escHtml(tag.nome)}
+                            </span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('bulkProtocolCountDisplay').textContent = selectedProtocols.size;
+            openModal('modalBulkTag');
+        }
+
+        async function saveBulkTags() {
+            const checkboxes = document.querySelectorAll('.modal-bulk-tag-cb:checked');
+            if (checkboxes.length === 0) return alert('Selecione pelo menos uma tag para aplicar.');
+
+            const btn = document.getElementById('btnSaveBulkTags');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aplicando...';
+            btn.disabled = true;
+
+            const promises = [];
+            const tagIdsToApply = Array.from(checkboxes).map(cb => cb.value);
+
+            // Para cada protocolo selecionado, aplica as tags marcadas
+            selectedProtocols.forEach(protocoloId => {
+                tagIdsToApply.forEach(tagId => {
+                    promises.push(apiPost(`/protocolos/${protocoloId}/tags`, { tag_id: tagId }));
+                });
+            });
+
+            try {
+                if (promises.length > 0) {
+                    await Promise.all(promises); // Dispara tudo de uma vez
+                    await loadProtocolos();
+                }
+                closeModal('modalBulkTag');
+                clearSelection();
+                showStatus('Tags aplicadas em massa com sucesso!', 'success');
+            } catch (e) {
+                alert('Ocorreu um erro ao aplicar as tags em lote. Tente novamente.');
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // =============================================
+        // VINCULAR TAGS INDIVIDUAIS (MODAL)
         // =============================================
         function openLinkTagsModal(protocoloId) {
             const protocol = allProtocolos.find(p => p.id === protocoloId);
             if (!protocol) return;
 
             document.getElementById('linkProtocoloId').value = protocoloId;
-            document.getElementById('linkProtocoloNome').textContent = protocol.cd_protocolo || protocol.nm_protocolo;
+            document.getElementById('linkProtocoloNome').textContent = protocol.nm_protocolo || protocol.cd_protocolo;
 
             const container = document.getElementById('checkboxListContainer');
             const currentTagIds = (protocol.tags || []).map(t => String(t.id));
@@ -865,11 +994,9 @@
                 const isChecked = cb.checked;
                 const wasChecked = currentTagIds.includes(tagId);
 
-                // Se marcou e não tinha, adiciona (POST)
                 if (isChecked && !wasChecked) {
                     promises.push(apiPost(`/protocolos/${protocoloId}/tags`, { tag_id: tagId }));
                 } 
-                // Se desmarcou e tinha, remove (DELETE)
                 else if (!isChecked && wasChecked) {
                     promises.push(apiDelete(`/protocolos/${protocoloId}/tags/${tagId}`));
                 }
@@ -889,7 +1016,6 @@
             }
         }
 
-        // Remover tag direto pela pílula pequena da tabela
         async function removeTagFromProtocol(protocoloId, tagId) {
             try {
                 await apiDelete(`/protocolos/${protocoloId}/tags/${tagId}`);
@@ -916,19 +1042,11 @@
         }
 
         // =============================================
-        // MODAIS
+        // MODAIS E UTILS
         // =============================================
-        function openModal(id) {
-            document.getElementById(id).classList.add('open');
-        }
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('open');
-        }
-
-        // =============================================
-        // UTILS
-        // =============================================
         function escHtml(str) {
             if (str === null || str === undefined) return '';
             const div = document.createElement('div');
