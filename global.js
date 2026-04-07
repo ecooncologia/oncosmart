@@ -63,7 +63,7 @@ const MENU_SECTORS = [
 ];
 
 // =============================================
-// SISTEMA DE TOOLTIP VIA JAVASCRIPT
+// TOOLTIP VIA JAVASCRIPT
 // =============================================
 function initTooltipSystem() {
     if (window.__tooltipSystemReady) return;
@@ -79,14 +79,13 @@ function initTooltipSystem() {
 
     let hideTimeout = null;
 
-    document.addEventListener('mouseover', function(e) {
+    document.addEventListener('mouseover', function (e) {
         const nav = document.getElementById('global-nav');
         if (!nav || nav.classList.contains('expanded')) return;
-        if (window.innerWidth <= 900) return;
+        if (window.innerWidth <= 1100) return;
 
         const target = e.target.closest('[data-tooltip]');
-        if (!target) return;
-        if (!nav.contains(target)) return;
+        if (!target || !nav.contains(target)) return;
 
         const text = target.getAttribute('data-tooltip');
         if (!text) return;
@@ -101,8 +100,17 @@ function initTooltipSystem() {
         const tipW = tooltipEl.offsetWidth;
         const tipH = tooltipEl.offsetHeight;
 
-        const left = rect.right + 12;
-        const top = rect.top + (rect.height / 2) - (tipH / 2);
+        let left = rect.right + 12;
+        let top = rect.top + (rect.height / 2) - (tipH / 2);
+
+        if (left + tipW > window.innerWidth - 12) {
+            left = window.innerWidth - tipW - 12;
+        }
+
+        if (top < 12) top = 12;
+        if (top + tipH > window.innerHeight - 12) {
+            top = window.innerHeight - tipH - 12;
+        }
 
         tooltipEl.style.left = left + 'px';
         tooltipEl.style.top = top + 'px';
@@ -116,13 +124,14 @@ function initTooltipSystem() {
         });
     });
 
-    document.addEventListener('mouseout', function(e) {
+    document.addEventListener('mouseout', function (e) {
         const target = e.target.closest('[data-tooltip]');
         if (!target) return;
 
         hideTimeout = setTimeout(() => {
             tooltipEl.classList.remove('visible');
             arrowEl.classList.remove('visible');
+
             setTimeout(() => {
                 tooltipEl.style.display = 'none';
                 arrowEl.style.display = 'none';
@@ -132,7 +141,7 @@ function initTooltipSystem() {
 }
 
 // =============================================
-// ESTILOS DO MENU
+// CSS INJETADO DO MENU
 // =============================================
 function injectMenuStyles() {
     if (document.getElementById('smart-menu-styles')) return;
@@ -140,7 +149,6 @@ function injectMenuStyles() {
     const style = document.createElement('style');
     style.id = 'smart-menu-styles';
     style.innerHTML = `
-        /* TOOLTIP FLUTUANTE (NO BODY, NÃO NA SIDEBAR) */
         #smart-tooltip {
             position: fixed;
             display: none;
@@ -185,7 +193,6 @@ function injectMenuStyles() {
             transform: translateX(0);
         }
 
-        /* SIDEBAR PRINCIPAL */
         #global-nav {
             position: fixed;
             top: 0;
@@ -214,7 +221,6 @@ function injectMenuStyles() {
         #global-nav::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         #global-nav::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* TOPO DA SIDEBAR - LOGO / AVATAR */
         .sidebar-logo-area {
             padding: 14px 8px 8px;
             display: flex;
@@ -253,7 +259,9 @@ function injectMenuStyles() {
             object-fit: contain;
         }
 
-        .sidebar-logo-full { display: none; }
+        .sidebar-logo-full {
+            display: none;
+        }
 
         #global-nav.expanded .sidebar-logo-button {
             width: 200px;
@@ -262,13 +270,26 @@ function injectMenuStyles() {
             padding: 8px 16px;
         }
 
-        #global-nav.expanded .sidebar-logo-avatar { display: none; }
-        #global-nav.expanded .sidebar-logo-full { display: block; width: 100%; height: 100%; }
+        #global-nav.expanded .sidebar-logo-avatar {
+            display: none;
+        }
 
-        #global-nav:not(.expanded) .sidebar-logo-avatar { display: block; width: 46px; height: 46px; }
-        #global-nav:not(.expanded) .sidebar-logo-full { display: none; }
+        #global-nav.expanded .sidebar-logo-full {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
 
-        /* CARD DO USUÁRIO */
+        #global-nav:not(.expanded) .sidebar-logo-avatar {
+            display: block;
+            width: 46px;
+            height: 46px;
+        }
+
+        #global-nav:not(.expanded) .sidebar-logo-full {
+            display: none;
+        }
+
         .sidebar-user-card {
             display: flex;
             align-items: center;
@@ -298,9 +319,16 @@ function injectMenuStyles() {
             border: 1px solid #dbe5ef;
         }
 
-        .sidebar-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-        .sidebar-user-info { flex: 1; min-width: 0; }
+        .sidebar-user-info {
+            flex: 1;
+            min-width: 0;
+        }
 
         .sidebar-user-greeting {
             font-size: 10px;
@@ -334,7 +362,9 @@ function injectMenuStyles() {
             justify-content: center;
         }
 
-        .sidebar-logout-btn:hover { background: #fee2e2; }
+        .sidebar-logout-btn:hover {
+            background: #fee2e2;
+        }
 
         .sidebar-section-label {
             padding: 12px 18px 6px;
@@ -345,8 +375,10 @@ function injectMenuStyles() {
             color: #94a3b8;
         }
 
-        /* SETORES */
-        .smart-dropdown { margin-bottom: 8px; padding: 0 10px; }
+        .smart-dropdown {
+            margin-bottom: 8px;
+            padding: 0 10px;
+        }
 
         .smart-dropbtn {
             width: 100%;
@@ -438,7 +470,6 @@ function injectMenuStyles() {
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* SUBITENS */
         .smart-drop-item {
             padding: 10px 12px;
             text-decoration: none;
@@ -473,11 +504,30 @@ function injectMenuStyles() {
             transition: 0.2s ease;
         }
 
-        .smart-drop-item:hover { color: #00855B; background: #f8fafc; border-color: #e2e8f0; }
-        .smart-drop-item:hover i { color: #00855B; background: #ecfdf5; border-color: #d1fae5; }
+        .smart-drop-item:hover {
+            color: #00855B;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
 
-        .smart-drop-item.active { color: #00855B; font-weight: 800; background: #f8fffb; border-color: #d1fae5; }
-        .smart-drop-item.active i { color: #00855B; background: #ecfdf5; border-color: #c7f0dc; }
+        .smart-drop-item:hover i {
+            color: #00855B;
+            background: #ecfdf5;
+            border-color: #d1fae5;
+        }
+
+        .smart-drop-item.active {
+            color: #00855B;
+            font-weight: 800;
+            background: #f8fffb;
+            border-color: #d1fae5;
+        }
+
+        .smart-drop-item.active i {
+            color: #00855B;
+            background: #ecfdf5;
+            border-color: #c7f0dc;
+        }
 
         .smart-drop-item.active::before {
             content: '';
@@ -491,7 +541,11 @@ function injectMenuStyles() {
             border-radius: 50%;
         }
 
-        .item-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         .sidebar-footer {
             margin-top: auto;
@@ -504,10 +558,20 @@ function injectMenuStyles() {
             background: #fafafa;
         }
 
-        .sidebar-footer img { max-width: 120px; height: auto; opacity: 0.9; }
-        .sidebar-footer span { font-size: 10px; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px; text-align: center; }
+        .sidebar-footer img {
+            max-width: 120px;
+            height: auto;
+            opacity: 0.9;
+        }
 
-        /* ESTADO RECOLHIDO - USER CARD: foto + botão sair */
+        .sidebar-footer span {
+            font-size: 10px;
+            color: #94a3b8;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
         #global-nav:not(.expanded) .sidebar-user-card {
             width: 58px;
             padding: 8px 6px;
@@ -526,7 +590,6 @@ function injectMenuStyles() {
             display: none !important;
         }
 
-        /* Botão sair VISÍVEL mesmo no recolhido */
         #global-nav:not(.expanded) .sidebar-logout-btn {
             display: inline-flex !important;
             width: 30px;
@@ -556,13 +619,11 @@ function injectMenuStyles() {
             display: none !important;
         }
 
-        /* ESTADO EXPANDIDO */
         #global-nav.expanded .sidebar-user-card {
             flex-direction: row;
         }
 
-        /* MOBILE */
-        @media (max-width: 900px) {
+        @media (max-width: 1100px) {
             #global-nav,
             #global-nav.expanded {
                 position: relative;
@@ -575,16 +636,29 @@ function injectMenuStyles() {
                 overflow-x: hidden;
             }
 
-            #global-nav:not(.expanded) .sidebar-user-info,
-            #global-nav:not(.expanded) .sidebar-section-label,
-            #global-nav:not(.expanded) .menu-text,
-            #global-nav:not(.expanded) .item-text,
-            #global-nav:not(.expanded) .sector-chevron,
-            #global-nav:not(.expanded) .sidebar-footer {
-                display: flex !important;
+            #global-nav .sidebar-logo-area {
+                padding: 14px 12px 10px;
             }
 
-            #global-nav:not(.expanded) .sidebar-user-card {
+            #global-nav .sidebar-logo-button,
+            #global-nav.expanded .sidebar-logo-button {
+                width: 190px;
+                height: 62px;
+                border-radius: 18px;
+                padding: 8px 16px;
+            }
+
+            #global-nav .sidebar-logo-avatar {
+                display: none !important;
+            }
+
+            #global-nav .sidebar-logo-full {
+                display: block !important;
+                width: 100%;
+                height: 100%;
+            }
+
+            #global-nav .sidebar-user-card {
                 width: calc(100% - 20px);
                 padding: 10px 12px;
                 flex-direction: row;
@@ -593,17 +667,25 @@ function injectMenuStyles() {
                 gap: 10px;
             }
 
-            #global-nav:not(.expanded) .smart-dropbtn {
+            #global-nav .sidebar-user-info,
+            #global-nav .sidebar-section-label,
+            #global-nav .menu-text,
+            #global-nav .item-text,
+            #global-nav .sector-chevron {
+                display: flex !important;
+            }
+
+            #global-nav .smart-dropbtn {
                 justify-content: space-between;
                 padding: 12px 14px;
             }
 
-            #global-nav:not(.expanded) .sector-title {
+            #global-nav .sector-title {
                 justify-content: flex-start;
                 gap: 12px;
             }
 
-            #global-nav:not(.expanded) .sector-title i {
+            #global-nav .sector-title i {
                 width: 30px;
                 height: 30px;
                 min-width: 30px;
@@ -611,9 +693,18 @@ function injectMenuStyles() {
                 font-size: 15px;
             }
 
-            /* Sem tooltips no mobile */
+            #global-nav .smart-dropdown-content {
+                display: none;
+            }
+
+            #global-nav .sidebar-footer {
+                display: none !important;
+            }
+
             #smart-tooltip,
-            #smart-tooltip-arrow { display: none !important; }
+            #smart-tooltip-arrow {
+                display: none !important;
+            }
         }
     `;
 
@@ -621,10 +712,14 @@ function injectMenuStyles() {
 }
 
 // =============================================
-// FUNÇÕES AUXILIARES DA SIDEBAR
+// FUNÇÕES DA SIDEBAR
 // =============================================
+function isTabletOrMobile() {
+    return window.innerWidth <= 1100;
+}
+
 function getDefaultSidebarExpanded() {
-    if (window.innerWidth <= 900) return true;
+    if (isTabletOrMobile()) return true;
     return localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
 }
 
@@ -662,8 +757,14 @@ function openActiveSectorSubmenu() {
 function hideTooltip() {
     const tip = document.getElementById('smart-tooltip');
     const arrow = document.getElementById('smart-tooltip-arrow');
-    if (tip) { tip.classList.remove('visible'); tip.style.display = 'none'; }
-    if (arrow) { arrow.classList.remove('visible'); arrow.style.display = 'none'; }
+    if (tip) {
+        tip.classList.remove('visible');
+        tip.style.display = 'none';
+    }
+    if (arrow) {
+        arrow.classList.remove('visible');
+        arrow.style.display = 'none';
+    }
 }
 
 function syncSidebarState(isExpanded) {
@@ -673,7 +774,7 @@ function syncSidebarState(isExpanded) {
     nav.classList.toggle('expanded', isExpanded);
     applyBodySidebarClass(isExpanded);
 
-    if (window.innerWidth > 900) {
+    if (!isTabletOrMobile()) {
         localStorage.setItem(SIDEBAR_STORAGE_KEY, isExpanded ? 'true' : 'false');
     }
 
@@ -692,6 +793,11 @@ function syncSidebarState(isExpanded) {
 window.toggleSidebar = function(forceState = null) {
     const nav = document.getElementById('global-nav');
     if (!nav) return;
+
+    if (isTabletOrMobile()) {
+        syncSidebarState(true);
+        return;
+    }
 
     const nextState = forceState !== null
         ? forceState
@@ -745,14 +851,19 @@ function ensureResponsiveSidebarListener() {
     if (window.__smartSidebarResizeBound) return;
     window.__smartSidebarResizeBound = true;
 
+    let resizeTimer;
+
     window.addEventListener('resize', () => {
-        const shouldExpand = getDefaultSidebarExpanded();
-        syncSidebarState(shouldExpand);
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            const shouldExpand = getDefaultSidebarExpanded();
+            syncSidebarState(shouldExpand);
+        }, 120);
     });
 }
 
 // =============================================
-// INICIALIZAÇÃO GLOBAL
+// INIT
 // =============================================
 async function initGlobal(currentPageId, pageTitle) {
     try {
@@ -784,7 +895,7 @@ async function initGlobal(currentPageId, pageTitle) {
 }
 
 // =============================================
-// HEADER — SEM LOGO, SOMENTE TÍTULO
+// HEADER — SOMENTE TÍTULO
 // =============================================
 function renderHeader(title) {
     const headerEl = document.getElementById('global-header');
@@ -972,7 +1083,6 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
     nav.innerHTML = html;
     syncSidebarState(isSidebarExpanded);
 
-    // --- ROTEADOR / CONTROLE DE ACESSO ---
     const pageConfig = APP_PAGES.find(p => p.id === activeId);
 
     if (pageConfig) {
@@ -1004,5 +1114,6 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
 function logout() {
     localStorage.removeItem('ecoUser');
     localStorage.removeItem('ecoUserPhoto');
+    localStorage.removeItem('ecoSidebarExpanded');
     window.location.href = 'https://ecooncologia.com.br/smart/';
 }
