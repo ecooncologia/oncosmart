@@ -504,8 +504,27 @@ function injectMenuStyles() {
             background: #fafafa;
         }
 
-        .sidebar-footer img { max-width: 120px; height: auto; opacity: 0.9; }
-        .sidebar-footer span { font-size: 10px; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px; text-align: center; }
+        .sidebar-footer img {
+            max-width: 120px;
+            height: auto;
+            opacity: 0.9;
+        }
+
+        .sidebar-footer span {
+            font-size: 10px;
+            color: #94a3b8;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        /* some no tablet e no celular */
+        @media (max-width: 1100px) {
+            .sidebar-footer {
+                display: none !important;
+            }
+        }
+
 
         /* ESTADO RECOLHIDO - USER CARD: foto + botão sair */
         #global-nav:not(.expanded) .sidebar-user-card {
@@ -521,10 +540,10 @@ function injectMenuStyles() {
         #global-nav:not(.expanded) .sidebar-section-label,
         #global-nav:not(.expanded) .menu-text,
         #global-nav:not(.expanded) .item-text,
-        #global-nav:not(.expanded) .sector-chevron,
-        #global-nav:not(.expanded) .sidebar-footer {
-            display: none !important;
+        #global-nav:not(.expanded) .sector-chevron {
+            display: flex !important;
         }
+
 
         /* Botão sair VISÍVEL mesmo no recolhido */
         #global-nav:not(.expanded) .sidebar-logout-btn {
