@@ -27,7 +27,7 @@
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body, html { height: 100%; width: 100%; overflow: hidden; }
+        body, html { height: 100%; width: 100%; overflow: hidden; display: block; }
         .split-container { display: flex; height: 100vh; width: 100vw; }
         
         .left-pane { 
@@ -98,7 +98,39 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO DA MSAL ---
+        // ==========================================
+        // BLINDAGEM DO LOCALSTORAGE
+        // ==========================================
+        function safeClearStorage() {
+            try {
+                localStorage.removeItem('ecoUser');
+                localStorage.removeItem('ecoUserPhoto');
+                localStorage.removeItem('ecoSidebarExpanded');
+            } catch(e) {
+                try { localStorage.clear(); } catch(e2) {}
+            }
+        }
+
+        function safeSetItem(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch(e) {
+                console.warn(`Storage cheio ao salvar '${key}'. Limpando e tentando novamente...`);
+                try {
+                    localStorage.clear();
+                    localStorage.setItem(key, value);
+                    return true;
+                } catch(e2) {
+                    console.error(`Falha crítica ao salvar '${key}' mesmo após limpar storage.`);
+                    return false;
+                }
+            }
+        }
+
+        // ==========================================
+        // CONFIGURAÇÃO DA MSAL
+        // ==========================================
         const msalConfig = {
             auth: {
                 clientId: "c8029ec0-cb5e-40a3-bdae-1f050d25bd9e", 
@@ -148,9 +180,20 @@
             let photo = "";
             try {
                 const tokenResp = await msalInstance.acquireTokenSilent({ account: account, scopes: ["User.Read"] });
-                const photoReq = await fetch("https://graph.microsoft.com/v1.0/me/photos/64x64/$value", { headers: { "Authorization": `Bearer ${tokenResp.accessToken}` } });
-                if(photoReq.ok) { const blob = await photoReq.blob(); photo = await new Promise(r => {const a=new FileReader(); a.onload=()=>r(a.result); a.readAsDataURL(blob)}); }
-            } catch(e) {}
+                const photoReq = await fetch("https://graph.microsoft.com/v1.0/me/photos/64x64/$value", { 
+                    headers: { "Authorization": `Bearer ${tokenResp.accessToken}` } 
+                });
+                if (photoReq.ok) { 
+                    const blob = await photoReq.blob(); 
+                    photo = await new Promise(resolve => {
+                        const reader = new FileReader(); 
+                        reader.onload = () => resolve(reader.result); 
+                        reader.readAsDataURL(blob);
+                    }); 
+                }
+            } catch(e) {
+                console.warn("Não foi possível buscar a foto do usuário:", e.message);
+            }
 
             // API Node.js com a Chave de Segurança
             try {
@@ -158,7 +201,7 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'x-api-key': 'EcoOnco_Smart_Seguranca_2026!@' // CHAVE AQUI
+                        'x-api-key': 'EcoOnco_Smart_Seguranca_2026!@'
                     },
                     body: JSON.stringify({ email, name, photo })
                 });
@@ -169,32 +212,32 @@
                     const user = apiData.user;
                     const perms = user.permissoes || {};
                     
-                    // 🛡️ BLINDAGEM DE MEMÓRIA: Remove a foto gigante do objeto do usuário
+                    // Remove a foto do objeto principal (vai em chave separada)
                     delete user.foto;
                     delete user.photo;
-                    
-                    // Limpa o cache antigo antes de salvar
-                    localStorage.removeItem('ecoUser');
-                    localStorage.removeItem('ecoUserPhoto');
 
-                    try {
-                        // Salva os dados leves do usuário
-                        localStorage.setItem('ecoUser', JSON.stringify(user));
-                    } catch (e) {
-                        console.error("Memória superlotada ao salvar o usuário. Forçando limpeza pesada.");
-                        localStorage.clear();
-                        localStorage.setItem('ecoUser', JSON.stringify({email: user.email, nome: user.nome, permissoes: user.permissoes}));
-                    }
+                    // LIMPEZA TOTAL antes de salvar
+                    safeClearStorage();
                     
-                    // Tenta salvar a foto em uma chave isolada
-                    if(photo) {
-                        try {
-                            localStorage.setItem('ecoUserPhoto', photo);
-                        } catch(e) {
-                            console.warn("Foto de perfil muito grande para o LocalStorage. Ignorando a foto.");
-                        }
+                    // Salva o usuário (dados leves)
+                    const userSaved = safeSetItem('ecoUser', JSON.stringify(user));
+
+                    if (!userSaved) {
+                        // Tentativa mínima: só o essencial
+                        const miniUser = {
+                            email: user.email,
+                            nome: user.nome,
+                            permissoes: user.permissoes
+                        };
+                        safeSetItem('ecoUser', JSON.stringify(miniUser));
                     }
-                    
+
+                    // Salva a foto em chave isolada (se couber)
+                    if (photo) {
+                        safeSetItem('ecoUserPhoto', photo);
+                    }
+
+                    // Roteamento
                     if (typeof APP_PAGES === 'undefined') {
                         throw new Error("Erro interno de rotas.");
                     }
