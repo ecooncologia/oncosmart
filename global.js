@@ -56,7 +56,7 @@ const MENU_SECTORS = [
     { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing'] }
 ];
 
-// 💡 NOVO ESTILO: BARRA LATERAL FIXA (SIDEBAR) ESTILO SAAS 
+// 💡 NOVO ESTILO: BARRA LATERAL FIXA BRANCA (LIGHT THEME SAAS)
 function injectMenuStyles() {
     if(document.getElementById('smart-menu-styles')) return;
     const style = document.createElement('style');
@@ -69,22 +69,23 @@ function injectMenuStyles() {
             left: 0; 
             width: 260px; 
             height: 100vh; 
-            background: linear-gradient(180deg, #00855B 0%, #004d34 100%); 
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1); 
+            background: #ffffff; /* Fundo Branco Limpo */
+            box-shadow: 4px 0 20px rgba(0,0,0,0.03); 
+            border-right: 1px solid #e2e8f0;
             z-index: 1000;
             overflow-y: auto;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            color: white;
+            color: #334155; /* Texto chumbo escuro */
             transition: 0.3s;
         }
         
         /* SCROLLBAR CUSTOMIZADA (Fininha e Discreta) */
         #global-nav::-webkit-scrollbar { width: 5px; }
         #global-nav::-webkit-scrollbar-track { background: transparent; }
-        #global-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        #global-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+        #global-nav::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        #global-nav::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         /* ÁREA DA LOGO NO TOPO DO MENU */
         .sidebar-logo-area {
@@ -92,17 +93,16 @@ function injectMenuStyles() {
             display: flex;
             justify-content: center;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 15px;
+            margin-bottom: 5px;
         }
-        .sidebar-logo-area img { max-width: 140px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        .sidebar-logo-area img { max-width: 150px; height: auto; }
 
         /* BOTÃO MESTRE DOS SETORES (Acordeão) */
-        .smart-dropdown { margin-bottom: 5px; padding: 0 15px; }
+        .smart-dropdown { margin-bottom: 8px; padding: 0 15px; }
         .smart-dropbtn { 
             width: 100%;
             background: transparent; 
-            color: rgba(255,255,255,0.85); 
+            color: #475569; 
             padding: 12px 15px; 
             font-size: 13px; 
             font-weight: 700; 
@@ -114,16 +114,21 @@ function injectMenuStyles() {
             justify-content: space-between;
             transition: 0.2s; 
         }
-        .smart-dropbtn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .smart-dropbtn:hover { background: #f8fafc; color: #00855B; }
         
         .sector-title { display: flex; align-items: center; gap: 12px; }
-        .sector-title i { font-size: 16px; width: 20px; text-align: center; }
+        .sector-title i { font-size: 16px; width: 20px; text-align: center; color: #94a3b8; transition: 0.2s;}
+
+        .smart-dropbtn:hover .sector-title i { color: #00855B; }
 
         /* STATUS ATIVO (Quando a página aberta pertence a este setor) */
         .smart-dropdown.active-sector .smart-dropbtn { 
-            background: rgba(255, 255, 255, 0.2); 
-            color: #ffffff; 
+            background: #ecfdf5; /* Fundo verde super claro */
+            color: #00855B; 
             font-weight: 800;
+        }
+        .smart-dropdown.active-sector .smart-dropbtn .sector-title i {
+            color: #00855B;
         }
 
         /* CAIXA DE SUB-ITENS (Páginas) */
@@ -142,7 +147,7 @@ function injectMenuStyles() {
         .smart-drop-item { 
             padding: 10px 15px; 
             text-decoration: none; 
-            color: rgba(255,255,255,0.7); 
+            color: #64748b; 
             font-size: 12px; 
             font-weight: 600; 
             border: none; 
@@ -154,30 +159,29 @@ function injectMenuStyles() {
             transition: 0.2s;
             position: relative;
         }
-        .smart-drop-item:hover { color: white; background: rgba(255,255,255,0.05); }
+        .smart-drop-item:hover { color: #00855B; background: #f8fafc; }
         
         /* PÁGINA ATUAL ABERTA */
         .smart-drop-item.active { 
-            color: white; 
+            color: #00855B; 
             font-weight: 800; 
-            background: rgba(255,255,255,0.15); 
+            background: transparent; 
         }
         .smart-drop-item.active::before {
             content: '';
             position: absolute;
-            left: -15px;
+            left: -12px;
             top: 50%;
             transform: translateY(-50%);
             width: 6px;
             height: 6px;
-            background: #10b981;
+            background: #00855B;
             border-radius: 50%;
-            box-shadow: 0 0 5px #10b981;
         }
 
-        /* AJUSTES PARA CELULAR (Vira um menu gaveta inferior ou tela inteira - Opcional) */
+        /* AJUSTES PARA CELULAR */
         @media (max-width: 900px) {
-            #global-nav { position: relative; width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; }
+            #global-nav { position: relative; width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; box-shadow: none; border-right: none;}
             .sidebar-logo-area { display: none; }
         }
     `;
@@ -254,7 +258,7 @@ function renderHeader(user, title, photoSrc) {
 
     // 💡 O cabeçalho agora ficou menor, pois a Logo foi para a barra lateral!
     headerEl.innerHTML = `
-        <div class="header-logo"><img src="https://i.imgur.com/kpCeqqJ.png" alt="ECO"></div>
+        <div class="header-logo"><img src="https://imgur.com/m9NWY03.png" alt="ECO"></div>
         <div class="header-center"><p>${title}</p></div>
         <div class="user-profile">
             <div class="user-info"><div class="user-greeting">${greeting},</div><div class="user-name">${displayName}</div></div>
@@ -333,7 +337,7 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
             <div class="smart-dropdown ${sectorActiveClass}">
                 <button class="smart-dropbtn" onclick="toggleSmartMenu('${dropId}', event)">
                     <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
-                    <i class="fas ${iconChevron}" style="font-size:10px; opacity:0.6;"></i>
+                    <i class="fas ${iconChevron}" style="font-size:10px; color:#cbd5e1;"></i>
                 </button>
                 <div id="${dropId}" class="smart-dropdown-content ${showClass}">
                     ${sectorHtml}
@@ -344,7 +348,7 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
             <div class="smart-dropdown">
                 <button class="smart-dropbtn" style="opacity: 0.5; cursor: not-allowed;">
                     <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
-                    <small style="font-size: 9px; background: rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 4px;">Em breve</small>
+                    <small style="font-size: 9px; background: #f1f5f9; color: #64748b; padding: 2px 5px; border-radius: 4px;">Em breve</small>
                 </button>
             </div>`;
         }
