@@ -131,6 +131,10 @@
         .filter-bar select {
             max-width: 220px;
         }
+        
+        .table-container table {
+            min-width: 1200px; /* Aumentado para caber as novas colunas */
+        }
 
         .protocol-tags-cell {
             display: flex;
@@ -436,10 +440,8 @@
     <div class="container">
         <header id="global-header"></header>
 
-        <!-- STATUS DE SINCRONIZAÇÃO -->
         <div id="syncStatus" class="sync-status hidden"></div>
 
-        <!-- AÇÕES DA PÁGINA -->
         <div class="page-actions">
             <button class="btn btn-success" onclick="syncFromTasy()">
                 <i class="fas fa-sync-alt"></i> Sincronizar Tasy
@@ -449,7 +451,6 @@
             </button>
         </div>
 
-        <!-- KPIs -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-card-icon"><i class="fas fa-dna"></i></div>
@@ -479,7 +480,6 @@
             </div>
         </div>
 
-        <!-- GESTÃO DE TAGS -->
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-tags"></i> Gestão de Tags
@@ -504,14 +504,13 @@
             </div>
         </div>
 
-        <!-- TABELA DE PROTOCOLOS -->
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-dna"></i> Protocolos Cadastrados
             </div>
 
             <div class="filter-bar">
-                <input type="text" id="searchInput" placeholder="Buscar por código ou sequência..." oninput="filterProtocolos()">
+                <input type="text" id="searchInput" placeholder="Buscar por código, sequência ou nome..." oninput="filterProtocolos()">
                 <select id="filterTag" onchange="filterProtocolos()">
                     <option value="">Todas as Tags</option>
                     <option value="__sem_tag__">Sem Tag</option>
@@ -522,14 +521,21 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width:100px;">Nº Sequência</th>
+                            <th>Estab.</th>
+                            <th>Seq. Protocolo</th>
                             <th>Cód. Protocolo</th>
+                            <th>Seq. Subtipo</th>
+                            <th>Nome Protocolo</th>
+                            <th>Medicação (Subtipo)</th>
+                            <th>Ciclos</th>
+                            <th>Dias Int.</th>
+                            <th>Usuário</th>
                             <th>Tags</th>
                         </tr>
                     </thead>
                     <tbody id="protocolosBody">
                         <tr>
-                            <td colspan="3" class="empty-table">
+                            <td colspan="10" class="empty-table">
                                 <i class="fas fa-database"></i>
                                 Carregando protocolos...
                             </td>
@@ -542,7 +548,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMAÇÃO -->
     <div class="modal-overlay" id="modalConfirm">
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('modalConfirm')">
@@ -614,7 +619,6 @@
         async function initTables() {
             try {
                 await apiPost('/protocolos/init-tables');
-                console.log('Tabelas verificadas/criadas com sucesso.');
             } catch (e) {
                 console.error('Erro ao inicializar tabelas:', e);
                 showStatus('Erro ao inicializar tabelas no banco.', 'danger');
@@ -756,8 +760,11 @@
 
             filteredProtocolos = allProtocolos.filter(p => {
                 const matchSearch = !search ||
-                    String(p.nr_sequencia).toLowerCase().includes(search) ||
-                    String(p.cd_protocolo).toLowerCase().includes(search);
+                    String(p.seq_protocolo || p.nr_sequencia || '').toLowerCase().includes(search) ||
+                    String(p.cd_protocolo || '').toLowerCase().includes(search) ||
+                    String(p.nm_protocolo || '').toLowerCase().includes(search) ||
+                    String(p.nm_subtipo || '').toLowerCase().includes(search) ||
+                    String(p.nr_seq_subtipo || '').toLowerCase().includes(search);
 
                 let matchTag = true;
                 if (tagFilter === '__sem_tag__') {
@@ -784,7 +791,7 @@
             if (pageItems.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="3" class="empty-table">
+                        <td colspan="10" class="empty-table">
                             <i class="fas fa-database"></i>
                             ${allProtocolos.length === 0 ? 'Nenhum protocolo encontrado. Sincronize com o Tasy.' : 'Nenhum resultado para o filtro aplicado.'}
                         </td>
@@ -818,8 +825,15 @@
 
                 return `
                     <tr>
-                        <td><strong>${escHtml(String(p.nr_sequencia))}</strong></td>
-                        <td>${escHtml(String(p.cd_protocolo))}</td>
+                        <td>${escHtml(String(p.cd_estabelecimento || '-'))}</td>
+                        <td><strong>${escHtml(String(p.seq_protocolo || p.nr_sequencia || '-'))}</strong></td>
+                        <td>${escHtml(String(p.cd_protocolo || '-'))}</td>
+                        <td>${escHtml(String(p.nr_seq_subtipo || '-'))}</td>
+                        <td>${escHtml(String(p.nm_protocolo || '-'))}</td>
+                        <td>${escHtml(String(p.nm_subtipo || '-'))}</td>
+                        <td>${escHtml(String(p.nr_ciclos || '-'))}</td>
+                        <td>${escHtml(String(p.nr_dias_intervalo || '-'))}</td>
+                        <td>${escHtml(String(p.nm_usuario || '-'))}</td>
                         <td>
                             <div class="protocol-tags-cell">
                                 ${tagsHtml}
@@ -961,6 +975,7 @@
         // UTILS
         // =============================================
         function escHtml(str) {
+            if (str === null || str === undefined) return '';
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
