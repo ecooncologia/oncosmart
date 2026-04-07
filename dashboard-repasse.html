@@ -69,8 +69,10 @@
 
         /* Blocos Menores Empilhados */
         .details-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; margin-bottom: 25px; }
+        .stacked-cards-col { display: flex; flex-direction: column; gap: 20px; height: 100%; width: 100%; }
         
-        .detail-card { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; overflow: hidden; display: flex; flex-direction: column; }
+        .detail-card { background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; overflow: hidden; display: flex; flex-direction: column; height: 100%;}
+        .detail-card.auto-height { height: auto; }
         .detail-header { background: #ffffff; padding: 15px 20px; border-bottom: 1px solid #f3f4f6; font-weight: 800; color: #1f2937; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .detail-header i { font-size: 16px; }
         
@@ -116,6 +118,7 @@
             .kpi-subtext { font-size: 9px !important; }
             
             .details-grid { display: flex !important; flex-direction: row !important; width: 100% !important; gap: 10px !important; margin-bottom: 0 !important;}
+            .stacked-cards-col { gap: 10px !important; flex: 1 !important; margin: 0 !important;}
             .detail-card { flex: 1 !important; box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; margin: 0 !important;}
             .detail-header { padding: 8px 12px !important; font-size: 11px !important; }
             
@@ -232,17 +235,33 @@
 
             <div class="details-grid">
                 
-                <div class="detail-card">
-                    <div class="detail-header" style="color: #0284c7;">
-                        <i class="fas fa-user-md" style="color: #0ea5e9;"></i> Resumo de Sala Médica (Plantões)
+                <div class="stacked-cards-col">
+                    <div class="detail-card auto-height">
+                        <div class="detail-header" style="color: #0284c7;">
+                            <i class="fas fa-user-md" style="color: #0ea5e9;"></i> Resumo de Sala Médica (Plantões)
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Total de Turnos Cumpridos</span>
+                            <span class="summary-val" id="detPlantTurnos">0</span>
+                        </div>
+                        <div class="summary-row" style="border-bottom: none;">
+                            <span class="summary-label">Valor Apurado na Escala</span>
+                            <span class="summary-val" id="detPlantValor" style="color: #0284c7;">R$ 0,00</span>
+                        </div>
                     </div>
-                    <div class="summary-row">
-                        <span class="summary-label">Total de Turnos Cumpridos</span>
-                        <span class="summary-val" id="detPlantTurnos">0</span>
-                    </div>
-                    <div class="summary-row">
-                        <span class="summary-label">Valor Apurado na Escala</span>
-                        <span class="summary-val" id="detPlantValor" style="color: #0284c7;">R$ 0,00</span>
+
+                    <div class="detail-card auto-height">
+                        <div class="detail-header" style="color: #d97706;">
+                            <i class="fas fa-user-friends" style="color: #f59e0b;"></i> Consultas Particulares
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Qtd. de Atendimentos</span>
+                            <span class="summary-val" id="detPartAtend">0</span>
+                        </div>
+                        <div class="summary-row" style="border-bottom: none;">
+                            <span class="summary-label">Valor Apurado (R$)</span>
+                            <span class="summary-val" id="detPartValor" style="color: #d97706;">R$ 0,00</span>
+                        </div>
                     </div>
                 </div>
 
@@ -372,6 +391,11 @@
             return 'pac_' + String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         };
 
+        function cleanDocName(name) {
+            if (!name) return '';
+            return String(name).replace(/^(DRA?\.?\s+)/i, '').trim();
+        }
+
         function parseCurrency(val) {
             if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return parseFloat(val.toFixed(2));
@@ -490,9 +514,11 @@
                 const dashSel = document.getElementById('dashSelectDoctor');
                 dashSel.innerHTML = '<option value="">-- Selecione o Médico --</option>';
 
-                Object.entries(doctors).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
-                    dashSel.add(new Option(doc.nome, id));
-                });
+                Object.entries(doctors)
+                    .sort((a,b) => cleanDocName(a[1].nome).localeCompare(cleanDocName(b[1].nome)))
+                    .forEach(([id, doc]) => {
+                        dashSel.add(new Option(doc.nome, id));
+                    });
             } catch(e) {}
         }
 
@@ -518,7 +544,7 @@
             document.getElementById('dashFlags').style.display = 'flex';
             
             // ------------------------------------------------
-            // 💡 CALCULO DE COMPETÊNCIAS E FLAGS
+            // CALCULO DE COMPETÊNCIAS E FLAGS
             // ------------------------------------------------
             const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
             const strUnimed = `${months[mo].toUpperCase()}/${yr}`;
@@ -552,7 +578,7 @@
 
             const elsToReset = [
                 'kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart', 
-                'detPlantTurnos', 'detPlantValor', 'detTratPac', 'detTratPacUnimed', 'detTratPacPart',
+                'detPlantTurnos', 'detPlantValor', 'detPartAtend', 'detPartValor', 'detTratPac', 'detTratPacUnimed', 'detTratPacPart',
                 'detTratItens', 'detTratItensUnimed', 'detTratItensPart', 
                 'detTratValor', 'detTratValorUnimed', 'detTratValorPart'
             ];
@@ -605,7 +631,6 @@
                                     const isHol = !!holidaysPlantao[isoDateStr];
                                     const isWk = d.getDay()===0||d.getDay()===6;
                                     
-                                    // 💡 LÓGICA DO SOBREAVISO P/ CIRURGIÕES (ADICIONADO)
                                     if(val && val === 'S') {
                                         if (ep === '/escala_mensal_cirurgioes') {
                                             valorPlantao += 500;
@@ -699,7 +724,6 @@
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
                             if (vComp === compPlantao) {
                                 if (v.medico && v.medico.toUpperCase() === doctorName) {
-                                    // 💡 REGRA DO RECEBEDOR: Somente Clínica entra no Painel (ADICIONADO)
                                     let recebedor = String(v.pagamento_para || v.recebedor || '').toLowerCase();
                                     if (recebedor === 'clinica' || recebedor === 'clínica') {
                                         atendimentosConsultaPart++;
@@ -837,19 +861,46 @@
                     }
                 });
 
-                document.getElementById('kpiPartAtend').innerText = atendimentosConsultaPart;
-                document.getElementById('kpiTotalPart').innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                document.getElementById('kpiTratPac').innerText = pacientesTratCount.size;
-                document.getElementById('detTratPac').innerText = pacientesTratCount.size;
-                document.getElementById('detTratPacUnimed').innerText = pacientesTratUnimedCount.size;
-                document.getElementById('detTratPacPart').innerText = pacientesTratPartCount.size;
-                document.getElementById('detTratItens').innerText = totalAtendimentosTrat;
-                document.getElementById('detTratItensUnimed').innerText = atendimentosTratUnimed;
-                document.getElementById('detTratItensPart').innerText = atendimentosTratPart;
+                let listaRenderPacienteHtml = Array.from(listaRenderPacienteHtmlMap.values());
+
+                let elKpiPartAtend = document.getElementById('kpiPartAtend');
+                if(elKpiPartAtend) elKpiPartAtend.innerText = atendimentosConsultaPart;
+                
+                let elKpiTotalPart = document.getElementById('kpiTotalPart');
+                if(elKpiTotalPart) elKpiTotalPart.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                let elDetPartAtend = document.getElementById('detPartAtend');
+                if(elDetPartAtend) elDetPartAtend.innerText = atendimentosConsultaPart;
+
+                let elDetPartValor = document.getElementById('detPartValor');
+                if(elDetPartValor) elDetPartValor.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+
+                let elKpiTratPac = document.getElementById('kpiTratPac');
+                if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
+                
+                let elDetTratPac = document.getElementById('detTratPac');
+                if(elDetTratPac) elDetTratPac.innerText = pacientesTratCount.size;
+                let elDetTratPacUnimed = document.getElementById('detTratPacUnimed');
+                if(elDetTratPacUnimed) elDetTratPacUnimed.innerText = pacientesTratUnimedCount.size;
+                let elDetTratPacPart = document.getElementById('detTratPacPart');
+                if(elDetTratPacPart) elDetTratPacPart.innerText = pacientesTratPartCount.size;
+                
+                let elDetTratItens = document.getElementById('detTratItens');
+                if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
+                let elDetTratItensUnimed = document.getElementById('detTratItensUnimed');
+                if(elDetTratItensUnimed) elDetTratItensUnimed.innerText = atendimentosTratUnimed;
+                let elDetTratItensPart = document.getElementById('detTratItensPart');
+                if(elDetTratItensPart) elDetTratItensPart.innerText = atendimentosTratPart;
+                
                 document.getElementById('detTratValorUnimed').innerText = `R$ ${valorTratamentoUnimed.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValorPart').innerText = `R$ ${valorTratamentoParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                document.getElementById('detTratValor').innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                document.getElementById('kpiTotalTratamento').innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                let elDetTratValor = document.getElementById('detTratValor');
+                if(elDetTratValor) elDetTratValor.innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                let elKpiTotalTratamento = document.getElementById('kpiTotalTratamento');
+                if(elKpiTotalTratamento) elKpiTotalTratamento.innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
                 if (listaRenderPacienteHtmlMap.size === 0) {
@@ -860,9 +911,13 @@
                 }
 
                 let totalGeral = valorPlantao + valorTratamentoTotal + valorConsultaParticular;
-                document.getElementById('kpiTotalGeral').innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                
+                let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
+                if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
-            } catch (err) { console.error("Erro dashboard: ", err); }
+            } catch (err) {
+                console.error("Erro ao montar o painel: ", err);
+            }
         }
     </script>
 </body>
