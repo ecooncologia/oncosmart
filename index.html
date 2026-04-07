@@ -93,6 +93,8 @@
                 </button>
                 
                 <div id="errorMsg" class="alert"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -167,8 +169,31 @@
                     const user = apiData.user;
                     const perms = user.permissoes || {};
                     
-                    localStorage.setItem('ecoUser', JSON.stringify(user));
-                    if(photo) localStorage.setItem('ecoUserPhoto', photo);
+                    // 🛡️ BLINDAGEM DE MEMÓRIA: Remove a foto gigante do objeto do usuário
+                    delete user.foto;
+                    delete user.photo;
+                    
+                    // Limpa o cache antigo antes de salvar
+                    localStorage.removeItem('ecoUser');
+                    localStorage.removeItem('ecoUserPhoto');
+
+                    try {
+                        // Salva os dados leves do usuário
+                        localStorage.setItem('ecoUser', JSON.stringify(user));
+                    } catch (e) {
+                        console.error("Memória superlotada ao salvar o usuário. Forçando limpeza pesada.");
+                        localStorage.clear();
+                        localStorage.setItem('ecoUser', JSON.stringify({email: user.email, nome: user.nome, permissoes: user.permissoes}));
+                    }
+                    
+                    // Tenta salvar a foto em uma chave isolada
+                    if(photo) {
+                        try {
+                            localStorage.setItem('ecoUserPhoto', photo);
+                        } catch(e) {
+                            console.warn("Foto de perfil muito grande para o LocalStorage. Ignorando a foto.");
+                        }
+                    }
                     
                     if (typeof APP_PAGES === 'undefined') {
                         throw new Error("Erro interno de rotas.");
