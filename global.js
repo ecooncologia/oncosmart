@@ -11,38 +11,38 @@ const API_HEADERS = {
 
 // 1. LISTA MESTRA DAS PÁGINAS E PERMISSÕES
 const APP_PAGES = [
-    { id: 'dashboard', label: 'Dashboard', file: 'dashboard.html', perm: 'dashboard' },
-    { id: 'budget', label: 'Novo Orçamento', file: 'budget.html', perm: 'orcamentos' },
-    { id: 'budgets', label: 'Orçamentos', file: 'budgets.html', perm: 'orcamentos' },
-    { id: 'sales', label: 'Particulares', file: 'sales.html', perm: 'consultas' },
-    { id: 'repass', label: 'Repasse', file: 'medical-repass.html', perm: 'repass' },
-    { id: 'dashboard-repasse', label: 'Dashboard Repasse', file: 'dashboard-repasse.html', perm: 'dashboard-repasse' },
-    { id: 'procedures', label: 'Procedimentos', file: 'procedures.html', perm: 'procedimentos' },
-    
-    { id: 'transporte', label: 'Recepção (Triagem)', file: 'transporte.html', perm: 'transporte' },
-    { id: 'stenci', label: 'Stenci', file: 'stenci.html', perm: 'stenci' },
-    { id: 'selos', label: 'Selos', file: 'selos.html', perm: 'selos' },
-    { id: 'tuss', label: 'Tabela TUSS', file: 'tuss.html', perm: 'tuss' },
-    
-    { id: 'helpdesk_admin', label: 'Gestão Helpdesk', file: 'helpdesk-admin.html', perm: 'helpdesk_admin' },
-    { id: 'admin', label: 'Admin', file: 'admin.html', perm: 'admin' },
-    
-    { id: 'enfermagem', label: 'Enfermagem (Triagem)', file: 'enfermagem.html', perm: 'enfermagem' },
-    { id: 'doctors', label: 'Médicos', file: 'doctors.html', perm: 'medicos' },
-    { id: 'pacientes', label: 'Pacientes', file: 'pacientes.html', perm: 'pacientes' },
-    { id: 'shifts', label: 'Plantão', file: 'shifts.html', perm: 'plantao' },
-    
-    { id: 'indicadores_enf', label: 'Indicadores', file: 'indicadores-enfermagem.html', perm: 'indicadores_enf' },
-    { id: 'helpdesk_dash', label: 'Dashboard Helpdesk', file: 'helpdesk-dash.html', perm: 'helpdesk_dash' },
-    { id: 'eventos', label: 'Eventos', file: 'eventos.html', perm: 'eventos' },
-    { id: 'atas', label: 'Mural de ATAs', file: 'atas.html', perm: 'atas' },
-    
-    { id: 'helpdesk', label: 'Helpdesk', file: 'helpdesk.html', perm: 'helpdesk' },
-    { id: 'kanban', label: 'Trello', file: 'kanban.html', perm: 'kanban' },
-    { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood' },
-    
-    { id: 'marketing', label: 'Gerador de Artes', file: 'gerador-imagens.html', perm: 'marketing' },
-    { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas' }
+    { id: 'dashboard', label: 'Dashboard', file: 'dashboard.html', perm: 'dashboard', icon: 'fas fa-chart-pie' },
+    { id: 'budget', label: 'Novo Orçamento', file: 'budget.html', perm: 'orcamentos', icon: 'fas fa-file-invoice-dollar' },
+    { id: 'budgets', label: 'Orçamentos', file: 'budgets.html', perm: 'orcamentos', icon: 'fas fa-folder-open' },
+    { id: 'sales', label: 'Particulares', file: 'sales.html', perm: 'consultas', icon: 'fas fa-user-tag' },
+    { id: 'repass', label: 'Repasse', file: 'medical-repass.html', perm: 'repass', icon: 'fas fa-exchange-alt' },
+    { id: 'dashboard-repasse', label: 'Dashboard Repasse', file: 'dashboard-repasse.html', perm: 'dashboard-repasse', icon: 'fas fa-chart-bar' },
+    { id: 'procedures', label: 'Procedimentos', file: 'procedures.html', perm: 'procedimentos', icon: 'fas fa-stethoscope' },
+
+    { id: 'transporte', label: 'Recepção (Triagem)', file: 'transporte.html', perm: 'transporte', icon: 'fas fa-clipboard-list' },
+    { id: 'stenci', label: 'Stenci', file: 'stenci.html', perm: 'stenci', icon: 'fas fa-print' },
+    { id: 'selos', label: 'Selos', file: 'selos.html', perm: 'selos', icon: 'fas fa-stamp' },
+    { id: 'tuss', label: 'Tabela TUSS', file: 'tuss.html', perm: 'tuss', icon: 'fas fa-table' },
+
+    { id: 'helpdesk_admin', label: 'Gestão Helpdesk', file: 'helpdesk-admin.html', perm: 'helpdesk_admin', icon: 'fas fa-tools' },
+    { id: 'admin', label: 'Admin', file: 'admin.html', perm: 'admin', icon: 'fas fa-shield-alt' },
+
+    { id: 'enfermagem', label: 'Enfermagem (Triagem)', file: 'enfermagem.html', perm: 'enfermagem', icon: 'fas fa-heartbeat' },
+    { id: 'doctors', label: 'Médicos', file: 'doctors.html', perm: 'medicos', icon: 'fas fa-user-md' },
+    { id: 'pacientes', label: 'Pacientes', file: 'pacientes.html', perm: 'pacientes', icon: 'fas fa-procedures' },
+    { id: 'shifts', label: 'Plantão', file: 'shifts.html', perm: 'plantao', icon: 'fas fa-calendar-alt' },
+
+    { id: 'indicadores_enf', label: 'Indicadores', file: 'indicadores-enfermagem.html', perm: 'indicadores_enf', icon: 'fas fa-chart-line' },
+    { id: 'helpdesk_dash', label: 'Dashboard Helpdesk', file: 'helpdesk-dash.html', perm: 'helpdesk_dash', icon: 'fas fa-tachometer-alt' },
+    { id: 'eventos', label: 'Eventos', file: 'eventos.html', perm: 'eventos', icon: 'fas fa-calendar-check' },
+    { id: 'atas', label: 'Mural de ATAs', file: 'atas.html', perm: 'atas', icon: 'fas fa-thumbtack' },
+
+    { id: 'helpdesk', label: 'Helpdesk', file: 'helpdesk.html', perm: 'helpdesk', icon: 'fas fa-headset' },
+    { id: 'kanban', label: 'Trello', file: 'kanban.html', perm: 'kanban', icon: 'fas fa-columns' },
+    { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood', icon: 'fas fa-utensils' },
+
+    { id: 'marketing', label: 'Gerador de Artes', file: 'gerador-imagens.html', perm: 'marketing', icon: 'fas fa-paint-brush' },
+    { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas', icon: 'fas fa-file-medical-alt' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
@@ -51,162 +51,290 @@ const MENU_SECTORS = [
     { name: "Recepção", icon: "fas fa-concierge-bell", pages: ['transporte', 'stenci', 'selos', 'tuss'] },
     { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts'] },
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
-    { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] }, 
+    { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
     { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing'] }
 ];
 
-// 💡 NOVO ESTILO: BARRA LATERAL FIXA BRANCA (LIGHT THEME SAAS)
 function injectMenuStyles() {
-    if(document.getElementById('smart-menu-styles')) return;
+    if (document.getElementById('smart-menu-styles')) return;
     const style = document.createElement('style');
     style.id = 'smart-menu-styles';
     style.innerHTML = `
-        /* CONTAINER PRINCIPAL DA BARRA LATERAL */
-        #global-nav { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 260px; 
-            height: 100vh; 
-            background: #ffffff; /* Fundo Branco Limpo */
-            box-shadow: 4px 0 20px rgba(0,0,0,0.03); 
-            border-right: 1px solid #e2e8f0;
+        /* ===== SIDEBAR PRINCIPAL ===== */
+        #global-nav {
+            position: fixed;
+            top: 0; left: 0;
+            width: 268px;
+            height: 100vh;
+            background: linear-gradient(180deg, #00855B 0%, #006644 100%);
             z-index: 1000;
             overflow-y: auto;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            color: #334155; /* Texto chumbo escuro */
-            transition: 0.3s;
+            transition: width 0.3s ease;
+            box-shadow: 6px 0 24px rgba(0,102,68,0.18);
         }
-        
-        /* SCROLLBAR CUSTOMIZADA (Fininha e Discreta) */
-        #global-nav::-webkit-scrollbar { width: 5px; }
+
+        /* scrollbar fina e discreta */
+        #global-nav::-webkit-scrollbar { width: 4px; }
         #global-nav::-webkit-scrollbar-track { background: transparent; }
-        #global-nav::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        #global-nav::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        #global-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        #global-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
 
-        /* ÁREA DA LOGO NO TOPO DO MENU */
+        /* ===== ÁREA DA LOGO ===== */
         .sidebar-logo-area {
-            padding: 25px 20px;
+            padding: 28px 22px 18px;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .sidebar-logo-area img { max-width: 150px; height: auto; }
-
-        /* BOTÃO MESTRE DOS SETORES (Acordeão) */
-        .smart-dropdown { margin-bottom: 8px; padding: 0 15px; }
-        .smart-dropbtn { 
-            width: 100%;
-            background: transparent; 
-            color: #475569; 
-            padding: 12px 15px; 
-            font-size: 13px; 
-            font-weight: 700; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between;
-            transition: 0.2s; 
-        }
-        .smart-dropbtn:hover { background: #f8fafc; color: #00855B; }
-        
-        .sector-title { display: flex; align-items: center; gap: 12px; }
-        .sector-title i { font-size: 16px; width: 20px; text-align: center; color: #94a3b8; transition: 0.2s;}
-
-        .smart-dropbtn:hover .sector-title i { color: #00855B; }
-
-        /* STATUS ATIVO (Quando a página aberta pertence a este setor) */
-        .smart-dropdown.active-sector .smart-dropbtn { 
-            background: #ecfdf5; /* Fundo verde super claro */
-            color: #00855B; 
-            font-weight: 800;
-        }
-        .smart-dropdown.active-sector .smart-dropbtn .sector-title i {
-            color: #00855B;
-        }
-
-        /* CAIXA DE SUB-ITENS (Páginas) */
-        .smart-dropdown-content { 
-            display: none; 
             flex-direction: column;
-            gap: 2px;
-            padding: 5px 0 5px 35px; /* Recuo para mostrar que está dentro */
-            overflow: hidden; 
+            align-items: flex-start;
+            gap: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 10px;
         }
-        .smart-dropdown-content.show { display: flex; animation: slideDown 0.3s ease-out; }
-        
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .sidebar-logo-area img {
+            max-width: 140px;
+            height: auto;
+            filter: brightness(0) invert(1);
+            opacity: 0.95;
+        }
 
-        /* ITEM DA PÁGINA (Link) */
-        .smart-drop-item { 
-            padding: 10px 15px; 
-            text-decoration: none; 
-            color: #64748b; 
-            font-size: 12px; 
-            font-weight: 600; 
-            border: none; 
-            background: transparent; 
-            cursor: pointer; 
-            text-align: left; 
-            width: 100%; 
-            border-radius: 6px;
+        /* ===== PERFIL DO USUÁRIO NA SIDEBAR ===== */
+        .sidebar-user-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 10px 12px;
+            width: 100%;
+        }
+        .sidebar-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            background: rgba(255,255,255,0.2);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: #ffffff;
+            flex-shrink: 0;
+        }
+        .sidebar-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-user-info { flex: 1; min-width: 0; }
+        .sidebar-user-greeting {
+            font-size: 10px;
+            color: rgba(255,255,255,0.65);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        .sidebar-user-name {
+            font-size: 12.5px;
+            color: #ffffff;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-logout-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 7px;
             transition: 0.2s;
+            flex-shrink: 0;
+            font-size: 13px;
+        }
+        .sidebar-logout-btn:hover {
+            color: #ffffff;
+            background: rgba(255,255,255,0.12);
+        }
+
+        /* ===== LABEL DE SEÇÃO ===== */
+        .sidebar-section-label {
+            padding: 14px 22px 5px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* ===== SETOR (ACCORDEON) ===== */
+        .smart-dropdown { padding: 0 12px; margin-bottom: 2px; }
+
+        .smart-dropbtn {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 12px;
+            transition: background 0.18s;
+            text-align: left;
+        }
+        .smart-dropbtn:hover { background: rgba(255,255,255,0.1); }
+
+        .sector-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .sector-icon-wrap i { font-size: 13px; color: rgba(255,255,255,0.75); transition: color 0.2s; }
+
+        .sector-name {
+            flex: 1;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.8);
+            transition: color 0.2s;
+        }
+
+        .sector-chevron {
+            font-size: 9px;
+            color: rgba(255,255,255,0.35);
+            transition: transform 0.25s ease, color 0.2s;
+        }
+
+        /* Setor com página ativa */
+        .smart-dropdown.active-sector > .smart-dropbtn { background: rgba(255,255,255,0.12); }
+        .smart-dropdown.active-sector > .smart-dropbtn .sector-icon-wrap {
+            background: rgba(255,255,255,0.22);
+        }
+        .smart-dropdown.active-sector > .smart-dropbtn .sector-icon-wrap i { color: #ffffff; }
+        .smart-dropdown.active-sector > .smart-dropbtn .sector-name { color: #ffffff; font-weight: 700; }
+        .smart-dropdown.active-sector > .smart-dropbtn .sector-chevron { transform: rotate(90deg); color: rgba(255,255,255,0.6); }
+
+        /* Chevron quando aberto sem ser ativo */
+        .smart-dropbtn.is-open .sector-chevron { transform: rotate(90deg); color: rgba(255,255,255,0.5); }
+        .smart-dropbtn.is-open .sector-name { color: #ffffff; }
+
+        /* ===== SUB-ITENS (PÁGINAS) ===== */
+        .smart-dropdown-content {
+            display: none;
+            flex-direction: column;
+            gap: 1px;
+            padding: 4px 0 6px 44px;
+            overflow: hidden;
+        }
+        .smart-dropdown-content.show {
+            display: flex;
+            animation: slideDown 0.22s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .smart-drop-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: rgba(255,255,255,0.65);
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+            width: 100%;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
             position: relative;
         }
-        .smart-drop-item:hover { color: #00855B; background: #f8fafc; }
-        
-        /* PÁGINA ATUAL ABERTA */
-        .smart-drop-item.active { 
-            color: #00855B; 
-            font-weight: 800; 
-            background: transparent; 
+        .smart-drop-item i {
+            font-size: 12px;
+            width: 16px;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            transition: color 0.15s;
+            flex-shrink: 0;
         }
+        .smart-drop-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+        .smart-drop-item:hover i { color: rgba(255,255,255,0.8); }
+
+        /* Item ativo */
+        .smart-drop-item.active {
+            background: rgba(255,255,255,0.18);
+            color: #ffffff;
+            font-weight: 700;
+        }
+        .smart-drop-item.active i { color: #ffffff; }
         .smart-drop-item.active::before {
             content: '';
             position: absolute;
-            left: -12px;
+            left: 0;
             top: 50%;
             transform: translateY(-50%);
-            width: 6px;
-            height: 6px;
-            background: #00855B;
-            border-radius: 50%;
+            width: 3px;
+            height: 60%;
+            background: #ffffff;
+            border-radius: 0 3px 3px 0;
         }
 
-        /* AJUSTES PARA CELULAR */
+        /* ===== RODAPÉ DA SIDEBAR ===== */
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 22px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 10px;
+            color: rgba(255,255,255,0.3);
+            text-align: center;
+            letter-spacing: 0.4px;
+        }
+
+        /* ===== MOBILE ===== */
         @media (max-width: 900px) {
-            #global-nav { position: relative; width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; box-shadow: none; border-right: none;}
-            .sidebar-logo-area { display: none; }
+            #global-nav {
+                position: relative;
+                width: 100%;
+                height: auto;
+                border-radius: 14px;
+                margin-bottom: 20px;
+                box-shadow: 0 8px 24px rgba(0,102,68,0.2);
+            }
+            .sidebar-logo-area { padding: 18px 18px 14px; }
         }
     `;
     document.head.appendChild(style);
 }
 
-// Funções para Controle do Acordeão (Sanfona)
-window.toggleSmartMenu = function(id, event) {
+// Controle do Acordeão
+window.toggleSmartMenu = function (id, event) {
     event.stopPropagation();
-    
+
     const targetMenu = document.getElementById(id);
-    const iconChevron = event.currentTarget.querySelector('.fa-chevron-down, .fa-chevron-right');
+    const btn = event.currentTarget;
     const isCurrentlyOpen = targetMenu.classList.contains('show');
 
-    // Comportamento moderno: Fechar outras gavetas ao abrir uma nova
-    document.querySelectorAll('.smart-dropdown-content').forEach(el => {
-        el.classList.remove('show');
-    });
-    document.querySelectorAll('.smart-dropbtn .fa-chevron-down').forEach(el => {
-        el.classList.replace('fa-chevron-down', 'fa-chevron-right');
-    });
+    // Fechar todos
+    document.querySelectorAll('.smart-dropdown-content').forEach(el => el.classList.remove('show'));
+    document.querySelectorAll('.smart-dropbtn').forEach(el => el.classList.remove('is-open'));
 
     if (!isCurrentlyOpen) {
         targetMenu.classList.add('show');
-        if(iconChevron) iconChevron.classList.replace('fa-chevron-right', 'fa-chevron-down');
+        btn.classList.add('is-open');
     }
 };
 
@@ -230,9 +358,9 @@ async function initGlobal(currentPageId, pageTitle) {
 
         if (!isNoAccess) {
             renderHeader(user, pageTitle, displayPhoto);
-            await checkPermissionsAndRenderMenu(user, currentPageId);
+            await checkPermissionsAndRenderMenu(user, currentPageId, displayPhoto);
         }
-        
+
     } catch (e) {
         console.error("Erro initGlobal:", e);
     }
@@ -240,40 +368,18 @@ async function initGlobal(currentPageId, pageTitle) {
 
 function renderHeader(user, title, photoSrc) {
     const headerEl = document.getElementById('global-header');
-    if(!headerEl) return;
-    
+    if (!headerEl) return;
+
     headerEl.className = 'header';
-
-    const hour = new Date().getHours();
-    let greeting = (hour < 12) ? 'Bom dia' : (hour < 18) ? 'Boa tarde' : 'Boa noite';
-    
-    let displayName = user.nome || "Usuário";
-    if (user.nome && user.nome.split(' ').length > 1) {
-        displayName = `${user.nome.split(' ')[0]} ${user.nome.split(' ')[1]}`;
-    }
-
-    let avatarHTML = (photoSrc) 
-        ? `<img src="${photoSrc}" style="width:100%; height:100%; object-fit:cover;">` 
-        : `<span>${displayName.charAt(0)}</span>`;
-
-    // 💡 O cabeçalho agora ficou menor, pois a Logo foi para a barra lateral!
-    headerEl.innerHTML = `
-        <div class="header-logo"><img src="https://imgur.com/m9NWY03.png" alt="ECO"></div>
-        <div class="header-center"><p>${title}</p></div>
-        <div class="user-profile">
-            <div class="user-info"><div class="user-greeting">${greeting},</div><div class="user-name">${displayName}</div></div>
-            <div class="user-avatar">${avatarHTML}</div>
-            <button class="logout-btn" onclick="logout()" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
-    `;
+    headerEl.innerHTML = `<div class="header-center"><p>${title}</p></div>`;
 }
 
-async function checkPermissionsAndRenderMenu(user, activeId) {
-    let perms = user.permissoes || {}; 
-    
+async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
+    let perms = user.permissoes || {};
+
     try {
         const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
-        
+
         if (res.ok) {
             const allUsers = await res.json();
             const emailKey = user.email.replace(/\./g, ',');
@@ -284,21 +390,46 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
                 localStorage.setItem('ecoUser', JSON.stringify(user));
             }
         }
-    } catch(e) { console.error("Falha ao buscar usuários:", e); }
+    } catch (e) { console.error("Falha ao buscar usuários:", e); }
 
     injectMenuStyles();
 
     const nav = document.getElementById('global-nav');
-    if(!nav) return;
-    
-    // 💡 INSERE A LOGO DA CLÍNICA NO TOPO DA BARRA LATERAL
+    if (!nav) return;
+
+    // --- Dados do usuário para o card da sidebar ---
+    const hour = new Date().getHours();
+    const greeting = (hour < 12) ? 'Bom dia' : (hour < 18) ? 'Boa tarde' : 'Boa noite';
+
+    let displayName = user.nome || "Usuário";
+    if (user.nome && user.nome.split(' ').length > 1) {
+        displayName = `${user.nome.split(' ')[0]} ${user.nome.split(' ')[1]}`;
+    }
+
+    const avatarHTML = photoSrc
+        ? `<img src="${photoSrc}" alt="${displayName}">`
+        : `<span>${displayName.charAt(0).toUpperCase()}</span>`;
+
+    // --- Monta o HTML da sidebar ---
     let html = `
         <div class="sidebar-logo-area">
             <img src="https://i.imgur.com/kpCeqqJ.png" alt="ONCO SMART">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar">${avatarHTML}</div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-greeting">${greeting},</div>
+                    <div class="sidebar-user-name">${displayName}</div>
+                </div>
+                <button class="sidebar-logout-btn" onclick="logout()" title="Sair">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
         </div>
+        <div class="sidebar-section-label">Menu</div>
     `;
+
     let hasVisibleMenu = false;
-    
+
     MENU_SECTORS.forEach((sector, index) => {
         let sectorHtml = '';
         let sectorHasVisiblePages = false;
@@ -309,19 +440,25 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
             if (!page) return;
 
             let show = false;
-            if (page.id === 'helpdesk') show = true; 
+            if (page.id === 'helpdesk') show = true;
             else if (page.id === 'admin') show = (perms.admin === true);
             else show = (perms[page.perm] === true);
 
             if (show) {
                 sectorHasVisiblePages = true;
                 hasVisibleMenu = true;
-                
+
                 const isActive = (page.id === activeId);
                 if (isActive) isSectorActive = true;
-                
+
                 const activeClass = isActive ? 'active' : '';
-                sectorHtml += `<button class="smart-drop-item ${activeClass}" onclick="window.location.href='${page.file}'">${page.label}</button>`;
+                const pageIcon = page.icon || 'fas fa-circle';
+
+                sectorHtml += `
+                    <button class="smart-drop-item ${activeClass}" onclick="window.location.href='${page.file}'">
+                        <i class="${pageIcon}"></i>
+                        ${page.label}
+                    </button>`;
             }
         });
 
@@ -329,44 +466,38 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
 
         if (sectorHasVisiblePages) {
             const sectorActiveClass = isSectorActive ? 'active-sector' : '';
-            // Se o setor estiver ativo, o ícone já nasce apontando para baixo e o menu aberto
-            const iconChevron = isSectorActive ? 'fa-chevron-down' : 'fa-chevron-right';
             const showClass = isSectorActive ? 'show' : '';
+            const openClass = isSectorActive ? 'is-open' : '';
 
             html += `
             <div class="smart-dropdown ${sectorActiveClass}">
-                <button class="smart-dropbtn" onclick="toggleSmartMenu('${dropId}', event)">
-                    <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
-                    <i class="fas ${iconChevron}" style="font-size:10px; color:#cbd5e1;"></i>
+                <button class="smart-dropbtn ${openClass}" onclick="toggleSmartMenu('${dropId}', event)">
+                    <span class="sector-icon-wrap"><i class="${sector.icon}"></i></span>
+                    <span class="sector-name">${sector.name}</span>
+                    <i class="fas fa-chevron-right sector-chevron"></i>
                 </button>
                 <div id="${dropId}" class="smart-dropdown-content ${showClass}">
                     ${sectorHtml}
                 </div>
             </div>`;
-        } else if (sector.pages.length === 0 && perms.admin === true) {
-            html += `
-            <div class="smart-dropdown">
-                <button class="smart-dropbtn" style="opacity: 0.5; cursor: not-allowed;">
-                    <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
-                    <small style="font-size: 9px; background: #f1f5f9; color: #64748b; padding: 2px 5px; border-radius: 4px;">Em breve</small>
-                </button>
-            </div>`;
         }
     });
-    
+
+    html += `<div class="sidebar-footer">ONCO SMART &copy; ${new Date().getFullYear()}</div>`;
+
     nav.innerHTML = html;
 
-    // --- ROTEADOR (BLOQUEIO DE ACESSO INDEVIDO) ---
+    // --- ROTEADOR ---
     const pageConfig = APP_PAGES.find(p => p.id === activeId);
     if (pageConfig) {
         const req = pageConfig.perm;
-        const allowed = (perms.admin === true && pageConfig.id === 'admin') || 
-                        (req === 'helpdesk') || 
-                        (perms[req] === true);
-        
+        const allowed = (perms.admin === true && pageConfig.id === 'admin') ||
+            (req === 'helpdesk') ||
+            (perms[req] === true);
+
         if (!allowed) {
             const firstValidPage = APP_PAGES.find(p => {
-                if (p.id === activeId) return false; 
+                if (p.id === activeId) return false;
                 if (p.id === 'helpdesk') return true;
                 if (p.id === 'admin' && perms.admin) return true;
                 return perms[p.perm] === true;
@@ -384,7 +515,7 @@ async function checkPermissionsAndRenderMenu(user, activeId) {
 }
 
 function logout() {
-    localStorage.removeItem('ecoUser'); 
+    localStorage.removeItem('ecoUser');
     localStorage.removeItem('ecoUserPhoto');
     window.location.href = 'https://ecooncologia.com.br/smart/';
 }
