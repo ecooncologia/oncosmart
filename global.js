@@ -9,12 +9,11 @@ const API_HEADERS = {
     'x-api-key': 'EcoOnco_Smart_Seguranca_2026!@'
 };
 
-const TOP_LOGO_URL = 'https://i.imgur.com/uu3TbH6.png';
+const TOP_LOGO_URL = 'https://i.imgur.com/okuWi3T.png';
+const TOP_AVATAR_URL = 'https://i.imgur.com/Xgvttab.png';
 const FOOTER_LOGO_URL = 'https://i.imgur.com/kpCeqqJ.png';
 
 const SIDEBAR_STORAGE_KEY = 'ecoSidebarExpanded';
-const SIDEBAR_EXPANDED_WIDTH = 260;
-const SIDEBAR_COLLAPSED_WIDTH = 78;
 
 // 1. LISTA MESTRA DAS PÁGINAS E PERMISSÕES
 const APP_PAGES = [
@@ -69,68 +68,67 @@ function injectMenuStyles() {
     const style = document.createElement('style');
     style.id = 'smart-menu-styles';
     style.innerHTML = `
-        :root {
-            --smart-sidebar-expanded: ${SIDEBAR_EXPANDED_WIDTH}px;
-            --smart-sidebar-collapsed: ${SIDEBAR_COLLAPSED_WIDTH}px;
-        }
-
-        body.sidebar-expanded .container {
-            margin-left: var(--smart-sidebar-expanded) !important;
-            transition: margin 0.3s ease !important;
-        }
-
-        body.sidebar-collapsed .container {
-            margin-left: var(--smart-sidebar-collapsed) !important;
-            transition: margin 0.3s ease !important;
-        }
-
         #global-nav {
             position: fixed;
             top: 0;
             left: 0;
-            width: var(--smart-sidebar-collapsed);
+            width: 78px;
             height: 100vh;
-            background: #ffffff;
-            box-shadow: 4px 0 20px rgba(0,0,0,0.03);
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-right: 1px solid #e2e8f0;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.03);
             z-index: 1000;
             overflow-y: auto;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            color: #334155;
             transition: width 0.3s ease;
         }
 
         #global-nav.expanded {
-            width: var(--smart-sidebar-expanded);
+            width: 260px;
         }
 
-        #global-nav::-webkit-scrollbar { width: 5px; }
-        #global-nav::-webkit-scrollbar-track { background: transparent; }
-        #global-nav::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        #global-nav::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        #global-nav::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        #global-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #global-nav::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        #global-nav::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
 
         .sidebar-logo-area {
-            padding: 16px 12px 12px;
+            padding: 16px 12px 10px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 4px;
         }
 
         .sidebar-logo-button {
-            width: 48px;
-            height: 48px;
+            width: 54px;
+            height: 54px;
             border: 1px solid #e2e8f0;
-            border-radius: 14px;
+            border-radius: 16px;
             background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.25s ease;
             padding: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
         }
 
         .sidebar-logo-button:hover {
@@ -139,11 +137,43 @@ function injectMenuStyles() {
             transform: translateY(-1px);
         }
 
-        .sidebar-logo-button img {
+        .sidebar-logo-avatar,
+        .sidebar-logo-full {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .sidebar-logo-full {
+            display: none;
+        }
+
+        #global-nav.expanded .sidebar-logo-button {
+            width: 186px;
+            height: 58px;
+            border-radius: 18px;
+            padding: 8px 14px;
+        }
+
+        #global-nav.expanded .sidebar-logo-avatar {
+            display: none;
+        }
+
+        #global-nav.expanded .sidebar-logo-full {
+            display: block;
             width: 100%;
             height: 100%;
-            object-fit: contain;
+        }
+
+        #global-nav:not(.expanded) .sidebar-logo-avatar {
             display: block;
+            width: 40px;
+            height: 40px;
+        }
+
+        #global-nav:not(.expanded) .sidebar-logo-full {
+            display: none;
         }
 
         .sidebar-user-card {
@@ -152,17 +182,17 @@ function injectMenuStyles() {
             gap: 10px;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 10px 12px;
             width: calc(100% - 20px);
             margin: 0 auto 14px auto;
-            transition: 0.3s;
+            transition: 0.25s ease;
         }
 
         .sidebar-user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 9px;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             background: #e2e8f0;
             overflow: hidden;
             display: flex;
@@ -206,8 +236,8 @@ function injectMenuStyles() {
             border: none;
             color: #ef4444;
             cursor: pointer;
-            padding: 5px;
-            border-radius: 7px;
+            padding: 6px;
+            border-radius: 8px;
             transition: 0.2s;
             flex-shrink: 0;
             font-size: 13px;
@@ -239,7 +269,7 @@ function injectMenuStyles() {
             font-size: 13px;
             font-weight: 700;
             border: 1px solid #e2e8f0;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -251,6 +281,7 @@ function injectMenuStyles() {
             background: #f8fafc;
             color: #00855B;
             border-color: #cbd5e1;
+            transform: translateY(-1px);
         }
 
         .sector-title {
@@ -320,7 +351,7 @@ function injectMenuStyles() {
             cursor: pointer;
             text-align: left;
             width: 100%;
-            border-radius: 8px;
+            border-radius: 10px;
             transition: 0.2s;
             position: relative;
             display: flex;
@@ -367,7 +398,7 @@ function injectMenuStyles() {
 
         .sidebar-footer {
             margin-top: auto;
-            padding: 20px 18px;
+            padding: 18px;
             border-top: 1px solid #f1f5f9;
             display: flex;
             flex-direction: column;
@@ -391,20 +422,13 @@ function injectMenuStyles() {
         }
 
         /* ESTADO RECOLHIDO */
-        #global-nav:not(.expanded) .sidebar-user-info,
-        #global-nav:not(.expanded) .sidebar-logout-btn,
+        #global-nav:not(.expanded) .sidebar-user-card,
         #global-nav:not(.expanded) .sidebar-section-label,
         #global-nav:not(.expanded) .menu-text,
         #global-nav:not(.expanded) .item-text,
         #global-nav:not(.expanded) .sector-chevron,
         #global-nav:not(.expanded) .sidebar-footer {
             display: none !important;
-        }
-
-        #global-nav:not(.expanded) .sidebar-user-card {
-            width: 56px;
-            padding: 10px;
-            justify-content: center;
         }
 
         #global-nav:not(.expanded) .smart-dropbtn {
@@ -427,43 +451,31 @@ function injectMenuStyles() {
             display: none !important;
         }
 
-        /* ESTADO EXPANDIDO */
-        #global-nav.expanded .sidebar-logo-button {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
+        /* TOOLTIPS SIMPLES NO RECOLHIDO */
+        #global-nav:not(.expanded) .smart-dropbtn[title] {
+            position: relative;
         }
 
+        /* MOBILE */
         @media (max-width: 900px) {
-            body.sidebar-expanded .container,
-            body.sidebar-collapsed .container {
-                margin-left: 0 !important;
-            }
-
             #global-nav,
             #global-nav.expanded {
                 position: relative;
                 width: 100%;
                 height: auto;
-                border-radius: 12px;
-                margin-bottom: 20px;
-                box-shadow: none;
                 border-right: none;
+                border-radius: 16px;
+                margin-bottom: 18px;
+                box-shadow: none;
             }
 
-            #global-nav:not(.expanded) .sidebar-user-info,
-            #global-nav:not(.expanded) .sidebar-logout-btn,
+            #global-nav:not(.expanded) .sidebar-user-card,
             #global-nav:not(.expanded) .sidebar-section-label,
             #global-nav:not(.expanded) .menu-text,
             #global-nav:not(.expanded) .item-text,
             #global-nav:not(.expanded) .sector-chevron,
             #global-nav:not(.expanded) .sidebar-footer {
                 display: flex !important;
-            }
-
-            #global-nav:not(.expanded) .sidebar-user-card {
-                width: calc(100% - 20px);
-                justify-content: flex-start;
             }
 
             #global-nav:not(.expanded) .smart-dropbtn {
@@ -516,6 +528,7 @@ function openActiveSectorSubmenu() {
     const chevron = activeDropdown.querySelector('.sector-chevron');
 
     if (content) content.classList.add('show');
+
     if (chevron) {
         chevron.classList.remove('fa-chevron-right');
         chevron.classList.add('fa-chevron-down');
@@ -536,8 +549,8 @@ function syncSidebarState(isExpanded) {
     if (!isExpanded) {
         closeAllSubmenus();
     } else {
-        const hasAnyOpen = document.querySelector('.smart-dropdown-content.show');
-        if (!hasAnyOpen) {
+        const hasOpenMenu = document.querySelector('.smart-dropdown-content.show');
+        if (!hasOpenMenu) {
             openActiveSectorSubmenu();
         }
     }
@@ -559,8 +572,7 @@ window.toggleSmartMenu = function(id, event) {
 
     const nav = document.getElementById('global-nav');
     const targetMenu = document.getElementById(id);
-    const button = event.currentTarget;
-    const iconChevron = button.querySelector('.sector-chevron');
+    const iconChevron = event.currentTarget.querySelector('.sector-chevron');
 
     if (!targetMenu) return;
 
@@ -627,7 +639,7 @@ async function initGlobal(currentPageId, pageTitle) {
             : (user.foto || user.photo || '');
 
         if (!isNoAccess) {
-            renderHeader(user, pageTitle, displayPhoto);
+            renderHeader(user, pageTitle);
             await checkPermissionsAndRenderMenu(user, currentPageId, displayPhoto);
         }
     } catch (e) {
@@ -635,13 +647,15 @@ async function initGlobal(currentPageId, pageTitle) {
     }
 }
 
-function renderHeader(user, title, photoSrc) {
+function renderHeader(user, title) {
     const headerEl = document.getElementById('global-header');
     if (!headerEl) return;
 
     headerEl.className = 'header';
     headerEl.innerHTML = `
-        <div class="header-center"><p>${title}</p></div>
+        <div class="header-center">
+            <p>${title}</p>
+        </div>
     `;
 }
 
@@ -702,7 +716,8 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
     let html = `
         <div class="sidebar-logo-area">
             <button class="sidebar-logo-button" onclick="toggleSidebar()" title="Expandir ou recolher menu">
-                <img src="${TOP_LOGO_URL}" alt="Eco Oncologia">
+                <img class="sidebar-logo-avatar" src="${TOP_AVATAR_URL}" alt="Avatar Onco Smart">
+                <img class="sidebar-logo-full" src="${TOP_LOGO_URL}" alt="Logo Onco Smart">
             </button>
         </div>
 
