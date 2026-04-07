@@ -4,7 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - ECO Oncologia</title>
-    
+
+    <!-- BLINDAGEM: Service Worker + Storage -->
+    <script>
+        (function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    regs.forEach(function(r) { r.unregister(); });
+                });
+            }
+
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    names.forEach(function(n) { caches.delete(n); });
+                });
+            }
+
+            try {
+                var t = '__storage_test__';
+                localStorage.setItem(t, 'x'.repeat(100000));
+                localStorage.removeItem(t);
+            } catch(e) {
+                try { localStorage.clear(); } catch(e2) {}
+            }
+        })();
+    </script>
+
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -116,13 +141,13 @@
                 localStorage.setItem(key, value);
                 return true;
             } catch(e) {
-                console.warn(`Storage cheio ao salvar '${key}'. Limpando e tentando novamente...`);
+                console.warn("Storage cheio ao salvar '" + key + "'. Limpando...");
                 try {
                     localStorage.clear();
                     localStorage.setItem(key, value);
                     return true;
                 } catch(e2) {
-                    console.error(`Falha crítica ao salvar '${key}' mesmo após limpar storage.`);
+                    console.error("Falha crítica ao salvar '" + key + "'.");
                     return false;
                 }
             }
@@ -179,9 +204,12 @@
             // Foto (Opcional)
             let photo = "";
             try {
-                const tokenResp = await msalInstance.acquireTokenSilent({ account: account, scopes: ["User.Read"] });
+                const tokenResp = await msalInstance.acquireTokenSilent({ 
+                    account: account, 
+                    scopes: ["User.Read"] 
+                });
                 const photoReq = await fetch("https://graph.microsoft.com/v1.0/me/photos/64x64/$value", { 
-                    headers: { "Authorization": `Bearer ${tokenResp.accessToken}` } 
+                    headers: { "Authorization": "Bearer " + tokenResp.accessToken } 
                 });
                 if (photoReq.ok) { 
                     const blob = await photoReq.blob(); 
@@ -192,10 +220,10 @@
                     }); 
                 }
             } catch(e) {
-                console.warn("Não foi possível buscar a foto do usuário:", e.message);
+                console.warn("Não foi possível buscar a foto:", e.message);
             }
 
-            // API Node.js com a Chave de Segurança
+            // API Node.js
             try {
                 const apiResponse = await fetch('https://api.ecooncologia.com.br:3000/auth/login', {
                     method: 'POST',
@@ -212,27 +240,26 @@
                     const user = apiData.user;
                     const perms = user.permissoes || {};
                     
-                    // Remove a foto do objeto principal (vai em chave separada)
+                    // Remove foto do objeto (vai em chave separada)
                     delete user.foto;
                     delete user.photo;
 
                     // LIMPEZA TOTAL antes de salvar
                     safeClearStorage();
                     
-                    // Salva o usuário (dados leves)
-                    const userSaved = safeSetItem('ecoUser', JSON.stringify(user));
+                    // Salva o usuário
+                    const saved = safeSetItem('ecoUser', JSON.stringify(user));
 
-                    if (!userSaved) {
-                        // Tentativa mínima: só o essencial
-                        const miniUser = {
+                    if (!saved) {
+                        // Tentativa mínima
+                        safeSetItem('ecoUser', JSON.stringify({
                             email: user.email,
                             nome: user.nome,
                             permissoes: user.permissoes
-                        };
-                        safeSetItem('ecoUser', JSON.stringify(miniUser));
+                        }));
                     }
 
-                    // Salva a foto em chave isolada (se couber)
+                    // Foto em chave isolada (se couber)
                     if (photo) {
                         safeSetItem('ecoUserPhoto', photo);
                     }
