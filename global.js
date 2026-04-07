@@ -693,8 +693,13 @@ function injectMenuStyles() {
                 font-size: 15px;
             }
 
+            /* tablet/mobile: submenu pode abrir normalmente */
             #global-nav .smart-dropdown-content {
                 display: none;
+            }
+
+            #global-nav .smart-dropdown-content.show {
+                display: flex !important;
             }
 
             #global-nav .sidebar-footer {
