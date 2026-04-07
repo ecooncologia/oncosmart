@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Protocolos - Onco Smart</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+
+    <script>
+        const versao = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versao + '">');
+        document.write('<script src="global.js?v=' + versao + '"><\/script>');
+    </script>
+
+    <style>
+        .page-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* TAGS MANAGEMENT */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1.5px solid;
+            transition: 0.2s;
+            cursor: default;
+        }
+
+        .tag-chip .tag-remove {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0,0,0,0.12);
+            color: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            transition: 0.2s;
+        }
+
+        .tag-chip .tag-remove:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .tag-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        /* CREATE TAG FORM */
+        .create-tag-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .create-tag-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .create-tag-form .form-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+        }
+
+        .create-tag-form input[type="text"] {
+            width: 220px;
+            padding: 9px 12px;
+        }
+
+        .create-tag-form input[type="color"] {
+            width: 44px;
+            height: 38px;
+            padding: 2px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #f8fafc;
+        }
+
+        /* TABLE */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .filter-bar input {
+            max-width: 300px;
+        }
+
+        .filter-bar select {
+            max-width: 220px;
+        }
+
+        .protocol-tags-cell {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .protocol-tag-mini {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            border: 1px solid;
+        }
+
+        .protocol-tag-mini .mini-remove {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font-size: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+
+        .protocol-tag-mini .mini-remove:hover {
+            opacity: 1;
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
+
+        .add-tag-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1.5px dashed #cbd5e1;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            transition: 0.2s;
+        }
+
+        .add-tag-btn:hover {
+            border-color: #00855B;
+            color: #00855B;
+            background: #ecfdf5;
+        }
+
+        /* TAG DROPDOWN */
+        .tag-dropdown-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tag-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 6px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+            padding: 6px;
+            z-index: 500;
+            min-width: 180px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .tag-dropdown.open {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        .tag-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            width: 100%;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            transition: 0.15s;
+            text-align: left;
+        }
+
+        .tag-dropdown-item:hover {
+            background: #f1f5f9;
+            color: #00855B;
+        }
+
+        .tag-dropdown-empty {
+            padding: 10px;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        /* MODAL OVERLAY */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 9000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 28px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+            position: relative;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-title i {
+            color: #00855B;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #fee2e2;
+            color: #ef4444;
+            border-color: #fecaca;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .sync-status.info {
+            background: #e0f2fe;
+            color: #0c4a6e;
+            border: 1px solid #bae6fd;
+        }
+
+        .sync-status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .sync-status.danger {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .sync-status.hidden {
+            display: none;
+        }
+
+        .empty-table {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+        }
+
+        .empty-table i {
+            font-size: 36px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .pagination button {
+            padding: 8px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #475569;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            transition: 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #00855B;
+            color: white;
+            border-color: #00855B;
+        }
+
+        .pagination span {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            .page-actions {
+                flex-direction: column;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+            }
+
+            .filter-bar input,
+            .filter-bar select {
+                max-width: 100%;
+            }
+
+            .create-tag-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .create-tag-form input[type="text"] {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav id="global-nav"></nav>
+
+    <div class="container">
+        <header id="global-header"></header>
+
+        <!-- STATUS DE SINCRONIZAÇÃO -->
+        <div id="syncStatus" class="sync-status hidden"></div>
+
+        <!-- AÇÕES DA PÁGINA -->
+        <div class="page-actions">
+            <button class="btn btn-success" onclick="syncFromTasy()">
+                <i class="fas fa-sync-alt"></i> Sincronizar Tasy
+            </button>
+            <button class="btn btn-outline" onclick="loadProtocolos()">
+                <i class="fas fa-refresh"></i> Atualizar Lista
+            </button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-icon"><i class="fas fa-dna"></i></div>
+                <div class="stat-card-label">Protocolos</div>
+                <div class="stat-card-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background:#e0f2fe; color:#0ea5e9; border-color:#bae6fd;">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div class="stat-card-label">Tags Criadas</div>
+                <div class="stat-card-value" id="statTags">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background:#fef3c7; color:#f59e0b; border-color:#fde68a;">
+                    <i class="fas fa-link"></i>
+                </div>
+                <div class="stat-card-label">Vínculos</div>
+                <div class="stat-card-value" id="statVinculos">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background:#fce7f3; color:#ec4899; border-color:#fbcfe8;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-card-label">Sem Tag</div>
+                <div class="stat-card-value" id="statSemTag">0</div>
+            </div>
+        </div>
+
+        <!-- GESTÃO DE TAGS -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-tags"></i> Gestão de Tags
+            </div>
+
+            <div id="tagsContainer" class="tags-container">
+                <span style="color:#94a3b8; font-size:13px;">Carregando tags...</span>
+            </div>
+
+            <div class="create-tag-form">
+                <div class="form-group">
+                    <label>Nome da Tag</label>
+                    <input type="text" id="newTagName" placeholder="Ex: Quimioterápicos" maxlength="60">
+                </div>
+                <div class="form-group">
+                    <label>Cor</label>
+                    <input type="color" id="newTagColor" value="#00855B">
+                </div>
+                <button class="btn btn-success" onclick="createTag()">
+                    <i class="fas fa-plus"></i> Criar Tag
+                </button>
+            </div>
+        </div>
+
+        <!-- TABELA DE PROTOCOLOS -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-dna"></i> Protocolos Cadastrados
+            </div>
+
+            <div class="filter-bar">
+                <input type="text" id="searchInput" placeholder="Buscar por código ou sequência..." oninput="filterProtocolos()">
+                <select id="filterTag" onchange="filterProtocolos()">
+                    <option value="">Todas as Tags</option>
+                    <option value="__sem_tag__">Sem Tag</option>
+                </select>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:100px;">Nº Sequência</th>
+                            <th>Cód. Protocolo</th>
+                            <th>Tags</th>
+                        </tr>
+                    </thead>
+                    <tbody id="protocolosBody">
+                        <tr>
+                            <td colspan="3" class="empty-table">
+                                <i class="fas fa-database"></i>
+                                Carregando protocolos...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div class="modal-overlay" id="modalConfirm">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal('modalConfirm')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-title">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="modalConfirmTitle">Confirmar</span>
+            </div>
+            <p id="modalConfirmText" style="font-size:13px; color:#64748b; margin-bottom:20px;"></p>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('modalConfirm')">Cancelar</button>
+                <button class="btn btn-danger" id="modalConfirmBtn" onclick="">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // ESTADO DA PÁGINA
+        // =============================================
+        let allProtocolos = [];
+        let allTags = [];
+        let filteredProtocolos = [];
+        let currentPage = 1;
+        const perPage = 20;
+
+        // =============================================
+        // INIT
+        // =============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initGlobal('protocolos', 'Cadastro de Protocolos');
+            await initTables();
+            await loadTags();
+            await loadProtocolos();
+        });
+
+        // =============================================
+        // API HELPERS
+        // =============================================
+        async function apiGet(path) {
+            const res = await fetch(`${API_BASE_URL}${path}`, { headers: API_HEADERS });
+            if (!res.ok) throw new Error(`Erro ${res.status}`);
+            return await res.json();
+        }
+
+        async function apiPost(path, body = {}) {
+            const res = await fetch(`${API_BASE_URL}${path}`, {
+                method: 'POST',
+                headers: API_HEADERS,
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error(`Erro ${res.status}`);
+            return await res.json();
+        }
+
+        async function apiDelete(path) {
+            const res = await fetch(`${API_BASE_URL}${path}`, {
+                method: 'DELETE',
+                headers: API_HEADERS
+            });
+            if (!res.ok) throw new Error(`Erro ${res.status}`);
+            return await res.json();
+        }
+
+        // =============================================
+        // INIT TABLES (AUTO-CREATE)
+        // =============================================
+        async function initTables() {
+            try {
+                await apiPost('/protocolos/init-tables');
+                console.log('Tabelas verificadas/criadas com sucesso.');
+            } catch (e) {
+                console.error('Erro ao inicializar tabelas:', e);
+                showStatus('Erro ao inicializar tabelas no banco.', 'danger');
+            }
+        }
+
+        // =============================================
+        // STATUS
+        // =============================================
+        function showStatus(msg, type = 'info') {
+            const el = document.getElementById('syncStatus');
+            const icons = { info: 'fas fa-info-circle', success: 'fas fa-check-circle', danger: 'fas fa-exclamation-circle' };
+            el.className = `sync-status ${type}`;
+            el.innerHTML = `<i class="${icons[type] || icons.info}"></i> ${msg}`;
+
+            if (type === 'success') {
+                setTimeout(() => { el.classList.add('hidden'); }, 5000);
+            }
+        }
+
+        function hideStatus() {
+            document.getElementById('syncStatus').classList.add('hidden');
+        }
+
+        // =============================================
+        // TAGS
+        // =============================================
+        async function loadTags() {
+            try {
+                allTags = await apiGet('/protocolo-tags');
+                renderTags();
+                renderTagFilter();
+            } catch (e) {
+                console.error('Erro ao carregar tags:', e);
+                allTags = [];
+                renderTags();
+            }
+        }
+
+        function renderTags() {
+            const container = document.getElementById('tagsContainer');
+            document.getElementById('statTags').textContent = allTags.length;
+
+            if (allTags.length === 0) {
+                container.innerHTML = '<span style="color:#94a3b8; font-size:13px;">Nenhuma tag criada ainda. Crie a primeira abaixo.</span>';
+                return;
+            }
+
+            container.innerHTML = allTags.map(tag => {
+                const bgColor = hexToRgba(tag.cor, 0.12);
+                return `
+                    <span class="tag-chip" style="background:${bgColor}; color:${tag.cor}; border-color:${hexToRgba(tag.cor, 0.35)};">
+                        <span class="tag-dot" style="background:${tag.cor};"></span>
+                        ${escHtml(tag.nome)}
+                        <button class="tag-remove" onclick="confirmDeleteTag(${tag.id}, '${escHtml(tag.nome)}')" title="Remover tag">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                `;
+            }).join('');
+        }
+
+        function renderTagFilter() {
+            const select = document.getElementById('filterTag');
+            const current = select.value;
+
+            select.innerHTML = `
+                <option value="">Todas as Tags</option>
+                <option value="__sem_tag__">Sem Tag</option>
+                ${allTags.map(t => `<option value="${t.id}">${escHtml(t.nome)}</option>`).join('')}
+            `;
+
+            select.value = current;
+        }
+
+        async function createTag() {
+            const nome = document.getElementById('newTagName').value.trim();
+            const cor = document.getElementById('newTagColor').value;
+
+            if (!nome) {
+                showStatus('Digite um nome para a tag.', 'danger');
+                return;
+            }
+
+            if (allTags.some(t => t.nome.toLowerCase() === nome.toLowerCase())) {
+                showStatus('Já existe uma tag com esse nome.', 'danger');
+                return;
+            }
+
+            try {
+                await apiPost('/protocolo-tags', { nome, cor });
+                document.getElementById('newTagName').value = '';
+                showStatus(`Tag "${nome}" criada com sucesso!`, 'success');
+                await loadTags();
+                renderProtocolosTable();
+            } catch (e) {
+                showStatus('Erro ao criar tag.', 'danger');
+            }
+        }
+
+        function confirmDeleteTag(id, nome) {
+            document.getElementById('modalConfirmTitle').textContent = 'Remover Tag';
+            document.getElementById('modalConfirmText').textContent = `Deseja remover a tag "${nome}"? Todos os vínculos com protocolos também serão removidos.`;
+            document.getElementById('modalConfirmBtn').onclick = () => deleteTag(id);
+            openModal('modalConfirm');
+        }
+
+        async function deleteTag(id) {
+            closeModal('modalConfirm');
+            try {
+                await apiDelete(`/protocolo-tags/${id}`);
+                showStatus('Tag removida com sucesso.', 'success');
+                await loadTags();
+                await loadProtocolos();
+            } catch (e) {
+                showStatus('Erro ao remover tag.', 'danger');
+            }
+        }
+
+        // =============================================
+        // PROTOCOLOS
+        // =============================================
+        async function loadProtocolos() {
+            try {
+                allProtocolos = await apiGet('/protocolos');
+                currentPage = 1;
+                filterProtocolos();
+                updateStats();
+            } catch (e) {
+                console.error('Erro ao carregar protocolos:', e);
+                allProtocolos = [];
+                filterProtocolos();
+            }
+        }
+
+        function filterProtocolos() {
+            const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+            const tagFilter = document.getElementById('filterTag').value;
+
+            filteredProtocolos = allProtocolos.filter(p => {
+                const matchSearch = !search ||
+                    String(p.nr_sequencia).toLowerCase().includes(search) ||
+                    String(p.cd_protocolo).toLowerCase().includes(search);
+
+                let matchTag = true;
+                if (tagFilter === '__sem_tag__') {
+                    matchTag = !p.tags || p.tags.length === 0;
+                } else if (tagFilter) {
+                    matchTag = p.tags && p.tags.some(t => String(t.id) === tagFilter);
+                }
+
+                return matchSearch && matchTag;
+            });
+
+            currentPage = 1;
+            renderProtocolosTable();
+            renderPagination();
+        }
+
+        function renderProtocolosTable() {
+            const tbody = document.getElementById('protocolosBody');
+
+            const start = (currentPage - 1) * perPage;
+            const end = start + perPage;
+            const pageItems = filteredProtocolos.slice(start, end);
+
+            if (pageItems.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="empty-table">
+                            <i class="fas fa-database"></i>
+                            ${allProtocolos.length === 0 ? 'Nenhum protocolo encontrado. Sincronize com o Tasy.' : 'Nenhum resultado para o filtro aplicado.'}
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = pageItems.map(p => {
+                const tags = (p.tags || []);
+                const tagsHtml = tags.map(t => {
+                    const bg = hexToRgba(t.cor, 0.12);
+                    return `
+                        <span class="protocol-tag-mini" style="background:${bg}; color:${t.cor}; border-color:${hexToRgba(t.cor, 0.3)};">
+                            <span class="tag-dot" style="background:${t.cor}; width:7px; height:7px;"></span>
+                            ${escHtml(t.nome)}
+                            <button class="mini-remove" onclick="removeTagFromProtocol(${p.id}, ${t.id})" title="Remover">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </span>`;
+                }).join('');
+
+                const availableTags = allTags.filter(t => !tags.some(pt => pt.id === t.id));
+
+                const dropdownHtml = availableTags.length > 0
+                    ? availableTags.map(t => `
+                        <button class="tag-dropdown-item" onclick="addTagToProtocol(${p.id}, ${t.id}); closeTagDropdown(${p.id});">
+                            <span class="tag-dot" style="background:${t.cor};"></span>
+                            ${escHtml(t.nome)}
+                        </button>`).join('')
+                    : '<div class="tag-dropdown-empty">Todas as tags já vinculadas</div>';
+
+                return `
+                    <tr>
+                        <td><strong>${escHtml(String(p.nr_sequencia))}</strong></td>
+                        <td>${escHtml(String(p.cd_protocolo))}</td>
+                        <td>
+                            <div class="protocol-tags-cell">
+                                ${tagsHtml}
+                                <div class="tag-dropdown-wrapper">
+                                    <button class="add-tag-btn" onclick="toggleTagDropdown(${p.id})" title="Adicionar tag">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <div class="tag-dropdown" id="tagDrop_${p.id}">
+                                        ${dropdownHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            const totalPages = Math.ceil(filteredProtocolos.length / perPage);
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <button ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span>Página ${currentPage} de ${totalPages}</span>
+                <button ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderProtocolosTable();
+            renderPagination();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = allProtocolos.length;
+
+            let totalVinculos = 0;
+            let semTag = 0;
+
+            allProtocolos.forEach(p => {
+                const tags = p.tags || [];
+                totalVinculos += tags.length;
+                if (tags.length === 0) semTag++;
+            });
+
+            document.getElementById('statVinculos').textContent = totalVinculos;
+            document.getElementById('statSemTag').textContent = semTag;
+        }
+
+        // =============================================
+        // TAG ↔ PROTOCOLO
+        // =============================================
+        async function addTagToProtocol(protocoloId, tagId) {
+            try {
+                await apiPost(`/protocolos/${protocoloId}/tags`, { tag_id: tagId });
+                await loadProtocolos();
+            } catch (e) {
+                showStatus('Erro ao vincular tag.', 'danger');
+            }
+        }
+
+        async function removeTagFromProtocol(protocoloId, tagId) {
+            try {
+                await apiDelete(`/protocolos/${protocoloId}/tags/${tagId}`);
+                await loadProtocolos();
+            } catch (e) {
+                showStatus('Erro ao remover vínculo.', 'danger');
+            }
+        }
+
+        // =============================================
+        // TAG DROPDOWN
+        // =============================================
+        function toggleTagDropdown(protocoloId) {
+            const drop = document.getElementById(`tagDrop_${protocoloId}`);
+            const isOpen = drop.classList.contains('open');
+
+            // fecha todos
+            document.querySelectorAll('.tag-dropdown').forEach(d => d.classList.remove('open'));
+
+            if (!isOpen) {
+                drop.classList.add('open');
+            }
+        }
+
+        function closeTagDropdown(protocoloId) {
+            const drop = document.getElementById(`tagDrop_${protocoloId}`);
+            if (drop) drop.classList.remove('open');
+        }
+
+        // fecha dropdown ao clicar fora
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.tag-dropdown-wrapper')) {
+                document.querySelectorAll('.tag-dropdown').forEach(d => d.classList.remove('open'));
+            }
+        });
+
+        // =============================================
+        // SYNC TASY
+        // =============================================
+        async function syncFromTasy() {
+            showStatus('<i class="fas fa-spinner fa-spin"></i> Sincronizando com o Tasy... Aguarde.', 'info');
+
+            try {
+                const result = await apiGet('/protocolos/sync-tasy');
+                const count = result.inserted || result.total || 0;
+                showStatus(`Sincronização concluída! ${count} protocolo(s) processado(s).`, 'success');
+                await loadProtocolos();
+            } catch (e) {
+                showStatus('Erro ao sincronizar com o Tasy. Verifique a conexão com o Oracle.', 'danger');
+            }
+        }
+
+        // =============================================
+        // MODAIS
+        // =============================================
+        function openModal(id) {
+            document.getElementById(id).classList.add('open');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
+
+        // =============================================
+        // UTILS
+        // =============================================
+        function escHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+    </script>
+</body>
+</html>
