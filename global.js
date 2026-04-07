@@ -51,47 +51,49 @@ const MENU_SECTORS = [
     { name: "Recepção", icon: "fas fa-concierge-bell", pages: ['transporte', 'stenci', 'selos', 'tuss'] },
     { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts'] },
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
-    { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
+    { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] }, 
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
     { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing'] }
 ];
 
+// 💡 ESTILO: BARRA LATERAL FIXA BRANCA COM BORDAS SUTIS
 function injectMenuStyles() {
-    if (document.getElementById('smart-menu-styles')) return;
+    if(document.getElementById('smart-menu-styles')) return;
     const style = document.createElement('style');
     style.id = 'smart-menu-styles';
     style.innerHTML = `
-        /* ===== SIDEBAR PRINCIPAL (LIGHT THEME) ===== */
-        #global-nav {
-            position: fixed;
-            top: 0; left: 0;
-            width: 268px;
-            height: 100vh;
-            background: #ffffff; /* Fundo Branco */
+        /* CONTAINER PRINCIPAL DA BARRA LATERAL */
+        #global-nav { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 260px; 
+            height: 100vh; 
+            background: #ffffff; 
+            box-shadow: 4px 0 20px rgba(0,0,0,0.03); 
+            border-right: 1px solid #e2e8f0;
             z-index: 1000;
             overflow-y: auto;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            transition: width 0.3s ease;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.04);
-            border-right: 1px solid #e2e8f0;
+            color: #334155; 
+            transition: 0.3s;
         }
-
-        /* scrollbar fina e discreta */
-        #global-nav::-webkit-scrollbar { width: 4px; }
+        
+        /* SCROLLBAR CUSTOMIZADA */
+        #global-nav::-webkit-scrollbar { width: 5px; }
         #global-nav::-webkit-scrollbar-track { background: transparent; }
         #global-nav::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         #global-nav::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* ===== ÁREA DA LOGO (TEXTO) ===== */
+        /* ÁREA DA LOGO NO TOPO DO MENU */
         .sidebar-logo-area {
-            padding: 28px 22px 18px;
+            padding: 25px 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            border-bottom: 1px solid #f1f5f9;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             font-size: 22px;
             font-weight: 900;
             color: #00855B;
@@ -99,7 +101,7 @@ function injectMenuStyles() {
         }
         .sidebar-logo-area span { color: #1e293b; }
 
-        /* ===== PERFIL DO USUÁRIO NA SIDEBAR ===== */
+        /* PERFIL DO USUÁRIO NA SIDEBAR */
         .sidebar-user-card {
             display: flex;
             align-items: center;
@@ -132,67 +134,124 @@ function injectMenuStyles() {
         .sidebar-logout-btn { background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 5px; border-radius: 7px; transition: 0.2s; flex-shrink: 0; font-size: 13px; }
         .sidebar-logout-btn:hover { background: #fee2e2; }
 
-        /* ===== LABEL DE SEÇÃO ===== */
+        /* LABEL DE SEÇÃO */
         .sidebar-section-label { padding: 14px 22px 5px; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #94a3b8; }
 
-        /* ===== SETOR (ACCORDEON) ===== */
-        .smart-dropdown { padding: 0 12px; margin-bottom: 2px; }
-        .smart-dropbtn { width: 100%; background: transparent; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 11px; padding: 10px 12px; transition: background 0.18s; text-align: left; color: #475569; }
-        .smart-dropbtn:hover { background: #f1f5f9; color: #00855B; }
-        .smart-dropbtn:hover .sector-icon-wrap i { color: #00855B; }
+        /* BOTÃO MESTRE DOS SETORES (Acordeão) */
+        .smart-dropdown { margin-bottom: 8px; padding: 0 15px; }
+        .smart-dropbtn { 
+            width: 100%;
+            background: transparent; 
+            color: #475569; 
+            padding: 12px 15px; 
+            font-size: 13px; 
+            font-weight: 700; 
+            border: 1px solid #e2e8f0; /* Bordinha sutil */
+            border-radius: 8px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            transition: 0.2s; 
+        }
+        .smart-dropbtn:hover { background: #f8fafc; color: #00855B; border-color: #cbd5e1; }
+        
+        .sector-title { display: flex; align-items: center; gap: 12px; }
+        .sector-title i { font-size: 16px; width: 20px; text-align: center; color: #94a3b8; transition: 0.2s;}
 
-        .sector-icon-wrap { width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
-        .sector-icon-wrap i { font-size: 13px; color: #64748b; transition: color 0.2s; }
-        .sector-name { flex: 1; font-size: 12.5px; font-weight: 600; transition: color 0.2s; }
-        .sector-chevron { font-size: 9px; color: #cbd5e1; transition: transform 0.25s ease, color 0.2s; }
+        .smart-dropbtn:hover .sector-title i { color: #00855B; }
 
-        /* Setor com página ativa */
-        .smart-dropdown.active-sector > .smart-dropbtn { background: #ecfdf5; }
-        .smart-dropdown.active-sector > .smart-dropbtn .sector-icon-wrap { background: #d1fae5; }
-        .smart-dropdown.active-sector > .smart-dropbtn .sector-icon-wrap i { color: #00855B; }
-        .smart-dropdown.active-sector > .smart-dropbtn .sector-name { color: #00855B; font-weight: 700; }
-        .smart-dropdown.active-sector > .smart-dropbtn .sector-chevron { transform: rotate(90deg); color: #00855B; }
-        .smart-dropbtn.is-open .sector-chevron { transform: rotate(90deg); color: #94a3b8; }
+        /* STATUS ATIVO (Setor) */
+        .smart-dropdown.active-sector .smart-dropbtn { 
+            background: #ecfdf5; 
+            color: #00855B; 
+            font-weight: 800;
+            border-color: #a7f3d0; /* Borda verdinha */
+        }
+        .smart-dropdown.active-sector .smart-dropbtn .sector-title i { color: #00855B; }
 
-        /* ===== SUB-ITENS (PÁGINAS) ===== */
-        .smart-dropdown-content { display: none; flex-direction: column; gap: 1px; padding: 4px 0 6px 44px; overflow: hidden; }
-        .smart-dropdown-content.show { display: flex; animation: slideDown 0.22s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        /* CAIXA DE SUB-ITENS (Páginas) */
+        .smart-dropdown-content { 
+            display: none; 
+            flex-direction: column;
+            gap: 4px;
+            padding: 5px 0 5px 35px;
+            overflow: hidden; 
+        }
+        .smart-dropdown-content.show { display: flex; animation: slideDown 0.3s ease-out; }
+        
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .smart-drop-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; text-decoration: none; color: #64748b; font-size: 12px; font-weight: 500; border: none; background: transparent; cursor: pointer; text-align: left; width: 100%; border-radius: 8px; transition: background 0.15s, color 0.15s; position: relative; }
-        .smart-drop-item i { font-size: 12px; width: 16px; text-align: center; color: #cbd5e1; transition: color 0.15s; flex-shrink: 0; }
-        .smart-drop-item:hover { background: #f8fafc; color: #00855B; }
-        .smart-drop-item:hover i { color: #00855B; }
+        /* ITEM DA PÁGINA (Link/Subcategoria) */
+        .smart-drop-item { 
+            padding: 10px 15px; 
+            text-decoration: none; 
+            color: #64748b; 
+            font-size: 12px; 
+            font-weight: 600; 
+            border: 1px solid #f8fafc; /* Borda bem sutil para criar o formato de card */
+            background: transparent; 
+            cursor: pointer; 
+            text-align: left; 
+            width: 100%; 
+            border-radius: 6px;
+            transition: 0.2s;
+            position: relative;
+        }
+        .smart-drop-item:hover { color: #00855B; background: #f8fafc; border-color: #e2e8f0; }
+        
+        /* PÁGINA ATUAL ABERTA */
+        .smart-drop-item.active { 
+            color: #00855B; 
+            font-weight: 800; 
+            background: transparent; 
+            border-color: #d1fae5; /* Borda verdinha no item ativo */
+        }
+        .smart-drop-item.active::before {
+            content: '';
+            position: absolute;
+            left: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background: #00855B;
+            border-radius: 50%;
+        }
 
-        .smart-drop-item.active { background: transparent; color: #00855B; font-weight: 700; }
-        .smart-drop-item.active i { color: #00855B; }
-        .smart-drop-item.active::before { content: ''; position: absolute; left: -14px; top: 50%; transform: translateY(-50%); width: 4px; height: 60%; background: #00855B; border-radius: 0 4px 4px 0; }
-
-        /* ===== RODAPÉ DA SIDEBAR (LOGO) ===== */
+        /* RODAPÉ DA SIDEBAR (LOGO) */
         .sidebar-footer { margin-top: auto; padding: 20px 22px; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; align-items: center; gap: 10px; background: #fafafa;}
         .sidebar-footer img { max-width: 130px; height: auto; opacity: 0.9; }
         .sidebar-footer span { font-size: 10px; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px; }
 
         @media (max-width: 900px) {
-            #global-nav { position: relative; width: 100%; height: auto; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+            #global-nav { position: relative; width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; box-shadow: none; border-right: none;}
+            .sidebar-logo-area { display: none; }
             .sidebar-footer { display: none; }
         }
     `;
     document.head.appendChild(style);
 }
 
-window.toggleSmartMenu = function (id, event) {
+// Funções para Controle do Acordeão (Sanfona)
+window.toggleSmartMenu = function(id, event) {
     event.stopPropagation();
+    
     const targetMenu = document.getElementById(id);
-    const btn = event.currentTarget;
+    const iconChevron = event.currentTarget.querySelector('.fa-chevron-down, .fa-chevron-right');
     const isCurrentlyOpen = targetMenu.classList.contains('show');
 
-    document.querySelectorAll('.smart-dropdown-content').forEach(el => el.classList.remove('show'));
-    document.querySelectorAll('.smart-dropbtn').forEach(el => el.classList.remove('is-open'));
+    // Comportamento moderno: Fechar outras gavetas ao abrir uma nova
+    document.querySelectorAll('.smart-dropdown-content').forEach(el => {
+        el.classList.remove('show');
+    });
+    document.querySelectorAll('.smart-dropbtn .fa-chevron-down').forEach(el => {
+        el.classList.replace('fa-chevron-down', 'fa-chevron-right');
+    });
 
     if (!isCurrentlyOpen) {
         targetMenu.classList.add('show');
-        btn.classList.add('is-open');
+        if(iconChevron) iconChevron.classList.replace('fa-chevron-right', 'fa-chevron-down');
     }
 };
 
@@ -212,15 +271,13 @@ async function initGlobal(currentPageId, pageTitle) {
 
         let user = JSON.parse(userJson);
         const localPhoto = localStorage.getItem('ecoUserPhoto');
-        
-        // 💡 CORREÇÃO DA FOTO: Verifica no LocalStorage OU nos dados do banco (user.foto/user.photo)
         const displayPhoto = (localPhoto && localPhoto.length > 50) ? localPhoto : (user.foto || user.photo || '');
 
         if (!isNoAccess) {
             renderHeader(user, pageTitle, displayPhoto);
             await checkPermissionsAndRenderMenu(user, currentPageId, displayPhoto);
         }
-
+        
     } catch (e) {
         console.error("Erro initGlobal:", e);
     }
@@ -228,8 +285,8 @@ async function initGlobal(currentPageId, pageTitle) {
 
 function renderHeader(user, title, photoSrc) {
     const headerEl = document.getElementById('global-header');
-    if (!headerEl) return;
-
+    if(!headerEl) return;
+    
     headerEl.className = 'header';
     headerEl.innerHTML = `
         <div class="header-center"><p>${title}</p></div>
@@ -237,11 +294,11 @@ function renderHeader(user, title, photoSrc) {
 }
 
 async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
-    let perms = user.permissoes || {};
-
+    let perms = user.permissoes || {}; 
+    
     try {
         const res = await fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS });
-
+        
         if (res.ok) {
             const allUsers = await res.json();
             const emailKey = user.email.replace(/\./g, ',');
@@ -249,28 +306,27 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
             if (found) {
                 perms = (typeof found.permissoes === 'string') ? JSON.parse(found.permissoes) : found.permissoes;
                 user.permissoes = perms;
-                // Atualiza a foto caso ela tenha vindo atualizada do banco
                 if(found.foto && !photoSrc) photoSrc = found.foto; 
                 localStorage.setItem('ecoUser', JSON.stringify(user));
             }
         }
-    } catch (e) { console.error("Falha ao buscar usuários:", e); }
+    } catch(e) { console.error("Falha ao buscar usuários:", e); }
 
     injectMenuStyles();
 
     const nav = document.getElementById('global-nav');
-    if (!nav) return;
-
+    if(!nav) return;
+    
     const hour = new Date().getHours();
     const greeting = (hour < 12) ? 'Bom dia' : (hour < 18) ? 'Boa tarde' : 'Boa noite';
-
+    
     let displayName = user.nome || "Usuário";
     if (user.nome && user.nome.split(' ').length > 1) {
         displayName = `${user.nome.split(' ')[0]} ${user.nome.split(' ')[1]}`;
     }
 
-    const avatarHTML = photoSrc
-        ? `<img src="${photoSrc}" alt="${displayName}">`
+    const avatarHTML = photoSrc 
+        ? `<img src="${photoSrc}" alt="${displayName}">` 
         : `<span>${displayName.charAt(0).toUpperCase()}</span>`;
 
     let html = `
@@ -289,9 +345,9 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
         </div>
         <div class="sidebar-section-label">Menu Principal</div>
     `;
-
+    
     let hasVisibleMenu = false;
-
+    
     MENU_SECTORS.forEach((sector, index) => {
         let sectorHtml = '';
         let sectorHasVisiblePages = false;
@@ -302,17 +358,17 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
             if (!page) return;
 
             let show = false;
-            if (page.id === 'helpdesk') show = true;
+            if (page.id === 'helpdesk') show = true; 
             else if (page.id === 'admin') show = (perms.admin === true);
             else show = (perms[page.perm] === true);
 
             if (show) {
                 sectorHasVisiblePages = true;
                 hasVisibleMenu = true;
-
+                
                 const isActive = (page.id === activeId);
                 if (isActive) isSectorActive = true;
-
+                
                 const activeClass = isActive ? 'active' : '';
                 const pageIcon = page.icon || 'fas fa-circle';
 
@@ -334,13 +390,20 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
             html += `
             <div class="smart-dropdown ${sectorActiveClass}">
                 <button class="smart-dropbtn ${openClass}" onclick="toggleSmartMenu('${dropId}', event)">
-                    <span class="sector-icon-wrap"><i class="${sector.icon}"></i></span>
-                    <span class="sector-name">${sector.name}</span>
+                    <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
                     <i class="fas fa-chevron-right sector-chevron"></i>
                 </button>
                 <div id="${dropId}" class="smart-dropdown-content ${showClass}">
                     ${sectorHtml}
                 </div>
+            </div>`;
+        } else if (sector.pages.length === 0 && perms.admin === true) {
+            html += `
+            <div class="smart-dropdown">
+                <button class="smart-dropbtn" style="opacity: 0.5; cursor: not-allowed;">
+                    <span class="sector-title"><i class="${sector.icon}"></i> ${sector.name}</span>
+                    <small style="font-size: 9px; background: #f1f5f9; color: #64748b; padding: 2px 5px; border-radius: 4px;">Em breve</small>
+                </button>
             </div>`;
         }
     });
@@ -351,19 +414,20 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
             <span>&copy; ${new Date().getFullYear()} ECO SISTEMAS</span>
         </div>
     `;
-
+    
     nav.innerHTML = html;
 
+    // --- ROTEADOR ---
     const pageConfig = APP_PAGES.find(p => p.id === activeId);
     if (pageConfig) {
         const req = pageConfig.perm;
-        const allowed = (perms.admin === true && pageConfig.id === 'admin') ||
-            (req === 'helpdesk') ||
-            (perms[req] === true);
-
+        const allowed = (perms.admin === true && pageConfig.id === 'admin') || 
+                        (req === 'helpdesk') || 
+                        (perms[req] === true);
+        
         if (!allowed) {
             const firstValidPage = APP_PAGES.find(p => {
-                if (p.id === activeId) return false;
+                if (p.id === activeId) return false; 
                 if (p.id === 'helpdesk') return true;
                 if (p.id === 'admin' && perms.admin) return true;
                 return perms[p.perm] === true;
@@ -381,7 +445,7 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
 }
 
 function logout() {
-    localStorage.removeItem('ecoUser');
+    localStorage.removeItem('ecoUser'); 
     localStorage.removeItem('ecoUserPhoto');
     window.location.href = 'https://ecooncologia.com.br/smart/';
 }
