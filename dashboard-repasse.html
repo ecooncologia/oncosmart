@@ -147,14 +147,18 @@
                 
                 <div class="input-group" style="width: 200px;">
                     <label class="label-title" style="color: #8b5cf6;">Visualizar por Grupo</label>
-                    <select id="dashSelectGroup" class="input-field" style="border-color: #c4b5fd;"></select>
+                    <select id="dashSelectGroup" class="input-field" style="border-color: #c4b5fd;">
+                        <option value="">-- Selecione o Grupo --</option>
+                    </select>
                 </div>
 
                 <div style="display:flex; align-items:center; font-size:12px; font-weight:bold; color:#9ca3af; margin-bottom:12px;">OU</div>
 
                 <div class="input-group" style="width: 250px;">
                     <label class="label-title">Por Médico Específico</label>
-                    <select id="dashSelectDoctor" class="input-field"></select>
+                    <select id="dashSelectDoctor" class="input-field">
+                        <option value="">-- Selecione o Médico --</option>
+                    </select>
                 </div>
                 
                 <div class="input-group" style="width: 140px;">
@@ -483,7 +487,7 @@
             months.forEach((m, i) => elMonth.add(new Option(m, i)));
             elMonth.value = curM;
 
-            // 💡 CONTROLES DE GRUPO VS MEDICO
+            // EVENTOS DOS DROPDOWNS
             document.getElementById('dashSelectGroup').addEventListener('change', function() {
                 if(this.value) document.getElementById('dashSelectDoctor').value = '';
                 renderDashboard();
@@ -505,15 +509,10 @@
             try { 
                 const r = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 doctors = normalizeData(await r.json()); 
-                
                 const dashSel = document.getElementById('dashSelectDoctor');
-                dashSel.innerHTML = '<option value="">-- Selecione o Médico --</option>';
-
                 Object.entries(doctors)
                     .sort((a,b) => cleanDocName(a[1].nome).localeCompare(cleanDocName(b[1].nome)))
-                    .forEach(([id, doc]) => {
-                        dashSel.add(new Option(doc.nome, id));
-                    });
+                    .forEach(([id, doc]) => { dashSel.add(new Option(doc.nome, id)); });
             } catch(e) {}
         }
 
@@ -522,17 +521,13 @@
                 const res = await fetch(`${API_BASE_URL}/grupos_medicos`, { headers: API_HEADERS });
                 if (res.ok) {
                     docGroups = normalizeData(await res.json());
+                    console.log("Grupos carregados:", docGroups);
                     const dashSelGroup = document.getElementById('dashSelectGroup');
-                    if (dashSelGroup) {
-                        dashSelGroup.innerHTML = '<option value="">-- Selecione o Grupo --</option>';
-                        Object.entries(docGroups)
-                            .sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''))
-                            .forEach(([id, g]) => {
-                                dashSelGroup.add(new Option(g.nome, id));
-                            });
-                    }
+                    Object.entries(docGroups)
+                        .sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''))
+                        .forEach(([id, g]) => { dashSelGroup.add(new Option(g.nome, id)); });
                 }
-            } catch(e) {}
+            } catch(e) { console.error("Erro ao carregar grupos:", e); }
         }
 
         async function loadPacientesDb() {
@@ -557,22 +552,21 @@
             document.getElementById('modernDashboard').style.display = 'block';
             document.getElementById('dashFlags').style.display = 'flex';
             
-            // 💡 DEFINIR ALVOS (Lista de médicos do grupo ou 1 só)
+            // 💡 DEFINIR ALVOS (Médicos do grupo ou 1 só)
             let targetDocs = [];
             let displayName = "";
             
-            if (groupId) {
+            if (groupId && docGroups[groupId]) {
                 targetDocs = docGroups[groupId].medicos || [];
                 displayName = "GRUPO: " + String(docGroups[groupId].nome).toUpperCase();
-            } else {
+            } else if (docId && doctors[docId]) {
                 targetDocs = [docId];
-                displayName = doctors[docId] ? doctors[docId].nome.toUpperCase() : "MÉDICO DESCONHECIDO";
+                displayName = doctors[docId].nome.toUpperCase();
+            } else {
+                return;
             }
             
-            // Transforma os IDs em String pra garantir o .includes
             targetDocs = targetDocs.map(String);
-            
-            // Pega os nomes em UpperCase para cruzar com textos de "vendas"
             const targetDocNames = targetDocs.map(id => doctors[id] ? doctors[id].nome.toUpperCase() : '').filter(Boolean);
 
             if (targetDocs.length === 0) {
@@ -581,20 +575,14 @@
                 return;
             }
 
-            // ------------------------------------------------
             // CALCULO DE COMPETÊNCIAS E FLAGS
-            // ------------------------------------------------
             const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
             const strUnimed = `${months[mo].toUpperCase()}/${yr}`;
 
-            let moRep = mo + 2;
-            let yrRep = yr;
-            if(moRep > 11) { moRep -= 12; yrRep++; }
+            let moRep = mo + 2; let yrRep = yr; if(moRep > 11) { moRep -= 12; yrRep++; }
             const strRepasse = `${months[moRep].toUpperCase()}/${yrRep}`;
 
-            let moPlantao = mo + 1;
-            let yrPlantao = yr;
-            if(moPlantao > 11) { moPlantao -= 12; yrPlantao++; }
+            let moPlantao = mo + 1; let yrPlantao = yr; if(moPlantao > 11) { moPlantao -= 12; yrPlantao++; }
             const compPlantao = `${String(moPlantao+1).padStart(2,'0')}/${yrPlantao}`;
             const strPlantao = `${months[moPlantao].toUpperCase()}/${yrPlantao}`;
 
@@ -602,27 +590,20 @@
             document.getElementById('flagPlant').innerText = strPlantao;
             document.getElementById('flagRepasse').innerText = strRepasse;
             
-            const printU = document.getElementById('flagUnimedPrint');
-            if (printU) printU.innerText = strUnimed;
-            const printP = document.getElementById('flagPlantPrint');
-            if (printP) printP.innerText = strPlantao;
-            const printR = document.getElementById('flagRepassePrint');
-            if (printR) printR.innerText = strRepasse;
+            const printU = document.getElementById('flagUnimedPrint'); if (printU) printU.innerText = strUnimed;
+            const printP = document.getElementById('flagPlantPrint'); if (printP) printP.innerText = strPlantao;
+            const printR = document.getElementById('flagRepassePrint'); if (printR) printR.innerText = strRepasse;
 
-            document.getElementById('inpConvQtd').value = "0";
-            document.getElementById('inpConvValor').value = "0.00";
-            document.getElementById('printConvQtd').innerText = "0";
-            document.getElementById('printConvValor').innerText = "0.00";
+            document.getElementById('inpConvQtd').value = "0"; document.getElementById('inpConvValor').value = "0.00";
+            document.getElementById('printConvQtd').innerText = "0"; document.getElementById('printConvValor').innerText = "0.00";
 
             const elsToReset = [
                 'kpiTotalGeral', 'kpiTotalPlantao', 'kpiTotalTratamento', 'kpiTotalPart', 
                 'detPlantTurnos', 'detPlantValor', 'detPartAtend', 'detPartValor', 'detTratPac', 'detTratPacUnimed', 'detTratPacPart',
-                'detTratItens', 'detTratItensUnimed', 'detTratItensPart', 
-                'detTratValor', 'detTratValorUnimed', 'detTratValorPart'
+                'detTratItens', 'detTratItensUnimed', 'detTratItensPart', 'detTratValor', 'detTratValorUnimed', 'detTratValorPart'
             ];
             elsToReset.forEach(id => {
-                let el = document.getElementById(id);
-                if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:12px;"></i>';
+                let el = document.getElementById(id); if (el) el.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:12px;"></i>';
             });
             
             let tbPac = document.getElementById('tablePacientesTrat');
@@ -632,11 +613,8 @@
             document.getElementById('lblPeriod').innerText = strUnimed;
             
             try {
-                // ------------------------------------------------
-                // 1. SALA MÉDICA (Plantões) - SOMANDO TODOS OS MÉDICOS DO GRUPO
-                // ------------------------------------------------
-                let turnosPlantao = 0;
-                let valorPlantao = 0;
+                // 1. SALA MÉDICA (Plantões) - Somando grupo
+                let turnosPlantao = 0; let valorPlantao = 0;
                 const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
                 const holidaysPlantao = getHolidays(yrPlantao);
                 const daysInMonthPlantao = new Date(yrPlantao, moPlantao+1, 0).getDate();
@@ -655,11 +633,8 @@
                                 return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
                             });
                             let dbShifts = {};
-                            if (foundId) {
-                                dbShifts = typeof dataObj[foundId] === 'string' ? JSON.parse(dataObj[foundId]) : dataObj[foundId];
-                            }
+                            if (foundId) dbShifts = typeof dataObj[foundId] === 'string' ? JSON.parse(dataObj[foundId]) : dataObj[foundId];
 
-                            // Loop por todos os médicos alvo
                             targetDocs.forEach(dId => {
                                 if (dbShifts[dId]) {
                                     for (let i = 1; i <= daysInMonthPlantao; i++) {
@@ -670,20 +645,13 @@
                                         const isWk = d.getDay()===0||d.getDay()===6;
                                         
                                         if(val && val === 'S') {
-                                            if (ep === '/escala_mensal_cirurgioes') {
-                                                valorPlantao += 500;
-                                                turnosPlantao += 1;
-                                            } else {
-                                                turnosPlantao += 1;
-                                            }
+                                            if (ep === '/escala_mensal_cirurgioes') { valorPlantao += 500; turnosPlantao += 1; } 
+                                            else { turnosPlantao += 1; }
                                         }
                                         else if(val && val !== 'S') {
                                             if (val === 'M/T') turnosPlantao += 2; else turnosPlantao += 1;
-                                            if (isWk || isHol) {
-                                                valorPlantao += (val === 'M/T' ? 900 : 450);
-                                            } else {
-                                                valorPlantao += (val === 'M/T' ? 1000 : 500);
-                                            }
+                                            if (isWk || isHol) { valorPlantao += (val === 'M/T' ? 900 : 450); } 
+                                            else { valorPlantao += (val === 'M/T' ? 1000 : 500); }
                                         }
                                     }
                                 }
@@ -696,10 +664,7 @@
                 document.getElementById('detPlantValor').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('kpiTotalPlantao').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
-
-                // ------------------------------------------------
                 // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
-                // ------------------------------------------------
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
@@ -709,8 +674,7 @@
                 let arrayBot = Object.values(unimedData);
                 let dadosFiltrados = arrayBot.filter(r => r.competencia === compUnimed);
 
-                let valorConsultaParticular = 0; 
-                let atendimentosConsultaPart = 0;
+                let valorConsultaParticular = 0; let atendimentosConsultaPart = 0;
 
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     const isLiminar = (String(v.tipo_registro).toLowerCase() === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
@@ -731,26 +695,15 @@
                                             let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
                                             isPartExt = ext.origem === 'venda_particular' || String(d.tipo).toUpperCase() === 'PARTICULAR';
                                         }
-                                        return isPartExt && 
-                                               d.data_atendimento === v.data && 
-                                               String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
+                                        return isPartExt && d.data_atendimento === v.data && String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
                                     } catch(e) { return false; }
                                 });
                                 
                                 if (!alreadyExists) {
                                     dadosFiltrados.push({
-                                        id_firebase: 'virt_part_' + vId,
-                                        paciente: String(v.paciente).toUpperCase().trim(),
-                                        data_atendimento: v.data,
-                                        competencia: vComp,
-                                        carteirinha: '',
-                                        descricao: `Aplicação Particular - ${v.procedimento}`,
-                                        valor_pago: parseFloat(v.valor_final || v.valor || 0),
-                                        quantidade: parseFloat(v.aplicacoes_realizadas || 1),
-                                        tipo: 'PARTICULAR',
-                                        custo_errado: v.custo_errado || 0,
-                                        custo_informado: v.custo_informado || 0,
-                                        dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
+                                        id_firebase: 'virt_part_' + vId, paciente: String(v.paciente).toUpperCase().trim(), data_atendimento: v.data, competencia: vComp,
+                                        carteirinha: '', descricao: `Aplicação Particular - ${v.procedimento}`, valor_pago: parseFloat(v.valor_final || v.valor || 0), quantidade: parseFloat(v.aplicacoes_realizadas || 1),
+                                        tipo: 'PARTICULAR', custo_errado: v.custo_errado || 0, custo_informado: v.custo_informado || 0, dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                     });
                                 }
                             }
@@ -778,28 +731,17 @@
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     let custo_informado_antigo = row.custo_informado || extras.custo_informado || 0;
                     let custoAtual = (row.custo_errado !== undefined && row.custo_errado !== null && parseFloat(row.custo_errado) > 0)
-                        ? parseFloat(row.custo_errado) 
-                        : parseFloat(custo_informado_antigo);
+                        ? parseFloat(row.custo_errado) : parseFloat(custo_informado_antigo);
 
-                    let dataNormalized = row.data_atendimento || "-";
-                    if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
-
-                    let isPart = false;
-                    let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
+                    let dataNormalized = row.data_atendimento || "-"; if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
+                    let isPart = false; let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
                     if (tipoStr === 'PARTICULAR' || tipoStr.includes('PARTICULAR')) isPart = true;
                     if (extras.origem && String(extras.origem).toLowerCase().includes('particular')) isPart = true;
                     if (String(row.id_firebase).includes('virt_part_')) isPart = true;
 
                     return {
-                        id_firebase: row.id_firebase,
-                        paciente: String(row.paciente || '').toUpperCase().trim(), 
-                        medicamento: String(row.descricao || '').toUpperCase().trim(), 
-                        valor: parseFloat(row.valor_pago || 0), 
-                        mg: parseFloat(row.quantidade || 1), 
-                        data: dataNormalized, 
-                        tipo: tipoStr, 
-                        isParticular: isPart, 
-                        custo_informado: parseFloat(custoAtual)
+                        id_firebase: row.id_firebase, paciente: String(row.paciente || '').toUpperCase().trim(), medicamento: String(row.descricao || '').toUpperCase().trim(), 
+                        valor: parseFloat(row.valor_pago || 0), mg: parseFloat(row.quantidade || 1), data: dataNormalized, tipo: tipoStr, isParticular: isPart, custo_informado: parseFloat(custoAtual)
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -810,9 +752,8 @@
                 const patientsTableObj = {};
                 excelData.forEach(d => {
                     const p = d.paciente; 
-                    if (!patientsTableObj[p]) {
-                        patientsTableObj[p] = { name: p, items: [], pId: null, pName: '', eId: null, eName: '' };
-                    }
+                    if (!patientsTableObj[p]) patientsTableObj[p] = { name: p, items: [], pId: null, pName: '', eId: null, eName: '' };
+                    
                     const patId = generatePatientId(d.paciente);
                     const patDb = pacientesDb[patId];
                     if (patDb) {
@@ -824,21 +765,15 @@
                     patientsTableObj[p].items.push(d);
                 });
 
-                let valorTratamentoTotal = 0;
-                let valorTratamentoUnimed = 0;
-                let valorTratamentoParticular = 0;
-                let pacientesTratCount = new Set();
-                let pacientesTratUnimedCount = new Set();
-                let pacientesTratPartCount = new Set();
-                let totalAtendimentosTrat = 0;
-                let atendimentosTratUnimed = 0;
-                let atendimentosTratPart = 0;
+                let valorTratamentoTotal = 0; let valorTratamentoUnimed = 0; let valorTratamentoParticular = 0;
+                let pacientesTratCount = new Set(); let pacientesTratUnimedCount = new Set(); let pacientesTratPartCount = new Set();
+                let totalAtendimentosTrat = 0; let atendimentosTratUnimed = 0; let atendimentosTratPart = 0;
                 let listaRenderPacienteHtmlMap = new Map(); 
 
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     
-                    // 💡 Pula se NENHUM dos médicos alvo tem vínculo com o paciente
+                    // 💡 TRATAMENTOS: Verifica se o Prescritor ou Encaminhador do Paciente faz parte do array alvo
                     if (!targetDocs.includes(String(pat.pId)) && !targetDocs.includes(String(pat.eId))) return;
 
                     const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
@@ -861,6 +796,7 @@
                         let repP = canP ? Number((lucroRepasse * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                         let repE = canE ? Number((lucroRepasse * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
 
+                        // Se o médico prescritor está no alvo, computa a parte dele. E assim vai.
                         let isVisibleForFilter = (targetDocs.includes(String(pat.pId)) && canP) || (targetDocs.includes(String(pat.eId)) && canE);
 
                         if (isVisibleForFilter) {
@@ -904,43 +840,23 @@
 
                 let listaRenderPacienteHtml = Array.from(listaRenderPacienteHtmlMap.values());
 
-                let elKpiPartAtend = document.getElementById('kpiPartAtend');
-                if(elKpiPartAtend) elKpiPartAtend.innerText = atendimentosConsultaPart;
-                
-                let elKpiTotalPart = document.getElementById('kpiTotalPart');
-                if(elKpiTotalPart) elKpiTotalPart.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                
-                let elDetPartAtend = document.getElementById('detPartAtend');
-                if(elDetPartAtend) elDetPartAtend.innerText = atendimentosConsultaPart;
+                let elKpiPartAtend = document.getElementById('kpiPartAtend'); if(elKpiPartAtend) elKpiPartAtend.innerText = atendimentosConsultaPart;
+                let elKpiTotalPart = document.getElementById('kpiTotalPart'); if(elKpiTotalPart) elKpiTotalPart.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                let elDetPartAtend = document.getElementById('detPartAtend'); if(elDetPartAtend) elDetPartAtend.innerText = atendimentosConsultaPart;
+                let elDetPartValor = document.getElementById('detPartValor'); if(elDetPartValor) elDetPartValor.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
-                let elDetPartValor = document.getElementById('detPartValor');
-                if(elDetPartValor) elDetPartValor.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-
-                let elKpiTratPac = document.getElementById('kpiTratPac');
-                if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
-                
-                let elDetTratPac = document.getElementById('detTratPac');
-                if(elDetTratPac) elDetTratPac.innerText = pacientesTratCount.size;
-                let elDetTratPacUnimed = document.getElementById('detTratPacUnimed');
-                if(elDetTratPacUnimed) elDetTratPacUnimed.innerText = pacientesTratUnimedCount.size;
-                let elDetTratPacPart = document.getElementById('detTratPacPart');
-                if(elDetTratPacPart) elDetTratPacPart.innerText = pacientesTratPartCount.size;
-                
-                let elDetTratItens = document.getElementById('detTratItens');
-                if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
-                let elDetTratItensUnimed = document.getElementById('detTratItensUnimed');
-                if(elDetTratItensUnimed) elDetTratItensUnimed.innerText = atendimentosTratUnimed;
-                let elDetTratItensPart = document.getElementById('detTratItensPart');
-                if(elDetTratItensPart) elDetTratItensPart.innerText = atendimentosTratPart;
+                let elKpiTratPac = document.getElementById('kpiTratPac'); if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
+                let elDetTratPac = document.getElementById('detTratPac'); if(elDetTratPac) elDetTratPac.innerText = pacientesTratCount.size;
+                let elDetTratPacUnimed = document.getElementById('detTratPacUnimed'); if(elDetTratPacUnimed) elDetTratPacUnimed.innerText = pacientesTratUnimedCount.size;
+                let elDetTratPacPart = document.getElementById('detTratPacPart'); if(elDetTratPacPart) elDetTratPacPart.innerText = pacientesTratPartCount.size;
+                let elDetTratItens = document.getElementById('detTratItens'); if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
+                let elDetTratItensUnimed = document.getElementById('detTratItensUnimed'); if(elDetTratItensUnimed) elDetTratItensUnimed.innerText = atendimentosTratUnimed;
+                let elDetTratItensPart = document.getElementById('detTratItensPart'); if(elDetTratItensPart) elDetTratItensPart.innerText = atendimentosTratPart;
                 
                 document.getElementById('detTratValorUnimed').innerText = `R$ ${valorTratamentoUnimed.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValorPart').innerText = `R$ ${valorTratamentoParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                
-                let elDetTratValor = document.getElementById('detTratValor');
-                if(elDetTratValor) elDetTratValor.innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                
-                let elKpiTotalTratamento = document.getElementById('kpiTotalTratamento');
-                if(elKpiTotalTratamento) elKpiTotalTratamento.innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                document.getElementById('detTratValor').innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                document.getElementById('kpiTotalTratamento').innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
                 if (listaRenderPacienteHtmlMap.size === 0) {
@@ -951,7 +867,6 @@
                 }
 
                 let totalGeral = valorPlantao + valorTratamentoTotal + valorConsultaParticular;
-                
                 let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
                 if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
