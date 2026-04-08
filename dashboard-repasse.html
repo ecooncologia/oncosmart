@@ -144,9 +144,15 @@
 
         <div class="controls">
             <div class="controls-group" style="flex-wrap: nowrap;">
-                <div class="input-group" style="width: 320px;">
+                <div class="input-group" style="width: 280px;">
                     <label class="label-title">Selecione o Médico</label>
                     <select id="dashSelectDoctor" class="input-field"></select>
+                </div>
+                <div class="input-group" style="width: 220px;">
+                    <label class="label-title">Filtrar por Grupo</label>
+                    <select id="dashSelectGroup" class="input-field">
+                        <option value="">-- Todos os Grupos --</option>
+                    </select>
                 </div>
                 <div class="input-group" style="width: 150px;">
                     <label class="label-title">Mês de Referência</label>
@@ -499,6 +505,7 @@
             elMonth.value = curM;
 
             document.getElementById('dashSelectDoctor').addEventListener('change', renderDashboard);
+            document.getElementById('dashSelectGroup').addEventListener('change', renderDashboard); // Listener para o grupo
             document.getElementById('dashSelectMonth').addEventListener('change', renderDashboard);
             document.getElementById('dashSelectYear').addEventListener('change', renderDashboard);
 
@@ -525,12 +532,33 @@
         async function loadPacientesDb() {
             try {
                 const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
-                if (res.ok) pacientesDb = normalizeData(await res.json());
+                if (res.ok) {
+                    pacientesDb = normalizeData(await res.json());
+                    populateGroups(); // Popula os grupos após carregar os pacientes
+                }
             } catch(e) {}
+        }
+
+        // FUNÇÃO PARA POPULAR O SELECT DE GRUPOS
+        function populateGroups() {
+            const groupSel = document.getElementById('dashSelectGroup');
+            const uniqueGroups = new Set();
+            
+            Object.values(pacientesDb).forEach(p => {
+                if (p.grupo && String(p.grupo).trim() !== "") {
+                    uniqueGroups.add(String(p.grupo).trim());
+                }
+            });
+
+            const sortedGroups = Array.from(uniqueGroups).sort();
+            sortedGroups.forEach(g => {
+                groupSel.add(new Option(g, g));
+            });
         }
 
         async function renderDashboard() {
             const docId = document.getElementById('dashSelectDoctor').value;
+            const groupVal = document.getElementById('dashSelectGroup').value; // Valor do grupo selecionado
             const mo = parseInt(document.getElementById('dashSelectMonth').value);
             const yr = parseInt(document.getElementById('dashSelectYear').value);
 
@@ -543,9 +571,6 @@
             document.getElementById('modernDashboard').style.display = 'block';
             document.getElementById('dashFlags').style.display = 'flex';
             
-            // ------------------------------------------------
-            // CALCULO DE COMPETÊNCIAS E FLAGS
-            // ------------------------------------------------
             const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
             const strUnimed = `${months[mo].toUpperCase()}/${yr}`;
 
@@ -596,9 +621,7 @@
             document.getElementById('lblPeriod').innerText = strUnimed;
             
             try {
-                // ------------------------------------------------
-                // 1. SALA MÉDICA (Plantões)
-                // ------------------------------------------------
+                // 1. SALA MÉDICA (Plantões) - Não afetado pelo grupo de pacientes geralmente
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
                 const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
@@ -659,9 +682,7 @@
                 document.getElementById('kpiPlantTurnos').innerText = turnosPlantao;
 
 
-                // ------------------------------------------------
-                // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
-                // ------------------------------------------------
+                // 2. INJEÇÃO DE DADOS (Tratamentos)
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
@@ -680,6 +701,12 @@
 
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').toUpperCase();
+
+                    // Se houver filtro de grupo, verifica se este paciente de venda pertence ao grupo
+                    if (groupVal) {
+                        const patId = generatePatientId(v.paciente);
+                        if (!pacientesDb[patId] || pacientesDb[patId].grupo !== groupVal) return;
+                    }
 
                     if (tipoReg.includes('particular') && procNormalizado.includes('APLICA')) {
                         const dateParts = (v.data || '').split('-');
@@ -771,11 +798,16 @@
                 const patientsTableObj = {};
                 excelData.forEach(d => {
                     const p = d.paciente; 
+                    const patId = generatePatientId(p);
+                    const patDb = pacientesDb[patId];
+
+                    // FILTRO DE GRUPO NO TRATAMENTO
+                    if (groupVal && (!patDb || patDb.grupo !== groupVal)) return;
+
                     if (!patientsTableObj[p]) {
                         patientsTableObj[p] = { name: p, items: [], pId: null, pName: '', eId: null, eName: '' };
                     }
-                    const patId = generatePatientId(d.paciente);
-                    const patDb = pacientesDb[patId];
+                    
                     if (patDb) {
                         patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
                         patientsTableObj[p].eId = patDb.encaminhador_id;
@@ -861,46 +893,24 @@
                     }
                 });
 
-                let listaRenderPacienteHtml = Array.from(listaRenderPacienteHtmlMap.values());
+                document.getElementById('kpiPartAtend').innerText = atendimentosConsultaPart;
+                document.getElementById('kpiTotalPart').innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                document.getElementById('detPartAtend').innerText = atendimentosConsultaPart;
+                document.getElementById('detPartValor').innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
-                let elKpiPartAtend = document.getElementById('kpiPartAtend');
-                if(elKpiPartAtend) elKpiPartAtend.innerText = atendimentosConsultaPart;
+                document.getElementById('kpiTratPac').innerText = pacientesTratCount.size;
+                document.getElementById('detTratPac').innerText = pacientesTratCount.size;
+                document.getElementById('detTratPacUnimed').innerText = pacientesTratUnimedCount.size;
+                document.getElementById('detTratPacPart').innerText = pacientesTratPartCount.size;
                 
-                let elKpiTotalPart = document.getElementById('kpiTotalPart');
-                if(elKpiTotalPart) elKpiTotalPart.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                
-                let elDetPartAtend = document.getElementById('detPartAtend');
-                if(elDetPartAtend) elDetPartAtend.innerText = atendimentosConsultaPart;
-
-                let elDetPartValor = document.getElementById('detPartValor');
-                if(elDetPartValor) elDetPartValor.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-
-
-                let elKpiTratPac = document.getElementById('kpiTratPac');
-                if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
-                
-                let elDetTratPac = document.getElementById('detTratPac');
-                if(elDetTratPac) elDetTratPac.innerText = pacientesTratCount.size;
-                let elDetTratPacUnimed = document.getElementById('detTratPacUnimed');
-                if(elDetTratPacUnimed) elDetTratPacUnimed.innerText = pacientesTratUnimedCount.size;
-                let elDetTratPacPart = document.getElementById('detTratPacPart');
-                if(elDetTratPacPart) elDetTratPacPart.innerText = pacientesTratPartCount.size;
-                
-                let elDetTratItens = document.getElementById('detTratItens');
-                if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
-                let elDetTratItensUnimed = document.getElementById('detTratItensUnimed');
-                if(elDetTratItensUnimed) elDetTratItensUnimed.innerText = atendimentosTratUnimed;
-                let elDetTratItensPart = document.getElementById('detTratItensPart');
-                if(elDetTratItensPart) elDetTratItensPart.innerText = atendimentosTratPart;
+                document.getElementById('detTratItens').innerText = totalAtendimentosTrat;
+                document.getElementById('detTratItensUnimed').innerText = atendimentosTratUnimed;
+                document.getElementById('detTratItensPart').innerText = atendimentosTratPart;
                 
                 document.getElementById('detTratValorUnimed').innerText = `R$ ${valorTratamentoUnimed.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValorPart').innerText = `R$ ${valorTratamentoParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                
-                let elDetTratValor = document.getElementById('detTratValor');
-                if(elDetTratValor) elDetTratValor.innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                
-                let elKpiTotalTratamento = document.getElementById('kpiTotalTratamento');
-                if(elKpiTotalTratamento) elKpiTotalTratamento.innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                document.getElementById('detTratValor').innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                document.getElementById('kpiTotalTratamento').innerText = `R$ ${valorTratamentoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
                 if (listaRenderPacienteHtmlMap.size === 0) {
@@ -911,9 +921,7 @@
                 }
 
                 let totalGeral = valorPlantao + valorTratamentoTotal + valorConsultaParticular;
-                
-                let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
-                if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                document.getElementById('kpiTotalGeral').innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
             } catch (err) {
                 console.error("Erro ao montar o painel: ", err);
