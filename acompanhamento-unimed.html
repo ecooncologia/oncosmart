@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhamento Unimed - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        
+        .controls { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: flex-end; }
+        
+        .btn-primary { background: #00995D; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
+        .btn-primary:hover { opacity: 0.9; }
+        
+        .btn-warning { background: #f59e0b; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.2s; display:inline-flex; gap:5px; align-items:center;}
+        .btn-warning:hover { background: #d97706; }
+
+        .btn-success-small { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.2s; display:inline-flex; gap:5px; align-items:center;}
+        .btn-success-small:hover { background: #059669; }
+
+        .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #00995D; color: white; padding: 14px; text-align: left; }
+        .data-table td { padding: 14px; border-bottom: 1px solid #eee; color: #374151; vertical-align: middle; }
+        
+        .status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
+        .st-pendente { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
+        .st-nicolas { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .st-autorizado { background: #d1fae5; color: #059669; border: 1px solid #a7f3d0; }
+
+        .date-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 6px; font-size: 12px; outline: none; color: #374151; width: 130px;}
+        .date-input:focus { border-color: #00995D; box-shadow: 0 0 0 2px rgba(0, 153, 93, 0.1); }
+
+        /* Modal Styles (Padronizados) */
+        .modal-overlay { display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; width: 450px; max-width: 90%; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { background: #00995D; color: white; padding: 15px 20px; font-weight: bold; display: flex; justify-content: space-between; }
+        .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 15px;}
+        .modal-footer { padding: 15px 20px; background: #f9fafb; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
+        .form-label { font-size: 12px; font-weight: bold; color: #4b5563; }
+        .form-input { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; box-sizing: border-box; outline:none;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="controls">
+            <div>
+                <h2 style="margin:0; color:#1f2937; display:flex; align-items:center; gap:10px;"><i class="fas fa-file-medical" style="color:#00995D;"></i> Acompanhamento de Pacientes Novos (Unimed)</h2>
+                <p style="margin:5px 0 0; color:#6b7280; font-size:13px;">Gerencie o fluxo de autorizações, verificações de dosagem e contatos.</p>
+            </div>
+            
+            <button class="btn-primary" onclick="abrirModalAdd()"><i class="fas fa-plus"></i> Novo Paciente</button>
+        </div>
+
+        <div class="sheet-container">
+            <table class="data-table" id="tabelaFluxo">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Status Atual</th>
+                        <th>Autorização Unimed</th>
+                        <th>Data de Contato</th>
+                        <th>Data de Agendamento</th>
+                        <th>Ações de Fluxo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando fluxo...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalAdd">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span><i class="fas fa-user-plus"></i> Adicionar Paciente ao Fluxo</span>
+                <button onclick="fecharModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <label class="form-label">Nome Completo do Paciente</label>
+                    <input type="text" id="inpNome" class="form-input" placeholder="Ex: MARIA DA SILVA" style="text-transform: uppercase;">
+                </div>
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 1px solid #bae6fd;">
+                    <p style="margin:0 0 10px 0; font-size: 12px; font-weight: bold; color: #0284c7;"><i class="fas fa-robot"></i> Configurar Robô Unimed</p>
+                    <label class="form-label">Data Início (Busca)</label>
+                    <input type="text" id="inpDtInicio" class="form-input" placeholder="DD/MM/AAAA" style="margin-bottom: 10px;">
+                    <label class="form-label">Data Fim (Busca)</label>
+                    <input type="text" id="inpDtFim" class="form-input" placeholder="DD/MM/AAAA">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" style="background:#9ca3af;" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-primary" id="btnSalvarModal" onclick="salvarNovoPaciente()"><i class="fas fa-save"></i> Salvar e Iniciar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pacientesFluxo = {};
+
+        async function startApp() {
+            if (typeof initGlobal !== 'undefined') {
+                initGlobal('fluxo-unimed', 'Acompanhamento Unimed');
+                await carregarDados();
+            } else {
+                setTimeout(startApp, 100);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', startApp);
+
+        async function carregarDados() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    pacientesFluxo = data;
+                }
+            } catch(e) { pacientesFluxo = {}; }
+            renderTabela();
+        }
+
+        function renderTabela() {
+            const tbody = document.querySelector('#tabelaFluxo tbody');
+            let html = '';
+
+            const lista = Object.values(pacientesFluxo).sort((a,b) => new Date(b.data_criacao || 0) - new Date(a.data_criacao || 0));
+
+            if(lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#6b7280;">Nenhum paciente no fluxo atualmente.</td></tr>';
+                return;
+            }
+
+            lista.forEach(p => {
+                // STATUS BADGE
+                let statusHtml = `<span class="status-badge st-pendente"><i class="fas fa-clock"></i> Pendente</span>`;
+                if(p.status === 'nicolas') statusHtml = `<span class="status-badge st-nicolas"><i class="fas fa-user-md"></i> Nicolas Verificar</span>`;
+                if(p.status === 'autorizado') statusHtml = `<span class="status-badge st-autorizado"><i class="fas fa-check-circle"></i> Autorizado</span>`;
+
+                // BOTÕES DE AÇÃO
+                let acoesHtml = '';
+                if(p.status === 'pendente' || !p.status) {
+                    acoesHtml = `<button class="btn-warning" onclick="enviarParaNicolas('${p.id_firebase}', '${p.nome}')" title="Avisa o Nicolas por e-mail para verificar a dosagem."><i class="fas fa-paper-plane"></i> Enviar Nicolas</button>`;
+                } else if(p.status === 'nicolas') {
+                    acoesHtml = `<button class="btn-success-small" onclick="marcarVerificado('${p.id_firebase}', '${p.nome}')" title="Aprova a dosagem e avisa Enfermagem/Farmácia."><i class="fas fa-check-double"></i> Verificado</button>`;
+                } else if (p.status === 'autorizado') {
+                    acoesHtml = `<span style="font-size:11px; color:#059669; font-weight:bold;"><i class="fas fa-check"></i> Fluxo Concluído</span>`;
+                }
+
+                // PRINT UNIMED (ROBÔ)
+                let printHtml = '<span style="color:#9ca3af; font-size:11px;">Sem print</span>';
+                if(p.print_url) {
+                    printHtml = `<a href="${API_BASE_URL}${p.print_url}" target="_blank" style="color:#0284c7; text-decoration:none; font-weight:bold; font-size:12px;"><i class="fas fa-image"></i> Ver Print</a>`;
+                }
+
+                html += `
+                    <tr>
+                        <td style="font-weight:bold;">${p.nome}</td>
+                        <td>${statusHtml}</td>
+                        <td>${printHtml}</td>
+                        <td><input type="date" class="date-input" value="${p.dataContato || ''}" onchange="salvarData('${p.id_firebase}', 'dataContato', this.value)"></td>
+                        <td><input type="date" class="date-input" value="${p.dataAgendamento || ''}" onchange="salvarData('${p.id_firebase}', 'dataAgendamento', this.value)"></td>
+                        <td>${acoesHtml}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // ==========================================
+        // FLUXOS DE NEGÓCIO E E-MAILS
+        // ==========================================
+        async function salvarData(id, campo, valor) {
+            pacientesFluxo[id][campo] = valor;
+            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, {
+                method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id])
+            });
+        }
+
+        async function enviarParaNicolas(id, nome) {
+            if(!confirm(`Deseja enviar o paciente ${nome} para verificação do Nicolas? Um e-mail será disparado.`)) return;
+            
+            pacientesFluxo[id].status = 'nicolas';
+            renderTabela(); // Atualiza UI instantaneamente
+            
+            // Salva no banco
+            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
+            
+            // Chama a rota de envio de e-mail (QUE CRIAMOS NO SERVER.JS)
+            await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
+                method: 'POST', headers: API_HEADERS,
+                body: JSON.stringify({ pacienteNome: nome, acao: 'nicolas', pacienteDados: pacientesFluxo[id] })
+            });
+            alert('E-mail enviado para o Nicolas com sucesso!');
+        }
+
+        async function marcarVerificado(id, nome) {
+            if(!confirm(`Deseja marcar a dosagem como Verificada? Enfermagem e Farmácia serão notificados.`)) return;
+            
+            pacientesFluxo[id].status = 'autorizado';
+            renderTabela();
+            
+            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
+            
+            await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
+                method: 'POST', headers: API_HEADERS,
+                body: JSON.stringify({ pacienteNome: nome, acao: 'farmacia_enfermagem', pacienteDados: pacientesFluxo[id] })
+            });
+            alert('Enfermagem e Farmácia notificados com sucesso!');
+        }
+
+        // ==========================================
+        // MODAL E CRIAÇÃO
+        // ==========================================
+        function abrirModalAdd() {
+            document.getElementById('inpNome').value = '';
+            document.getElementById('inpDtInicio').value = '';
+            document.getElementById('inpDtFim').value = '';
+            document.getElementById('modalAdd').classList.add('active');
+        }
+
+        function fecharModal() {
+            document.getElementById('modalAdd').classList.remove('active');
+        }
+
+        async function salvarNovoPaciente() {
+            const nome = document.getElementById('inpNome').value.trim().toUpperCase();
+            if(!nome) return alert("Digite o nome do paciente.");
+
+            const btn = document.getElementById('btnSalvarModal');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+            btn.disabled = true;
+
+            const id = 'flu_' + Date.now();
+            const novoObj = {
+                id_firebase: id,
+                nome: nome,
+                status: 'pendente',
+                dataContato: '',
+                dataAgendamento: '',
+                data_criacao: new Date().toISOString(),
+                print_url: '' // Opcional: Se você integrar o robô para rodar via API, ele atualizaria isso.
+            };
+
+            try {
+                await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(novoObj) });
+                pacientesFluxo[id] = novoObj;
+                fecharModal();
+                renderTabela();
+            } catch(e) {
+                alert("Erro ao criar paciente.");
+            } finally {
+                btn.innerHTML = '<i class="fas fa-save"></i> Salvar e Iniciar';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
