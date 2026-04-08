@@ -144,12 +144,12 @@
 
         <div class="controls">
             <div class="controls-group" style="flex-wrap: nowrap;">
-                <div class="input-group" style="width: 280px;">
+                <div class="input-group" style="width: 320px;">
                     <label class="label-title">Selecione o Médico</label>
                     <select id="dashSelectDoctor" class="input-field"></select>
                 </div>
-                <div class="input-group" style="width: 220px;">
-                    <label class="label-title">Filtrar por Grupo</label>
+                <div class="input-group" style="width: 200px;">
+                    <label class="label-title">Grupo</label>
                     <select id="dashSelectGroup" class="input-field">
                         <option value="">-- Todos os Grupos --</option>
                     </select>
@@ -505,7 +505,7 @@
             elMonth.value = curM;
 
             document.getElementById('dashSelectDoctor').addEventListener('change', renderDashboard);
-            document.getElementById('dashSelectGroup').addEventListener('change', renderDashboard); // Listener para o grupo
+            document.getElementById('dashSelectGroup').addEventListener('change', renderDashboard); // Listener grupo
             document.getElementById('dashSelectMonth').addEventListener('change', renderDashboard);
             document.getElementById('dashSelectYear').addEventListener('change', renderDashboard);
 
@@ -534,19 +534,27 @@
                 const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
                 if (res.ok) {
                     pacientesDb = normalizeData(await res.json());
-                    populateGroups(); // Popula os grupos após carregar os pacientes
+                    populateGroups(); // Popula o select de grupos
                 }
             } catch(e) {}
         }
 
-        // FUNÇÃO PARA POPULAR O SELECT DE GRUPOS
+        // Função para preencher os grupos a partir do JSON dados_extras
         function populateGroups() {
             const groupSel = document.getElementById('dashSelectGroup');
             const uniqueGroups = new Set();
             
             Object.values(pacientesDb).forEach(p => {
-                if (p.grupo && String(p.grupo).trim() !== "") {
-                    uniqueGroups.add(String(p.grupo).trim());
+                let dados = {};
+                try {
+                    // Tenta parsear dados_extras se for string
+                    dados = typeof p.dados_extras === 'string' ? JSON.parse(p.dados_extras) : (p.dados_extras || {});
+                } catch(e) { dados = {}; }
+                
+                // Busca a chave 'grupo' dentro do JSON dados_extras
+                const g = dados.grupo || p.grupo; 
+                if (g && String(g).trim() !== "") {
+                    uniqueGroups.add(String(g).trim());
                 }
             });
 
@@ -558,7 +566,7 @@
 
         async function renderDashboard() {
             const docId = document.getElementById('dashSelectDoctor').value;
-            const groupVal = document.getElementById('dashSelectGroup').value; // Valor do grupo selecionado
+            const groupFilter = document.getElementById('dashSelectGroup').value; // Filtro de Grupo
             const mo = parseInt(document.getElementById('dashSelectMonth').value);
             const yr = parseInt(document.getElementById('dashSelectYear').value);
 
@@ -571,6 +579,9 @@
             document.getElementById('modernDashboard').style.display = 'block';
             document.getElementById('dashFlags').style.display = 'flex';
             
+            // ------------------------------------------------
+            // CALCULO DE COMPETÊNCIAS E FLAGS
+            // ------------------------------------------------
             const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
             const strUnimed = `${months[mo].toUpperCase()}/${yr}`;
 
@@ -621,7 +632,9 @@
             document.getElementById('lblPeriod').innerText = strUnimed;
             
             try {
-                // 1. SALA MÉDICA (Plantões) - Não afetado pelo grupo de pacientes geralmente
+                // ------------------------------------------------
+                // 1. SALA MÉDICA (Plantões)
+                // ------------------------------------------------
                 let turnosPlantao = 0;
                 let valorPlantao = 0;
                 const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
@@ -682,7 +695,9 @@
                 document.getElementById('kpiPlantTurnos').innerText = turnosPlantao;
 
 
-                // 2. INJEÇÃO DE DADOS (Tratamentos)
+                // ------------------------------------------------
+                // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
+                // ------------------------------------------------
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
@@ -701,12 +716,6 @@
 
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').toUpperCase();
-
-                    // Se houver filtro de grupo, verifica se este paciente de venda pertence ao grupo
-                    if (groupVal) {
-                        const patId = generatePatientId(v.paciente);
-                        if (!pacientesDb[patId] || pacientesDb[patId].grupo !== groupVal) return;
-                    }
 
                     if (tipoReg.includes('particular') && procNormalizado.includes('APLICA')) {
                         const dateParts = (v.data || '').split('-');
@@ -801,8 +810,17 @@
                     const patId = generatePatientId(p);
                     const patDb = pacientesDb[patId];
 
-                    // FILTRO DE GRUPO NO TRATAMENTO
-                    if (groupVal && (!patDb || patDb.grupo !== groupVal)) return;
+                    // --- LÓGICA DE FILTRO POR GRUPO (DADOS_EXTRAS JSON) ---
+                    if (groupFilter) {
+                        let groupVal = "";
+                        if (patDb) {
+                            try {
+                                const extras = typeof patDb.dados_extras === 'string' ? JSON.parse(patDb.dados_extras) : (patDb.dados_extras || {});
+                                groupVal = extras.grupo || patDb.grupo || "";
+                            } catch(e) { groupVal = patDb.grupo || ""; }
+                        }
+                        if (String(groupVal).trim() !== groupFilter) return; // Se não for do grupo, pula
+                    }
 
                     if (!patientsTableObj[p]) {
                         patientsTableObj[p] = { name: p, items: [], pId: null, pName: '', eId: null, eName: '' };
@@ -914,7 +932,7 @@
                 
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
                 if (listaRenderPacienteHtmlMap.size === 0) {
-                    elTablePacientesTrat.innerHTML = `<tr><td colspan="3"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com lucro para repasse neste mês.</div></td></tr>`;
+                    elTablePacientesTrat.innerHTML = `<tr><td colspan="3"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento localizado para os filtros.</div></td></tr>`;
                 } else {
                     let sorted = Array.from(listaRenderPacienteHtmlMap.values()).sort((a,b) => a.nome.localeCompare(b.nome));
                     elTablePacientesTrat.innerHTML = sorted.map(item => item.html).join('');
