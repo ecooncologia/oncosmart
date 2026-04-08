@@ -144,17 +144,23 @@
 
         <div class="controls">
             <div class="controls-group" style="flex-wrap: nowrap;">
-                <div class="input-group" style="width: 320px;">
+                <div class="input-group" style="width: 300px;">
                     <label class="label-title">Selecione o Médico</label>
                     <select id="dashSelectDoctor" class="input-field"></select>
                 </div>
-                <div class="input-group" style="width: 150px;">
+                <div class="input-group" style="width: 140px;">
                     <label class="label-title">Mês de Referência</label>
                     <select id="dashSelectMonth" class="input-field"></select>
                 </div>
-                <div class="input-group" style="width: 110px;">
+                <div class="input-group" style="width: 100px;">
                     <label class="label-title">Ano</label>
                     <select id="dashSelectYear" class="input-field"></select>
+                </div>
+                <div class="input-group" style="width: 180px;">
+                    <label class="label-title">Filtrar por Grupo</label>
+                    <select id="filterGroupRepasse" class="input-field" onchange="renderDashboard()">
+                        <option value="">Todos os Grupos</option>
+                    </select>
                 </div>
             </div>
 
@@ -371,6 +377,7 @@
     <script>
         let doctors = {};
         let pacientesDb = {};
+        let gruposDb = [];
 
         const IMPOSTO_TAXA = 0.1233; 
         const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
@@ -458,31 +465,6 @@
             return h; 
         }
 
-        function normalizeDate(d) {
-            if (!d) return "";
-            if (typeof d === 'number') {
-                let date = new Date(Math.round((d - 25569) * 86400 * 1000));
-                return String(date.getUTCDate()).padStart(2,'0') + '/' + String(date.getUTCMonth()+1).padStart(2,'0') + '/' + date.getUTCFullYear();
-            }
-            let str = String(d).trim();
-            if (!str) return ""; 
-            
-            if (str.includes('T')) str = str.split('T')[0];
-            if (str.includes('-')) {
-                let p = str.split('-');
-                if (p[0] && p[0].length === 4) return (p[2] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + p[0];
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            if (str.includes('/')) {
-                let p = str.split('/');
-                if (p[0] && parseInt(p[0], 10) <= 12 && p[1] && parseInt(p[1], 10) > 12) {
-                    return (p[1] || '').padStart(2,'0') + '/' + (p[0] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-                }
-                return (p[0] || '').padStart(2,'0') + '/' + (p[1] || '').padStart(2,'0') + '/' + (p[2] && p[2].length === 2 ? '20' + p[2] : (p[2] || ''));
-            }
-            return str;
-        }
-
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('dashboard-repasse', 'Painel de Honorários');
             const now = new Date(); 
@@ -503,6 +485,7 @@
             document.getElementById('dashSelectYear').addEventListener('change', renderDashboard);
 
             await loadDoctors();
+            await loadGrupos();
             await loadPacientesDb();
         });
 
@@ -522,6 +505,23 @@
             } catch(e) {}
         }
 
+        async function loadGrupos() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes_grupos`, { headers: API_HEADERS });
+                if (res.ok) {
+                    const data = await res.json();
+                    gruposDb = Object.values(normalizeData(data));
+                    const selGroup = document.getElementById('filterGroupRepasse');
+                    if (selGroup) {
+                        selGroup.innerHTML = '<option value="">Todos os Grupos</option>';
+                        gruposDb.forEach(g => {
+                            if (g.nome) selGroup.add(new Option(g.nome, g.id || g.id_firebase || g.nome));
+                        });
+                    }
+                }
+            } catch(e) { console.error("Erro ao carregar grupos:", e); }
+        }
+
         async function loadPacientesDb() {
             try {
                 const res = await fetch(`${API_BASE_URL}/pacientes`, { headers: API_HEADERS });
@@ -533,6 +533,7 @@
             const docId = document.getElementById('dashSelectDoctor').value;
             const mo = parseInt(document.getElementById('dashSelectMonth').value);
             const yr = parseInt(document.getElementById('dashSelectYear').value);
+            const filterGroup = document.getElementById('filterGroupRepasse').value;
 
             if (!docId) {
                 document.getElementById('modernDashboard').style.display = 'none';
@@ -656,7 +657,6 @@
                 document.getElementById('detPlantTurnos').innerText = turnosPlantao;
                 document.getElementById('detPlantValor').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('kpiTotalPlantao').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                document.getElementById('kpiPlantTurnos').innerText = turnosPlantao;
 
 
                 // ------------------------------------------------
@@ -726,6 +726,16 @@
                                 if (v.medico && v.medico.toUpperCase() === doctorName) {
                                     let recebedor = String(v.pagamento_para || v.recebedor || '').toLowerCase();
                                     if (recebedor === 'clinica' || recebedor === 'clínica') {
+                                        
+                                        // 💡 FILTRO DE GRUPO NAS CONSULTAS
+                                        if (filterGroup) {
+                                            const patIdCons = generatePatientId(v.paciente);
+                                            const patDbCons = pacientesDb[patIdCons];
+                                            if (!patDbCons || !patDbCons.grupos || !patDbCons.grupos.includes(filterGroup)) {
+                                                return; // Sai do loop if para esta consulta
+                                            }
+                                        }
+
                                         atendimentosConsultaPart++;
                                         valorConsultaParticular += parseCurrency(v.valor_final || v.valor || 0);
                                     }
@@ -799,6 +809,15 @@
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     if (pat.pId !== docId && pat.eId !== docId) return;
+
+                    // 💡 FILTRO DE GRUPO NOS TRATAMENTOS
+                    if (filterGroup) {
+                        const patIdTrat = generatePatientId(pat.name);
+                        const patDbTrat = pacientesDb[patIdTrat];
+                        if (!patDbTrat || !patDbTrat.grupos || !patDbTrat.grupos.includes(filterGroup)) {
+                            return; // Pula o paciente se não estiver no grupo
+                        }
+                    }
 
                     const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
                     let hasTratamentoRepasseParaEsteMedico = false;
@@ -875,7 +894,6 @@
                 let elDetPartValor = document.getElementById('detPartValor');
                 if(elDetPartValor) elDetPartValor.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
-
                 let elKpiTratPac = document.getElementById('kpiTratPac');
                 if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
                 
@@ -904,7 +922,7 @@
                 
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
                 if (listaRenderPacienteHtmlMap.size === 0) {
-                    elTablePacientesTrat.innerHTML = `<tr><td colspan="3"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com lucro para repasse neste mês.</div></td></tr>`;
+                    elTablePacientesTrat.innerHTML = `<tr><td colspan="3"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com lucro para repasse neste filtro.</div></td></tr>`;
                 } else {
                     let sorted = Array.from(listaRenderPacienteHtmlMap.values()).sort((a,b) => a.nome.localeCompare(b.nome));
                     elTablePacientesTrat.innerHTML = sorted.map(item => item.html).join('');
