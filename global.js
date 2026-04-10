@@ -61,7 +61,7 @@ const MENU_SECTORS = [
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
-    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing''acompanhamento-unimed'] }
+    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing', 'acompanhamento-unimed'] }
 ];
 
 // =============================================
