@@ -29,27 +29,41 @@
         .btn-success-small:hover { background: #059669; }
 
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .data-table th { background: #00995D; color: white; padding: 14px; text-align: left; }
-        .data-table td { padding: 14px; border-bottom: 1px solid #eee; color: #374151; vertical-align: middle; }
+        .table-responsive { overflow-x: auto; width: 100%; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+        .data-table th { background: #00995D; color: white; padding: 12px 14px; text-align: left; position: sticky; top: 0; z-index: 10; font-size: 11px; text-transform: uppercase; }
+        .data-table td { padding: 10px 14px; border-bottom: 1px solid #eee; color: #374151; vertical-align: top; }
+        .data-table tbody tr:hover { background-color: #f8fafc; }
         
-        .status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
+        .status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 10px; text-transform: uppercase; display: inline-block; text-align: center; }
         .st-pendente { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
+        .st-analise { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
         .st-nicolas { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
         .st-autorizado { background: #d1fae5; color: #059669; border: 1px solid #a7f3d0; }
+        .st-negado { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 
-        .date-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 6px; font-size: 12px; outline: none; color: #374151; width: 130px;}
+        .date-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px; font-size: 11px; outline: none; color: #374151; width: 110px;}
         .date-input:focus { border-color: #00995D; box-shadow: 0 0 0 2px rgba(0, 153, 93, 0.1); }
 
-        /* Modal Styles (Padronizados) */
+        .info-block { display: flex; flex-direction: column; gap: 3px; }
+        .info-label { font-size: 9px; color: #6b7280; font-weight: bold; text-transform: uppercase; }
+        .info-val { font-size: 12px; font-weight: 600; color: #111827; }
+
+        /* Modal Styles (Maior e com Grid) */
         .modal-overlay { display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; width: 450px; max-width: 90%; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-header { background: #00995D; color: white; padding: 15px 20px; font-weight: bold; display: flex; justify-content: space-between; }
-        .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 15px;}
-        .modal-footer { padding: 15px 20px; background: #f9fafb; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
-        .form-label { font-size: 12px; font-weight: bold; color: #4b5563; }
-        .form-input { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; box-sizing: border-box; outline:none;}
+        .modal-content { background: white; width: 800px; max-width: 95%; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 90vh; }
+        .modal-header { background: #00995D; color: white; padding: 15px 20px; font-weight: bold; display: flex; justify-content: space-between; flex-shrink: 0; }
+        .modal-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .modal-footer { padding: 15px 20px; background: #f9fafb; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group.full-width { grid-column: span 2; }
+        
+        .form-label { font-size: 11px; font-weight: 800; color: #4b5563; text-transform: uppercase; }
+        .form-input, .form-select { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; box-sizing: border-box; outline:none; font-size: 13px; font-family: inherit;}
+        .form-input:focus, .form-select:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
     </style>
 </head>
 <body>
@@ -59,70 +73,173 @@
 
         <div class="controls">
             <div>
-                <h2 style="margin:0; color:#1f2937; display:flex; align-items:center; gap:10px;"><i class="fas fa-file-medical" style="color:#00995D;"></i> Acompanhamento de Pacientes Novos (Unimed)</h2>
-                <p style="margin:5px 0 0; color:#6b7280; font-size:13px;">Gerencie o fluxo de autorizações, verificações de dosagem e contatos.</p>
+                <h2 style="margin:0; color:#1f2937; display:flex; align-items:center; gap:10px;"><i class="fas fa-map-signs" style="color:#00995D;"></i> Navegação do Paciente (Unimed)</h2>
+                <p style="margin:5px 0 0; color:#6b7280; font-size:13px;">Gerencie o fluxo completo: entrada, solicitação de guias, robô e autorizações.</p>
             </div>
             
-            <button class="btn-primary" onclick="abrirModalAdd()"><i class="fas fa-plus"></i> Novo Paciente</button>
+            <button class="btn-primary" onclick="abrirModalAdd()"><i class="fas fa-user-plus"></i> Iniciar Fluxo de Paciente</button>
         </div>
 
         <div class="sheet-container">
-            <table class="data-table" id="tabelaFluxo">
-                <thead>
-                    <tr>
-                        <th>Paciente</th>
-                        <th>Status Atual</th>
-                        <th>Autorização Unimed</th>
-                        <th>Data de Contato</th>
-                        <th>Data de Agendamento</th>
-                        <th>Ações de Fluxo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="6" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando fluxo...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="data-table" id="tabelaFluxo">
+                    <thead>
+                        <tr>
+                            <th>Paciente / Carteirinha</th>
+                            <th>Classificação (TTO / Origem)</th>
+                            <th>Vínculos Médicos</th>
+                            <th>Tratamento (Prot/Diag)</th>
+                            <th>Controle de Prazos</th>
+                            <th>Robô Unimed</th>
+                            <th>Status & Agendamento</th>
+                            <th style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="8" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando fluxo e médicos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="modalAdd">
         <div class="modal-content">
             <div class="modal-header">
-                <span><i class="fas fa-user-plus"></i> Adicionar Paciente ao Fluxo</span>
+                <span><i class="fas fa-clipboard-list"></i> Cadastro de Paciente no Fluxo</span>
                 <button onclick="fecharModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div>
-                    <label class="form-label">Nome Completo do Paciente</label>
-                    <input type="text" id="inpNome" class="form-input" placeholder="Ex: MARIA DA SILVA" style="text-transform: uppercase;">
-                </div>
-                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 1px solid #bae6fd;">
-                    <p style="margin:0 0 10px 0; font-size: 12px; font-weight: bold; color: #0284c7;"><i class="fas fa-robot"></i> Configurar Robô Unimed</p>
-                    <label class="form-label">Data Início (Busca)</label>
-                    <input type="text" id="inpDtInicio" class="form-input" placeholder="DD/MM/AAAA" style="margin-bottom: 10px;">
-                    <label class="form-label">Data Fim (Busca)</label>
-                    <input type="text" id="inpDtFim" class="form-input" placeholder="DD/MM/AAAA">
+                <div class="form-grid">
+                    
+                    <div class="form-group full-width">
+                        <label class="form-label">Nome Completo do Paciente *</label>
+                        <input type="text" id="inpNome" class="form-input" placeholder="Ex: MARIA DA SILVA" style="text-transform: uppercase;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Carteirinha Unimed *</label>
+                        <input type="text" id="inpCarteirinha" class="form-input" placeholder="00000000000000000">
+                        <span style="font-size:9px; color:#6b7280;">Usado pelo robô para pesquisa</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Convênio</label>
+                        <input type="text" id="inpConvenio" class="form-input" value="UNIMED" disabled style="background:#f3f4f6; color:#9ca3af; font-weight:bold;">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">TTO (Tipo de Tratamento) *</label>
+                        <select id="inpTto" class="form-select">
+                            <option value="">-- Selecione --</option>
+                            <option value="Paciente Novo na Clínica">Paciente Novo na Clínica</option>
+                            <option value="Troca de Tratamento">Troca de Tratamento</option>
+                            <option value="Complemento de Tratamento">Complemento de Tratamento</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Origem *</label>
+                        <select id="inpOrigem" class="form-select">
+                            <option value="">-- Selecione --</option>
+                            <option value="Médico Externo">Médico que mandou (Externo)</option>
+                            <option value="Próprio Paciente">Próprio Paciente</option>
+                            <option value="Hospital VITA">Hospital VITA</option>
+                            <option value="Eliel">Eliel</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Médico Encaminhador</label>
+                        <select id="inpEncaminhador" class="form-select">
+                            <option value="">Carregando médicos...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Médico Prescritor (Responsável na Guia) *</label>
+                        <select id="inpPrescritor" class="form-select">
+                            <option value="">Carregando médicos...</option>
+                        </select>
+                        <span style="font-size:9px; color:#6b7280;">Dica: Externos saem no nome do Dr Alessandro</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Diagnóstico</label>
+                        <input type="text" id="inpDiagnostico" class="form-input" placeholder="Ex: C50 Neoplasia maligna da mama" style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Protocolo (Medicamento)</label>
+                        <input type="text" id="inpProtocolo" class="form-input" placeholder="Ex: PACLITAXEL + TRASTUZUMABE" style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Intervalo entre Ciclos (Dias)</label>
+                        <input type="number" id="inpIntervalo" class="form-input" placeholder="Ex: 21">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Data de Recebimento (Doc Completa)</label>
+                        <input type="date" id="inpDataRecebimento" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Data de Solicitação (Envio Unimed)</label>
+                        <input type="date" id="inpDataSolicitacao" class="form-input">
+                    </div>
+
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-primary" style="background:#9ca3af;" onclick="fecharModal()">Cancelar</button>
-                <button class="btn-primary" id="btnSalvarModal" onclick="salvarNovoPaciente()"><i class="fas fa-save"></i> Salvar e Iniciar</button>
+                <button class="btn-primary" id="btnSalvarModal" onclick="salvarNovoPaciente()"><i class="fas fa-save"></i> Cadastrar no Fluxo</button>
             </div>
         </div>
     </div>
 
     <script>
         let pacientesFluxo = {};
+        let dbMedicos = {};
 
         async function startApp() {
             if (typeof initGlobal !== 'undefined') {
-                initGlobal('fluxo-unimed', 'Acompanhamento Unimed');
+                initGlobal('fluxo-unimed', 'Navegação de Pacientes Unimed');
+                await carregarMedicos();
                 await carregarDados();
             } else {
                 setTimeout(startApp, 100);
             }
         }
         document.addEventListener('DOMContentLoaded', startApp);
+
+        // ==========================================
+        // CARREGAMENTO E DEPENDÊNCIAS
+        // ==========================================
+        async function carregarMedicos() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    // Normaliza caso venha como JSON em string
+                    Object.entries(data).forEach(([key, val]) => {
+                        if (typeof val === 'string' && val.startsWith('{')) { try { dbMedicos[key] = JSON.parse(val); } catch(e){} } 
+                        else { dbMedicos[key] = val; }
+                    });
+
+                    // Preenche os Selects do Form
+                    const selEnc = document.getElementById('inpEncaminhador');
+                    const selPresc = document.getElementById('inpPrescritor');
+                    selEnc.innerHTML = '<option value="">-- Selecione --</option>';
+                    selPresc.innerHTML = '<option value="">-- Selecione --</option>';
+
+                    Object.entries(dbMedicos).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
+                        selEnc.add(new Option(doc.nome, id));
+                        selPresc.add(new Option(doc.nome, id));
+                    });
+                }
+            } catch(e) { console.error("Erro ao carregar médicos", e); }
+        }
 
         async function carregarDados() {
             try {
@@ -135,6 +252,44 @@
             renderTabela();
         }
 
+        // Função auxiliar para calcular Dias Úteis
+        function calcularDiasUteis(dataInicialStr) {
+            if (!dataInicialStr) return 0;
+            const dataInicial = new Date(dataInicialStr + "T00:00:00"); // Força o timezone local
+            const hoje = new Date();
+            
+            if (isNaN(dataInicial.getTime())) return 0;
+
+            let diasUteis = 0;
+            let tempDate = new Date(dataInicial.getTime());
+
+            while (tempDate <= hoje) {
+                const diaSemana = tempDate.getDay();
+                // 0 = Domingo, 6 = Sábado
+                if (diaSemana !== 0 && diaSemana !== 6) {
+                    diasUteis++;
+                }
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+            return diasUteis;
+        }
+
+        function formatarDataHoraBR(isoString) {
+            if(!isoString) return '-';
+            const data = new Date(isoString);
+            return data.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        }
+
+        function formatarDataBR(dataString) {
+            if(!dataString) return '-';
+            const partes = dataString.split('-');
+            if(partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            return dataString;
+        }
+
+        // ==========================================
+        // RENDERIZAÇÃO DA TABELA
+        // ==========================================
         function renderTabela() {
             const tbody = document.querySelector('#tabelaFluxo tbody');
             let html = '';
@@ -142,40 +297,104 @@
             const lista = Object.values(pacientesFluxo).sort((a,b) => new Date(b.data_criacao || 0) - new Date(a.data_criacao || 0));
 
             if(lista.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#6b7280;">Nenhum paciente no fluxo atualmente.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px; color:#6b7280;">Nenhum paciente no fluxo atualmente.</td></tr>';
                 return;
             }
 
             lista.forEach(p => {
-                // STATUS BADGE
-                let statusHtml = `<span class="status-badge st-pendente"><i class="fas fa-clock"></i> Pendente</span>`;
+                // Tratamento dos nomes dos médicos
+                const nomeEncam = p.encaminhador && dbMedicos[p.encaminhador] ? dbMedicos[p.encaminhador].nome : (p.encaminhador || 'Não informado');
+                const nomePresc = p.medico_prescritor && dbMedicos[p.medico_prescritor] ? dbMedicos[p.medico_prescritor].nome : 'Não informado';
+
+                // Cálculo de tempo
+                const diasAnalise = calcularDiasUteis(p.data_solicitacao);
+                let corDias = diasAnalise >= 5 ? '#dc2626' : (diasAnalise >= 3 ? '#d97706' : '#059669');
+                
+                // STATUS BADGE E LOGICA
+                let statusHtml = `<span class="status-badge st-pendente"><i class="fas fa-clock"></i> Pendente Info</span>`;
+                if(p.status === 'pendente') statusHtml = `<span class="status-badge st-pendente"><i class="fas fa-robot"></i> Fila Robô</span>`;
+                if(p.status === 'em_analise') statusHtml = `<span class="status-badge st-analise"><i class="fas fa-search"></i> Em Análise</span>`;
                 if(p.status === 'nicolas') statusHtml = `<span class="status-badge st-nicolas"><i class="fas fa-user-md"></i> Nicolas Verificar</span>`;
                 if(p.status === 'autorizado') statusHtml = `<span class="status-badge st-autorizado"><i class="fas fa-check-circle"></i> Autorizado</span>`;
+                if(p.status === 'negado') statusHtml = `<span class="status-badge st-negado"><i class="fas fa-times-circle"></i> Negado</span>`;
+
+                // ROBÔ INFO
+                let printHtml = '<span style="color:#9ca3af; font-size:10px; font-style:italic;">Aguardando Varredura</span>';
+                if(p.print_url) {
+                    printHtml = `<a href="${API_BASE_URL}${p.print_url}" target="_blank" style="color:#0284c7; text-decoration:none; font-weight:bold; font-size:11px; display:inline-block; margin-bottom:4px;"><i class="fas fa-image"></i> Ver Print da Guia</a>`;
+                }
 
                 // BOTÕES DE AÇÃO
                 let acoesHtml = '';
-                if(p.status === 'pendente' || !p.status) {
-                    acoesHtml = `<button class="btn-warning" onclick="enviarParaNicolas('${p.id_firebase}', '${p.nome}')" title="Avisa o Nicolas por e-mail para verificar a dosagem."><i class="fas fa-paper-plane"></i> Enviar Nicolas</button>`;
+                if(p.status === 'pendente' || p.status === 'em_analise') {
+                    acoesHtml += `<button class="btn-warning" onclick="alterarStatus('${p.id_firebase}', 'nicolas', '${p.nome}')" title="Avisa o Nicolas por e-mail para verificar a dosagem."><i class="fas fa-paper-plane"></i> Enviar Nicolas</button><br>`;
+                    acoesHtml += `<button class="btn-warning" style="background:#ef4444; margin-top:5px;" onclick="alterarStatus('${p.id_firebase}', 'negado')" title="Marcar como negado pela Unimed."><i class="fas fa-ban"></i> Negar</button>`;
                 } else if(p.status === 'nicolas') {
-                    acoesHtml = `<button class="btn-success-small" onclick="marcarVerificado('${p.id_firebase}', '${p.nome}')" title="Aprova a dosagem e avisa Enfermagem/Farmácia."><i class="fas fa-check-double"></i> Verificado</button>`;
+                    acoesHtml += `<button class="btn-success-small" onclick="alterarStatus('${p.id_firebase}', 'autorizado', '${p.nome}')" title="Aprova a dosagem e avisa Enfermagem/Farmácia."><i class="fas fa-check-double"></i> Verificado (Autorizar)</button>`;
                 } else if (p.status === 'autorizado') {
-                    acoesHtml = `<span style="font-size:11px; color:#059669; font-weight:bold;"><i class="fas fa-check"></i> Fluxo Concluído</span>`;
-                }
-
-                // PRINT UNIMED (ROBÔ)
-                let printHtml = '<span style="color:#9ca3af; font-size:11px;">Sem print</span>';
-                if(p.print_url) {
-                    printHtml = `<a href="${API_BASE_URL}${p.print_url}" target="_blank" style="color:#0284c7; text-decoration:none; font-weight:bold; font-size:12px;"><i class="fas fa-image"></i> Ver Print</a>`;
+                    acoesHtml += `<span style="font-size:11px; color:#059669; font-weight:bold;"><i class="fas fa-check"></i> Finalizado</span>`;
+                } else if (p.status === 'negado') {
+                    acoesHtml += `<span style="font-size:11px; color:#dc2626; font-weight:bold;"><i class="fas fa-ban"></i> Tratamento Negado</span>`;
                 }
 
                 html += `
                     <tr>
-                        <td style="font-weight:bold;">${p.nome}</td>
-                        <td>${statusHtml}</td>
-                        <td>${printHtml}</td>
-                        <td><input type="date" class="date-input" value="${p.dataContato || ''}" onchange="salvarData('${p.id_firebase}', 'dataContato', this.value)"></td>
-                        <td><input type="date" class="date-input" value="${p.dataAgendamento || ''}" onchange="salvarData('${p.id_firebase}', 'dataAgendamento', this.value)"></td>
-                        <td>${acoesHtml}</td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val" style="color:#0284c7;">${p.nome}</span>
+                                <span class="info-label">Cart: <span style="color:#111827; font-family:monospace; font-size:10px;">${p.carteirinha || 'N/A'}</span></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val">${p.tto || '-'}</span>
+                                <span class="info-label">Origem: <span style="color:#4b5563;">${p.origem || '-'}</span></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-label">Prescritor (Guia)</span>
+                                <span class="info-val" style="color:#be185d; font-size:10px;"><i class="fas fa-stethoscope"></i> ${nomePresc}</span>
+                                <span class="info-label" style="margin-top:2px;">Encaminhador</span>
+                                <span class="info-val" style="color:#c2410c; font-size:10px;"><i class="fas fa-share-square"></i> ${nomeEncam}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val" style="font-size:10px; white-space:normal; max-width:180px;">${p.protocolo || '-'}</span>
+                                <span class="info-label">Diag: ${p.diagnostico || '-'} | Intervalo: ${p.intervalo ? p.intervalo+' dias' : '-'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-label">Recebido em: <span style="color:#111827;">${formatarDataBR(p.data_recebimento)}</span></span>
+                                <span class="info-label">Solicitado em: <span style="color:#111827;">${formatarDataBR(p.data_solicitacao)}</span></span>
+                                <span class="info-label" style="margin-top:3px; color:${corDias};">Dias em Análise: <span style="font-size:12px; font-weight:900;">${diasAnalise}</span> dia(s) útil(eis)</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                ${printHtml}
+                                <span class="info-label">Última Varredura:</span>
+                                <span class="info-val" style="font-size:10px; font-family:monospace;">${formatarDataHoraBR(p.data_revisado_robo)}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block" style="gap:5px;">
+                                ${statusHtml}
+                                <div>
+                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Contato:</span>
+                                    <input type="date" class="date-input" value="${p.dataContato || ''}" onchange="salvarCampoRapido('${p.id_firebase}', 'dataContato', this.value)">
+                                </div>
+                                <div>
+                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Agendamento:</span>
+                                    <input type="date" class="date-input" value="${p.dataAgendamento || ''}" onchange="salvarCampoRapido('${p.id_firebase}', 'dataAgendamento', this.value)">
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align: center; vertical-align: middle;">
+                            ${acoesHtml}
+                        </td>
                     </tr>
                 `;
             });
@@ -186,52 +405,49 @@
         // ==========================================
         // FLUXOS DE NEGÓCIO E E-MAILS
         // ==========================================
-        async function salvarData(id, campo, valor) {
+        async function salvarCampoRapido(id, campo, valor) {
             pacientesFluxo[id][campo] = valor;
             await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, {
                 method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id])
             });
         }
 
-        async function enviarParaNicolas(id, nome) {
-            if(!confirm(`Deseja enviar o paciente ${nome} para verificação do Nicolas? Um e-mail será disparado.`)) return;
-            
-            pacientesFluxo[id].status = 'nicolas';
-            renderTabela(); // Atualiza UI instantaneamente
-            
-            // Salva no banco
-            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
-            
-            // Chama a rota de envio de e-mail (QUE CRIAMOS NO SERVER.JS)
-            await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
-                method: 'POST', headers: API_HEADERS,
-                body: JSON.stringify({ pacienteNome: nome, acao: 'nicolas', pacienteDados: pacientesFluxo[id] })
-            });
-            alert('E-mail enviado para o Nicolas com sucesso!');
-        }
+        async function alterarStatus(id, novoStatus, nomePaciente = null) {
+            const mensagens = {
+                'nicolas': "Deseja enviar para verificação do Nicolas? Um e-mail será disparado.",
+                'autorizado': "Confirmar autorização e verificar dosagem? Enfermagem/Farmácia serão notificados.",
+                'negado': "Tem certeza que deseja marcar este tratamento como NEGADO na Unimed?"
+            };
 
-        async function marcarVerificado(id, nome) {
-            if(!confirm(`Deseja marcar a dosagem como Verificada? Enfermagem e Farmácia serão notificados.`)) return;
+            if(!confirm(mensagens[novoStatus])) return;
             
-            pacientesFluxo[id].status = 'autorizado';
-            renderTabela();
+            pacientesFluxo[id].status = novoStatus;
+            renderTabela(); // UI instantânea
             
             await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
             
-            await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
-                method: 'POST', headers: API_HEADERS,
-                body: JSON.stringify({ pacienteNome: nome, acao: 'farmacia_enfermagem', pacienteDados: pacientesFluxo[id] })
-            });
-            alert('Enfermagem e Farmácia notificados com sucesso!');
+            // Disparo de E-mails Inteligente via Rota (se aplicável)
+            if (novoStatus === 'nicolas' || novoStatus === 'autorizado') {
+                const acaoMail = novoStatus === 'nicolas' ? 'nicolas' : 'farmacia_enfermagem';
+                try {
+                    await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
+                        method: 'POST', headers: API_HEADERS,
+                        body: JSON.stringify({ pacienteNome: nomePaciente || pacientesFluxo[id].nome, acao: acaoMail, pacienteDados: pacientesFluxo[id] })
+                    });
+                    alert('Notificações de e-mail enviadas com sucesso!');
+                } catch (e) {
+                    alert('Status alterado, mas houve um erro ao enviar e-mails.');
+                }
+            }
         }
 
         // ==========================================
-        // MODAL E CRIAÇÃO
+        // MODAL DE CADASTRO COMPLETO
         // ==========================================
         function abrirModalAdd() {
-            document.getElementById('inpNome').value = '';
-            document.getElementById('inpDtInicio').value = '';
-            document.getElementById('inpDtFim').value = '';
+            // Limpa todos os inputs
+            const inputs = document.querySelectorAll('#modalAdd input:not(#inpConvenio), #modalAdd select');
+            inputs.forEach(inp => inp.value = '');
             document.getElementById('modalAdd').classList.add('active');
         }
 
@@ -241,21 +457,41 @@
 
         async function salvarNovoPaciente() {
             const nome = document.getElementById('inpNome').value.trim().toUpperCase();
-            if(!nome) return alert("Digite o nome do paciente.");
+            const carteirinha = document.getElementById('inpCarteirinha').value.trim();
+            const tto = document.getElementById('inpTto').value;
+            const origem = document.getElementById('inpOrigem').value;
+            const prescritor = document.getElementById('inpPrescritor').value;
+            
+            // Validações básicas
+            if(!nome || !carteirinha || !tto || !origem || !prescritor) {
+                return alert("Por favor, preencha todos os campos obrigatórios marcados com *.");
+            }
 
             const btn = document.getElementById('btnSalvarModal');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inserindo...';
             btn.disabled = true;
 
             const id = 'flu_' + Date.now();
             const novoObj = {
                 id_firebase: id,
                 nome: nome,
-                status: 'pendente',
+                carteirinha: carteirinha,
+                convenio: 'UNIMED',
+                tto: tto,
+                origem: origem,
+                encaminhador: document.getElementById('inpEncaminhador').value,
+                medico_prescritor: prescritor,
+                diagnostico: document.getElementById('inpDiagnostico').value.trim().toUpperCase(),
+                protocolo: document.getElementById('inpProtocolo').value.trim().toUpperCase(),
+                intervalo: document.getElementById('inpIntervalo').value,
+                data_recebimento: document.getElementById('inpDataRecebimento').value,
+                data_solicitacao: document.getElementById('inpDataSolicitacao').value,
+                data_revisado_robo: '', // O robô preenche com timestamp ISO
+                status: 'pendente', // Entra direto na fila do robô
                 dataContato: '',
                 dataAgendamento: '',
                 data_criacao: new Date().toISOString(),
-                print_url: '' // Opcional: Se você integrar o robô para rodar via API, ele atualizaria isso.
+                print_url: '' 
             };
 
             try {
@@ -264,9 +500,9 @@
                 fecharModal();
                 renderTabela();
             } catch(e) {
-                alert("Erro ao criar paciente.");
+                alert("Erro ao cadastrar paciente no fluxo.");
             } finally {
-                btn.innerHTML = '<i class="fas fa-save"></i> Salvar e Iniciar';
+                btn.innerHTML = '<i class="fas fa-save"></i> Cadastrar no Fluxo';
                 btn.disabled = false;
             }
         }
