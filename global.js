@@ -49,7 +49,8 @@ const APP_PAGES = [
     { id: 'oncofood', label: 'OncoFood - Copa', file: 'oncofood.html', perm: 'oncofood', icon: 'fas fa-utensils' },
 
     { id: 'marketing', label: 'Gerador de Artes', file: 'gerador-imagens.html', perm: 'marketing', icon: 'fas fa-palette' },
-    { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas', icon: 'fas fa-file-medical-alt' }
+    { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas', icon: 'fas fa-file-medical-alt' },
+    { id: 'acompanhamento-unimed', label: 'Autorizações Unimed', file: 'acompanhamento-unimed.html', perm: 'acompanhamento-unimed', icon: 'fas fa-clipboard-check' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
@@ -60,7 +61,7 @@ const MENU_SECTORS = [
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
-    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing'] }
+    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing''acompanhamento-unimed'] }
 ];
 
 // =============================================
