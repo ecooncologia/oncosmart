@@ -21,15 +21,44 @@
         
         .btn-primary { background: #00995D; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
         .btn-primary:hover { opacity: 0.9; }
+
+        /* NOVOS ESTILOS PARA OS BOTÕES DA TABELA (AÇÕES) */
+        .action-buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px; /* Espaço entre os botões */
+            width: 130px; /* Largura fixa para ficarem idênticos */
+            margin: 0 auto;
+        }
         
-        .btn-warning { background: #f59e0b; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.2s; display:inline-flex; gap:5px; align-items:center; width: 100%; justify-content: center; margin-bottom: 5px;}
-        .btn-warning:hover { background: #d97706; }
-
-        .btn-success-small { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.2s; display:inline-flex; gap:5px; align-items:center; width: 100%; justify-content: center; margin-bottom: 5px;}
-        .btn-success-small:hover { background: #059669; }
-
-        .btn-edit-small { background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.2s; display:inline-flex; gap:5px; align-items:center; width: 100%; justify-content: center; margin-bottom: 5px;}
-        .btn-edit-small:hover { background: #2563eb; }
+        .btn-table {
+            color: white; 
+            border: none; 
+            padding: 8px 10px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-weight: bold; 
+            font-size: 11px; 
+            transition: 0.2s;
+            display: flex; 
+            gap: 6px; 
+            align-items: center; 
+            justify-content: center;
+            width: 100%; 
+            box-sizing: border-box;
+        }
+        
+        .btn-t-edit { background: #3b82f6; } 
+        .btn-t-edit:hover { background: #2563eb; }
+        
+        .btn-t-send { background: #f59e0b; } 
+        .btn-t-send:hover { background: #d97706; }
+        
+        .btn-t-deny { background: #ef4444; } 
+        .btn-t-deny:hover { background: #dc2626; }
+        
+        .btn-t-auth { background: #10b981; } 
+        .btn-t-auth:hover { background: #059669; }
 
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
         .table-responsive { overflow-x: auto; width: 100%; }
@@ -204,7 +233,7 @@
     <script>
         let pacientesFluxo = {};
         let dbMedicos = {};
-        let editandoId = null; // Variável global para controlar se estamos editando ou criando
+        let editandoId = null; 
 
         async function startApp() {
             if (typeof initGlobal !== 'undefined') {
@@ -314,19 +343,23 @@
                     printHtml = `<a href="${API_BASE_URL}${p.print_url}" target="_blank" style="color:#0284c7; text-decoration:none; font-weight:bold; font-size:11px; display:inline-block; margin-bottom:4px;"><i class="fas fa-image"></i> Ver Print da Guia</a>`;
                 }
 
-                // Coluna de Ações: Sempre terá o botão de editar primeiro
-                let acoesHtml = `<button class="btn-edit-small" onclick="abrirModalEditar('${p.id_firebase}')" title="Editar dados do paciente"><i class="fas fa-edit"></i> Editar</button>`;
+                // Coluna de Ações reorganizada
+                let acoesHtml = `<div class="action-buttons-container">`;
+                
+                acoesHtml += `<button class="btn-table btn-t-edit" onclick="abrirModalEditar('${p.id_firebase}')" title="Editar dados do paciente"><i class="fas fa-edit"></i> Editar</button>`;
 
                 if(p.status === 'pendente' || p.status === 'em_analise') {
-                    acoesHtml += `<button class="btn-warning" onclick="alterarStatus('${p.id_firebase}', 'nicolas', '${p.nome}')" title="Avisa o Nicolas por e-mail para verificar a dosagem."><i class="fas fa-paper-plane"></i> Enviar Nicolas</button>`;
-                    acoesHtml += `<button class="btn-warning" style="background:#ef4444;" onclick="alterarStatus('${p.id_firebase}', 'negado')" title="Marcar como negado pela Unimed."><i class="fas fa-ban"></i> Negar</button>`;
+                    acoesHtml += `<button class="btn-table btn-t-send" onclick="alterarStatus('${p.id_firebase}', 'nicolas', '${p.nome}')" title="Avisa o Nicolas por e-mail para verificar a dosagem."><i class="fas fa-paper-plane"></i> Enviar Nicolas</button>`;
+                    acoesHtml += `<button class="btn-table btn-t-deny" onclick="alterarStatus('${p.id_firebase}', 'negado')" title="Marcar como negado pela Unimed."><i class="fas fa-ban"></i> Negar</button>`;
                 } else if(p.status === 'nicolas') {
-                    acoesHtml += `<button class="btn-success-small" onclick="alterarStatus('${p.id_firebase}', 'autorizado', '${p.nome}')" title="Aprova a dosagem e avisa Enfermagem/Farmácia."><i class="fas fa-check-double"></i> Verificado (Autorizar)</button>`;
+                    acoesHtml += `<button class="btn-table btn-t-auth" onclick="alterarStatus('${p.id_firebase}', 'autorizado', '${p.nome}')" title="Aprova a dosagem e avisa Enfermagem/Farmácia."><i class="fas fa-check-double"></i> Aprovar</button>`;
                 } else if (p.status === 'autorizado') {
-                    acoesHtml += `<span style="font-size:11px; color:#059669; font-weight:bold; display:block; text-align:center; margin-top:5px;"><i class="fas fa-check"></i> Finalizado</span>`;
+                    acoesHtml += `<span style="font-size:11px; color:#059669; font-weight:bold; display:block; text-align:center; padding-top: 5px;"><i class="fas fa-check"></i> Finalizado</span>`;
                 } else if (p.status === 'negado') {
-                    acoesHtml += `<span style="font-size:11px; color:#dc2626; font-weight:bold; display:block; text-align:center; margin-top:5px;"><i class="fas fa-ban"></i> Negado</span>`;
+                    acoesHtml += `<span style="font-size:11px; color:#dc2626; font-weight:bold; display:block; text-align:center; padding-top: 5px;"><i class="fas fa-ban"></i> Negado</span>`;
                 }
+
+                acoesHtml += `</div>`; // Fechamento da div .action-buttons-container
 
                 html += `
                     <tr>
@@ -435,7 +468,7 @@
         // MODAL DE CADASTRO E EDIÇÃO
         // ==========================================
         function abrirModalAdd() {
-            editandoId = null; // Reseta variável de controle
+            editandoId = null; 
             document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-clipboard-list"></i> Cadastro de Paciente no Fluxo';
             document.getElementById('btnSalvarModal').innerHTML = '<i class="fas fa-save"></i> Cadastrar no Fluxo';
             
@@ -445,13 +478,12 @@
         }
 
         function abrirModalEditar(id) {
-            editandoId = id; // Define qual paciente está sendo editado
+            editandoId = id; 
             const paciente = pacientesFluxo[id];
 
             document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Paciente';
             document.getElementById('btnSalvarModal').innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
 
-            // Preenche os campos com os dados do paciente
             document.getElementById('inpNome').value = paciente.nome || '';
             document.getElementById('inpCarteirinha').value = paciente.carteirinha || '';
             document.getElementById('inpTto').value = paciente.tto || '';
@@ -486,11 +518,8 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             btn.disabled = true;
 
-            // Se estiver editando, mantém o ID antigo. Se for novo, gera um ID.
             const idToSave = editandoId ? editandoId : ('flu_' + Date.now());
             
-            // Se estiver editando, resgata o objeto antigo inteiro para não apagar o status, os prints e as datas do robô.
-            // Se for novo, cria as propriedades em branco.
             const baseObj = editandoId ? pacientesFluxo[editandoId] : {
                 status: 'pendente',
                 dataContato: '',
@@ -500,7 +529,6 @@
                 ultima_varredura: ''
             };
 
-            // Sobrescreve apenas os dados que vieram do formulário
             const dadosSalvar = {
                 ...baseObj,
                 id_firebase: idToSave,
@@ -515,7 +543,7 @@
                 protocolo: document.getElementById('inpProtocolo').value.trim().toUpperCase(),
                 intervalo: document.getElementById('inpIntervalo').value,
                 data_recebimento: document.getElementById('inpDataRecebimento').value,
-                data_solicitacao: document.getElementById('inpDataSolicitacao').value
+                data_solicitacao: document.getElementById('inpDataSolicitacao') ? document.getElementById('inpDataSolicitacao').value : ''
             };
 
             try {
