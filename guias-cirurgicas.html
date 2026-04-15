@@ -21,8 +21,13 @@
         .header-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); gap: 15px; }
         .header-actions h2 { margin: 0; color: #00855B; display: flex; align-items: center; gap: 10px; }
         
+        .header-buttons { display: flex; gap: 10px; }
+        
         .btn-success { background: #00855B; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-success:hover { background: #006644; }
+
+        .btn-outline { background: white; color: #00855B; border: 2px solid #00855B; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-outline:hover, .btn-outline.active { background: #00855B; color: white; }
         
         .controls-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; width: 100%; background: #fff; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .input-group { display: flex; flex-direction: column; gap: 5px; }
@@ -44,12 +49,12 @@
         .data-table tr:hover { background-color: #f8fafc; }
 
         .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
-        .st-enviado { background: #e0f2fe; color: #0284c7; }
-        .st-aguardando { background: #fef3c7; color: #d97706; }
-        .st-recebido { background: #cffafe; color: #0369a1; }
-        .st-pendente { background: #fee2e2; color: #dc2626; }
-        .st-autorizado { background: #dcfce7; color: #166534; }
-        .st-agendada { background: #f3e8ff; color: #7e22ce; }
+        .st-enviado { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+        .st-aguardando { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+        .st-recebido { background: #cffafe; color: #0369a1; border: 1px solid #a5f3fc; }
+        .st-pendente { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .st-autorizado { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .st-agendada { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
         .status-date { display: block; font-size: 9px; color: #94a3b8; margin-top: 4px; font-weight: 600; }
 
         .action-btns { display: flex; gap: 10px; justify-content: center; }
@@ -60,6 +65,25 @@
         .btn-icon.edit { color: #0284c7; }
         .btn-icon.delete { color: #dc2626; }
         .btn-icon:hover { opacity: 0.8; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* Estilos da Agenda / Dashboard */
+        .agenda-wrapper { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow-x: auto; position: relative; }
+        .agenda-scroll-area { min-width: 1000px; } /* Força o scroll em telas menores */
+        .agenda-header { display: flex; border-bottom: 2px solid #e2e8f0; background: #f8fafc; position: sticky; top: 0; z-index: 20; }
+        .agenda-doctor-col { width: 180px; min-width: 180px; padding: 15px; border-right: 1px solid #e2e8f0; font-weight: bold; color: #475569; position: sticky; left: 0; background: inherit; z-index: 30; display: flex; align-items: center; font-size: 13px; box-shadow: 2px 0 5px rgba(0,0,0,0.02);}
+        .agenda-hours-col { display: flex; flex: 1; position: relative; }
+        .agenda-time-marker { flex: 1; text-align: center; padding: 15px 0; font-size: 11px; font-weight: bold; color: #64748b; border-right: 1px dashed #e2e8f0; }
+        .agenda-body { display: flex; flex-direction: column; }
+        .agenda-row { display: flex; border-bottom: 1px solid #e2e8f0; background: white; }
+        .agenda-row:hover .agenda-events-col { background: #f8fafc; }
+        .agenda-events-col { flex: 1; position: relative; min-height: 80px; }
+        .agenda-grid-line { position: absolute; top: 0; bottom: 0; border-right: 1px dashed #e2e8f0; pointer-events: none; z-index: 1;}
+        .agenda-event { position: absolute; top: 10px; bottom: 10px; border-radius: 6px; padding: 6px 10px; font-size: 11px; overflow: hidden; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 10; border-left: 4px solid; display: flex; flex-direction: column; justify-content: center; }
+        .agenda-event:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); z-index: 20; }
+        .ev-time { font-weight: 800; font-size: 10px; margin-bottom: 2px; opacity: 0.8; }
+        .ev-title { font-weight: 700; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .ev-proc { font-size: 9px; opacity: 0.8; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .agenda-empty { padding: 40px; text-align: center; color: #94a3b8; font-weight: 500; font-size: 14px; }
 
         /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(3px); }
@@ -73,14 +97,17 @@
         .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
         .modal-footer { padding: 15px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; border-radius: 0 0 12px 12px; }
 
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
         .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-group.full-width { grid-column: span 2; }
+        .form-group.col-span-2 { grid-column: span 2; }
+        .form-group.full-width { grid-column: span 3; }
         .form-label { font-size: 12px; font-weight: 700; color: #475569; }
         .form-input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; color: #1e293b; outline: none; transition: 0.2s; font-family: inherit; background: #fff;}
         .form-input:focus { border-color: #00855B; box-shadow: 0 0 0 3px rgba(0,133,91,0.1); }
         .form-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
         textarea.form-input { resize: vertical; min-height: 80px; }
+
+        .section-title { grid-column: span 3; font-size: 13px; font-weight: bold; color: #00855B; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; text-transform: uppercase;}
 
         .btn-cancel { background: #e2e8f0; color: #475569; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-cancel:hover { background: #cbd5e1; }
@@ -105,19 +132,33 @@
 
         <div class="header-actions">
             <h2><i class="fas fa-notes-medical"></i> Controle de Guias Cirúrgicas</h2>
-            <button class="btn-success" onclick="openModal()">
-                <i class="fas fa-plus"></i> Nova Guia
-            </button>
+            <div class="header-buttons">
+                <button id="btnViewList" class="btn-outline active" onclick="changeView('list')">
+                    <i class="fas fa-list"></i> Ver Lista
+                </button>
+                <button id="btnViewAgenda" class="btn-outline" onclick="changeView('agenda')">
+                    <i class="fas fa-calendar-alt"></i> Ver Agenda
+                </button>
+                <button class="btn-success" onclick="openModal()">
+                    <i class="fas fa-plus"></i> Nova Guia
+                </button>
+            </div>
         </div>
 
         <div class="controls-row">
-            <div class="input-group">
+            <div class="input-group" id="groupSearch">
                 <label>Buscar Paciente / Guia</label>
-                <input type="text" id="searchInput" class="search-bar" placeholder="Digite para filtrar..." onkeyup="filterTable()">
+                <input type="text" id="searchInput" class="search-bar" placeholder="Digite para filtrar..." onkeyup="refreshViews()">
             </div>
-            <div class="input-group">
+            
+            <div class="input-group" id="groupDataAgenda" style="display: none;">
+                <label>Data da Agenda</label>
+                <input type="date" id="filterDataAgenda" class="filter-select" onchange="refreshViews()">
+            </div>
+
+            <div class="input-group" id="groupMes">
                 <label>Mês de Envio</label>
-                <select id="filterMes" class="filter-select" onchange="filterTable()">
+                <select id="filterMes" class="filter-select" onchange="refreshViews()">
                     <option value="todos">Todos os Meses</option>
                     <option value="01">Janeiro</option>
                     <option value="02">Fevereiro</option>
@@ -133,30 +174,31 @@
                     <option value="12">Dezembro</option>
                 </select>
             </div>
-            <div class="input-group">
+            <div class="input-group" id="groupAno">
                 <label>Ano</label>
-                <select id="filterAno" class="filter-select" onchange="filterTable()"></select>
+                <select id="filterAno" class="filter-select" onchange="refreshViews()"></select>
             </div>
+
             <div class="input-group">
                 <label>Médico Responsável</label>
-                <select id="filterMedico" class="filter-select" onchange="filterTable()">
+                <select id="filterMedico" class="filter-select" onchange="refreshViews()">
                     <option value="todos">Todos os Médicos</option>
                 </select>
             </div>
-            <div class="input-group">
+            <div class="input-group" id="groupResp">
                 <label>Responsável (Emissão)</label>
-                <select id="filterResp" class="filter-select" onchange="filterTable()">
+                <select id="filterResp" class="filter-select" onchange="refreshViews()">
                     <option value="todos">Todos</option>
                 </select>
             </div>
-            <div class="input-group" style="margin-left: auto;">
+            <div class="input-group" style="margin-left: auto;" id="groupExport">
                 <button class="btn-print" onclick="generatePDF()">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </button>
             </div>
         </div>
 
-        <div class="sheet-container">
+        <div id="viewList" class="sheet-container">
             <div class="table-responsive">
                 <table class="data-table" id="guiasTable">
                     <thead>
@@ -177,6 +219,11 @@
                 </table>
             </div>
         </div>
+
+        <div id="viewAgenda" style="display: none;">
+            <div id="agendaContent">
+                </div>
+        </div>
     </div>
 
     <div class="modal-overlay" id="guiaModal">
@@ -190,12 +237,12 @@
                     <input type="hidden" id="guia_id">
                     
                     <div class="form-grid">
+                        <div class="section-title">Informações do Envio e Status</div>
                         <div class="form-group">
                             <label class="form-label">Data do Envio</label>
                             <input type="date" id="data_envio" class="form-input" required>
                         </div>
-                        
-                        <div class="form-group">
+                        <div class="form-group col-span-2">
                             <label class="form-label">Status Inicial</label>
                             <select id="status" class="form-input" required>
                                 <option value="Enviado">Enviado</option>
@@ -207,11 +254,11 @@
                             </select>
                         </div>
 
-                        <div class="form-group full-width">
+                        <div class="section-title">Dados Clínicos</div>
+                        <div class="form-group col-span-2">
                             <label class="form-label">Paciente</label>
                             <input type="text" id="paciente" class="form-input" placeholder="Nome completo do paciente" required>
                         </div>
-
                         <div class="form-group">
                             <label class="form-label">Médico Responsável</label>
                             <select id="medico" class="form-input" required>
@@ -219,11 +266,17 @@
                             </select>
                         </div>
 
+                        <div class="form-group full-width">
+                            <label class="form-label">Procedimento Cirúrgico</label>
+                            <select id="procedimento" class="form-input" required>
+                                <option value="">Carregando procedimentos...</option>
+                            </select>
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Hospital</label>
                             <input type="text" id="hospital" class="form-input" placeholder="Ex: Hospital Vita" required>
                         </div>
-
                         <div class="form-group">
                             <label class="form-label">Tipo (Convênio ou Particular)</label>
                             <select id="convenio" class="form-input" required>
@@ -237,24 +290,30 @@
                                 <option value="Outros">Outros</option>
                             </select>
                         </div>
-
                         <div class="form-group">
                             <label class="form-label">Valor Estimado (R$)</label>
                             <input type="number" step="0.01" id="valor" class="form-input" placeholder="0,00">
                         </div>
 
-                        <div class="form-group full-width">
-                            <label class="form-label">Procedimento Cirúrgico</label>
-                            <select id="procedimento" class="form-input" required>
-                                <option value="">Carregando procedimentos...</option>
-                            </select>
+                        <div class="section-title">Dados do Agendamento (Para aparecer no Dashboard)</div>
+                        <div class="form-group">
+                            <label class="form-label">Data da Cirurgia (Opcional)</label>
+                            <input type="date" id="data_cirurgia" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hora (Ex: 08:30)</label>
+                            <input type="time" id="hora_cirurgia" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Duração Estimada (h)</label>
+                            <input type="number" step="0.5" id="duracao" class="form-input" placeholder="Ex: 2.5" value="1.5">
                         </div>
 
+                        <div class="section-title">Controle Administrativo</div>
                         <div class="form-group">
                             <label class="form-label">Nº da Guia / Senha</label>
                             <input type="text" id="numero_guia" class="form-input" placeholder="Ex: 123456789">
                         </div>
-
                         <div class="form-group">
                             <label class="form-label">Forma de Envio</label>
                             <select id="forma_envio" class="form-input">
@@ -264,9 +323,8 @@
                                 <option value="WhatsApp">WhatsApp</option>
                             </select>
                         </div>
-
-                        <div class="form-group full-width">
-                            <label class="form-label">Responsável pelo Envio (Logado)</label>
+                        <div class="form-group">
+                            <label class="form-label">Responsável (Logado)</label>
                             <input type="text" id="responsavel" class="form-input" disabled>
                         </div>
 
@@ -294,7 +352,7 @@
                 <p style="font-size: 12px; color: #64748b; margin-top: 0;">Novo status para <strong id="statusPacienteNome" style="color: #0f172a;"></strong>:</p>
                 <input type="hidden" id="statusGuiaId">
                 <div class="status-list" id="statusOptionsContainer">
-                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -308,7 +366,7 @@
             <div class="modal-body">
                 <input type="hidden" id="anexosGuiaId">
                 <div id="listaAnexos">
-                    </div>
+                </div>
                 
                 <div class="file-upload-wrapper">
                     <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #94a3b8; margin-bottom: 10px;"></i>
@@ -326,6 +384,7 @@
         let procedimentosList = [];
         let medicosList = [];
         let userLogged = {};
+        let currentView = 'list'; // 'list' ou 'agenda'
 
         const statusConfig = [
             { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane' },
@@ -345,6 +404,9 @@
                 for(let i = curY - 2; i <= curY + 2; i++) { selAno.add(new Option(i, i)); }
                 selAno.value = curY;
 
+                // Seta a data de hoje para o filtro da agenda
+                document.getElementById('filterDataAgenda').value = new Date().toISOString().split('T')[0];
+
                 const userSession = localStorage.getItem('ecoUser');
                 if(userSession) {
                     try {
@@ -363,6 +425,27 @@
             }
         }
         document.addEventListener('DOMContentLoaded', startApp);
+
+        function changeView(view) {
+            currentView = view;
+            
+            // Toggle botões
+            document.getElementById('btnViewList').classList.toggle('active', view === 'list');
+            document.getElementById('btnViewAgenda').classList.toggle('active', view === 'agenda');
+            
+            // Toggle containers principais
+            document.getElementById('viewList').style.display = view === 'list' ? 'block' : 'none';
+            document.getElementById('viewAgenda').style.display = view === 'agenda' ? 'block' : 'none';
+
+            // Toggle filtros visíveis
+            document.getElementById('groupDataAgenda').style.display = view === 'agenda' ? 'flex' : 'none';
+            document.getElementById('groupMes').style.display = view === 'list' ? 'flex' : 'none';
+            document.getElementById('groupAno').style.display = view === 'list' ? 'flex' : 'none';
+            document.getElementById('groupResp').style.display = view === 'list' ? 'flex' : 'none';
+            document.getElementById('groupExport').style.display = view === 'list' ? 'flex' : 'none';
+
+            refreshViews();
+        }
 
         async function loadProcedimentos() {
             try {
@@ -426,12 +509,150 @@
                 selResp.innerHTML = '<option value="todos">Todos</option>';
                 responsaveisUnicos.sort().forEach(r => selResp.innerHTML += `<option value="${r}">${r}</option>`);
 
-                filterTable();
+                refreshViews();
             } catch (err) {
                 document.querySelector('#guiasTable tbody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626;">Erro ao carregar dados.</td></tr>`;
             }
         }
 
+        function refreshViews() {
+            if (currentView === 'list') {
+                filterTable();
+            } else {
+                renderAgenda();
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DA VISÃO AGENDA (DASHBOARD)
+        // ==========================================
+        function renderAgenda() {
+            const container = document.getElementById('agendaContent');
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const medSel = document.getElementById('filterMedico').value;
+            const dataSel = document.getElementById('filterDataAgenda').value;
+
+            if(!dataSel) {
+                container.innerHTML = '<div class="agenda-empty">Selecione uma data para ver a agenda.</div>';
+                return;
+            }
+
+            // Filtra as guias que têm cirurgia na data selecionada
+            let agendamentos = guiasData.filter(g => g.data_cirurgia === dataSel && g.hora_cirurgia);
+
+            // Aplica filtro de texto e médico
+            if(term) {
+                agendamentos = agendamentos.filter(g => `${g.paciente||''} ${g.procedimento||''} ${g.hospital||''}`.toLowerCase().includes(term));
+            }
+            if(medSel !== 'todos') {
+                agendamentos = agendamentos.filter(g => g.medico === medSel);
+            }
+
+            // Agrupa por médico
+            let medicosAtivos = medicosList.map(m => m.nome);
+            if(medSel !== 'todos') medicosAtivos = [medSel];
+
+            const eventosPorMedico = {};
+            medicosAtivos.forEach(m => eventosPorMedico[m] = []);
+
+            agendamentos.forEach(g => {
+                if(eventosPorMedico[g.medico]) {
+                    eventosPorMedico[g.medico].push(g);
+                } else if(medSel === 'todos') { // Médico antigo que não está mais na lista mas tem cirurgia
+                    eventosPorMedico[g.medico] = [g];
+                    medicosAtivos.push(g.medico);
+                }
+            });
+
+            // Filtra médicos vazios para não poluir o painel (A menos que tenhamos filtrado um especifico)
+            medicosAtivos = medicosAtivos.filter(m => eventosPorMedico[m].length > 0 || medSel !== 'todos');
+
+            if (medicosAtivos.length === 0) {
+                container.innerHTML = `<div class="agenda-wrapper"><div class="agenda-empty"><i class="fas fa-calendar-times" style="font-size:30px; margin-bottom:10px; opacity:0.5;"></i><br>Nenhuma cirurgia agendada para o dia ${dataSel.split('-').reverse().join('/')}.</div></div>`;
+                return;
+            }
+
+            // Configurações da Linha do Tempo (Horários Padrão: 06:00 às 22:00)
+            const horaInicioGrid = 6;
+            const horaFimGrid = 22;
+            const totalHoras = horaFimGrid - horaInicioGrid;
+
+            let html = `
+                <div class="agenda-wrapper">
+                    <div class="agenda-scroll-area">
+                        <div class="agenda-header">
+                            <div class="agenda-doctor-col"><i class="fas fa-user-md" style="margin-right:8px;"></i> Médico</div>
+                            <div class="agenda-hours-col">`;
+            
+            // Colunas de horas do cabeçalho
+            for(let i = horaInicioGrid; i <= horaFimGrid; i++) {
+                html += `<div class="agenda-time-marker">${i.toString().padStart(2, '0')}:00</div>`;
+            }
+            
+            html += `       </div>
+                        </div>
+                        <div class="agenda-body">`;
+
+            // Linhas dos médicos
+            medicosAtivos.forEach(med => {
+                html += `
+                            <div class="agenda-row">
+                                <div class="agenda-doctor-col">${med}</div>
+                                <div class="agenda-events-col">`;
+                
+                // Desenha as linhas tracejadas de grade
+                for(let i = horaInicioGrid; i <= horaFimGrid; i++) {
+                    const posLeft = ((i - horaInicioGrid) / totalHoras) * 100;
+                    html += `<div class="agenda-grid-line" style="left: ${posLeft}%"></div>`;
+                }
+
+                // Coloca as cirurgias
+                eventosPorMedico[med].forEach(ev => {
+                    const [hStr, mStr] = ev.hora_cirurgia.split(':');
+                    const horaFloat = parseInt(hStr) + (parseInt(mStr) / 60);
+                    
+                    if(horaFloat >= horaInicioGrid && horaFloat < horaFimGrid) {
+                        const duracao = parseFloat(ev.duracao) || 1.5; // Duração padrão se nula
+                        
+                        const leftPerc = ((horaFloat - horaInicioGrid) / totalHoras) * 100;
+                        const widthPerc = (duracao / totalHoras) * 100;
+
+                        // Estilização baseada no status
+                        const st = statusConfig.find(s => s.name === ev.status);
+                        let bg = '#f1f5f9', color = '#475569', border = '#cbd5e1';
+                        if(st) {
+                            if(st.class==='st-enviado') { bg='#e0f2fe'; color='#0284c7'; border='#0284c7'; }
+                            else if(st.class==='st-aguardando') { bg='#fef3c7'; color='#d97706'; border='#d97706'; }
+                            else if(st.class==='st-recebido') { bg='#cffafe'; color='#0369a1'; border='#0369a1'; }
+                            else if(st.class==='st-pendente') { bg='#fee2e2'; color='#dc2626'; border='#dc2626'; }
+                            else if(st.class==='st-autorizado') { bg='#dcfce7'; color='#166534'; border='#166534'; }
+                            else if(st.class==='st-agendada') { bg='#f3e8ff'; color='#7e22ce'; border='#7e22ce'; }
+                        }
+
+                        html += `
+                            <div class="agenda-event" style="left: ${leftPerc}%; width: calc(${widthPerc}% - 4px); background: ${bg}; border-left-color: ${border}; color: ${color};" onclick="openModal('${ev.id_firebase}')" title="${ev.paciente} | ${ev.procedimento} | ${ev.hospital}">
+                                <div class="ev-time">${ev.hora_cirurgia} (${duracao}h)</div>
+                                <div class="ev-title">${ev.paciente}</div>
+                                <div class="ev-proc">${ev.procedimento}</div>
+                            </div>
+                        `;
+                    }
+                });
+
+                html += `       </div>
+                            </div>`;
+            });
+
+            html += `       </div>
+                    </div>
+                </div>`;
+
+            container.innerHTML = html;
+        }
+
+        // ==========================================
+        // LÓGICA DA VISÃO LISTA
+        // ==========================================
         function filterTable() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const mesSel = document.getElementById('filterMes').value;
@@ -472,7 +693,6 @@
             return `<span class="status-badge" style="background:${bg}; color:${color}; border:1px solid ${border};">${convenio || '-'}</span>`;
         }
 
-        // 💡 Correção dos Ícones e cor azul claro (#0ea5e9) pro e-mail
         function getEnvioInfo(forma) {
             if(!forma) return '';
             let icon = 'fas fa-paper-plane';
@@ -516,6 +736,7 @@
                 let anexoQtd = (g.anexos && g.anexos.length > 0) ? `<span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; font-size:9px; border-radius:50%; width:14px; height:14px; display:flex; align-items:center; justify-content:center;">${g.anexos.length}</span>` : '';
 
                 let hasObs = g.observacao && g.observacao.trim() !== '';
+                let cirurgiaAgendadaInfo = (g.data_cirurgia && g.hora_cirurgia) ? `<br><span style="font-size:10px; color:#00855B; font-weight:bold;"><i class="fas fa-calendar-check"></i> ${g.data_cirurgia.split('-').reverse().join('/')} às ${g.hora_cirurgia}</span>` : '';
 
                 html += `
                     <tr class="main-row" style="${hasObs ? 'border-bottom: none;' : ''}">
@@ -524,7 +745,10 @@
                             ${envioHtml}
                         </td>
                         <td style="font-weight: 700; color: #0f172a;">${g.paciente || '-'} <br><span style="font-weight:normal; font-size:10px; color:#64748b;">Dr(a). ${g.medico || '-'}</span></td>
-                        <td style="font-size: 11px;">${g.procedimento || '-'}</td>
+                        <td style="font-size: 11px;">
+                            ${g.procedimento || '-'}
+                            ${cirurgiaAgendadaInfo}
+                        </td>
                         <td>${convenioHtml}</td>
                         <td>${g.hospital || '-'}</td>
                         <td>
@@ -546,7 +770,6 @@
                     </tr>
                 `;
 
-                // 💡 Linha da observação visível e colada na linha principal
                 if (hasObs) {
                     html += `
                         <tr class="obs-row" style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
@@ -591,10 +814,16 @@
                     document.getElementById('responsavel').value = guia.responsavel || userLogged.nome;
                     document.getElementById('status').value = guia.status || 'Enviado';
                     document.getElementById('observacao').value = guia.observacao || '';
+                    
+                    // Novos campos de Agenda
+                    document.getElementById('data_cirurgia').value = guia.data_cirurgia || '';
+                    document.getElementById('hora_cirurgia').value = guia.hora_cirurgia || '';
+                    document.getElementById('duracao').value = guia.duracao || '1.5';
                 }
             } else {
                 document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Cadastrar Nova Guia';
                 document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
+                document.getElementById('duracao').value = '1.5';
             }
 
             showModalElement('guiaModal');
@@ -646,6 +875,12 @@
                 responsavel: document.getElementById('responsavel').value,
                 status: novoStatus,
                 observacao: document.getElementById('observacao').value,
+                
+                // Novos campos da agenda
+                data_cirurgia: document.getElementById('data_cirurgia').value,
+                hora_cirurgia: document.getElementById('hora_cirurgia').value,
+                duracao: parseFloat(document.getElementById('duracao').value) || 1.5,
+
                 historico_status: hist,
                 anexos: guiaAnterior.anexos || [],
                 atualizado_em: new Date().toISOString()
@@ -666,7 +901,6 @@
             finally { btn.innerHTML = originalText; btn.disabled = false; }
         }
 
-        // 💡 Correção do comportamento "Atualizando" no status
         function openStatusModal(id, pacienteNome) {
             document.getElementById('statusGuiaId').value = id;
             document.getElementById('statusPacienteNome').innerText = pacienteNome;
@@ -706,10 +940,8 @@
             guia.historico_status = hist;
             guia.atualizado_em = new Date().toISOString();
 
-            // Bloqueia toda a lista de botões para evitar duplo clique
             document.querySelectorAll('.status-option').forEach(el => el.style.pointerEvents = 'none');
             
-            // Muda APENAS o botão clicado
             const textSpan = btnElement.querySelector('.st-text');
             const iconEl = btnElement.querySelector('i');
             const originalText = textSpan.innerText;
@@ -723,8 +955,6 @@
                     method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia)
                 });
                 closeModal('statusModal');
-                
-                // Força o recarregamento total silencioso para garantir que a data apareça embaixo do status
                 await loadGuias(); 
             } catch(e) { 
                 alert("Erro ao atualizar status."); 
@@ -734,14 +964,12 @@
             }
         }
 
-        // ANEXOS
         function openAnexosModal(id) {
             document.getElementById('anexosGuiaId').value = id;
             renderAnexosList(id);
             showModalElement('anexosModal');
         }
 
-        // 💡 Função de Visualização nativa do navegador (Sem download obrigatório)
         window.visualizarAnexo = function(guiaId, anexoIdx) {
             const guia = guiasData.find(g => g.id_firebase === guiaId);
             if(!guia || !guia.anexos || !guia.anexos[anexoIdx]) return;
@@ -765,7 +993,6 @@
             }
         };
 
-        // 💡 Renderização da lista de anexos com o botão Visualizar (Olho)
         function renderAnexosList(id) {
             const guia = guiasData.find(g => g.id_firebase === id);
             const container = document.getElementById('listaAnexos');
@@ -824,7 +1051,7 @@
                         method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia)
                     });
                     renderAnexosList(id);
-                    filterTable(); 
+                    refreshViews(); 
                 } catch(err) {
                     alert("Falha ao salvar anexo.");
                 }
@@ -843,7 +1070,7 @@
                         method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia)
                     });
                     renderAnexosList(id);
-                    filterTable();
+                    refreshViews();
                 } catch(e){}
             }
         }
@@ -857,7 +1084,6 @@
             } catch (err) { alert('Erro: ' + err.message); }
         }
 
-        // PDF EXPORT
         function generatePDF() {
             const tbody = document.querySelector('#guiasTable tbody');
             if (tbody.innerText.includes('Nenhuma guia') || tbody.innerText.includes('Carregando')) return alert("Não há dados para exportar.");
