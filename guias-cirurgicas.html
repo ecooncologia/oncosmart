@@ -122,7 +122,7 @@
         .form-label { font-size: 11px; font-weight: 700; color: #475569; }
         .form-input { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; outline: none; transition: 0.2s; font-family: inherit; background: #fff; width: 100%; box-sizing: border-box;}
         .form-input:focus { border-color: #00855B; box-shadow: 0 0 0 3px rgba(0,133,91,0.1); }
-        .form-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+        .form-input:disabled, .form-input[readonly] { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
         textarea.form-input { resize: vertical; min-height: 60px; }
 
         .section-title { grid-column: span 4; font-size: 12px; font-weight: bold; color: #00855B; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-top: 5px; text-transform: uppercase;}
@@ -337,15 +337,10 @@
                             <input type="time" id="hora_cirurgia" class="form-input">
                         </div>
                         
-                        <div class="form-group col-span-2" style="display:flex; flex-direction:row; gap:10px;">
-                            <div style="flex:1;">
-                                <label class="form-label">Horas</label>
-                                <input type="number" id="duracao_h" class="form-input" min="0" value="1" onblur="normalizeDuration()">
-                            </div>
-                            <div style="flex:1;">
-                                <label class="form-label">Minutos (ex: digite 90)</label>
-                                <input type="number" id="duracao_m" class="form-input" min="0" value="30" onblur="normalizeDuration()" placeholder="Mins">
-                            </div>
+                        <div class="form-group col-span-2">
+                            <label class="form-label">Duração Total (Minutos)</label>
+                            <input type="number" id="duracao_m" class="form-input" min="0" value="30" oninput="updateDurationLabel()" placeholder="Ex: 90">
+                            <div id="duracao_label" style="font-size:11px; color:#00855B; font-weight:bold; margin-top:3px;">Tempo: 0h 30m</div>
                         </div>
                         <div class="form-group col-span-2"></div> <div class="section-title">Controle Administrativo</div>
                         <div class="form-group">
@@ -520,7 +515,7 @@
         let userLogged = {};
         let currentView = 'list'; 
         let hospitaisAtivos = []; 
-        let currentProcs = []; // Gestão de múltiplos procedimentos no Modal
+        let currentProcs = []; 
 
         const statusConfig = [
             { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane', bg: '#e0f2fe', border: '#0284c7', text: '#0369a1' },
@@ -621,7 +616,6 @@
             }
         }
         
-        // SINCRONIZADOR DE CORES ANTES DE ADICIONAR/REMOVER
         function syncHospitalColors() {
             const inputs = document.querySelectorAll('#hospitaisListContainer .color-picker-input');
             inputs.forEach(input => {
@@ -631,7 +625,7 @@
         }
 
         function addHospital() {
-            syncHospitalColors(); // Salva estado atual das cores dos inputs
+            syncHospitalColors(); 
             const input = document.getElementById('newHospitalName'); const name = input.value.trim();
             if(!name) return alert("Digite o nome do hospital.");
             if(hospitaisAtivos.find(h => h.name.toLowerCase() === name.toLowerCase())) return alert("Hospital já cadastrado!");
@@ -640,7 +634,7 @@
         }
         function removeHospital(index) {
             if(confirm(`Remover o hospital ${hospitaisAtivos[index].name} da lista?`)) { 
-                syncHospitalColors(); // Salva as outras cores
+                syncHospitalColors(); 
                 hospitaisAtivos.splice(index, 1); 
                 renderHospitaisModalList(); 
             }
@@ -710,20 +704,14 @@
             const val = selectEl.value;
             currentProcs[index].nome = val;
             
-            // Busca o valor na lista
             const procObj = procedimentosList.find(p => p.nome === val);
             if(procObj) {
-                // Conversão segura do valor vindo do BD
                 let valNumerico = parseFloat((procObj.valor||0).toString().replace(',','.').replace(/[^0-9.-]+/g,"")) || 0;
                 currentProcs[index].valor = valNumerico;
             } else {
                 currentProcs[index].valor = 0;
             }
             renderProcRows();
-        }
-        function updateProcManualValue(index, inputEl) {
-            currentProcs[index].valor = parseFloat(inputEl.value) || 0;
-            calcTotalProcs();
         }
         function calcTotalProcs() {
             let total = currentProcs.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
@@ -748,7 +736,7 @@
                             </select>
                         </div>
                         <div style="width:120px; flex-shrink:0;">
-                            <input type="number" step="0.01" class="form-input" value="${p.valor}" onchange="updateProcManualValue(${idx}, this)" required placeholder="Valor (R$)">
+                            <input type="number" step="0.01" class="form-input" value="${p.valor}" readonly style="background:#f1f5f9; color:#94a3b8; cursor:not-allowed;" title="Valor gerado automaticamente" placeholder="Valor (R$)">
                         </div>
                         <button type="button" class="btn-danger-sm" style="height:35px; width:35px;" onclick="removeProcRow(${idx})" title="Remover"><i class="fas fa-trash"></i></button>
                     </div>
@@ -758,16 +746,16 @@
             calcTotalProcs();
         }
 
-        // Conversão de Minutos Inteligente
-        function normalizeDuration() {
-            let h = parseInt(document.getElementById('duracao_h').value) || 0;
+        // ==========================================
+        // CONVERSÃO DE MINUTOS
+        // ==========================================
+        function updateDurationLabel() {
             let m = parseInt(document.getElementById('duracao_m').value) || 0;
-            if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
-            document.getElementById('duracao_h').value = h;
-            document.getElementById('duracao_m').value = m;
+            let h = Math.floor(m / 60);
+            let restM = m % 60;
+            document.getElementById('duracao_label').innerText = `Tempo: ${h}h ${restM}m`;
         }
 
-        // Função de clique no fundo da Agenda
         function openModalFromGrid(hosp, hour, min) {
             openModal();
             document.getElementById('hospital').value = hosp;
@@ -775,6 +763,8 @@
             const hh = hour.toString().padStart(2, '0');
             const mm = min.toString().padStart(2, '0');
             document.getElementById('hora_cirurgia').value = `${hh}:${mm}`;
+            document.getElementById('duracao_m').value = 30; // Padrão 30 minutos ao clicar
+            updateDurationLabel();
         }
 
         // ==========================================
@@ -1082,12 +1072,9 @@
                     document.getElementById('hora_cirurgia').value = guia.hora_cirurgia || '';
                     
                     let durFloat = parseFloat(guia.duracao) || 1.5;
-                    let dH = Math.floor(durFloat);
-                    let dM = Math.round((durFloat - dH) * 60);
-                    document.getElementById('duracao_h').value = dH;
-                    document.getElementById('duracao_m').value = dM;
+                    let totalMins = Math.round(durFloat * 60);
+                    document.getElementById('duracao_m').value = totalMins;
 
-                    // Mapeamento de Procedimentos Anteriores
                     if(guia.procedimentos && guia.procedimentos.length > 0) {
                         currentProcs = JSON.parse(JSON.stringify(guia.procedimentos));
                     } else if (guia.procedimento) {
@@ -1099,11 +1086,11 @@
             } else {
                 document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Cadastrar Nova Guia';
                 document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
-                document.getElementById('duracao_h').value = '1';
-                document.getElementById('duracao_m').value = '30';
+                document.getElementById('duracao_m').value = 30;
                 currentProcs.push({nome: '', valor: 0});
             }
             
+            updateDurationLabel();
             renderProcRows();
             showModalElement('guiaModal');
         }
@@ -1138,10 +1125,8 @@
                 hist.push({ status: novoStatus, data: new Date().toISOString(), usuario: userLogged.nome || 'Sistema' });
             }
 
-            normalizeDuration(); 
-            const valH = parseInt(document.getElementById('duracao_h').value) || 0;
-            const valM = parseInt(document.getElementById('duracao_m').value) || 0;
-            const totalDuracao = valH + (valM / 60);
+            const totalMinutos = parseInt(document.getElementById('duracao_m').value) || 0;
+            const totalDuracao = totalMinutos / 60;
             
             const valorTotal = parseFloat(document.getElementById('valorTotal').value) || 0;
             const nomeProcAgrupado = currentProcs.map(p => p.nome).join(' + ');
