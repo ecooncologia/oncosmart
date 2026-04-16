@@ -56,7 +56,7 @@
         .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
         .st-enviado { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
         .st-aguardando { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
-        .st-recebido { background: #cffafe; color: #0369a1; border: 1px solid #a5f3fc; }
+        .st-recebido { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; } /* Rosa Pink */
         .st-pendente { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
         .st-autorizado { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .st-agendada { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
@@ -226,7 +226,7 @@
                 <button class="btn-print" id="btnExportList" onclick="generatePDF()">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </button>
-                <button class="btn-print" id="btnExportAgenda" onclick="generateAgendaPDF()" style="display:none; background: #0284c7;">
+                <button class="btn-print" id="btnExportAgenda" onclick="generateAgendaPDF()" style="display:none; background: #00855B;">
                     <i class="fas fa-map"></i> Mapa Cirúrgico
                 </button>
             </div>
@@ -472,7 +472,7 @@
                     <input type="text" id="newHospitalName" class="form-input" placeholder="Nome do novo hospital..." style="flex:1;">
                     <button class="btn-success" onclick="addHospital()"><i class="fas fa-plus"></i> Adicionar</button>
                 </div>
-                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 10px;">Estes hospitais definirão as colunas do Dashboard da Agenda.</p>
+                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 10px;">Estes hospitais definirão as colunas do Dashboard da Agenda e suas cores nos Relatórios.</p>
                 <div id="hospitaisListContainer"></div>
             </div>
             <div class="modal-footer">
@@ -524,11 +524,10 @@
         let currentView = 'list'; 
         let hospitaisAtivos = []; 
 
-        // Adicionado cores específicas para preencher o fundo e a borda dos cards
         const statusConfig = [
             { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane', bg: '#e0f2fe', border: '#0284c7', text: '#0369a1' },
             { name: 'Aguardando confirmação', class: 'st-aguardando', icon: 'fa-clock', bg: '#fef3c7', border: '#d97706', text: '#b45309' },
-            { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user', bg: '#cffafe', border: '#0ea5e9', text: '#0369a1' },
+            { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user', bg: '#fce7f3', border: '#db2777', text: '#be185d' }, // Alterado para Rosa Pink
             { name: 'Pendente de documento', class: 'st-pendente', icon: 'fa-exclamation-triangle', bg: '#fee2e2', border: '#dc2626', text: '#b91c1c' },
             { name: 'Autorizado', class: 'st-autorizado', icon: 'fa-check-circle', bg: '#dcfce7', border: '#166534', text: '#15803d' },
             { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check', bg: '#f3e8ff', border: '#7e22ce', text: '#6b21a8' }
@@ -599,8 +598,8 @@
                 hospitaisAtivos = JSON.parse(saved);
             } else {
                 const unicos = [...new Set(guiasData.map(g => g.hospital).filter(Boolean))].sort();
-                hospitaisAtivos = unicos.map(h => ({ name: h, color: '#cbd5e1' }));
-                if(hospitaisAtivos.length === 0) hospitaisAtivos = [{name: 'Hospital Vita', color: '#3b82f6'}];
+                hospitaisAtivos = unicos.map(h => ({ name: h, color: '#00855B' }));
+                if(hospitaisAtivos.length === 0) hospitaisAtivos = [{name: 'Hospital Vita', color: '#00855B'}];
                 saveHospitaisLocal();
             }
             updateHospitalSelects();
@@ -974,7 +973,7 @@
                     let durFloat = parseFloat(guia.duracao) || 1.5;
                     let dH = Math.floor(durFloat);
                     let dM = Math.round((durFloat - dH) * 60);
-                    if(dM !== 0 && dM !== 15 && dM !== 30 && dM !== 45) dM = 30; // Segurança
+                    if(dM !== 0 && dM !== 15 && dM !== 30 && dM !== 45) dM = 30;
                     
                     document.getElementById('duracao_h').value = dH;
                     document.getElementById('duracao_m').value = dM;
@@ -1085,7 +1084,7 @@
             let html = `<html><head><title>Relatório de Guias - ${periodoStr}</title><style>
                 @page { size: portrait; margin: 15mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
                 .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; justify-content: space-between; } 
-                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #00855B; padding: 8px; border-radius: 6px; } 
+                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #ffffff; padding: 8px; border-radius: 6px; } 
                 .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 18px; text-transform: uppercase; } 
                 .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } 
                 table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 20px;} th, td { border: 1px solid #ccc; padding: 6px; text-align: left; } 
@@ -1123,21 +1122,25 @@
             
             let html = `<html><head><title>Mapa Cirúrgico - ${dataFormatada}</title><style>
                 @page { size: landscape; margin: 15mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
-                .header-row { display: flex; align-items: center; border-bottom: 3px solid #0284c7; padding-bottom: 10px; margin-bottom: 15px; } 
-                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #0284c7; padding: 8px; border-radius: 6px; } 
-                .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #0284c7; font-size: 20px; text-transform: uppercase; } 
+                .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } 
+                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #ffffff; padding: 8px; border-radius: 6px; } 
+                .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } 
                 .header-text p { margin: 2px 0 0; font-size: 13px; color: #666; font-weight: 600; } 
-                .hosp-title { background: #f8fafc; padding: 8px 12px; margin-top: 20px; border-left: 5px solid #0284c7; font-size: 15px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; }
+                .hosp-title { background: #f8fafc; padding: 8px 12px; margin-top: 20px; border-left: 5px solid #00855B; font-size: 15px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; }
                 table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 0;} th, td { border-bottom: 1px solid #e2e8f0; padding: 10px 8px; text-align: left; vertical-align:top;} 
                 th { background: #f1f5f9; color: #475569; font-size: 11px; text-transform: uppercase; font-weight: bold;}
-                .status-span { padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight:bold; }
+                .status-span { padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight:bold; display: inline-block; line-height: 1.2; text-align: center; }
             </style></head><body>`;
 
             html += `<div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>Mapa Cirúrgico Diário</h1><p>Data: ${dataFormatada}</p></div></div>`;
             
             Object.keys(grupos).sort().forEach(hosp => {
-                html += `<div class="hosp-title">${hosp}</div>`;
+                let hConfig = hospitaisAtivos.find(h => h.name === hosp);
+                let hColor = hConfig ? hConfig.color : '#00855B';
+                
+                html += `<div class="hosp-title" style="border-left-color: ${hColor}; color: ${hColor};">${hosp}</div>`;
                 html += `<table><thead><tr><th style="width:50px;">Horário</th><th>Paciente</th><th>Procedimento</th><th>Médico Responsável</th><th>Convênio</th><th style="width:100px;">Status</th><th style="width:200px;">Observações</th></tr></thead><tbody>`;
+                
                 grupos[hosp].forEach(g => {
                     let dH = Math.floor(g.duracao || 1.5);
                     let dM = Math.round(((g.duracao || 1.5) - dH)*60);
@@ -1163,7 +1166,7 @@
             win.document.write(html); win.document.close();
         }
 
-        // Script Status/Anexos (Mantidos sem cortes)
+        // Script Status/Anexos
         function openStatusModal(id, pacienteNome) {
             document.getElementById('statusGuiaId').value = id;
             document.getElementById('statusPacienteNome').innerText = pacienteNome;
