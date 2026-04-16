@@ -318,7 +318,7 @@
                         <div id="procedimentosWrapper" style="display:flex; flex-direction:column; gap:8px; grid-column: span 4;">
                         </div>
                         <div class="form-group full-width" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #e2e8f0; padding-bottom:15px;">
-                            <button type="button" class="btn-outline" id="btnAddProc" onclick="addProcRow()" style="font-size:11px; padding:6px 12px;"><i class="fas fa-plus"></i> Adicionar (Máx 5)</button>
+                            <button type="button" class="btn-outline" id="btnAddProc" onclick="addProcRow()" style="font-size:11px; padding:6px 12px;"><i class="fas fa-plus"></i> Adicionar</button>
                             <div style="font-weight:bold; color:#00855B; font-size:15px;">Total: R$ <span id="totalEstimadoVis">0,00</span></div>
                         </div>
 
@@ -845,7 +845,7 @@
                     </div>
                 `;
             });
-            document.getElementById('btnAddProc').style.display = currentProcs.length >= 5 ? 'none' : 'block';
+            document.getElementById('btnAddProc').style.display = currentProcs.length >= 15 ? 'none' : 'block';
             calcTotalProcs();
         }
 
