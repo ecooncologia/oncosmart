@@ -652,7 +652,11 @@
                 const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json(); let rawList = [];
-                    Object.entries(data).forEach(([key, val]) => { rawList.push(typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val)); });
+                    Object.entries(data).forEach(([key, val]) => { 
+                        // Faz o merge seguro entre as colunas nativas e os dados extras do JSON
+                        let extras = typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || {});
+                        rawList.push({ ...val, ...extras }); 
+                    });
                     procedimentosList = rawList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
                 }
             } catch(e) {}
@@ -706,8 +710,19 @@
             
             const procObj = procedimentosList.find(p => p.nome === val);
             if(procObj) {
-                let valNumerico = parseFloat((procObj.valor||0).toString().replace(',','.').replace(/[^0-9.-]+/g,"")) || 0;
-                currentProcs[index].valor = valNumerico;
+                // Nova Lógica: Soma as colunas específicas de custo do banco de dados
+                let cProc = parseFloat(procObj.custo_procedimento) || 0;
+                let cMed = parseFloat(procObj.custo_medicamento) || 0;
+                let cMat = parseFloat(procObj.custo_material) || 0;
+                
+                let somaTotal = cProc + cMed + cMat;
+
+                // Fallback de segurança caso algum cadastro muito antigo use 'valor' solto
+                if (somaTotal === 0 && procObj.valor) {
+                    somaTotal = parseFloat(String(procObj.valor).replace(',','.').replace(/[^0-9.-]+/g,"")) || 0;
+                }
+
+                currentProcs[index].valor = somaTotal;
             } else {
                 currentProcs[index].valor = 0;
             }
@@ -736,7 +751,7 @@
                             </select>
                         </div>
                         <div style="width:120px; flex-shrink:0;">
-                            <input type="number" step="0.01" class="form-input" value="${p.valor}" readonly style="background:#f1f5f9; color:#94a3b8; cursor:not-allowed;" title="Valor gerado automaticamente" placeholder="Valor (R$)">
+                            <input type="number" step="0.01" class="form-input" value="${p.valor}" readonly style="background:#f1f5f9; color:#94a3b8; cursor:not-allowed;" title="Valor calculado automaticamente do banco" placeholder="Valor (R$)">
                         </div>
                         <button type="button" class="btn-danger-sm" style="height:35px; width:35px;" onclick="removeProcRow(${idx})" title="Remover"><i class="fas fa-trash"></i></button>
                     </div>
