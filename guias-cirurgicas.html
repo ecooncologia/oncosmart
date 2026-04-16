@@ -70,7 +70,7 @@
         .btn-icon.delete { color: #dc2626; }
         .btn-icon:hover { opacity: 0.8; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* DASHBOARD / AGENDA VERTICAL (ONE-PAGE / SEM SCROLL) */
+        /* DASHBOARD / AGENDA VERTICAL */
         #viewAgenda { flex: 1; display: flex; flex-direction: column; min-height: 0; }
         .agenda-v-wrapper { display: flex; flex-direction: column; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; flex: 1; overflow: hidden; position: relative; }
         .agenda-v-header { display: flex; z-index: 30; background: #f8fafc; border-bottom: 2px solid #e2e8f0; flex-shrink: 0;}
@@ -86,6 +86,11 @@
         
         .agenda-v-grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; z-index: 1; }
         .agenda-v-grid-line.half-hour { border-top: 1px dotted #e2e8f0; }
+
+        /* CLICKABLE GRID BACKGROUND */
+        .agenda-v-bg-grid { position: absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; z-index: 5; }
+        .grid-slot { flex:1; cursor: pointer; transition: background 0.1s; }
+        .grid-slot:hover { background: rgba(0, 133, 91, 0.08); }
 
         /* CARDS DA AGENDA */
         .agenda-v-card { position: absolute; border-radius: 4px; padding: 4px 6px; overflow: hidden; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; border-left: 4px solid; display: flex; flex-direction: column; box-sizing: border-box; line-height: 1.1;}
@@ -114,7 +119,7 @@
         .form-group.col-span-2 { grid-column: span 2; }
         .form-group.full-width { grid-column: span 3; }
         .form-label { font-size: 11px; font-weight: 700; color: #475569; }
-        .form-input { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; outline: none; transition: 0.2s; font-family: inherit; background: #fff;}
+        .form-input { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; outline: none; transition: 0.2s; font-family: inherit; background: #fff; width: 100%; box-sizing: border-box;}
         .form-input:focus { border-color: #00855B; box-shadow: 0 0 0 3px rgba(0,133,91,0.1); }
         .form-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
         textarea.form-input { resize: vertical; min-height: 60px; }
@@ -128,7 +133,7 @@
         .hosp-color-item strong { font-size: 12px; color: #1e293b; flex: 1; }
         .color-picker-input { width: 35px; height: 25px; border: none; border-radius: 4px; cursor: pointer; padding: 0; margin-right: 10px;}
         
-        .btn-danger-sm { background: #fee2e2; color: #dc2626; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: 0.2s; }
+        .btn-danger-sm { background: #fee2e2; color: #dc2626; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: 0.2s; display: flex; align-items: center; justify-content: center;}
         .btn-danger-sm:hover { background: #fca5a5; }
 
         .add-hosp-bar { display: flex; gap: 10px; margin-bottom: 15px; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;}
@@ -244,11 +249,11 @@
                             <tr>
                                 <th>Data Envio</th>
                                 <th>Paciente / Médico</th>
-                                <th>Procedimento / Agendamento</th>
+                                <th>Procedimento(s) / Agendamento</th>
                                 <th>Convênio</th>
                                 <th>Hospital</th>
                                 <th>Status da Guia</th>
-                                <th style="text-align: right;">Valor (R$)</th>
+                                <th style="text-align: right;">Total (R$)</th>
                                 <th style="text-align: center;">Ações</th>
                             </tr>
                         </thead>
@@ -275,6 +280,7 @@
             <div class="modal-body">
                 <form id="guiaForm">
                     <input type="hidden" id="guia_id">
+                    <input type="hidden" id="valorTotal" value="0">
                     
                     <div class="form-grid">
                         <div class="section-title">Informações do Envio e Status</div>
@@ -306,13 +312,15 @@
                             </select>
                         </div>
 
-                        <div class="form-group full-width">
-                            <label class="form-label">Procedimento Cirúrgico</label>
-                            <select id="procedimento" class="form-input" required>
-                                <option value="">Carregando procedimentos...</option>
-                            </select>
+                        <div class="section-title" style="margin-top:15px;">Procedimentos e Valores</div>
+                        <div id="procedimentosWrapper" style="display:flex; flex-direction:column; gap:8px; grid-column: span 3;">
+                            </div>
+                        <div class="form-group full-width" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #e2e8f0; padding-bottom:15px;">
+                            <button type="button" class="btn-outline" id="btnAddProc" onclick="addProcRow()" style="font-size:11px; padding:6px 12px;"><i class="fas fa-plus"></i> Adicionar (Máx 5)</button>
+                            <div style="font-weight:bold; color:#00855B; font-size:15px;">Total: R$ <span id="totalEstimadoVis">0,00</span></div>
                         </div>
 
+                        <div class="section-title">Dados do Agendamento (Dashboard)</div>
                         <div class="form-group">
                             <label class="form-label">Hospital</label>
                             <select id="hospital" class="form-input" required>
@@ -320,7 +328,28 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Tipo (Convênio ou Part.)</label>
+                            <label class="form-label">Data da Cirurgia</label>
+                            <input type="date" id="data_cirurgia" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hora Início</label>
+                            <input type="time" id="hora_cirurgia" class="form-input">
+                        </div>
+                        
+                        <div class="form-group col-span-2" style="display:flex; flex-direction:row; gap:10px;">
+                            <div style="flex:1;">
+                                <label class="form-label">Horas</label>
+                                <input type="number" id="duracao_h" class="form-input" min="0" value="1" onblur="normalizeDuration()">
+                            </div>
+                            <div style="flex:1;">
+                                <label class="form-label">Minutos (ex: digite 90)</label>
+                                <input type="number" id="duracao_m" class="form-input" min="0" value="30" onblur="normalizeDuration()" placeholder="Mins">
+                            </div>
+                        </div>
+
+                        <div class="section-title">Controle Administrativo</div>
+                        <div class="form-group">
+                            <label class="form-label">Convênio ou Part.</label>
                             <select id="convenio" class="form-input" required>
                                 <option value="">Selecione...</option>
                                 <option value="Particular">Particular</option>
@@ -333,38 +362,6 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Valor Estimado (R$)</label>
-                            <input type="number" step="0.01" id="valor" class="form-input" placeholder="0,00">
-                        </div>
-
-                        <div class="section-title">Dados do Agendamento (Dashboard)</div>
-                        <div class="form-group">
-                            <label class="form-label">Data da Cirurgia</label>
-                            <input type="date" id="data_cirurgia" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Hora Início (Ex: 08:30)</label>
-                            <input type="time" id="hora_cirurgia" class="form-input">
-                        </div>
-                        
-                        <div class="form-group" style="display:flex; flex-direction:row; gap:10px;">
-                            <div style="flex:1;">
-                                <label class="form-label">Horas (Duração)</label>
-                                <input type="number" id="duracao_h" class="form-input" min="0" value="1" placeholder="Ex: 1">
-                            </div>
-                            <div style="flex:1;">
-                                <label class="form-label">Minutos</label>
-                                <select id="duracao_m" class="form-input">
-                                    <option value="0">00 min</option>
-                                    <option value="15">15 min</option>
-                                    <option value="30" selected>30 min</option>
-                                    <option value="45">45 min</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="section-title">Controle Administrativo</div>
-                        <div class="form-group">
                             <label class="form-label">Nº da Guia / Senha</label>
                             <input type="text" id="numero_guia" class="form-input" placeholder="Ex: 123456789">
                         </div>
@@ -376,10 +373,6 @@
                                 <option value="Físico / Malote">Físico / Malote</option>
                                 <option value="WhatsApp">WhatsApp</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Responsável (Logado)</label>
-                            <input type="text" id="responsavel" class="form-input" disabled>
                         </div>
 
                         <div class="form-group full-width">
@@ -428,8 +421,8 @@
                 <div class="view-row">
                     <div class="view-icon"><i class="fas fa-stethoscope"></i></div>
                     <div class="view-text">
-                        <span class="view-label">Procedimento</span>
-                        <span class="view-value" id="viewProc"></span>
+                        <span class="view-label">Procedimentos e Valores</span>
+                        <div id="viewProcsList" style="margin-top: 4px;"></div>
                     </div>
                 </div>
 
@@ -523,11 +516,12 @@
         let userLogged = {};
         let currentView = 'list'; 
         let hospitaisAtivos = []; 
+        let currentProcs = []; // Gestão de múltiplos procedimentos no Modal
 
         const statusConfig = [
             { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane', bg: '#e0f2fe', border: '#0284c7', text: '#0369a1' },
             { name: 'Aguardando confirmação', class: 'st-aguardando', icon: 'fa-clock', bg: '#fef3c7', border: '#d97706', text: '#b45309' },
-            { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user', bg: '#fce7f3', border: '#db2777', text: '#be185d' }, // Alterado para Rosa Pink
+            { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user', bg: '#fce7f3', border: '#db2777', text: '#be185d' },
             { name: 'Pendente de documento', class: 'st-pendente', icon: 'fa-exclamation-triangle', bg: '#fee2e2', border: '#dc2626', text: '#b91c1c' },
             { name: 'Autorizado', class: 'st-autorizado', icon: 'fa-check-circle', bg: '#dcfce7', border: '#166534', text: '#15803d' },
             { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check', bg: '#f3e8ff', border: '#7e22ce', text: '#6b21a8' }
@@ -562,9 +556,7 @@
         function renderLegend() {
             const legendDiv = document.getElementById('agendaLegend');
             let html = '<span style="font-size:11px; font-weight:800; color:#475569;">LEGENDA:</span>';
-            statusConfig.forEach(st => {
-                html += `<div class="legend-item"><div class="legend-color" style="background:${st.bg}; border-color:${st.border};"></div>${st.name}</div>`;
-            });
+            statusConfig.forEach(st => { html += `<div class="legend-item"><div class="legend-color" style="background:${st.bg}; border-color:${st.border};"></div>${st.name}</div>`; });
             legendDiv.innerHTML = html;
         }
 
@@ -650,8 +642,6 @@
                     const data = await res.json(); let rawList = [];
                     Object.entries(data).forEach(([key, val]) => { rawList.push(typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val)); });
                     procedimentosList = rawList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
-                    const select = document.getElementById('procedimento'); select.innerHTML = '<option value="">Carregando procedimentos...</option>';
-                    procedimentosList.forEach(p => { select.innerHTML += `<option value="${p.nome}">${p.nome}</option>`; });
                 }
             } catch(e) {}
         }
@@ -685,6 +675,90 @@
             } catch (err) { document.querySelector('#guiasTable tbody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626;">Erro ao carregar dados.</td></tr>`; }
         }
         function refreshViews() { if (currentView === 'list') { filterTable(); } else { renderAgenda(); } }
+
+        // ==========================================
+        // GESTÃO DE MÚLTIPLOS PROCEDIMENTOS
+        // ==========================================
+        function addProcRow(nome = '', valor = 0) {
+            if(currentProcs.length >= 5) return alert("Limite máximo de 5 procedimentos.");
+            currentProcs.push({nome: nome, valor: valor});
+            renderProcRows();
+        }
+        function removeProcRow(index) {
+            currentProcs.splice(index, 1);
+            renderProcRows();
+        }
+        function updateProcNameAndFetchValue(index, selectEl) {
+            const val = selectEl.value;
+            currentProcs[index].nome = val;
+            
+            // Busca o valor na lista
+            const procObj = procedimentosList.find(p => p.nome === val);
+            if(procObj) {
+                // Conversão segura do valor vindo do BD
+                let valNumerico = parseFloat((procObj.valor||0).toString().replace(',','.').replace(/[^0-9.-]+/g,"")) || 0;
+                currentProcs[index].valor = valNumerico;
+            } else {
+                currentProcs[index].valor = 0;
+            }
+            renderProcRows();
+        }
+        function updateProcManualValue(index, inputEl) {
+            currentProcs[index].valor = parseFloat(inputEl.value) || 0;
+            calcTotalProcs();
+        }
+        function calcTotalProcs() {
+            let total = currentProcs.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
+            document.getElementById('totalEstimadoVis').innerText = total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('valorTotal').value = total;
+        }
+        function renderProcRows() {
+            const wrap = document.getElementById('procedimentosWrapper');
+            wrap.innerHTML = '';
+            
+            let optionsHtml = '<option value="">Selecione o procedimento...</option>';
+            procedimentosList.forEach(proc => { optionsHtml += `<option value="${proc.nome}">${proc.nome}</option>`; });
+
+            currentProcs.forEach((p, idx) => {
+                // Monta os options marcando o selected
+                let pOptions = optionsHtml.replace(`value="${p.nome}"`, `value="${p.nome}" selected`);
+                
+                wrap.innerHTML += `
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <div style="flex:1;">
+                            <select class="form-input" onchange="updateProcNameAndFetchValue(${idx}, this)" required>
+                                ${pOptions}
+                            </select>
+                        </div>
+                        <div style="width:120px; flex-shrink:0;">
+                            <input type="number" step="0.01" class="form-input" value="${p.valor}" onchange="updateProcManualValue(${idx}, this)" required placeholder="Valor (R$)">
+                        </div>
+                        <button type="button" class="btn-danger-sm" style="height:35px; width:35px;" onclick="removeProcRow(${idx})" title="Remover"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+            document.getElementById('btnAddProc').style.display = currentProcs.length >= 5 ? 'none' : 'block';
+            calcTotalProcs();
+        }
+
+        // Conversão de Minutos Inteligente
+        function normalizeDuration() {
+            let h = parseInt(document.getElementById('duracao_h').value) || 0;
+            let m = parseInt(document.getElementById('duracao_m').value) || 0;
+            if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
+            document.getElementById('duracao_h').value = h;
+            document.getElementById('duracao_m').value = m;
+        }
+
+        // Função de clique no fundo da Agenda
+        function openModalFromGrid(hosp, hour, min) {
+            openModal();
+            document.getElementById('hospital').value = hosp;
+            document.getElementById('data_cirurgia').value = document.getElementById('filterDataAgenda').value;
+            const hh = hour.toString().padStart(2, '0');
+            const mm = min.toString().padStart(2, '0');
+            document.getElementById('hora_cirurgia').value = `${hh}:${mm}`;
+        }
 
         // ==========================================
         // AGENDA DASHBOARD
@@ -729,6 +803,15 @@
 
             colunasHospitais.forEach(hosp => {
                 html += `<div class="agenda-v-hosp-track">`;
+                
+                // Gerador do Grid Invisível Clicável
+                html += `<div class="agenda-v-bg-grid">`;
+                for(let i = HORA_INICIO; i < HORA_FIM; i++) {
+                    html += `<div class="grid-slot" onclick="openModalFromGrid('${hosp.name}', ${i}, 0)"></div>`;
+                    html += `<div class="grid-slot half" onclick="openModalFromGrid('${hosp.name}', ${i}, 30)"></div>`;
+                }
+                html += `</div>`;
+
                 let evs = agendamentos.filter(g => g.hospital === hosp.name);
                 evs.sort((a,b) => parseTimeToFloat(a.hora_cirurgia) - parseTimeToFloat(b.hora_cirurgia));
                 
@@ -755,7 +838,11 @@
                         
                         let stConfig = statusConfig.find(s => s.name === ev.status) || statusConfig[0];
                         let obsText = ev.observacao ? ev.observacao.substring(0, 40) + (ev.observacao.length > 40 ? '...' : '') : '';
-                        let medicoNome = ev.medico.replace(/^Dr\.?\s*|^Dra\.?\s*/i, ''); // Tira o Dr. / Dra. do nome
+                        let medicoNome = ev.medico.replace(/^Dr\.?\s*|^Dra\.?\s*/i, ''); 
+
+                        // Adaptação para mostrar multi-procedimentos
+                        let procLabel = ev.procedimento;
+                        if(ev.procedimentos && ev.procedimentos.length > 1) procLabel = `${ev.procedimentos.length} Procedimentos`;
 
                         html += `
                             <div class="agenda-v-card" 
@@ -766,7 +853,7 @@
                                     <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${medicoNome}"><i class="fas fa-user-md" style="opacity:0.7;"></i> ${medicoNome}</span>
                                 </div>
                                 <div class="card-paciente">${ev.paciente}</div>
-                                <div class="card-proc">${ev.procedimento}</div>
+                                <div class="card-proc">${procLabel}</div>
                                 ${obsText ? `<div class="card-obs">${obsText}</div>` : ''}
                             </div>
                         `;
@@ -788,10 +875,19 @@
             document.getElementById('viewGuiaId').value = id;
             document.getElementById('viewPaciente').innerText = guia.paciente;
             document.getElementById('viewMedico').innerText = guia.medico;
-            document.getElementById('viewProc').innerText = guia.procedimento;
             document.getElementById('viewHosp').innerText = guia.hospital;
             
-            // Calculo Horário de Término
+            // Listagem Detalhada de Procedimentos
+            const vList = document.getElementById('viewProcsList');
+            vList.innerHTML = '';
+            let procs = guia.procedimentos || [{nome: guia.procedimento, valor: guia.valor}];
+            procs.forEach(p => {
+                let vTxt = parseFloat(p.valor) ? `R$ ${parseFloat(p.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : 'S/ Valor';
+                vList.innerHTML += `<div style="font-size:13px; color:#1e293b; display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:4px 0;"><span>• ${p.nome}</span><strong>${vTxt}</strong></div>`;
+            });
+            let total = procs.reduce((acc,p) => acc + (parseFloat(p.valor)||0), 0);
+            vList.innerHTML += `<div style="font-size:14px; color:#00855B; display:flex; justify-content:space-between; padding-top:6px; font-weight:bold;"><span>Total:</span><span>R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>`;
+
             let timeStr = "";
             if(guia.data_cirurgia && guia.hora_cirurgia) {
                 const dataFmt = guia.data_cirurgia.split('-').reverse().join('/');
@@ -802,7 +898,6 @@
                 const endH = Math.floor(endFloat);
                 const endM = Math.round((endFloat - endH) * 60);
                 const endStr = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
-                
                 timeStr = `${dataFmt} ⋅ ${guia.hora_cirurgia} – ${endStr}`;
             } else {
                 timeStr = "Sem horário definido";
@@ -910,11 +1005,14 @@
                 }
                 let cirurgiaAgendadaInfo = (g.data_cirurgia && g.hora_cirurgia) ? `<br><span style="font-size:10px; color:#00855B; font-weight:bold;"><i class="fas fa-calendar-check"></i> ${g.data_cirurgia.split('-').reverse().join('/')} às ${g.hora_cirurgia} (${durText})</span>` : '';
 
+                let procsLabel = g.procedimento || '-';
+                if(g.procedimentos && g.procedimentos.length > 1) procsLabel = `<span style="color:#00855B; font-weight:bold;">[${g.procedimentos.length} Procedimentos]</span><br>` + g.procedimentos.map(p => `• ${p.nome}`).join('<br>');
+
                 html += `
                     <tr class="main-row" style="${hasObs ? 'border-bottom: none;' : ''}">
                         <td style="font-weight: 600;">${dataFormatada}</td>
                         <td style="font-weight: 700; color: #0f172a;">${g.paciente || '-'} <br><span style="font-weight:normal; font-size:10px; color:#64748b;">${g.medico || '-'}</span></td>
-                        <td style="font-size: 11px;">${g.procedimento || '-'}${cirurgiaAgendadaInfo}</td>
+                        <td style="font-size: 11px;">${procsLabel}${cirurgiaAgendadaInfo}</td>
                         <td>${convenioHtml}</td>
                         <td>${g.hospital || '-'}</td>
                         <td>${badgeHtml}<span class="status-date">${dateStr}</span></td>
@@ -948,6 +1046,7 @@
             document.getElementById('guiaForm').reset();
             document.getElementById('guia_id').value = '';
             document.getElementById('responsavel').value = userLogged.nome || 'Usuário Desconhecido';
+            currentProcs = [];
             
             if (id) {
                 document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Guia Cirúrgica';
@@ -959,31 +1058,38 @@
                     document.getElementById('medico').value = guia.medico || '';
                     document.getElementById('hospital').value = guia.hospital || '';
                     document.getElementById('convenio').value = guia.convenio || '';
-                    document.getElementById('valor').value = guia.valor || '';
-                    document.getElementById('procedimento').value = guia.procedimento || '';
                     document.getElementById('numero_guia').value = guia.numero_guia || '';
                     document.getElementById('forma_envio').value = guia.forma_envio || 'E-mail';
                     document.getElementById('responsavel').value = guia.responsavel || userLogged.nome;
                     document.getElementById('status').value = guia.status || 'Enviado';
                     document.getElementById('observacao').value = guia.observacao || '';
-                    
                     document.getElementById('data_cirurgia').value = guia.data_cirurgia || '';
                     document.getElementById('hora_cirurgia').value = guia.hora_cirurgia || '';
                     
                     let durFloat = parseFloat(guia.duracao) || 1.5;
                     let dH = Math.floor(durFloat);
                     let dM = Math.round((durFloat - dH) * 60);
-                    if(dM !== 0 && dM !== 15 && dM !== 30 && dM !== 45) dM = 30;
-                    
                     document.getElementById('duracao_h').value = dH;
                     document.getElementById('duracao_m').value = dM;
+
+                    // Mapeamento de Procedimentos Anteriores
+                    if(guia.procedimentos && guia.procedimentos.length > 0) {
+                        currentProcs = JSON.parse(JSON.stringify(guia.procedimentos));
+                    } else if (guia.procedimento) {
+                        currentProcs.push({nome: guia.procedimento, valor: parseFloat(guia.valor)||0});
+                    } else {
+                        currentProcs.push({nome: '', valor: 0});
+                    }
                 }
             } else {
                 document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Cadastrar Nova Guia';
                 document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
                 document.getElementById('duracao_h').value = '1';
                 document.getElementById('duracao_m').value = '30';
+                currentProcs.push({nome: '', valor: 0});
             }
+            
+            renderProcRows();
             showModalElement('guiaModal');
         }
 
@@ -1000,6 +1106,10 @@
         async function saveGuia() {
             const form = document.getElementById('guiaForm');
             if (!form.checkValidity()) { form.reportValidity(); return; }
+            if (currentProcs.length === 0) { alert("Adicione pelo menos 1 procedimento."); return; }
+            
+            // Verifica se tem algum procedimento sem nome selecionado
+            if(currentProcs.some(p => !p.nome)) { alert("Por favor, selecione o nome para todos os procedimentos."); return; }
 
             const id = document.getElementById('guia_id').value;
             const btn = document.querySelector('#guiaModal .btn-success');
@@ -1014,9 +1124,13 @@
                 hist.push({ status: novoStatus, data: new Date().toISOString(), usuario: userLogged.nome || 'Sistema' });
             }
 
+            normalizeDuration(); // Garante que a conta esteja certa
             const valH = parseInt(document.getElementById('duracao_h').value) || 0;
             const valM = parseInt(document.getElementById('duracao_m').value) || 0;
             const totalDuracao = valH + (valM / 60);
+            
+            const valorTotal = parseFloat(document.getElementById('valorTotal').value) || 0;
+            const nomeProcAgrupado = currentProcs.map(p => p.nome).join(' + ');
 
             const payload = {
                 data_envio: document.getElementById('data_envio').value,
@@ -1024,8 +1138,11 @@
                 medico: document.getElementById('medico').value,
                 hospital: document.getElementById('hospital').value,
                 convenio: document.getElementById('convenio').value,
-                valor: parseFloat(document.getElementById('valor').value) || 0,
-                procedimento: document.getElementById('procedimento').value,
+                
+                procedimento: nomeProcAgrupado, // Mantido para compatibilidade em listagens antigas
+                valor: valorTotal, // Mantido para o valor total
+                procedimentos: currentProcs, // O novo Array estruturado
+
                 numero_guia: document.getElementById('numero_guia').value,
                 forma_envio: document.getElementById('forma_envio').value,
                 responsavel: document.getElementById('responsavel').value,
@@ -1069,7 +1186,13 @@
                 let dt = cols[0].innerHTML.split('<div')[0].replace(/<[^>]*>?/gm, '').trim(); 
                 let p = cols[1].innerHTML.split('<br>')[0].replace(/<[^>]*>?/gm, '').trim(); 
                 let m = cols[1].innerText.split('\n')[1] || ''; 
-                let proc = cols[2].innerText; let conv = cols[3].innerText; let hosp = cols[4].innerText;
+                
+                // Limpa o texto da coluna para o relatório removendo botões do HTML injetado
+                let procColHtml = cols[2].innerHTML.split('<br>')[0];
+                let proc = procColHtml.replace(/<[^>]*>?/gm, '').trim(); 
+                if(cols[2].innerText.includes('[')) { proc = cols[2].innerText.split('\n').filter(l => l.includes('•')).join(', ').replace(/• /g, ''); }
+
+                let conv = cols[3].innerText; let hosp = cols[4].innerText;
                 let status = cols[5].innerText.split('\n')[0]; 
                 let valStr = cols[6].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
                 let valNum = parseFloat(valStr) || 0; totalVal += valNum;
@@ -1139,7 +1262,7 @@
                 let hColor = hConfig ? hConfig.color : '#00855B';
                 
                 html += `<div class="hosp-title" style="border-left-color: ${hColor}; color: ${hColor};">${hosp}</div>`;
-                html += `<table><thead><tr><th style="width:50px;">Horário</th><th>Paciente</th><th>Procedimento</th><th>Médico Responsável</th><th>Convênio</th><th style="width:100px;">Status</th><th style="width:200px;">Observações</th></tr></thead><tbody>`;
+                html += `<table><thead><tr><th style="width:50px;">Horário</th><th>Paciente</th><th>Procedimentos e Valores</th><th>Médico Responsável</th><th>Convênio</th><th style="width:100px;">Status</th><th style="width:180px;">Observações</th></tr></thead><tbody>`;
                 
                 grupos[hosp].forEach(g => {
                     let dH = Math.floor(g.duracao || 1.5);
@@ -1149,10 +1272,18 @@
                     let stConfig = statusConfig.find(s => s.name === g.status) || statusConfig[0];
                     let stHtml = `<span class="status-span" style="background:${stConfig.bg}; color:${stConfig.text}; border:1px solid ${stConfig.border};">${g.status}</span>`;
 
+                    // Formatação detalhada dos múltiplos procedimentos
+                    let procsHtml = '';
+                    let pList = g.procedimentos || [{nome: g.procedimento, valor: g.valor}];
+                    pList.forEach(p => {
+                        let vTxt = parseFloat(p.valor) ? `(R$ ${parseFloat(p.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})})` : '';
+                        procsHtml += `<div style="margin-bottom:2px;">• ${p.nome} <span style="color:#64748b;">${vTxt}</span></div>`;
+                    });
+
                     html += `<tr>
                         <td style="font-size:13px;"><b>${g.hora_cirurgia}</b><br><span style="font-size:10px; color:#64748b; font-weight:normal;">Dur: ${durTxt}</span></td>
                         <td style="font-size:12px; font-weight:bold;">${g.paciente}</td>
-                        <td>${g.procedimento}</td>
+                        <td style="font-size:10px;">${procsHtml}</td>
                         <td>${g.medico}</td>
                         <td>${g.convenio}</td>
                         <td>${stHtml}</td>
