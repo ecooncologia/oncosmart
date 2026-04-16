@@ -93,7 +93,7 @@
         .grid-slot:hover { background: rgba(0, 133, 91, 0.08); }
 
         /* CARDS DA AGENDA */
-        .agenda-v-card { position: absolute; border-radius: 4px; padding: 4px 6px; overflow: hidden; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; border-left: 4px solid; display: flex; flex-direction: column; box-sizing: border-box; line-height: 1.1;}
+        .agenda-v-card { position: absolute; border-radius: 4px; padding: 4px 6px; overflow: hidden; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; border-left: 4px solid; display: flex; flex-direction: column; box-sizing: border-box; line-height: 1.1; min-height: 45px;} /* MIN-HEIGHT ADICIONADO AQUI PARA NÃO CORTAR */
         .agenda-v-card:hover { transform: scale(1.02); z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .card-doctor { font-weight: 800; font-size: 10px; margin-bottom: 3px; }
         .card-paciente { font-weight: 700; font-size: 9px; opacity: 0.9; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
@@ -581,21 +581,43 @@
         }
 
         // ==========================================
-        // HOSPITAIS E CORES
+        // HOSPITAIS E CORES - LÓGICA BLINDADA
         // ==========================================
         function initHospitais() {
-            const saved = localStorage.getItem('ecoHospitaisMaster');
-            if(saved) {
-                hospitaisAtivos = JSON.parse(saved);
-            } else {
-                const unicos = [...new Set(guiasData.map(g => g.hospital).filter(Boolean))].sort();
-                hospitaisAtivos = unicos.map(h => ({ name: h, color: '#00855B' }));
-                if(hospitaisAtivos.length === 0) hospitaisAtivos = [{name: 'Hospital Vita', color: '#00855B'}];
-                saveHospitaisLocal();
+            let salvos = [];
+            
+            // 1. Tenta carregar o que já estava salvo no navegador
+            try {
+                const saved = localStorage.getItem('ecoHospitaisMaster');
+                if (saved) salvos = JSON.parse(saved);
+            } catch (e) {}
+
+            // 2. RECUPERAÇÃO AUTOMÁTICA: Busca em todo o banco de guias todos os hospitais já usados.
+            // Isso garante que mesmo limpando o cache, se tiver uma guia com "Hospital X", ele não some.
+            const hospitaisNoBanco = [...new Set(guiasData.map(g => g.hospital).filter(Boolean))];
+            
+            hospitaisNoBanco.forEach(hb => {
+                if(!salvos.find(s => s.name === hb)) {
+                    salvos.push({ name: hb, color: '#00855B' });
+                }
+            });
+
+            // 3. Fallback apenas se for a primeira vez e o banco estiver 100% vazio
+            if(salvos.length === 0) {
+                salvos = [
+                    {name: 'Hospital Vita', color: '#00855B'}
+                ];
             }
+
+            // Ordena alfabeticamente
+            salvos.sort((a,b) => a.name.localeCompare(b.name));
+            
+            hospitaisAtivos = salvos;
+            saveHospitaisLocal();
             updateHospitalSelects();
             if(currentView === 'agenda') renderAgenda();
         }
+
         function saveHospitaisLocal() { localStorage.setItem('ecoHospitaisMaster', JSON.stringify(hospitaisAtivos)); }
         function updateHospitalSelects() {
             const formSelect = document.getElementById('hospital'); formSelect.innerHTML = '<option value="">Selecione o Hospital...</option>';
@@ -653,7 +675,6 @@
                 if(res.ok) {
                     const data = await res.json(); let rawList = [];
                     Object.entries(data).forEach(([key, val]) => { 
-                        // Faz o merge seguro entre as colunas nativas e os dados extras do JSON
                         let extras = typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || {});
                         rawList.push({ ...val, ...extras }); 
                     });
@@ -710,18 +731,14 @@
             
             const procObj = procedimentosList.find(p => p.nome === val);
             if(procObj) {
-                // Nova Lógica: Soma as colunas específicas de custo do banco de dados
                 let cProc = parseFloat(procObj.custo_procedimento) || 0;
                 let cMed = parseFloat(procObj.custo_medicamento) || 0;
                 let cMat = parseFloat(procObj.custo_material) || 0;
-                
                 let somaTotal = cProc + cMed + cMat;
 
-                // Fallback de segurança caso algum cadastro muito antigo use 'valor' solto
                 if (somaTotal === 0 && procObj.valor) {
                     somaTotal = parseFloat(String(procObj.valor).replace(',','.').replace(/[^0-9.-]+/g,"")) || 0;
                 }
-
                 currentProcs[index].valor = somaTotal;
             } else {
                 currentProcs[index].valor = 0;
