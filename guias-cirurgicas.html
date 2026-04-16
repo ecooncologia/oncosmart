@@ -39,6 +39,11 @@
         .btn-print { background: #4b5563; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; height: 34px; font-size: 12px;}
         .btn-print:hover { background: #374151; }
 
+        /* LEGENDA STATUS */
+        #agendaLegend { display: none; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; padding: 10px 20px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #475569; }
+        .legend-color { width: 14px; height: 14px; border-radius: 3px; border-left: 3px solid; }
+
         /* TABELA DE LISTA */
         #viewList { flex: 1; display: flex; flex-direction: column; min-height: 0; }
         .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; flex: 1;}
@@ -82,16 +87,17 @@
         .agenda-v-grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed #cbd5e1; pointer-events: none; z-index: 1; }
         .agenda-v-grid-line.half-hour { border-top: 1px dotted #e2e8f0; }
 
-        /* CARDS MENORES DA AGENDA */
+        /* CARDS DA AGENDA */
         .agenda-v-card { position: absolute; border-radius: 4px; padding: 4px 6px; overflow: hidden; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; border-left: 4px solid; display: flex; flex-direction: column; box-sizing: border-box; line-height: 1.1;}
         .agenda-v-card:hover { transform: scale(1.02); z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .card-doctor { font-weight: 800; font-size: 10px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: flex-start;}
+        .card-doctor { font-weight: 800; font-size: 10px; margin-bottom: 3px; }
         .card-paciente { font-weight: 700; font-size: 9px; opacity: 0.9; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-        .card-proc { font-size: 8px; opacity: 0.8; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-top: auto;}
+        .card-proc { font-size: 8px; font-weight: 600; opacity: 0.8; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .card-obs { font-size: 8px; opacity: 0.7; margin-top: auto; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-style: italic; }
         
         .agenda-empty { padding: 40px; text-align: center; color: #94a3b8; font-weight: 500; font-size: 14px; width: 100%; margin-top: 20px;}
 
-        /* Modals */
+        /* Modals Padrão */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(3px); }
         .modal-overlay.show { display: flex; opacity: 1; }
         .modal-content { background: white; width: 90%; max-width: 800px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: 90vh; }
@@ -126,6 +132,19 @@
         .btn-danger-sm:hover { background: #fca5a5; }
 
         .add-hosp-bar { display: flex; gap: 10px; margin-bottom: 15px; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;}
+
+        /* MODAL DE VISUALIZAÇÃO (TIPO GOOGLE CALENDAR) */
+        .view-modal-header { padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; border-radius: 12px 12px 0 0;}
+        .view-modal-body { padding: 25px 30px; font-size: 14px; color: #334155; }
+        .view-modal-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .view-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-start; }
+        .view-icon { width: 24px; color: #64748b; font-size: 16px; text-align: center; margin-top: 2px;}
+        .view-text { flex: 1; }
+        .view-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; display: block;}
+        .view-value { font-weight: 500; font-size: 14px; color: #1e293b;}
+        .btn-icon-light { background: transparent; border: none; color: #64748b; font-size: 16px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-icon-light:hover { background: #e2e8f0; color: #0f172a; }
+        .btn-icon-light.delete:hover { background: #fee2e2; color: #dc2626; }
     </style>
 </head>
 <body>
@@ -208,10 +227,14 @@
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </button>
                 <button class="btn-print" id="btnExportAgenda" onclick="generateAgendaPDF()" style="display:none; background: #0284c7;">
-                    <i class="fas fa-file-contract"></i> Relatório da Agenda
+                    <i class="fas fa-map"></i> Mapa Cirúrgico
                 </button>
             </div>
         </div>
+
+        <div id="agendaLegend">
+            <span style="font-size:11px; font-weight:800; color:#475569;">LEGENDA DE CORES:</span>
+            </div>
 
         <div id="viewList">
             <div class="sheet-container">
@@ -294,7 +317,7 @@
                             <label class="form-label">Hospital</label>
                             <select id="hospital" class="form-input" required>
                                 <option value="">Selecione o Hospital...</option>
-                                </select>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Tipo (Convênio ou Part.)</label>
@@ -323,9 +346,21 @@
                             <label class="form-label">Hora Início (Ex: 08:30)</label>
                             <input type="time" id="hora_cirurgia" class="form-input">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Duração Estimada (h)</label>
-                            <input type="number" step="0.5" id="duracao" class="form-input" placeholder="Ex: 2.5" value="1.5">
+                        
+                        <div class="form-group" style="display:flex; flex-direction:row; gap:10px;">
+                            <div style="flex:1;">
+                                <label class="form-label">Horas (Duração)</label>
+                                <input type="number" id="duracao_h" class="form-input" min="0" value="1" placeholder="Ex: 1">
+                            </div>
+                            <div style="flex:1;">
+                                <label class="form-label">Minutos</label>
+                                <select id="duracao_m" class="form-input">
+                                    <option value="0">00 min</option>
+                                    <option value="15">15 min</option>
+                                    <option value="30" selected>30 min</option>
+                                    <option value="45">45 min</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="section-title">Controle Administrativo</div>
@@ -361,6 +396,71 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="viewGuiaModal">
+        <div class="modal-content small" style="max-width: 500px; border-radius: 12px; overflow: hidden;">
+            <div class="view-modal-header">
+                <button class="btn-icon-light" onclick="openModal(document.getElementById('viewGuiaId').value); closeModal('viewGuiaModal');" title="Expandir/Editar"><i class="fas fa-edit"></i></button>
+                <button class="btn-icon-light delete" onclick="deleteGuiaAndClose(document.getElementById('viewGuiaId').value)" title="Excluir Agenda"><i class="fas fa-trash-alt"></i></button>
+                <button class="btn-icon-light" onclick="closeModal('viewGuiaModal')" title="Fechar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="view-modal-body">
+                <input type="hidden" id="viewGuiaId">
+                <div class="view-modal-title">
+                    <div id="viewColorBadge" style="width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;"></div>
+                    <div id="viewPaciente" style="line-height: 1.2;"></div>
+                </div>
+
+                <div class="view-row">
+                    <div class="view-icon"><i class="far fa-clock"></i></div>
+                    <div class="view-text">
+                        <span class="view-value" id="viewHorario"></span>
+                    </div>
+                </div>
+
+                <div class="view-row">
+                    <div class="view-icon"><i class="fas fa-user-md"></i></div>
+                    <div class="view-text">
+                        <span class="view-label">Médico Responsável</span>
+                        <span class="view-value" id="viewMedico"></span>
+                    </div>
+                </div>
+
+                <div class="view-row">
+                    <div class="view-icon"><i class="fas fa-stethoscope"></i></div>
+                    <div class="view-text">
+                        <span class="view-label">Procedimento</span>
+                        <span class="view-value" id="viewProc"></span>
+                    </div>
+                </div>
+
+                <div class="view-row">
+                    <div class="view-icon"><i class="far fa-building"></i></div>
+                    <div class="view-text">
+                        <span class="view-label">Local / Hospital</span>
+                        <span class="view-value" id="viewHosp"></span>
+                    </div>
+                </div>
+
+                <div class="view-row">
+                    <div class="view-icon"><i class="fas fa-info-circle"></i></div>
+                    <div class="view-text">
+                        <span class="view-label">Status da Guia</span>
+                        <div id="viewStatusBadge" style="margin-top: 4px;"></div>
+                    </div>
+                </div>
+
+                <div class="view-row" id="viewObsContainer" style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                    <div class="view-icon"><i class="fas fa-align-left"></i></div>
+                    <div class="view-text">
+                        <span class="view-label">Observação</span>
+                        <span class="view-value" id="viewObs" style="font-size: 13px; font-weight: normal; color: #475569; white-space: pre-wrap;"></span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="hospitaisModal">
         <div class="modal-content small">
             <div class="modal-header">
@@ -372,14 +472,12 @@
                     <input type="text" id="newHospitalName" class="form-input" placeholder="Nome do novo hospital..." style="flex:1;">
                     <button class="btn-success" onclick="addHospital()"><i class="fas fa-plus"></i> Adicionar</button>
                 </div>
-                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 10px;">Estes hospitais aparecerão no formulário de cadastro e definirão as colunas fixas do Dashboard da Agenda.</p>
-                
-                <div id="hospitaisListContainer">
-                    </div>
+                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 10px;">Estes hospitais definirão as colunas do Dashboard da Agenda.</p>
+                <div id="hospitaisListContainer"></div>
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel" onclick="closeModal('hospitaisModal')">Fechar</button>
-                <button class="btn-success" onclick="saveHospitalColors()"><i class="fas fa-save"></i> Salvar Alterações</button>
+                <button class="btn-success" onclick="saveHospitalColors()"><i class="fas fa-save"></i> Salvar</button>
             </div>
         </div>
     </div>
@@ -401,7 +499,7 @@
     <div class="modal-overlay" id="anexosModal">
          <div class="modal-content small">
             <div class="modal-header" style="background: #f8fafc; color: #1e293b; border-bottom: 2px solid #e2e8f0;">
-                <h3 style="font-size: 15px;"><i class="fas fa-paperclip" style="color: #8b5cf6;"></i> Documentos da Guia</h3>
+                <h3 style="font-size: 15px;"><i class="fas fa-paperclip" style="color: #8b5cf6;"></i> Documentos</h3>
                 <button class="close-modal" style="color: #64748b;" onclick="closeModal('anexosModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
@@ -409,7 +507,7 @@
                 <div id="listaAnexos"></div>
                 <div class="file-upload-wrapper">
                     <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #94a3b8; margin-bottom: 10px;"></i>
-                    <div style="font-size: 13px; font-weight: 600; color: #475569;">Clique aqui para anexar documento</div>
+                    <div style="font-size: 13px; font-weight: 600; color: #475569;">Clique aqui para anexar</div>
                     <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">PDF, JPG ou PNG (Máx 2MB)</div>
                     <input type="file" id="fileInput" accept=".pdf, image/jpeg, image/png" onchange="uploadAttachment(this)">
                 </div>
@@ -424,17 +522,16 @@
         let medicosList = [];
         let userLogged = {};
         let currentView = 'list'; 
-        
-        // Gerenciamento de Hospitais
-        let hospitaisAtivos = []; // Array de objetos {name: 'Hospital', color: '#hex'}
+        let hospitaisAtivos = []; 
 
+        // Adicionado cores específicas para preencher o fundo e a borda dos cards
         const statusConfig = [
-            { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane' },
-            { name: 'Aguardando confirmação', class: 'st-aguardando', icon: 'fa-clock' },
-            { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user' },
-            { name: 'Pendente de documento', class: 'st-pendente', icon: 'fa-exclamation-triangle' },
-            { name: 'Autorizado', class: 'st-autorizado', icon: 'fa-check-circle' },
-            { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check' }
+            { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane', bg: '#e0f2fe', border: '#0284c7', text: '#0369a1' },
+            { name: 'Aguardando confirmação', class: 'st-aguardando', icon: 'fa-clock', bg: '#fef3c7', border: '#d97706', text: '#b45309' },
+            { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user', bg: '#cffafe', border: '#0ea5e9', text: '#0369a1' },
+            { name: 'Pendente de documento', class: 'st-pendente', icon: 'fa-exclamation-triangle', bg: '#fee2e2', border: '#dc2626', text: '#b91c1c' },
+            { name: 'Autorizado', class: 'st-autorizado', icon: 'fa-check-circle', bg: '#dcfce7', border: '#166534', text: '#15803d' },
+            { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check', bg: '#f3e8ff', border: '#7e22ce', text: '#6b21a8' }
         ];
 
         async function startApp() {
@@ -453,15 +550,24 @@
                     try { userLogged = JSON.parse(userSession); document.getElementById('responsavel').value = userLogged.nome || 'Usuário Desconhecido'; } catch(e){}
                 }
 
+                renderLegend();
+
                 await Promise.all([ loadProcedimentos(), loadMedicos(), loadGuias() ]);
-                
-                // Inicializa Hospitais
                 initHospitais();
             } else {
                 setTimeout(startApp, 100);
             }
         }
         document.addEventListener('DOMContentLoaded', startApp);
+
+        function renderLegend() {
+            const legendDiv = document.getElementById('agendaLegend');
+            let html = '<span style="font-size:11px; font-weight:800; color:#475569;">LEGENDA:</span>';
+            statusConfig.forEach(st => {
+                html += `<div class="legend-item"><div class="legend-color" style="background:${st.bg}; border-color:${st.border};"></div>${st.name}</div>`;
+            });
+            legendDiv.innerHTML = html;
+        }
 
         function changeView(view) {
             currentView = view;
@@ -472,11 +578,12 @@
             document.getElementById('viewAgenda').style.display = view === 'agenda' ? 'flex' : 'none';
 
             document.getElementById('groupDataAgenda').style.display = view === 'agenda' ? 'flex' : 'none';
+            document.getElementById('agendaLegend').style.display = view === 'agenda' ? 'flex' : 'none';
+
             document.getElementById('groupMes').style.display = view === 'list' ? 'flex' : 'none';
             document.getElementById('groupAno').style.display = view === 'list' ? 'flex' : 'none';
             document.getElementById('groupResp').style.display = view === 'list' ? 'flex' : 'none';
             
-            // Alterna botões de exportação
             document.getElementById('btnExportList').style.display = view === 'list' ? 'flex' : 'none';
             document.getElementById('btnExportAgenda').style.display = view === 'agenda' ? 'flex' : 'none';
 
@@ -484,184 +591,104 @@
         }
 
         // ==========================================
-        // GERENCIAMENTO DE HOSPITAIS
+        // HOSPITAIS
         // ==========================================
         function initHospitais() {
             const saved = localStorage.getItem('ecoHospitaisMaster');
             if(saved) {
                 hospitaisAtivos = JSON.parse(saved);
             } else {
-                // Se for a primeira vez, puxa os existentes na base
                 const unicos = [...new Set(guiasData.map(g => g.hospital).filter(Boolean))].sort();
                 hospitaisAtivos = unicos.map(h => ({ name: h, color: '#cbd5e1' }));
-                if(hospitaisAtivos.length === 0) {
-                    hospitaisAtivos = [{name: 'Hospital Vita', color: '#3b82f6'}]; // Default
-                }
+                if(hospitaisAtivos.length === 0) hospitaisAtivos = [{name: 'Hospital Vita', color: '#3b82f6'}];
                 saveHospitaisLocal();
             }
             updateHospitalSelects();
             if(currentView === 'agenda') renderAgenda();
         }
-
-        function saveHospitaisLocal() {
-            localStorage.setItem('ecoHospitaisMaster', JSON.stringify(hospitaisAtivos));
-        }
-
+        function saveHospitaisLocal() { localStorage.setItem('ecoHospitaisMaster', JSON.stringify(hospitaisAtivos)); }
         function updateHospitalSelects() {
-            // Atualiza Form Select
-            const formSelect = document.getElementById('hospital');
-            formSelect.innerHTML = '<option value="">Selecione o Hospital...</option>';
-            // Atualiza Filter Select
-            const filterSelect = document.getElementById('filterHospital');
-            filterSelect.innerHTML = '<option value="todos">Todos os Hospitais</option>';
-
+            const formSelect = document.getElementById('hospital'); formSelect.innerHTML = '<option value="">Selecione o Hospital...</option>';
+            const filterSelect = document.getElementById('filterHospital'); filterSelect.innerHTML = '<option value="todos">Todos os Hospitais</option>';
             hospitaisAtivos.forEach(h => {
                 formSelect.innerHTML += `<option value="${h.name}">${h.name}</option>`;
                 filterSelect.innerHTML += `<option value="${h.name}">${h.name}</option>`;
             });
         }
-
-        function openHospitaisModal() {
-            renderHospitaisModalList();
-            document.getElementById('newHospitalName').value = '';
-            showModalElement('hospitaisModal');
-        }
-
+        function openHospitaisModal() { renderHospitaisModalList(); document.getElementById('newHospitalName').value = ''; showModalElement('hospitaisModal'); }
         function renderHospitaisModalList() {
-            const container = document.getElementById('hospitaisListContainer');
-            container.innerHTML = '';
-            
-            if(hospitaisAtivos.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#64748b;">Nenhum hospital cadastrado.</p>';
-            } else {
+            const container = document.getElementById('hospitaisListContainer'); container.innerHTML = '';
+            if(hospitaisAtivos.length === 0) container.innerHTML = '<p style="text-align:center; color:#64748b;">Nenhum hospital cadastrado.</p>';
+            else {
                 hospitaisAtivos.forEach((h, index) => {
-                    container.innerHTML += `
-                        <div class="hosp-color-item">
-                            <strong>${h.name}</strong>
-                            <div style="display:flex; align-items:center;">
-                                <input type="color" class="color-picker-input" data-index="${index}" value="${h.color}">
-                                <button class="btn-danger-sm" onclick="removeHospital(${index})" title="Remover"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    `;
+                    container.innerHTML += `<div class="hosp-color-item"><strong>${h.name}</strong><div style="display:flex; align-items:center;"><input type="color" class="color-picker-input" data-index="${index}" value="${h.color}"><button class="btn-danger-sm" onclick="removeHospital(${index})" title="Remover"><i class="fas fa-trash"></i></button></div></div>`;
                 });
             }
         }
-
         function addHospital() {
-            const input = document.getElementById('newHospitalName');
-            const name = input.value.trim();
+            const input = document.getElementById('newHospitalName'); const name = input.value.trim();
             if(!name) return alert("Digite o nome do hospital.");
-            
-            if(hospitaisAtivos.find(h => h.name.toLowerCase() === name.toLowerCase())) {
-                return alert("Hospital já cadastrado!");
-            }
-
-            hospitaisAtivos.push({ name: name, color: '#00855B' });
-            hospitaisAtivos.sort((a,b) => a.name.localeCompare(b.name));
-            input.value = '';
-            renderHospitaisModalList();
+            if(hospitaisAtivos.find(h => h.name.toLowerCase() === name.toLowerCase())) return alert("Hospital já cadastrado!");
+            hospitaisAtivos.push({ name: name, color: '#00855B' }); hospitaisAtivos.sort((a,b) => a.name.localeCompare(b.name));
+            input.value = ''; renderHospitaisModalList();
         }
-
         function removeHospital(index) {
-            if(confirm(`Remover o hospital ${hospitaisAtivos[index].name} da lista?`)) {
-                hospitaisAtivos.splice(index, 1);
-                renderHospitaisModalList();
-            }
+            if(confirm(`Remover o hospital ${hospitaisAtivos[index].name} da lista?`)) { hospitaisAtivos.splice(index, 1); renderHospitaisModalList(); }
         }
-
         function saveHospitalColors() {
             const inputs = document.querySelectorAll('#hospitaisListContainer .color-picker-input');
-            inputs.forEach(input => {
-                const idx = parseInt(input.getAttribute('data-index'));
-                hospitaisAtivos[idx].color = input.value;
-            });
-            saveHospitaisLocal();
-            updateHospitalSelects();
-            closeModal('hospitaisModal');
-            if(currentView === 'agenda') renderAgenda();
+            inputs.forEach(input => { const idx = parseInt(input.getAttribute('data-index')); hospitaisAtivos[idx].color = input.value; });
+            saveHospitaisLocal(); updateHospitalSelects(); closeModal('hospitaisModal'); if(currentView === 'agenda') renderAgenda();
         }
 
         // ==========================================
-        // CARREGAMENTO E DADOS BASE
+        // DADOS
         // ==========================================
         async function loadProcedimentos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
                 if(res.ok) {
-                    const data = await res.json();
-                    let rawList = [];
-                    Object.entries(data).forEach(([key, val]) => {
-                        let p = typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val);
-                        rawList.push(p);
-                    });
+                    const data = await res.json(); let rawList = [];
+                    Object.entries(data).forEach(([key, val]) => { rawList.push(typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val)); });
                     procedimentosList = rawList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
-                    const select = document.getElementById('procedimento');
-                    select.innerHTML = '<option value="">Carregando procedimentos...</option>';
+                    const select = document.getElementById('procedimento'); select.innerHTML = '<option value="">Carregando procedimentos...</option>';
                     procedimentosList.forEach(p => { select.innerHTML += `<option value="${p.nome}">${p.nome}</option>`; });
                 }
             } catch(e) {}
         }
-
         async function loadMedicos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
-                    Object.entries(data).forEach(([key, val]) => {
-                        let m = typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val);
-                        medicosList.push(m);
-                    });
+                    Object.entries(data).forEach(([key, val]) => { medicosList.push(typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || val)); });
                     medicosList.sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
-                    const selForm = document.getElementById('medico');
-                    const selFiltro = document.getElementById('filterMedico');
-                    medicosList.forEach(m => {
-                        selForm.innerHTML += `<option value="${m.nome}">${m.nome}</option>`;
-                        selFiltro.innerHTML += `<option value="${m.nome}">${m.nome}</option>`;
-                    });
+                    const selForm = document.getElementById('medico'); const selFiltro = document.getElementById('filterMedico');
+                    medicosList.forEach(m => { selForm.innerHTML += `<option value="${m.nome}">${m.nome}</option>`; selFiltro.innerHTML += `<option value="${m.nome}">${m.nome}</option>`; });
                 }
             } catch(e) {}
         }
-
         async function loadGuias() {
             try {
                 const res = await fetch(`${API_BASE_URL}/${API_TABLE}`, { headers: API_HEADERS });
                 if (!res.ok) throw new Error('Falha ao carregar');
                 const data = await res.json();
-                
                 guiasData = Object.values(data).map(item => {
                     let obj = typeof item.dados_extras === 'string' ? JSON.parse(item.dados_extras) : (item.dados_extras || item);
-                    obj.id_firebase = item.id_firebase || obj.id_firebase;
-                    return obj;
+                    obj.id_firebase = item.id_firebase || obj.id_firebase; return obj;
                 });
                 guiasData.sort((a, b) => new Date(b.data_envio || 0) - new Date(a.data_envio || 0));
                 
                 const responsaveisUnicos = [...new Set(guiasData.map(g => g.responsavel).filter(Boolean))];
-                const selResp = document.getElementById('filterResp');
-                selResp.innerHTML = '<option value="todos">Todos</option>';
+                const selResp = document.getElementById('filterResp'); selResp.innerHTML = '<option value="todos">Todos</option>';
                 responsaveisUnicos.sort().forEach(r => selResp.innerHTML += `<option value="${r}">${r}</option>`);
-
                 refreshViews();
-            } catch (err) {
-                document.querySelector('#guiasTable tbody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626;">Erro ao carregar dados.</td></tr>`;
-            }
+            } catch (err) { document.querySelector('#guiasTable tbody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626;">Erro ao carregar dados.</td></tr>`; }
         }
-
-        function refreshViews() {
-            if (currentView === 'list') { filterTable(); } 
-            else { renderAgenda(); }
-        }
-
-        function getDoctorColor(name) {
-            if(!name) return { bg: '#f1f5f9', border: '#cbd5e1', text: '#334155' };
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) { hash = name.charCodeAt(i) + ((hash << 5) - hash); }
-            const h = Math.abs(hash) % 360;
-            return { bg: `hsl(${h}, 70%, 90%)`, border: `hsl(${h}, 70%, 40%)`, text: `hsl(${h}, 80%, 25%)` };
-        }
+        function refreshViews() { if (currentView === 'list') { filterTable(); } else { renderAgenda(); } }
 
         // ==========================================
-        // LÓGICA DA VISÃO AGENDA (ONE-PAGE DASHBOARD)
+        // AGENDA DASHBOARD
         // ==========================================
         function parseTimeToFloat(timeStr) {
             if(!timeStr) return 0;
@@ -679,123 +706,133 @@
             if(!dataSel) { container.innerHTML = '<div class="agenda-empty">Selecione uma data para ver a agenda.</div>'; return; }
 
             let agendamentos = guiasData.filter(g => g.data_cirurgia === dataSel && g.hora_cirurgia);
-
             if(term) agendamentos = agendamentos.filter(g => `${g.paciente||''} ${g.procedimento||''} ${g.hospital||''}`.toLowerCase().includes(term));
             if(medSel !== 'todos') agendamentos = agendamentos.filter(g => g.medico === medSel);
             if(hospSel !== 'todos') agendamentos = agendamentos.filter(g => g.hospital === hospSel);
 
-            // Grade de horários Fixa e Dinâmica por Porcentagem (06:00 as 22:00 -> 16 horas)
-            const HORA_INICIO = 6;
-            const HORA_FIM = 22;
-            const TOTAL_HORAS = HORA_FIM - HORA_INICIO;
-
-            // Filtramos os hospitais visíveis no cabeçalho
-            // Só mostra os do hospitaisAtivos. Se tiver filtro de hospital, mostra só ele.
+            const HORA_INICIO = 6; const HORA_FIM = 22; const TOTAL_HORAS = HORA_FIM - HORA_INICIO;
             let colunasHospitais = hospitaisAtivos;
             if(hospSel !== 'todos') colunasHospitais = hospitaisAtivos.filter(h => h.name === hospSel);
+            if(colunasHospitais.length === 0) { container.innerHTML = `<div class="agenda-empty">Nenhum hospital selecionado ou cadastrado.</div>`; return; }
 
-            if(colunasHospitais.length === 0) {
-                container.innerHTML = `<div class="agenda-empty">Nenhum hospital cadastrado. Vá em "Hospitais" para criar o painel.</div>`;
-                return;
-            }
+            let html = `<div class="agenda-v-wrapper"><div class="agenda-v-header"><div class="agenda-v-time-corner"></div>`;
+            colunasHospitais.forEach(hosp => { html += `<div class="agenda-v-hosp-col" style="border-top: 3px solid ${hosp.color};" title="${hosp.name}"><i class="fas fa-building" style="color:${hosp.color}"></i> ${hosp.name}</div>`; });
+            html += `</div><div class="agenda-v-body"><div class="agenda-v-time-col">`;
 
-            let html = `
-                <div class="agenda-v-wrapper">
-                    <div class="agenda-v-header">
-                        <div class="agenda-v-time-corner"></div>`;
-            
-            // Colunas de Hospitais no Topo
-            colunasHospitais.forEach(hosp => {
-                html += `<div class="agenda-v-hosp-col" style="border-top: 3px solid ${hosp.color};" title="${hosp.name}"><i class="fas fa-building" style="color:${hosp.color}"></i> ${hosp.name}</div>`;
-            });
-            
-            html += `       </div>
-                    <div class="agenda-v-body">
-                        <div class="agenda-v-time-col">`;
-
-            // Coluna de Horas na Esquerda usando Flexbox
-            for(let i = HORA_INICIO; i < HORA_FIM; i++) {
-                html += `<div class="agenda-v-time-slot">${i.toString().padStart(2, '0')}:00</div>`;
-            }
+            for(let i = HORA_INICIO; i < HORA_FIM; i++) { html += `<div class="agenda-v-time-slot">${i.toString().padStart(2, '0')}:00</div>`; }
             html += `</div><div class="agenda-v-content">`;
 
-            // Linhas horizontais da grade usando porcentagem
             for(let i = HORA_INICIO; i <= HORA_FIM; i++) {
                 const topPerc = ((i - HORA_INICIO) / TOTAL_HORAS) * 100;
                 html += `<div class="agenda-v-grid-line" style="top: ${topPerc}%;"></div>`;
-                if(i < HORA_FIM) {
-                    html += `<div class="agenda-v-grid-line half-hour" style="top: ${topPerc + (50/TOTAL_HORAS)}%;"></div>`;
-                }
+                if(i < HORA_FIM) html += `<div class="agenda-v-grid-line half-hour" style="top: ${topPerc + (50/TOTAL_HORAS)}%;"></div>`;
             }
 
-            // Preenchimento de cada Hospital (Track Vertical)
             colunasHospitais.forEach(hosp => {
                 html += `<div class="agenda-v-hosp-track">`;
-                
                 let evs = agendamentos.filter(g => g.hospital === hosp.name);
                 evs.sort((a,b) => parseTimeToFloat(a.hora_cirurgia) - parseTimeToFloat(b.hora_cirurgia));
                 
                 let colunasDeEventos = [];
                 evs.forEach(ev => {
-                    let start = parseTimeToFloat(ev.hora_cirurgia);
-                    let end = start + (parseFloat(ev.duracao) || 1.5);
-                    
+                    let start = parseTimeToFloat(ev.hora_cirurgia); let dur = parseFloat(ev.duracao) || 1.5; let end = start + dur;
                     let colocado = false;
                     for(let i=0; i<colunasDeEventos.length; i++) {
-                        let ultimoEvento = colunasDeEventos[i][colunasDeEventos[i].length-1];
-                        let ultimoEnd = parseTimeToFloat(ultimoEvento.hora_cirurgia) + (parseFloat(ultimoEvento.duracao) || 1.5);
-                        
-                        if(start >= ultimoEnd) {
-                            colunasDeEventos[i].push(ev);
-                            ev._colIndex = i;
-                            colocado = true;
-                            break;
-                        }
+                        let ultEv = colunasDeEventos[i][colunasDeEventos[i].length-1];
+                        let ultEnd = parseTimeToFloat(ultEv.hora_cirurgia) + (parseFloat(ultEv.duracao) || 1.5);
+                        if(start >= ultEnd) { colunasDeEventos[i].push(ev); ev._colIndex = i; colocado = true; break; }
                     }
-                    if(!colocado) {
-                        colunasDeEventos.push([ev]);
-                        ev._colIndex = colunasDeEventos.length - 1;
-                    }
+                    if(!colocado) { colunasDeEventos.push([ev]); ev._colIndex = colunasDeEventos.length - 1; }
                 });
 
-                let numSubColunas = colunasDeEventos.length || 1;
-                let widthPercent = 100 / numSubColunas;
+                let numSubColunas = colunasDeEventos.length || 1; let widthPercent = 100 / numSubColunas;
 
                 evs.forEach(ev => {
                     let start = parseTimeToFloat(ev.hora_cirurgia);
                     if(start >= HORA_INICIO && start <= HORA_FIM) {
                         let dur = parseFloat(ev.duracao) || 1.5;
-                        
-                        // Posicionamento absoluto via porcentagem
-                        let topPerc = ((start - HORA_INICIO) / TOTAL_HORAS) * 100;
-                        let heightPerc = (dur / TOTAL_HORAS) * 100;
+                        let topPerc = ((start - HORA_INICIO) / TOTAL_HORAS) * 100; let heightPerc = (dur / TOTAL_HORAS) * 100;
                         let leftPercent = ev._colIndex * widthPercent;
                         
-                        let colors = getDoctorColor(ev.medico);
-                        
+                        let stConfig = statusConfig.find(s => s.name === ev.status) || statusConfig[0];
+                        let obsText = ev.observacao ? ev.observacao.substring(0, 40) + (ev.observacao.length > 40 ? '...' : '') : '';
+                        let medicoNome = ev.medico.replace(/^Dr\.?\s*|^Dra\.?\s*/i, ''); // Tira o Dr. / Dra. do nome
+
                         html += `
                             <div class="agenda-v-card" 
-                                style="top: ${topPerc}%; height: ${heightPerc}%; left: ${leftPercent}%; width: ${widthPercent}%; background-color: ${colors.bg}; border-left-color: ${colors.border};" 
-                                onclick="openModal('${ev.id_firebase}')" title="${ev.paciente} - Médico: ${ev.medico}">
+                                style="top: ${topPerc}%; height: ${heightPerc}%; left: ${leftPercent}%; width: ${widthPercent}%; background-color: ${stConfig.bg}; border-left-color: ${stConfig.border}; color: ${stConfig.text};" 
+                                onclick="openViewModal('${ev.id_firebase}')" title="Clique para ver detalhes">
                                 
-                                <div class="card-doctor" style="color: ${colors.text};">
-                                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${ev.medico}">${ev.medico}</span>
-                                    <span>${ev.hora_cirurgia} (${dur}h)</span>
+                                <div class="card-doctor">
+                                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${medicoNome}"><i class="fas fa-user-md" style="opacity:0.7;"></i> ${medicoNome}</span>
                                 </div>
-                                <div class="card-paciente" style="color: ${colors.text};">${ev.paciente}</div>
-                                <div class="card-proc" style="color: ${colors.border};">${ev.procedimento}</div>
+                                <div class="card-paciente">${ev.paciente}</div>
+                                <div class="card-proc">${ev.procedimento}</div>
+                                ${obsText ? `<div class="card-obs">${obsText}</div>` : ''}
                             </div>
                         `;
                     }
                 });
-
                 html += `</div>`;
             });
-
-            html += `           </div>
-                            </div>
-                        </div>`;
+            html += `</div></div></div>`;
             container.innerHTML = html;
+        }
+
+        // ==========================================
+        // MODAL DE VISUALIZAÇÃO RÁPIDA (GOOGLE CALENDAR)
+        // ==========================================
+        function openViewModal(id) {
+            const guia = guiasData.find(g => g.id_firebase === id);
+            if(!guia) return;
+
+            document.getElementById('viewGuiaId').value = id;
+            document.getElementById('viewPaciente').innerText = guia.paciente;
+            document.getElementById('viewMedico').innerText = guia.medico;
+            document.getElementById('viewProc').innerText = guia.procedimento;
+            document.getElementById('viewHosp').innerText = guia.hospital;
+            
+            // Calculo Horário de Término
+            let timeStr = "";
+            if(guia.data_cirurgia && guia.hora_cirurgia) {
+                const dataFmt = guia.data_cirurgia.split('-').reverse().join('/');
+                const startFloat = parseTimeToFloat(guia.hora_cirurgia);
+                const durFloat = parseFloat(guia.duracao) || 1.5;
+                const endFloat = startFloat + durFloat;
+                
+                const endH = Math.floor(endFloat);
+                const endM = Math.round((endFloat - endH) * 60);
+                const endStr = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+                
+                timeStr = `${dataFmt} ⋅ ${guia.hora_cirurgia} – ${endStr}`;
+            } else {
+                timeStr = "Sem horário definido";
+            }
+            document.getElementById('viewHorario').innerText = timeStr;
+
+            let stConfig = statusConfig.find(s => s.name === guia.status) || statusConfig[0];
+            document.getElementById('viewColorBadge').style.backgroundColor = stConfig.border;
+            document.getElementById('viewStatusBadge').innerHTML = getStatusBadge(guia.status);
+
+            const obsContainer = document.getElementById('viewObsContainer');
+            if(guia.observacao && guia.observacao.trim() !== '') {
+                obsContainer.style.display = 'flex';
+                document.getElementById('viewObs').innerText = guia.observacao;
+            } else {
+                obsContainer.style.display = 'none';
+            }
+
+            showModalElement('viewGuiaModal');
+        }
+
+        async function deleteGuiaAndClose(id) {
+            if (!confirm('Excluir toda essa guia cirúrgica do sistema?')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'DELETE', headers: API_HEADERS });
+                if (!res.ok) throw new Error('Erro ao excluir');
+                closeModal('viewGuiaModal');
+                await loadGuias();
+            } catch (err) { alert('Erro: ' + err.message); }
         }
 
         // ==========================================
@@ -865,7 +902,14 @@
                 let convenioHtml = getConvenioBadge(g.convenio);
                 let anexoQtd = (g.anexos && g.anexos.length > 0) ? `<span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; font-size:9px; border-radius:50%; width:14px; height:14px; display:flex; align-items:center; justify-content:center;">${g.anexos.length}</span>` : '';
                 let hasObs = g.observacao && g.observacao.trim() !== '';
-                let cirurgiaAgendadaInfo = (g.data_cirurgia && g.hora_cirurgia) ? `<br><span style="font-size:10px; color:#00855B; font-weight:bold;"><i class="fas fa-calendar-check"></i> ${g.data_cirurgia.split('-').reverse().join('/')} às ${g.hora_cirurgia} (${g.duracao||1.5}h)</span>` : '';
+                
+                let durText = '';
+                if(g.duracao) {
+                    const dH = Math.floor(g.duracao);
+                    const dM = Math.round((g.duracao - dH)*60);
+                    durText = `${dH}h${dM > 0 ? dM + 'm' : ''}`;
+                }
+                let cirurgiaAgendadaInfo = (g.data_cirurgia && g.hora_cirurgia) ? `<br><span style="font-size:10px; color:#00855B; font-weight:bold;"><i class="fas fa-calendar-check"></i> ${g.data_cirurgia.split('-').reverse().join('/')} às ${g.hora_cirurgia} (${durText})</span>` : '';
 
                 html += `
                     <tr class="main-row" style="${hasObs ? 'border-bottom: none;' : ''}">
@@ -898,6 +942,9 @@
             return `<span class="status-badge st-enviado"><i class="fas fa-info-circle"></i> ${status}</span>`;
         }
 
+        // ==========================================
+        // MODALS E SALVAMENTO
+        // ==========================================
         function openModal(id = null) {
             document.getElementById('guiaForm').reset();
             document.getElementById('guia_id').value = '';
@@ -923,12 +970,20 @@
                     
                     document.getElementById('data_cirurgia').value = guia.data_cirurgia || '';
                     document.getElementById('hora_cirurgia').value = guia.hora_cirurgia || '';
-                    document.getElementById('duracao').value = guia.duracao || '1.5';
+                    
+                    let durFloat = parseFloat(guia.duracao) || 1.5;
+                    let dH = Math.floor(durFloat);
+                    let dM = Math.round((durFloat - dH) * 60);
+                    if(dM !== 0 && dM !== 15 && dM !== 30 && dM !== 45) dM = 30; // Segurança
+                    
+                    document.getElementById('duracao_h').value = dH;
+                    document.getElementById('duracao_m').value = dM;
                 }
             } else {
                 document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Cadastrar Nova Guia';
                 document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
-                document.getElementById('duracao').value = '1.5';
+                document.getElementById('duracao_h').value = '1';
+                document.getElementById('duracao_m').value = '30';
             }
             showModalElement('guiaModal');
         }
@@ -960,6 +1015,10 @@
                 hist.push({ status: novoStatus, data: new Date().toISOString(), usuario: userLogged.nome || 'Sistema' });
             }
 
+            const valH = parseInt(document.getElementById('duracao_h').value) || 0;
+            const valM = parseInt(document.getElementById('duracao_m').value) || 0;
+            const totalDuracao = valH + (valM / 60);
+
             const payload = {
                 data_envio: document.getElementById('data_envio').value,
                 paciente: document.getElementById('paciente').value,
@@ -975,7 +1034,7 @@
                 observacao: document.getElementById('observacao').value,
                 data_cirurgia: document.getElementById('data_cirurgia').value,
                 hora_cirurgia: document.getElementById('hora_cirurgia').value,
-                duracao: parseFloat(document.getElementById('duracao').value) || 1.5,
+                duracao: totalDuracao,
                 historico_status: hist,
                 anexos: guiaAnterior.anexos || [],
                 atualizado_em: new Date().toISOString()
@@ -992,7 +1051,7 @@
         }
 
         // ==========================================
-        // EXPORTAÇÕES (PDF)
+        // RELATÓRIOS PDF
         // ==========================================
         function generatePDF() {
             const tbody = document.querySelector('#guiasTable tbody');
@@ -1040,7 +1099,7 @@
 
         function generateAgendaPDF() {
             const dataSel = document.getElementById('filterDataAgenda').value;
-            if(!dataSel) return alert("Selecione uma data para exportar a agenda.");
+            if(!dataSel) return alert("Selecione uma data para gerar o Mapa Cirúrgico.");
             
             const medSel = document.getElementById('filterMedico').value;
             const hospSel = document.getElementById('filterHospital').value;
@@ -1053,7 +1112,6 @@
 
             agendamentos.sort((a,b) => parseTimeToFloat(a.hora_cirurgia) - parseTimeToFloat(b.hora_cirurgia));
             
-            // Agrupar por hospital
             const grupos = {};
             agendamentos.forEach(g => {
                 if(!grupos[g.hospital]) grupos[g.hospital] = [];
@@ -1063,29 +1121,39 @@
             const win = window.open('', '_blank'); const LOGO_URL = "https://imgur.com/nWWyEBG.png";
             const dataFormatada = dataSel.split('-').reverse().join('/');
             
-            let html = `<html><head><title>Agenda Cirúrgica - ${dataFormatada}</title><style>
-                @page { size: portrait; margin: 15mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
+            let html = `<html><head><title>Mapa Cirúrgico - ${dataFormatada}</title><style>
+                @page { size: landscape; margin: 15mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
                 .header-row { display: flex; align-items: center; border-bottom: 3px solid #0284c7; padding-bottom: 10px; margin-bottom: 15px; } 
                 .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #0284c7; padding: 8px; border-radius: 6px; } 
-                .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #0284c7; font-size: 18px; text-transform: uppercase; } 
-                .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } 
-                .hosp-title { background: #f1f5f9; padding: 8px 12px; margin-top: 20px; border-left: 5px solid #0284c7; font-size: 14px; font-weight: bold; color: #1e293b; }
-                table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;} th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; } 
-                th { background: #f8fafc; color: #475569; font-size: 11px; text-transform: uppercase;}
+                .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #0284c7; font-size: 20px; text-transform: uppercase; } 
+                .header-text p { margin: 2px 0 0; font-size: 13px; color: #666; font-weight: 600; } 
+                .hosp-title { background: #f8fafc; padding: 8px 12px; margin-top: 20px; border-left: 5px solid #0284c7; font-size: 15px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; }
+                table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 0;} th, td { border-bottom: 1px solid #e2e8f0; padding: 10px 8px; text-align: left; vertical-align:top;} 
+                th { background: #f1f5f9; color: #475569; font-size: 11px; text-transform: uppercase; font-weight: bold;}
+                .status-span { padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight:bold; }
             </style></head><body>`;
 
-            html += `<div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>Agenda Cirúrgica Diária</h1><p>Data: ${dataFormatada}</p></div></div>`;
+            html += `<div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>Mapa Cirúrgico Diário</h1><p>Data: ${dataFormatada}</p></div></div>`;
             
             Object.keys(grupos).sort().forEach(hosp => {
                 html += `<div class="hosp-title">${hosp}</div>`;
-                html += `<table><thead><tr><th style="width: 80px;">Horário</th><th>Paciente</th><th>Procedimento</th><th>Médico</th><th>Duração</th></tr></thead><tbody>`;
+                html += `<table><thead><tr><th style="width:50px;">Horário</th><th>Paciente</th><th>Procedimento</th><th>Médico Responsável</th><th>Convênio</th><th style="width:100px;">Status</th><th style="width:200px;">Observações</th></tr></thead><tbody>`;
                 grupos[hosp].forEach(g => {
+                    let dH = Math.floor(g.duracao || 1.5);
+                    let dM = Math.round(((g.duracao || 1.5) - dH)*60);
+                    let durTxt = `${dH}h${dM > 0 ? dM + 'm' : ''}`;
+                    
+                    let stConfig = statusConfig.find(s => s.name === g.status) || statusConfig[0];
+                    let stHtml = `<span class="status-span" style="background:${stConfig.bg}; color:${stConfig.text}; border:1px solid ${stConfig.border};">${g.status}</span>`;
+
                     html += `<tr>
-                        <td><b>${g.hora_cirurgia}</b></td>
-                        <td>${g.paciente}</td>
+                        <td style="font-size:13px;"><b>${g.hora_cirurgia}</b><br><span style="font-size:10px; color:#64748b; font-weight:normal;">Dur: ${durTxt}</span></td>
+                        <td style="font-size:12px; font-weight:bold;">${g.paciente}</td>
                         <td>${g.procedimento}</td>
                         <td>${g.medico}</td>
-                        <td>${g.duracao || 1.5}h</td>
+                        <td>${g.convenio}</td>
+                        <td>${stHtml}</td>
+                        <td style="color:#475569; font-style:italic; font-size:10px;">${g.observacao || '-'}</td>
                     </tr>`;
                 });
                 html += `</tbody></table>`;
@@ -1137,7 +1205,7 @@
         function openAnexosModal(id) { document.getElementById('anexosGuiaId').value = id; renderAnexosList(id); showModalElement('anexosModal'); }
 
         window.visualizarAnexo = function(guiaId, anexoIdx) {
-            const guia = guiasData.find(g => g.id_firebase === id);
+            const guia = guiasData.find(g => g.id_firebase === guiaId);
             if(!guia || !guia.anexos || !guia.anexos[anexoIdx]) return;
             const anx = guia.anexos[anexoIdx];
             try {
@@ -1196,15 +1264,6 @@
                     renderAnexosList(id); refreshViews();
                 } catch(e){}
             }
-        }
-
-        async function deleteGuia(id) {
-            if (!confirm('Excluir toda essa guia cirúrgica do sistema?')) return;
-            try {
-                const res = await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'DELETE', headers: API_HEADERS });
-                if (!res.ok) throw new Error('Erro ao excluir');
-                await loadGuias();
-            } catch (err) { alert('Erro: ' + err.message); }
         }
     </script>
 </body>
