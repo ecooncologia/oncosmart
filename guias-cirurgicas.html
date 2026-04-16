@@ -92,7 +92,7 @@
         .agenda-v-card:hover { transform: scale(1.02); z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .card-doctor { font-weight: 800; font-size: 10px; margin-bottom: 3px; }
         .card-paciente { font-weight: 700; font-size: 9px; opacity: 0.9; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-        .card-proc { font-size: 8px; font-weight: 600; opacity: 0.8; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .card-proc { font-size: 8px; font-weight: 600; opacity: 0.8; margin-top: 2px; }
         .card-obs { font-size: 8px; opacity: 0.7; margin-top: auto; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-style: italic; }
         
         .agenda-empty { padding: 40px; text-align: center; color: #94a3b8; font-weight: 500; font-size: 14px; width: 100%; margin-top: 20px;}
@@ -175,13 +175,21 @@
                 <input type="text" id="searchInput" class="search-bar" placeholder="Digite para filtrar..." onkeyup="refreshViews()">
             </div>
             
+            <div class="input-group" id="groupAgendaMode" style="display: none;">
+                <label>Tipo de Mapa</label>
+                <select id="agendaMode" class="filter-select" onchange="toggleAgendaMode()">
+                    <option value="diario">Diário (1 Dia)</option>
+                    <option value="mensal">Mensal (Mês Inteiro)</option>
+                </select>
+            </div>
+
             <div class="input-group" id="groupDataAgenda" style="display: none;">
                 <label>Data da Agenda</label>
                 <input type="date" id="filterDataAgenda" class="filter-select" onchange="refreshViews()">
             </div>
 
             <div class="input-group" id="groupMes">
-                <label>Mês de Envio</label>
+                <label>Mês</label>
                 <select id="filterMes" class="filter-select" onchange="refreshViews()">
                     <option value="todos">Todos os Meses</option>
                     <option value="01">Janeiro</option>
@@ -226,7 +234,7 @@
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </button>
                 <button class="btn-print" id="btnExportAgenda" onclick="generateAgendaPDF()" style="display:none; background: #00855B;">
-                    <i class="fas fa-map"></i> Mapa Cirúrgico
+                    <i class="fas fa-map"></i> Gerar Mapa Cirúrgico
                 </button>
             </div>
         </div>
@@ -504,6 +512,8 @@
 
     <script>
         const API_TABLE = 'guias_cirurgicas';
+        const API_HOSPITAIS = 'hospitais'; // BANCO DE DADOS DOS HOSPITAIS
+        
         let guiasData = [];
         let procedimentosList = [];
         let medicosList = [];
@@ -540,7 +550,7 @@
                 renderLegend();
 
                 await Promise.all([ loadProcedimentos(), loadMedicos(), loadGuias() ]);
-                initHospitais();
+                await loadHospitais(); // Agora aguarda carregar os hospitais do Banco
             } else {
                 setTimeout(startApp, 100);
             }
@@ -554,6 +564,7 @@
             legendDiv.innerHTML = html;
         }
 
+        // ALTERAÇÃO: Toggle de visão Mensal / Diário para a Agenda
         function changeView(view) {
             currentView = view;
             document.getElementById('btnViewList').classList.toggle('active', view === 'list');
@@ -561,47 +572,76 @@
             
             document.getElementById('viewList').style.display = view === 'list' ? 'flex' : 'none';
             document.getElementById('viewAgenda').style.display = view === 'agenda' ? 'flex' : 'none';
-
-            document.getElementById('groupDataAgenda').style.display = view === 'agenda' ? 'flex' : 'none';
             document.getElementById('agendaLegend').style.display = view === 'agenda' ? 'flex' : 'none';
 
-            document.getElementById('groupMes').style.display = view === 'list' ? 'flex' : 'none';
-            document.getElementById('groupAno').style.display = view === 'list' ? 'flex' : 'none';
-            document.getElementById('groupResp').style.display = view === 'list' ? 'flex' : 'none';
-            
             document.getElementById('btnExportList').style.display = view === 'list' ? 'flex' : 'none';
             document.getElementById('btnExportAgenda').style.display = view === 'agenda' ? 'flex' : 'none';
+            document.getElementById('groupResp').style.display = view === 'list' ? 'flex' : 'none';
 
+            if (view === 'agenda') {
+                document.getElementById('groupAgendaMode').style.display = 'flex';
+                toggleAgendaMode();
+            } else {
+                document.getElementById('groupAgendaMode').style.display = 'none';
+                document.getElementById('groupDataAgenda').style.display = 'none';
+                document.getElementById('groupMes').style.display = 'flex';
+                document.getElementById('groupAno').style.display = 'flex';
+            }
             refreshViews();
         }
 
-        function initHospitais() {
-            let salvos = [];
-            try {
-                const saved = localStorage.getItem('ecoHospitaisMaster');
-                if (saved) salvos = JSON.parse(saved);
-            } catch (e) {}
+        function toggleAgendaMode() {
+            const mode = document.getElementById('agendaMode').value;
+            if(mode === 'diario') {
+                document.getElementById('groupDataAgenda').style.display = 'flex';
+                document.getElementById('groupMes').style.display = 'none';
+                document.getElementById('groupAno').style.display = 'none';
+            } else {
+                document.getElementById('groupDataAgenda').style.display = 'none';
+                document.getElementById('groupMes').style.display = 'flex';
+                document.getElementById('groupAno').style.display = 'flex';
+            }
+            refreshViews();
+        }
 
+        // ==========================================
+        // HOSPITAIS 100% BLINDADOS NO BANCO DE DADOS
+        // ==========================================
+        async function loadHospitais() {
+            try {
+                // Tenta puxar do backend permanentemente
+                const res = await fetch(`${API_BASE_URL}/${API_HOSPITAIS}`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    if(data && Object.keys(data).length > 0) {
+                        hospitaisAtivos = Object.values(data).map(item => {
+                            let obj = typeof item.dados_extras === 'string' ? JSON.parse(item.dados_extras) : (item.dados_extras || item);
+                            obj.id_firebase = item.id_firebase || obj.id_firebase; return obj;
+                        });
+                    }
+                }
+            } catch(e) {
+                // Fallback silencioso caso a rota /hospitais ainda não tenha sido criada no Make.com
+                console.warn("Rota /hospitais não encontrada. Usando cache local temporário.");
+                const saved = localStorage.getItem('ecoHospitaisMaster');
+                if (saved) hospitaisAtivos = JSON.parse(saved);
+            }
+
+            // Auto-recuperação de segurança: se a guia tem hospital, ele garante que não suma da lista
             const hospitaisNoBanco = [...new Set(guiasData.map(g => g.hospital).filter(Boolean))];
-            
             hospitaisNoBanco.forEach(hb => {
-                if(!salvos.find(s => s.name === hb)) {
-                    salvos.push({ name: hb, color: '#00855B' });
+                if(!hospitaisAtivos.find(s => s.name === hb)) {
+                    hospitaisAtivos.push({ name: hb, color: '#00855B' });
                 }
             });
 
-            if(salvos.length === 0) {
-                salvos = [{name: 'Hospital Vita', color: '#00855B'}];
-            }
-
-            salvos.sort((a,b) => a.name.localeCompare(b.name));
-            hospitaisAtivos = salvos;
-            saveHospitaisLocal();
+            if(hospitaisAtivos.length === 0) hospitaisAtivos = [{name: 'Hospital Vita', color: '#00855B'}];
+            
+            hospitaisAtivos.sort((a,b) => a.name.localeCompare(b.name));
             updateHospitalSelects();
             if(currentView === 'agenda') renderAgenda();
         }
 
-        function saveHospitaisLocal() { localStorage.setItem('ecoHospitaisMaster', JSON.stringify(hospitaisAtivos)); }
         function updateHospitalSelects() {
             const formSelect = document.getElementById('hospital'); formSelect.innerHTML = '<option value="">Selecione o Hospital...</option>';
             const filterSelect = document.getElementById('filterHospital'); filterSelect.innerHTML = '<option value="todos">Todos os Hospitais</option>';
@@ -610,6 +650,7 @@
                 filterSelect.innerHTML += `<option value="${h.name}">${h.name}</option>`;
             });
         }
+
         function openHospitaisModal() { renderHospitaisModalList(); document.getElementById('newHospitalName').value = ''; showModalElement('hospitaisModal'); }
         function renderHospitaisModalList() {
             const container = document.getElementById('hospitaisListContainer'); container.innerHTML = '';
@@ -629,26 +670,64 @@
             });
         }
 
-        function addHospital() {
+        async function addHospital() {
             syncHospitalColors(); 
             const input = document.getElementById('newHospitalName'); const name = input.value.trim();
             if(!name) return alert("Digite o nome do hospital.");
             if(hospitaisAtivos.find(h => h.name.toLowerCase() === name.toLowerCase())) return alert("Hospital já cadastrado!");
-            hospitaisAtivos.push({ name: name, color: '#00855B' }); hospitaisAtivos.sort((a,b) => a.name.localeCompare(b.name));
-            input.value = ''; renderHospitaisModalList();
-        }
-        function removeHospital(index) {
-            if(confirm(`Remover o hospital ${hospitaisAtivos[index].name} da lista?`)) { 
-                syncHospitalColors(); 
-                hospitaisAtivos.splice(index, 1); 
-                renderHospitaisModalList(); 
-            }
-        }
-        function saveHospitalColors() {
-            syncHospitalColors();
-            saveHospitaisLocal(); updateHospitalSelects(); closeModal('hospitaisModal'); if(currentView === 'agenda') renderAgenda();
+            
+            const newHosp = { name: name, color: '#00855B' };
+            hospitaisAtivos.push(newHosp);
+            hospitaisAtivos.sort((a,b) => a.name.localeCompare(b.name));
+            input.value = '';
+            
+            renderHospitaisModalList();
         }
 
+        async function removeHospital(index) {
+            if(!confirm(`Remover o hospital ${hospitaisAtivos[index].name} da lista?`)) return;
+            syncHospitalColors();
+            
+            const hosp = hospitaisAtivos[index];
+            if(hosp.id_firebase) {
+                try { await fetch(`${API_BASE_URL}/${API_HOSPITAIS}/${hosp.id_firebase}`, { method: 'DELETE', headers: API_HEADERS }); } catch(e){}
+            }
+            
+            hospitaisAtivos.splice(index, 1); 
+            renderHospitaisModalList(); 
+        }
+
+        async function saveHospitalColors() {
+            const btn = document.querySelector('#hospitaisModal .btn-success:last-child');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; btn.disabled = true;
+
+            syncHospitalColors();
+            
+            try {
+                // Salva cada hospital individualmente na tabela do banco
+                for (let hosp of hospitaisAtivos) {
+                    if (hosp.id_firebase) {
+                        await fetch(`${API_BASE_URL}/${API_HOSPITAIS}/${hosp.id_firebase}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(hosp) });
+                    } else {
+                        await fetch(`${API_BASE_URL}/${API_HOSPITAIS}`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(hosp) });
+                    }
+                }
+                await loadHospitais(); // Recarrega para pegar os IDs oficiais
+            } catch(e) {
+                // Fallback seguro local caso a API falhe
+                localStorage.setItem('ecoHospitaisMaster', JSON.stringify(hospitaisAtivos));
+                updateHospitalSelects();
+                if(currentView === 'agenda') renderAgenda();
+            }
+
+            btn.innerHTML = originalHtml; btn.disabled = false;
+            closeModal('hospitaisModal');
+        }
+
+        // ==========================================
+        // DADOS E FILTRO ESTRITO DE CIRURGIA
+        // ==========================================
         async function loadProcedimentos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
@@ -658,13 +737,15 @@
                         let extras = typeof val.dados_extras === 'string' ? JSON.parse(val.dados_extras) : (val.dados_extras || {});
                         rawList.push({ ...val, ...extras }); 
                     });
-                    // FILTRO: Lê apenas "Cirurgia" ou "Ambos"
+                    
+                    // FILTRO ESTRITO: Apenas os cadastrados como 'Cirurgia' no Cadastro de Procedimentos
                     procedimentosList = rawList
-                        .filter(p => p.tipo === 'Cirurgia' || p.tipo === 'Ambos')
+                        .filter(p => p.tipo === 'Cirurgia')
                         .sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
                 }
             } catch(e) {}
         }
+        
         async function loadMedicos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
@@ -677,6 +758,7 @@
                 }
             } catch(e) {}
         }
+        
         async function loadGuias() {
             try {
                 const res = await fetch(`${API_BASE_URL}/${API_TABLE}`, { headers: API_HEADERS });
@@ -696,15 +778,16 @@
         }
         function refreshViews() { if (currentView === 'list') { filterTable(); } else { renderAgenda(); } }
 
-        function addProcRow(nome = '', valor = 0) {
+        function addProcRow(nome = '', valor = 0, cid = '', tuss = '') {
             if(currentProcs.length >= 5) return alert("Limite máximo de 5 procedimentos.");
-            currentProcs.push({nome: nome, valor: valor});
+            currentProcs.push({nome: nome, valor: valor, cid: cid, codigo_tuss: tuss});
             renderProcRows();
         }
         function removeProcRow(index) {
             currentProcs.splice(index, 1);
             renderProcRows();
         }
+        
         function updateProcNameAndFetchValue(index, selectEl) {
             const val = selectEl.value;
             currentProcs[index].nome = val;
@@ -720,16 +803,24 @@
                     somaTotal = parseFloat(String(procObj.valor).replace(',','.').replace(/[^0-9.-]+/g,"")) || 0;
                 }
                 currentProcs[index].valor = somaTotal;
+                
+                // SALVANDO CID E TUSS NO CARRINHO
+                currentProcs[index].cid = procObj.cid || '';
+                currentProcs[index].codigo_tuss = procObj.codigo_tuss || '';
             } else {
                 currentProcs[index].valor = 0;
+                currentProcs[index].cid = '';
+                currentProcs[index].codigo_tuss = '';
             }
             renderProcRows();
         }
+        
         function calcTotalProcs() {
             let total = currentProcs.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
             document.getElementById('totalEstimadoVis').innerText = total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
             document.getElementById('valorTotal').value = total;
         }
+        
         function renderProcRows() {
             const wrap = document.getElementById('procedimentosWrapper');
             wrap.innerHTML = '';
@@ -784,6 +875,18 @@
 
         function renderAgenda() {
             const container = document.getElementById('agendaContent');
+            const mode = document.getElementById('agendaMode') ? document.getElementById('agendaMode').value : 'diario';
+            
+            if(mode === 'mensal') {
+                container.innerHTML = `<div class="agenda-empty" style="padding: 60px 20px;">
+                    <i class="fas fa-calendar-alt" style="font-size:40px; color:#cbd5e1; margin-bottom:15px;"></i><br>
+                    <strong style="color:#475569; font-size:16px;">Visão Mensal Ativada</strong><br><br>
+                    O dashboard interativo em tela suporta apenas a visualização de 1 dia.<br>
+                    Para extrair a relação do mês inteiro, clique no botão <b style="color:#00855B;">Gerar Mapa Cirúrgico</b> lá em cima.
+                </div>`;
+                return;
+            }
+
             const term = document.getElementById('searchInput').value.toLowerCase();
             const medSel = document.getElementById('filterMedico').value;
             const hospSel = document.getElementById('filterHospital').value;
@@ -849,7 +952,19 @@
                         
                         let stConfig = statusConfig.find(s => s.name === ev.status) || statusConfig[0];
                         let medicoNome = ev.medico.replace(/^Dr\.?\s*|^Dra\.?\s*/i, ''); 
-                        let procLabel = (ev.procedimentos && ev.procedimentos.length > 1) ? `${ev.procedimentos.length} Procedimentos` : ev.procedimento;
+                        
+                        // LÓGICA DO CARD: Renderizar CID e TUSS
+                        let procLabelArr = [];
+                        let pListForCard = ev.procedimentos || [{nome: ev.procedimento}];
+                        pListForCard.forEach(p => {
+                            let lbl = p.nome;
+                            let tags = [];
+                            if(p.codigo_tuss) tags.push(`TUSS: ${p.codigo_tuss}`);
+                            if(p.cid) tags.push(`CID: ${p.cid}`);
+                            if(tags.length > 0) lbl += `<br><span style="font-size:7px; color:#475569; opacity:0.8;">[${tags.join(' | ')}]</span>`;
+                            procLabelArr.push(lbl);
+                        });
+                        let procLabel = procLabelArr.join('<br>');
 
                         html += `
                             <div class="agenda-v-card" 
@@ -884,7 +999,12 @@
             let procs = guia.procedimentos || [{nome: guia.procedimento, valor: guia.valor}];
             procs.forEach(p => {
                 let vTxt = parseFloat(p.valor) ? `R$ ${parseFloat(p.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : 'S/ Valor';
-                vList.innerHTML += `<div style="font-size:13px; color:#1e293b; display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:4px 0;"><span>• ${p.nome}</span><strong>${vTxt}</strong></div>`;
+                let tags = [];
+                if(p.codigo_tuss) tags.push(`TUSS: ${p.codigo_tuss}`);
+                if(p.cid) tags.push(`CID: ${p.cid}`);
+                let tagsHtml = tags.length > 0 ? `<div style="font-size:10px; color:#64748b; margin-top:2px;">[${tags.join(' | ')}]</div>` : '';
+                
+                vList.innerHTML += `<div style="font-size:13px; color:#1e293b; display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:6px 0;"><div><span>• ${p.nome}</span>${tagsHtml}</div><strong>${vTxt}</strong></div>`;
             });
             let total = procs.reduce((acc,p) => acc + (parseFloat(p.valor)||0), 0);
             vList.innerHTML += `<div style="font-size:14px; color:#00855B; display:flex; justify-content:space-between; padding-top:6px; font-weight:bold;"><span>Total:</span><span>R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>`;
@@ -1034,13 +1154,13 @@
                     if(guia.procedimentos && guia.procedimentos.length > 0) {
                         currentProcs = JSON.parse(JSON.stringify(guia.procedimentos));
                     } else {
-                        currentProcs.push({nome: guia.procedimento || '', valor: parseFloat(guia.valor)||0});
+                        currentProcs.push({nome: guia.procedimento || '', valor: parseFloat(guia.valor)||0, cid: '', codigo_tuss: ''});
                     }
                 }
             } else {
                 document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
                 document.getElementById('duracao_m').value = 30;
-                currentProcs.push({nome: '', valor: 0});
+                currentProcs.push({nome: '', valor: 0, cid: '', codigo_tuss: ''});
             }
             
             updateDurationLabel();
@@ -1062,6 +1182,9 @@
             const form = document.getElementById('guiaForm');
             if (!form.checkValidity()) { form.reportValidity(); return; }
             const id = document.getElementById('guia_id').value;
+            const btn = document.querySelector('#guiaModal .btn-success');
+            btn.innerHTML = 'Salvando...'; btn.disabled = true;
+
             const guiaAnterior = guiasData.find(g => g.id_firebase === id) || {};
             const novoStatus = document.getElementById('status').value;
             let hist = guiaAnterior.historico_status || [];
@@ -1085,7 +1208,9 @@
                 hora_cirurgia: document.getElementById('hora_cirurgia').value,
                 duracao: (parseInt(document.getElementById('duracao_m').value) || 0) / 60,
                 historico_status: hist,
-                responsavel: document.getElementById('responsavel').value
+                responsavel: document.getElementById('responsavel').value,
+                anexos: guiaAnterior.anexos || [],
+                atualizado_em: new Date().toISOString()
             };
 
             try {
@@ -1093,8 +1218,158 @@
                 if (!res.ok) throw new Error('Erro ao salvar');
                 closeModal('guiaModal'); await loadGuias(); 
             } catch (err) { alert('Erro: ' + err.message); }
+            finally { btn.innerHTML = '<i class="fas fa-save"></i> Salvar Guia'; btn.disabled = false; }
         }
 
+        // ==========================================
+        // GERAÇÃO DE PDF E MAPA MENSAL / DIÁRIO
+        // ==========================================
+        function generatePDF() {
+            // Rotina de impressão da Tabela Lista
+            const tbody = document.querySelector('#guiasTable tbody');
+            if (tbody.innerText.includes('Nenhuma guia') || tbody.innerText.includes('Carregando')) return alert("Não há dados para exportar.");
+            
+            const mesSel = document.getElementById('filterMes'); const anoSel = document.getElementById('filterAno').value;
+            const periodoStr = mesSel.value === 'todos' ? `Ano ${anoSel}` : `${mesSel.options[mesSel.selectedIndex].text}/${anoSel}`;
+            const win = window.open('', '_blank'); const LOGO_URL = "https://imgur.com/nWWyEBG.png";
+            
+            let theadHtml = `<tr><th>Data Envio</th><th>Paciente</th><th>Médico</th><th>Hospital</th><th>Convênio</th><th>Status</th><th style="text-align:right;">Valor</th></tr>`;
+            let tbodyHtml = ''; let totalVal = 0;
+
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.forEach(tr => {
+                const cols = tr.querySelectorAll('td'); if(cols.length < 7) return; 
+                let dt = cols[0].innerText.split('\n')[0].trim();
+                let p = cols[1].innerText.split('\n')[0].trim(); 
+                let m = cols[1].innerText.split('\n')[1] || ''; 
+                
+                let proc = cols[2].innerText.split('\n')[0].replace(/\[.*\]/,'').trim();
+                let conv = cols[3].innerText.trim(); let hosp = cols[4].innerText.trim();
+                let status = cols[5].innerText.split('\n')[0].trim(); 
+                let valStr = cols[6].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                let valNum = parseFloat(valStr) || 0; totalVal += valNum;
+                
+                tbodyHtml += `<tr><td>${dt}</td><td>${p}<br><span style="font-size:9px; color:#666;">${proc}</span></td><td>${m}</td><td>${hosp}</td><td>${conv}</td><td>${status}</td><td style="text-align:right;">R$ ${valNum.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`;
+            });
+
+            let html = `<html><head><title>Relatório de Guias - ${periodoStr}</title><style>
+                @page { size: portrait; margin: 15mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
+                .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; justify-content: space-between; } 
+                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #ffffff; padding: 8px; border-radius: 6px; } 
+                .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 18px; text-transform: uppercase; } 
+                .header-text p { margin: 2px 0 0; font-size: 12px; color: #666; font-weight: 600; } 
+                table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 20px;} th, td { border: 1px solid #ccc; padding: 6px; text-align: left; } 
+                th { background: #00855B !important; color: white !important; font-size: 11px;} .total { text-align: right; font-size: 14px; font-weight: bold; color: #00855B; margin-top: 15px; }
+            </style></head><body>`;
+            
+            html += `<div class="header-row"><div style="display:flex; align-items:center;"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>Controle de Guias Cirúrgicas</h1><p>Referência: ${periodoStr}</p></div></div></div>`;
+            html += `<table><thead>${theadHtml}</thead><tbody>${tbodyHtml}</tbody></table><div class="total">VALOR TOTAL ESTIMADO: R$ ${totalVal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><script>window.onload=()=>{window.print();}<\/script></body></html>`;
+            win.document.write(html); win.document.close();
+        }
+
+        function generateAgendaPDF() {
+            const mode = document.getElementById('agendaMode').value;
+            const medSel = document.getElementById('filterMedico').value;
+            const hospSel = document.getElementById('filterHospital').value;
+            
+            let agendamentos = [];
+            let tituloPDF = '';
+
+            if (mode === 'diario') {
+                const dataSel = document.getElementById('filterDataAgenda').value;
+                if(!dataSel) return alert("Selecione uma data para gerar o Mapa Cirúrgico Diário.");
+                agendamentos = guiasData.filter(g => g.data_cirurgia === dataSel && g.hora_cirurgia);
+                tituloPDF = `Mapa Cirúrgico Diário - ${dataSel.split('-').reverse().join('/')}`;
+            } else {
+                const mesSel = document.getElementById('filterMes').value;
+                const anoSel = document.getElementById('filterAno').value;
+                if(mesSel === 'todos') return alert("Selecione um MÊS específico para gerar o Mapa Mensal.");
+                agendamentos = guiasData.filter(g => {
+                    if(!g.data_cirurgia || !g.hora_cirurgia) return false;
+                    const [ano, mes, dia] = g.data_cirurgia.split('-');
+                    return ano === anoSel && mes === mesSel;
+                });
+                const nomeMes = document.getElementById('filterMes').options[document.getElementById('filterMes').selectedIndex].text;
+                tituloPDF = `Mapa Cirúrgico Mensal - ${nomeMes}/${anoSel}`;
+            }
+
+            if(medSel !== 'todos') agendamentos = agendamentos.filter(g => g.medico === medSel);
+            if(hospSel !== 'todos') agendamentos = agendamentos.filter(g => g.hospital === hospSel);
+
+            if(agendamentos.length === 0) return alert("Nenhuma cirurgia agendada para os filtros atuais.");
+
+            // Ordena os agendamentos primeiro por data (se for mensal) e depois por horário
+            agendamentos.sort((a,b) => {
+                if(a.data_cirurgia !== b.data_cirurgia) return a.data_cirurgia.localeCompare(b.data_cirurgia);
+                return parseTimeToFloat(a.hora_cirurgia) - parseTimeToFloat(b.hora_cirurgia);
+            });
+            
+            const grupos = {};
+            agendamentos.forEach(g => {
+                if(!grupos[g.hospital]) grupos[g.hospital] = [];
+                grupos[g.hospital].push(g);
+            });
+
+            const win = window.open('', '_blank'); const LOGO_URL = "https://imgur.com/nWWyEBG.png";
+            
+            let html = `<html><head><title>${tituloPDF}</title><style>
+                @page { size: landscape; margin: 15mm; } body { font-family: 'Segoe UI', Arial, sans-serif; padding: 0; color: #333; -webkit-print-color-adjust: exact; } 
+                .header-row { display: flex; align-items: center; border-bottom: 3px solid #00855B; padding-bottom: 10px; margin-bottom: 15px; } 
+                .header-row img { height: 60px; max-width: 250px; object-fit: contain; background-color: #ffffff; padding: 8px; border-radius: 6px; } 
+                .header-text { margin-left: 20px; } .header-text h1 { margin: 0; color: #00855B; font-size: 20px; text-transform: uppercase; } 
+                .header-text p { margin: 2px 0 0; font-size: 13px; color: #666; font-weight: 600; } 
+                .hosp-title { background: #f8fafc; padding: 8px 12px; margin-top: 20px; border-left: 5px solid #00855B; font-size: 15px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; }
+                table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 0;} th, td { border-bottom: 1px solid #e2e8f0; padding: 10px 8px; text-align: left; vertical-align:top;} 
+                th { background: #f1f5f9; color: #475569; font-size: 11px; text-transform: uppercase; font-weight: bold;}
+                .status-span { padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight:bold; display: inline-block; line-height: 1.2; text-align: center; }
+            </style></head><body>`;
+
+            html += `<div class="header-row"><img src="${LOGO_URL}" alt="Logo"><div class="header-text"><h1>${tituloPDF}</h1></div></div>`;
+            
+            Object.keys(grupos).sort().forEach(hosp => {
+                let hConfig = hospitaisAtivos.find(h => h.name === hosp);
+                let hColor = hConfig ? hConfig.color : '#00855B';
+                
+                html += `<div class="hosp-title" style="border-left-color: ${hColor}; color: ${hColor};">${hosp}</div>`;
+                html += `<table><thead><tr><th style="width:70px;">Horário</th><th>Paciente</th><th>Procedimentos (CID/TUSS)</th><th>Médico Responsável</th><th>Convênio</th><th style="width:100px;">Status</th><th style="width:180px;">Observações</th></tr></thead><tbody>`;
+                
+                grupos[hosp].forEach(g => {
+                    let dH = Math.floor(g.duracao || 1.5);
+                    let dM = Math.round(((g.duracao || 1.5) - dH)*60);
+                    let durTxt = `${dH}h${dM > 0 ? dM + 'm' : ''}`;
+                    let dataSpan = mode === 'mensal' ? `<br><span style="color:#00855B; font-size:10px;">${g.data_cirurgia.split('-').reverse().join('/')}</span>` : '';
+                    
+                    let stConfig = statusConfig.find(s => s.name === g.status) || statusConfig[0];
+                    let stHtml = `<span class="status-span" style="background:${stConfig.bg}; color:${stConfig.text}; border:1px solid ${stConfig.border};">${g.status}</span>`;
+
+                    let procsHtml = '';
+                    let pList = g.procedimentos || [{nome: g.procedimento, valor: g.valor}];
+                    pList.forEach(p => {
+                        let tags = [];
+                        if(p.codigo_tuss) tags.push(`TUSS: ${p.codigo_tuss}`);
+                        if(p.cid) tags.push(`CID: ${p.cid}`);
+                        let tagsHtml = tags.length > 0 ? `<br><span style="font-size:9px; color:#64748b;">[${tags.join(' | ')}]</span>` : '';
+                        procsHtml += `<div style="margin-bottom:6px; border-bottom:1px dotted #e2e8f0; padding-bottom:4px;">• ${p.nome}${tagsHtml}</div>`;
+                    });
+
+                    html += `<tr>
+                        <td style="font-size:13px;"><b>${g.hora_cirurgia}</b><br><span style="font-size:10px; color:#64748b; font-weight:normal;">Dur: ${durTxt}</span>${dataSpan}</td>
+                        <td style="font-size:12px; font-weight:bold;">${g.paciente}</td>
+                        <td style="font-size:11px;">${procsHtml}</td>
+                        <td>${g.medico}</td>
+                        <td>${g.convenio}</td>
+                        <td>${stHtml}</td>
+                        <td style="color:#475569; font-style:italic; font-size:10px;">${g.observacao || '-'}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+            });
+
+            html += `<script>window.onload=()=>{window.print();}<\/script></body></html>`;
+            win.document.write(html); win.document.close();
+        }
+
+        // Script Status/Anexos
         function openStatusModal(id, pacienteNome) {
             document.getElementById('statusGuiaId').value = id;
             document.getElementById('statusPacienteNome').innerText = pacienteNome;
@@ -1117,10 +1392,68 @@
             closeModal('statusModal'); await loadGuias();
         }
 
-        async function deleteGuia(id) {
-            if(!confirm("Excluir esta guia?")) return;
-            await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'DELETE', headers: API_HEADERS });
-            await loadGuias();
+        function openAnexosModal(id) { document.getElementById('anexosGuiaId').value = id; renderAnexosList(id); showModalElement('anexosModal'); }
+
+        window.visualizarAnexo = function(guiaId, anexoIdx) {
+            const guia = guiasData.find(g => g.id_firebase === guiaId);
+            if(!guia || !guia.anexos || !guia.anexos[anexoIdx]) return;
+            const anx = guia.anexos[anexoIdx];
+            try {
+                let arr = anx.base64.split(','); let mime = arr[0].match(/:(.*?);/)[1];
+                let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+                while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+                let blob = new Blob([u8arr], {type: mime});
+                window.open(URL.createObjectURL(blob), '_blank');
+            } catch(e) { alert("Erro ao visualizar o anexo. Tente usar o botão de Download."); }
+        };
+
+        function renderAnexosList(id) {
+            const guia = guiasData.find(g => g.id_firebase === id);
+            const container = document.getElementById('listaAnexos');
+            container.innerHTML = '';
+            let anexos = guia.anexos || [];
+            if(anexos.length === 0) { container.innerHTML = '<p style="font-size:12px; color:#64748b; text-align:center; padding:10px;">Nenhum documento anexado ainda.</p>'; } 
+            else {
+                anexos.forEach((anx, idx) => {
+                    let icone = anx.nome.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image';
+                    container.innerHTML += `<div class="anexo-item">
+                        <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 60%;"><i class="fas ${icone}" style="color:#64748b;"></i> ${anx.nome}</div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-sm" style="background:#e0f2fe; color:#0284c7; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="visualizarAnexo('${id}', ${idx})" title="Visualizar"><i class="fas fa-eye"></i></button>
+                            <a href="${anx.base64}" download="${anx.nome}" class="btn-sm" style="background:#dcfce7; color:#166534; text-decoration:none; padding:6px 10px; border-radius:4px; display:flex; align-items:center;" title="Baixar"><i class="fas fa-download"></i></a>
+                            <button class="btn-sm" style="background:#fee2e2; color:#dc2626; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="deleteAttachment('${id}', ${idx})" title="Excluir"><i class="fas fa-trash"></i></button>
+                        </div></div>`;
+                });
+            }
+        }
+
+        function uploadAttachment(inputEl) {
+            const file = inputEl.files[0]; if(!file) return;
+            if (file.size > 2097152) { alert("Arquivo muito grande! (Máx 2MB)."); inputEl.value = ''; return; }
+            const id = document.getElementById('anexosGuiaId').value; const guia = guiasData.find(g => g.id_firebase === id); if(!guia) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                let anexos = guia.anexos || [];
+                anexos.push({ nome: file.name, base64: e.target.result, data_upload: new Date().toISOString() });
+                guia.anexos = anexos;
+                try {
+                    await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia) });
+                    renderAnexosList(id); refreshViews(); 
+                } catch(err) { alert("Falha ao salvar anexo."); }
+            };
+            reader.readAsDataURL(file); inputEl.value = ''; 
+        }
+
+        async function deleteAttachment(id, idx) {
+            if(!confirm("Excluir este anexo?")) return;
+            const guia = guiasData.find(g => g.id_firebase === id);
+            if(guia && guia.anexos) {
+                guia.anexos.splice(idx, 1);
+                try {
+                    await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia) });
+                    renderAnexosList(id); refreshViews();
+                } catch(e){}
+            }
         }
     </script>
 </body>
