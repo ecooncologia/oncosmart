@@ -779,7 +779,7 @@
         function refreshViews() { if (currentView === 'list') { filterTable(); } else { renderAgenda(); } }
 
         function addProcRow(nome = '', valor = 0, cid = '', tuss = '') {
-            if(currentProcs.length >= 5) return alert("Limite máximo de 5 procedimentos.");
+            if(currentProcs.length >= 15) return alert("Limite máximo de 15 procedimentos.");
             currentProcs.push({nome: nome, valor: valor, cid: cid, codigo_tuss: tuss});
             renderProcRows();
         }
@@ -845,7 +845,7 @@
                     </div>
                 `;
             });
-            document.getElementById('btnAddProc').style.display = currentProcs.length >= 15 ? 'none' : 'block';
+            document.getElementById('btnAddProc').style.display = currentProcs.length >= 5 ? 'none' : 'block';
             calcTotalProcs();
         }
 
