@@ -27,6 +27,7 @@
         .badge-part { background-color: #dbeafe; color: #1e40af; } /* Azul - Particular */
         .badge-orc { background-color: #fef3c7; color: #92400e; } /* Amarelo - Orçamento */
         .badge-lim { background-color: #e0e7ff; color: #3730a3; } /* Roxo escuro - Liminar */
+        .badge-cirurgia { background-color: #fce7f3; color: #be185d; } /* Rosa - Cirurgia (Guias) */
         .badge-ambos { background-color: #f3e8ff; color: #6b21a8; } /* Roxo - Ambos */
 
         .actions-cell { display: flex; gap: 5px; justify-content: center; }
@@ -74,13 +75,25 @@
                                 <option value="Particular">Particular (Venda)</option>
                                 <option value="Liminar">Liminar Judicial</option>
                                 <option value="Orcamento">Orçamento (Cotação)</option>
-                                <option value="Ambos">Todos (Venda, Liminar e Cotação)</option>
+                                <option value="Cirurgia">Cirurgia (Apenas Guias)</option>
+                                <option value="Ambos">Todos (Venda, Liminar, Cotação e Guias)</option>
                             </select>
                         </div>
 
                         <div class="form-group" style="margin-bottom:15px;">
-                            <label>Nome</label>
+                            <label>Nome do Procedimento</label>
                             <input type="text" id="procName" class="form-control" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Código TUSS</label>
+                                <input type="text" id="procTuss" class="form-control" placeholder="Ex: 31005470">
+                            </div>
+                            <div class="form-group">
+                                <label>CID Principal</label>
+                                <input type="text" id="procCid" class="form-control" placeholder="Ex: C50.9">
+                            </div>
                         </div>
 
                         <div class="form-row">
@@ -137,6 +150,7 @@
                                     <option value="Particular">Particular</option>
                                     <option value="Liminar">Liminar</option>
                                     <option value="Orcamento">Orçamento</option>
+                                    <option value="Cirurgia">Cirurgia (Guias)</option>
                                     <option value="Ambos">Ambos / Todos</option>
                                 </select>
                             </div>
@@ -148,6 +162,7 @@
                                 <option value="Particular">Mudar para Particular</option>
                                 <option value="Liminar">Mudar para Liminar</option>
                                 <option value="Orcamento">Mudar para Orçamento</option>
+                                <option value="Cirurgia">Mudar para Cirurgia (Guias)</option>
                                 <option value="Ambos">Mudar para Todos</option>
                             </select>
                             <button class="btn btn-success" style="width: auto; padding: 5px 15px; height: 35px;" onclick="applyBulkUpdate()">
@@ -164,7 +179,7 @@
                                         <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
                                     </th>
                                     <th>Tipo</th>
-                                    <th>Nome</th>
+                                    <th>Nome / Informações</th>
                                     <th>Total</th>
                                     <th style="text-align:center">Ação</th>
                                 </tr>
@@ -220,6 +235,8 @@
             const proc = {
                 tipo: document.getElementById('procType').value,
                 nome: document.getElementById('procName').value,
+                codigo_tuss: document.getElementById('procTuss').value, // NOVO CAMPO
+                cid: document.getElementById('procCid').value,           // NOVO CAMPO
                 custo_material: Number(getSafeFloat(document.getElementById('procMat').value).toFixed(2)),
                 custo_medicamento: Number(getSafeFloat(document.getElementById('procMed').value).toFixed(2)),
                 custo_procedimento: Number(getSafeFloat(document.getElementById('procServ').value).toFixed(2)),
@@ -275,7 +292,6 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filterType = document.getElementById('filterType').value;
 
-            // 💡 CORREÇÃO DO CONFLITO DE IDENTIDADE:
             // Cria um array de itens garantindo que a Chave do Banco seja sempre preservada em `unique_key`
             let items = Object.entries(proceduresList).map(([key, p]) => {
                 return { ...p, unique_key: key };
@@ -309,9 +325,21 @@
                 } else if(p.tipo === 'Liminar') {
                     tipoClass = 'badge-lim';
                     tipoLabel = 'Liminar';
+                } else if (p.tipo === 'Cirurgia') {
+                    tipoClass = 'badge-cirurgia';
+                    tipoLabel = 'Cirurgia';
                 } else if (p.tipo === 'Ambos') {
                     tipoClass = 'badge-ambos';
                     tipoLabel = 'Todos';
+                }
+
+                let tussCidInfo = '';
+                if(p.codigo_tuss || p.cid) {
+                    tussCidInfo = `<br><span style="font-size:10px; color:#6b7280; margin-top:2px; display:inline-block;">
+                        ${p.codigo_tuss ? `<i class="fas fa-hashtag"></i> TUSS: ${p.codigo_tuss} ` : ''} 
+                        ${p.codigo_tuss && p.cid ? '|' : ''} 
+                        ${p.cid ? ` <i class="fas fa-stethoscope"></i> CID: ${p.cid}` : ''}
+                    </span>`;
                 }
 
                 // USO DO "unique_key" PARA EVITAR CONFLITO NO ONCLICK E NO CHECKBOX
@@ -321,7 +349,10 @@
                             <input type="checkbox" class="proc-checkbox" value="${p.unique_key}">
                         </td>
                         <td><span class="badge-type ${tipoClass}">${tipoLabel}</span></td>
-                        <td style="font-weight: 500; color: #374151;">${p.nome}</td>
+                        <td style="font-weight: 500; color: #374151; line-height: 1.2;">
+                            ${p.nome}
+                            ${tussCidInfo}
+                        </td>
                         <td style="font-weight:bold; color: #00855B;">${fmt(tot)}</td>
                         <td class="actions-cell">
                             <button class="btn-icon btn-edit" data-id="${p.unique_key}" onclick="editProc(this.dataset.id)" title="Editar">
@@ -380,6 +411,8 @@
             typeSelect.value = optionFound ? optionFound.value : 'Particular';
             
             document.getElementById('procName').value = p.nome || '';
+            document.getElementById('procTuss').value = p.codigo_tuss || '';
+            document.getElementById('procCid').value = p.cid || '';
             
             document.getElementById('procMat').value = getSafeFloat(p.custo_material).toFixed(2);
             document.getElementById('procMed').value = getSafeFloat(p.custo_medicamento).toFixed(2);
