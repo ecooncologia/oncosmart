@@ -166,12 +166,13 @@ body.sidebar-expanded .container {
 }
 
 /* ===== FORMULÁRIOS GLOBAIS ===== */
-/* Aqui o width voltou para 100% para os formulários ficarem do tamanho certo! */
+/* A SOLUÇÃO: Retirei o width: 100% que esticava tudo e coloquei um min-width agradável */
 .form-control,
 input,
 select,
 textarea {
-    width: 100%;
+    min-width: 250px; /* Tamanho justo, sem esticar para a tela toda */
+    max-width: 100%; /* Impede de quebrar o layout no celular */
     padding: 11px 14px;
     border: 1px solid #cbd5e1;
     background: var(--surface-soft);
@@ -647,10 +648,9 @@ tbody tr:hover td {
 .prescritor .card-icon-box { background: #fce7f3; color: #be185d; }
 .encaminhador .card-icon-box { background: #ffedd5; color: #c2410c; }
 
-/* TRAVA DE FLEXBOX PARA NÃO "ESTOURAR" O TAMANHO DA CAIXA */
 .card-content-box {
     flex: 1;
-    min-width: 0; /* Isso é o que impede o select de vazar! */
+    min-width: 0; 
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -683,10 +683,9 @@ tbody tr:hover td {
     text-align: left;
 }
 
-/* BLINDAGEM DO SELECT PARA ELE CORTAR O TEXTO LONGO AO INVÉS DE EMPURRAR */
 .card-select {
-    width: 100%;
-    max-width: 100%; /* Força o select a respeitar a caixa */
+    width: 100%; /* No modal queremos que ele use todo o card */
+    max-width: 100%; 
     padding: 10px 12px;
     border-radius: var(--radius-sm);
     background: var(--surface);
@@ -701,8 +700,6 @@ tbody tr:hover td {
     box-sizing: border-box;
     margin: 0 !important;
     display: block;
-    
-    /* Configuração para cortar o nome longo com "..." */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
