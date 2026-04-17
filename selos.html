@@ -34,7 +34,10 @@
         .selo-option { display: flex; align-items: center; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
         .selo-option:hover { background: #F7FAFC; border-color: #CBD5E0; }
         .selo-option.selected { background: #F0FDF4; border-color: var(--primary); }
-        .selo-option input[type="checkbox"] { margin-right: 15px; transform: scale(1.2); }
+        
+        /* CORREÇÃO AQUI: Estava 'width: 150px'. Troquei para margin-right para ficar bonito */
+        .selo-option input[type="checkbox"] { width: auto; margin-right: 15px; transform: scale(1.3); cursor: pointer; }
+        
         .selo-info { flex: 1; } .selo-name { font-weight: 700; color: var(--text-dark); font-size: 14px; } .selo-stock { font-size: 12px; color: var(--text-light); }
         .selo-quantidade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
         .selo-calculator { background: #E6FFFA; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); margin-top: 15px; }
@@ -99,9 +102,9 @@
                         </div>
                         <label style="margin-top: 15px; display:block; font-weight:bold;">Selecione os Selos:</label>
                         <div id="selos-container"></div> 
-                        <div id="selos-selecionados" style="display:none; background:#f8fafc; padding:15px; border-radius:8px; margin-top:10px;">
-                            <ul id="selos-selecionados-list"></ul>
-                            <strong>Total: <span id="total-minutos-cobertos">0</span> min</strong>
+                        <div id="selos-selecionados" style="display:none; background:#f8fafc ; padding:15px; border-radius:8px; margin-top:10px;">
+                            <ul id="selos-selecionados-list" style="color: rgb(51, 49, 49); font-weight: 600;"></ul>
+                            <strong style="color: rgb(51, 49, 49); display: block; margin-top: 10px;">Total: <span id="total-minutos-cobertos">0</span> min</strong>
                         </div>
                         <div id="selo-calculator" class="selo-calculator" style="display: none;">
                             <p><strong>Status da Cobertura:</strong></p>
@@ -206,8 +209,6 @@
 
         const TABLE_REGISTROS = 'selos_registros';
         const TABLE_ESTOQUE = 'selos_estoque';
-        
-        // CORREÇÃO APLICADA: APONTANDO PARA A TABELA 'secretarias' DO BANCO!
         const TABLE_SECRETARIAS = 'secretarias'; 
 
         let selos = [], estoque = [], secretarias = [], selosSelecionados = [];
@@ -235,7 +236,6 @@
         // --- CARREGAMENTO API ---
         async function loadEstoque() {
             try {
-                // BLINDADO
                 const res = await fetch(`${API_BASE_URL}/${TABLE_ESTOQUE}`, { headers: API_HEADERS });
                 const data = normalizeData(await res.json());
                 estoque = Object.values(data);
@@ -245,7 +245,6 @@
 
         async function loadSecretarias() {
             try {
-                // BLINDADO
                 const res = await fetch(`${API_BASE_URL}/${TABLE_SECRETARIAS}`, { headers: API_HEADERS });
                 const data = normalizeData(await res.json());
                 secretarias = Object.values(data);
@@ -255,7 +254,6 @@
 
         async function loadRegistros() {
             try {
-                // BLINDADO
                 const res = await fetch(`${API_BASE_URL}/${TABLE_REGISTROS}`, { headers: API_HEADERS });
                 const data = normalizeData(await res.json());
                 selos = Object.values(data);
@@ -302,6 +300,17 @@
                 if(item.quantidade > 0) {
                     const div = document.createElement('div');
                     div.className = 'selo-option';
+                    
+                    // MÁGICA AQUI: Ao clicar em qualquer lugar da div (menos no input numérico), ele aciona o checkbox!
+                    div.onclick = function(e) {
+                        // Ignora se o clique for direto no input de número ou no próprio checkbox para não dar duplo clique
+                        if (e.target.tagName === 'INPUT') return; 
+                        
+                        const chk = this.querySelector('input[type="checkbox"]');
+                        chk.checked = !chk.checked; // Inverte o estado
+                        chk.dispatchEvent(new Event('change')); // Avisa o sistema que mudou
+                    };
+
                     div.innerHTML = `<input type="checkbox" onchange="toggleSelo(this, '${item.id_firebase}', ${item.tipo==='horas'?item.duracao*60:item.duracao})"> <div class="selo-info"><div class="selo-name">Selo ${duracaoFmt}</div><div class="selo-stock">Disp: ${item.quantidade}</div></div> <input type="number" min="1" max="${item.quantidade}" value="1" class="selo-quantidade-input" disabled oninput="updateQtd('${item.id_firebase}', this.value)">`;
                     container.appendChild(div);
                 }
@@ -334,7 +343,6 @@
             lista.sort((a,b) => new Date(b.data || 0) - new Date(a.data || 0));
 
             lista.forEach(s => {
-                // CORREÇÃO: Tenta achar pelo id_firebase (Padrão) ou pelo Nome (Legado)
                 const sec = secretarias.find(x => x.id_firebase === s.secretaria || x.nome === s.secretaria)?.nome || s.secretaria || '-';
                 
                 const selosTxt = s.selosUtilizados?.map(u => `${u.quantidade}x ${formatarDuracao(u.duracao)}`).join(', ') || '-';
@@ -359,9 +367,13 @@
 
         // HELPERS E LOGICA
         function toggleSelo(chk, id, dur) {
-            const input = chk.parentElement.querySelector('input[type="number"]');
+            // MÁGICA PARTE 2: Garante que ele ache a div principal não importa de onde venha o evento
+            const container = chk.closest('.selo-option');
+            const input = container.querySelector('input[type="number"]');
+            
             input.disabled = !chk.checked;
-            chk.parentElement.classList.toggle('selected', chk.checked);
+            container.classList.toggle('selected', chk.checked);
+            
             if(chk.checked) selosSelecionados.push({id, dur, qtd: parseInt(input.value)});
             else selosSelecionados = selosSelecionados.filter(s => s.id !== id);
             updateSummary();
@@ -411,7 +423,6 @@
         }
 
         // --- SUBMITS E AÇÕES ---
-        
         document.getElementById('form-selo').addEventListener('submit', async e => {
             e.preventDefault();
             if(selosSelecionados.length === 0) return alert('Selecione selos.');
@@ -427,7 +438,6 @@
                 selosUtilizados: selosSelecionados.map(s => ({ seloId: s.id, quantidade: s.qtd, duracao: s.dur }))
             };
             
-            // BLINDADO
             await fetch(`${API_BASE_URL}/${TABLE_REGISTROS}`, {
                 method:'POST', 
                 headers:{
@@ -439,7 +449,6 @@
             
             for(let s of selosSelecionados) {
                 const item = estoque.find(x => x.id_firebase === s.id);
-                // BLINDADO
                 if(item) await fetch(`${API_BASE_URL}/${TABLE_ESTOQUE}/${s.id}`, {
                     method:'PUT', 
                     headers:{
@@ -466,7 +475,6 @@
         document.getElementById('form-estoque').addEventListener('submit', async e => {
             e.preventDefault();
             const item = { tipo: document.getElementById('tipo-selo').value, duracao: document.getElementById('duracao-selo').value, quantidade: document.getElementById('quantidade-selo').value, estoqueMinimo: document.getElementById('estoque-minimo').value };
-            // BLINDADO
             await fetch(`${API_BASE_URL}/${TABLE_ESTOQUE}`, {
                 method:'POST', 
                 headers:{
@@ -482,7 +490,6 @@
 
         document.getElementById('form-secretaria').addEventListener('submit', async e => {
             e.preventDefault();
-            // BLINDADO
             await fetch(`${API_BASE_URL}/${TABLE_SECRETARIAS}`, {
                 method:'POST', 
                 headers:{
@@ -539,7 +546,6 @@
                 estoqueMinimo: document.getElementById('editar-estoque-minimo').value
             };
             
-            // BLINDADO
             await fetch(`${API_BASE_URL}/${TABLE_ESTOQUE}/${id}`, { 
                 method:'PUT', 
                 headers:{

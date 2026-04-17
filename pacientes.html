@@ -187,32 +187,56 @@
     </div>
 
     <div class="modal-overlay" id="linkModal">
-        <div class="modal-content" style="width: 450px;">
-            <div class="modal-header">
+        <div class="modal-content" style="width: 500px; max-width: 95vw;">
+            <div class="modal-header" style="background: var(--primary); color: white;">
                 <span id="linkModalTitle">Vincular Médicos</span>
                 <button class="modal-close" onclick="closeModals()"><i class="fas fa-times"></i></button>
             </div>
-            <div class="modal-body">
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Paciente(s): <strong id="linkPatientName" style="color: #000; font-size: 14px;"></strong></p>
+            
+            <div class="modal-body modal-link-body">
+                
+                <div class="patient-highlight">
+                    <i class="fas fa-user-injured" style="color: var(--text-muted); font-size: 26px;"></i>
+                    <div>
+                        <div style="font-size: 10px; text-transform: uppercase; color: var(--text-light); font-weight: 800; letter-spacing: 0.5px;">Paciente Selecionado</div>
+                        <div id="linkPatientName" style="color: var(--text-dark); font-size: 16px; font-weight: 800; word-break: break-word;"></div>
+                    </div>
+                </div>
                 <input type="hidden" id="linkPatientId">
                 
-                <div style="background: #fdf2f8; border: 1px solid #fbcfe8; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                    <label class="form-label" style="color: #be185d; margin-bottom: 8px;"><i class="fas fa-stethoscope"></i> Médico Prescritor</label>
-                    <select id="linkPrescritorSelect" class="form-select" style="margin-bottom: 0; border-color: #fbcfe8;">
-                        <option value="">-- Nenhum --</option>
-                    </select>
+                <div class="doctor-select-card prescritor">
+                    <div class="card-icon-box">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <div class="card-content-box">
+                        <label class="card-label">Médico Prescritor</label>
+                        <div class="card-helper">Responsável principal (Obrigatório)</div>
+                        <select id="linkPrescritorSelect" class="card-select">
+                            <option value="">-- Selecione o Prescritor --</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 8px;">
-                    <label class="form-label" style="color: #c2410c; margin-bottom: 8px;"><i class="fas fa-share-square"></i> Médico Encaminhador</label>
-                    <select id="linkEncaminhadorSelect" class="form-select" style="margin-bottom: 0; border-color: #fed7aa;">
-                        <option value="">-- Nenhum --</option>
-                    </select>
+                <div class="doctor-select-card encaminhador">
+                    <div class="card-icon-box">
+                        <i class="fas fa-share-square"></i>
+                    </div>
+                    <div class="card-content-box">
+                        <label class="card-label">Médico Encaminhador</label>
+                        <div class="card-helper">Origem do paciente (Opcional)</div>
+                        <select id="linkEncaminhadorSelect" class="card-select">
+                            <option value="">-- Selecione o Encaminhador --</option>
+                        </select>
+                    </div>
                 </div>
+
             </div>
+            
             <div class="modal-footer">
-                <button class="btn-sync" style="background: #9ca3af;" onclick="closeModals()">Cancelar</button>
-                <button class="btn-primary" id="btnSaveLink" onclick="saveDoctorLink()"><i class="fas fa-check"></i> Salvar Vínculos</button>
+                <button class="btn btn-secondary" onclick="closeModals()">Cancelar</button>
+                <button class="btn btn-success" id="btnSaveLink" onclick="saveDoctorLink()">
+                    <i class="fas fa-check"></i> Salvar Vínculos
+                </button>
             </div>
         </div>
     </div>
@@ -243,7 +267,9 @@
 
                 <label class="form-label" style="margin-top: 10px;">Vincular Médicos ao Grupo</label>
                 <div id="groupDoctorsCheckboxes" style="max-height: 150px; overflow-y: auto; border: 1px solid #d1d5db; border-radius:6px; padding:10px; background:#f9fafb;">
-                    </div>
+                   
+                
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-sync" style="background: #9ca3af;" onclick="clearGroupForm()">Limpar Form</button>
@@ -707,7 +733,7 @@
             docsOrdenados.forEach(([id, doc]) => {
                 if (doc.prescritor === 'sim' || doc.encaminhador === 'sim') {
                     html += `<label style="display:flex; align-items:center; font-size:12px; color:#374151; margin-bottom:8px; cursor:pointer;">
-                        <input type="checkbox" value="${id}" class="group-doc-cb"> <span style="margin-left:8px;">${doc.nome}</span>
+                        <input type="checkbox" value="${id}" class="group-doc-cb" style="width: 5%;"> <span style="margin-left:8px;">${doc.nome}</span>
                     </label>`;
                 }
             });
