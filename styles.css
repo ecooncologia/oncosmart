@@ -166,13 +166,12 @@ body.sidebar-expanded .container {
 }
 
 /* ===== FORMULÁRIOS GLOBAIS ===== */
-/* A SOLUÇÃO: Retirei o width: 100% que esticava tudo e coloquei um min-width agradável */
+/* VOLTEI PARA 100%: Assim todas as outras páginas ficam perfeitamente alinhadas de novo */
 .form-control,
 input,
 select,
 textarea {
-    min-width: 250px; /* Tamanho justo, sem esticar para a tela toda */
-    max-width: 100%; /* Impede de quebrar o layout no celular */
+    width: 100%;
     padding: 11px 14px;
     border: 1px solid #cbd5e1;
     background: var(--surface-soft);
@@ -579,7 +578,7 @@ tbody tr:hover td {
 }
 
 /* ==========================================
-   MODAL DE VÍNCULO DE MÉDICOS (PREMIUM & BLINDADO)
+   MODAL DE VÍNCULO DE MÉDICOS (BLINDAGEM ESPECÍFICA)
    ========================================== */
 .modal-link-body {
     display: flex !important;
@@ -648,9 +647,10 @@ tbody tr:hover td {
 .prescritor .card-icon-box { background: #fce7f3; color: #be185d; }
 .encaminhador .card-icon-box { background: #ffedd5; color: #c2410c; }
 
+/* TRAVA EXCLUSIVA DO MODAL: Garante que ele não passe da div */
 .card-content-box {
     flex: 1;
-    min-width: 0; 
+    min-width: 0; /* IMPRESCINDÍVEL: Trava o overflow do Flexbox */
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -683,8 +683,9 @@ tbody tr:hover td {
     text-align: left;
 }
 
+/* BLINDAGEM DO SELECT: Esta regra só vale pro Modal e não afeta outras telas! */
 .card-select {
-    width: 100%; /* No modal queremos que ele use todo o card */
+    width: 100%;
     max-width: 100%; 
     padding: 10px 12px;
     border-radius: var(--radius-sm);
@@ -700,6 +701,8 @@ tbody tr:hover td {
     box-sizing: border-box;
     margin: 0 !important;
     display: block;
+    
+    /* Configuração para cortar nomes compridos com "..." */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
