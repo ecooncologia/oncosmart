@@ -34,10 +34,7 @@
         .selo-option { display: flex; align-items: center; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
         .selo-option:hover { background: #F7FAFC; border-color: #CBD5E0; }
         .selo-option.selected { background: #F0FDF4; border-color: var(--primary); }
-        
-        /* CORREÇÃO AQUI: Estava 'width: 150px'. Troquei para margin-right para ficar bonito */
         .selo-option input[type="checkbox"] { width: auto; margin-right: 15px; transform: scale(1.3); cursor: pointer; }
-        
         .selo-info { flex: 1; } .selo-name { font-weight: 700; color: var(--text-dark); font-size: 14px; } .selo-stock { font-size: 12px; color: var(--text-light); }
         .selo-quantidade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
         .selo-calculator { background: #E6FFFA; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); margin-top: 15px; }
@@ -56,7 +53,6 @@
         .filter-input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; }
         
         .action-buttons { display: flex; gap: 8px; align-items: center; }
-        
         .btn-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; transition: 0.2s; color: white; }
         .btn-edit { background: #3182ce; } .btn-delete { background: #e53e3e; }
         .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; }
@@ -66,6 +62,13 @@
         .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 600px; position: relative; animation: slideDown 0.3s; }
         .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; background: none; border: none; color: #666; }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* ESTILOS DA PAGINAÇÃO */
+        .pagination { display: flex; justify-content: flex-end; gap: 6px; margin-top: 15px; flex-wrap: wrap; }
+        .page-btn { padding: 6px 12px; border: 1px solid #cbd5e1; background: white; color: var(--text-dark); border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s; font-weight: 600; }
+        .page-btn:hover:not(:disabled) { background: #f1f5f9; color: var(--primary); }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #f8fafc; }
 
         @media (max-width: 768px) { .form-row { flex-direction: column; gap: 10px; } .tabs { overflow-x: auto; } .stats { flex-direction: column; } }
     </style>
@@ -102,9 +105,9 @@
                         </div>
                         <label style="margin-top: 15px; display:block; font-weight:bold;">Selecione os Selos:</label>
                         <div id="selos-container"></div> 
-                        <div id="selos-selecionados" style="display:none; background:#f8fafc ; padding:15px; border-radius:8px; margin-top:10px;">
-                            <ul id="selos-selecionados-list" style="color: rgb(51, 49, 49); font-weight: 600;"></ul>
-                            <strong style="color: rgb(51, 49, 49); display: block; margin-top: 10px;">Total: <span id="total-minutos-cobertos">0</span> min</strong>
+                        <div id="selos-selecionados" style="display:none; background:#0f62b4; padding:15px; border-radius:8px; margin-top:10px;">
+                            <ul id="selos-selecionados-list" style="color: white; font-weight: 600;"></ul>
+                            <strong style="color: white; display: block; margin-top: 10px;">Total: <span id="total-minutos-cobertos">0</span> min</strong>
                         </div>
                         <div id="selo-calculator" class="selo-calculator" style="display: none;">
                             <p><strong>Status da Cobertura:</strong></p>
@@ -119,7 +122,7 @@
                     <h2 class="section-title">Histórico Recente</h2>
                     <div class="table-filters">
                         <input type="text" id="filter-paciente" class="filter-input" placeholder="Buscar paciente..." oninput="filtrarPacientes(this.value)">
-                        <button onclick="loadRegistros()" class="btn btn-primary" style="font-size: 12px;">Atualizar</button>
+                        <button onclick="loadRegistros()" class="btn btn-primary" style="font-size: 12px;"><i class="fas fa-sync-alt"></i> Atualizar</button>
                     </div>
                     <div class="table-responsive">
                         <table id="tabela-registros">
@@ -127,6 +130,7 @@
                             <tbody></tbody>
                         </table>
                     </div>
+                    <div id="pagination-controls" class="pagination"></div>
                 </div>
             </div>
 
@@ -179,7 +183,7 @@
                         <div class="stat-card"><h3>Total Usado</h3><div class="stat-value" id="total-selos">0</div></div>
                         <div class="stat-card"><h3>Alertas Estoque</h3><div class="stat-value" id="alertas-estoque" style="color:red">0</div></div>
                     </div>
-                    <button id="baixar-pdf" class="btn btn-secondary" style="margin-top: 20px; width: 100%;">Baixar PDF</button>
+                    <button id="baixar-pdf" class="btn btn-secondary" style="margin-top: 20px; width: 100%;"><i class="fas fa-file-pdf"></i> Baixar PDF</button>
                 </div>
             </div>
         </div>
@@ -214,10 +218,15 @@
         let selos = [], estoque = [], secretarias = [], selosSelecionados = [];
         let totalMinutos = 0, totalMinutosCobertos = 0;
 
+        // Variáveis de Paginação
+        let currentPage = 1;
+        const itemsPerPage = 15;
+        let currentFilteredSelos = [];
+
         async function init() {
-            await loadSecretarias(); // Garante que carrega os nomes primeiro
+            await loadSecretarias(); 
             await loadEstoque();
-            await loadRegistros();   // Puxa os registros para cruzar os IDs com os Nomes
+            await loadRegistros();   
             setupTabs();
             setupCalculators();
         }
@@ -259,8 +268,13 @@
                 selos = Object.values(data);
                 
                 const termo = document.getElementById('filter-paciente').value;
-                if(termo) filtrarPacientes(termo);
-                else renderRegistros(selos);
+                if(termo) {
+                    filtrarPacientes(termo);
+                } else {
+                    currentFilteredSelos = [...selos];
+                    currentPage = 1;
+                    renderRegistros();
+                }
                 
                 atualizarRelatorios();
             } catch(e) { console.error("Erro registros", e); }
@@ -269,8 +283,9 @@
         // --- FILTRO PACIENTES ---
         function filtrarPacientes(termo) {
             const termoLower = termo.toLowerCase();
-            const filtrados = selos.filter(s => (s.paciente || '').toLowerCase().includes(termoLower));
-            renderRegistros(filtrados);
+            currentFilteredSelos = selos.filter(s => (s.paciente || '').toLowerCase().includes(termoLower));
+            currentPage = 1; // Reseta para a página 1 ao filtrar
+            renderRegistros();
         }
 
         // --- RENDERS ---
@@ -301,14 +316,11 @@
                     const div = document.createElement('div');
                     div.className = 'selo-option';
                     
-                    // MÁGICA AQUI: Ao clicar em qualquer lugar da div (menos no input numérico), ele aciona o checkbox!
                     div.onclick = function(e) {
-                        // Ignora se o clique for direto no input de número ou no próprio checkbox para não dar duplo clique
                         if (e.target.tagName === 'INPUT') return; 
-                        
                         const chk = this.querySelector('input[type="checkbox"]');
-                        chk.checked = !chk.checked; // Inverte o estado
-                        chk.dispatchEvent(new Event('change')); // Avisa o sistema que mudou
+                        chk.checked = !chk.checked; 
+                        chk.dispatchEvent(new Event('change')); 
                     };
 
                     div.innerHTML = `<input type="checkbox" onchange="toggleSelo(this, '${item.id_firebase}', ${item.tipo==='horas'?item.duracao*60:item.duracao})"> <div class="selo-info"><div class="selo-name">Selo ${duracaoFmt}</div><div class="selo-stock">Disp: ${item.quantidade}</div></div> <input type="number" min="1" max="${item.quantidade}" value="1" class="selo-quantidade-input" disabled oninput="updateQtd('${item.id_firebase}', this.value)">`;
@@ -335,16 +347,26 @@
             });
         }
 
-        function renderRegistros(lista) {
+        function renderRegistros() {
             const tbody = document.querySelector('#tabela-registros tbody');
             tbody.innerHTML = '';
-            if(lista.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">Nenhum registro.</td></tr>'; return; }
             
-            lista.sort((a,b) => new Date(b.data || 0) - new Date(a.data || 0));
+            if(currentFilteredSelos.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 20px;">Nenhum registro encontrado.</td></tr>'; 
+                renderPagination();
+                return; 
+            }
+            
+            // Ordena tudo antes de paginar (mais recentes primeiro)
+            currentFilteredSelos.sort((a,b) => new Date(b.data || 0) - new Date(a.data || 0));
 
-            lista.forEach(s => {
+            // Paginação lógica
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedLista = currentFilteredSelos.slice(startIndex, endIndex);
+
+            paginatedLista.forEach(s => {
                 const sec = secretarias.find(x => x.id_firebase === s.secretaria || x.nome === s.secretaria)?.nome || s.secretaria || '-';
-                
                 const selosTxt = s.selosUtilizados?.map(u => `${u.quantidade}x ${formatarDuracao(u.duracao)}`).join(', ') || '-';
                 tbody.innerHTML += `
                 <tr>
@@ -363,11 +385,80 @@
                     </td>
                 </tr>`;
             });
+            
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const paginationEl = document.getElementById('pagination-controls');
+            paginationEl.innerHTML = '';
+            
+            const totalPages = Math.ceil(currentFilteredSelos.length / itemsPerPage);
+            if (totalPages <= 1) return; // Não mostra se só tiver 1 página
+            
+            // Botão Anterior
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => mudarPagina(currentPage - 1);
+            paginationEl.appendChild(prevBtn);
+            
+            // Lógica para mostrar os números sem estourar a tela (Max 5 visíveis)
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (currentPage <= 2) endPage = Math.min(5, totalPages);
+            if (currentPage >= totalPages - 1) startPage = Math.max(1, totalPages - 4);
+
+            if (startPage > 1) {
+                paginationEl.appendChild(createPageBtn(1));
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.innerHTML = '...';
+                    dots.style.padding = '5px';
+                    paginationEl.appendChild(dots);
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationEl.appendChild(createPageBtn(i));
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.innerHTML = '...';
+                    dots.style.padding = '5px';
+                    paginationEl.appendChild(dots);
+                }
+                paginationEl.appendChild(createPageBtn(totalPages));
+            }
+
+            // Botão Próximo
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => mudarPagina(currentPage + 1);
+            paginationEl.appendChild(nextBtn);
+        }
+
+        function createPageBtn(page) {
+            const btn = document.createElement('button');
+            btn.className = `page-btn ${page === currentPage ? 'active' : ''}`;
+            btn.innerText = page;
+            btn.onclick = () => mudarPagina(page);
+            return btn;
+        }
+
+        function mudarPagina(page) {
+            currentPage = page;
+            renderRegistros();
         }
 
         // HELPERS E LOGICA
         function toggleSelo(chk, id, dur) {
-            // MÁGICA PARTE 2: Garante que ele ache a div principal não importa de onde venha o evento
             const container = chk.closest('.selo-option');
             const input = container.querySelector('input[type="number"]');
             
@@ -559,11 +650,40 @@
             await loadEstoque();
         });
 
+        // ===============================================
+        // MÁGICA DO PDF ATUALIZADA PARA PEGAR TUDO!
+        // ===============================================
         document.getElementById('baixar-pdf').onclick = () => {
             const doc = new window.jspdf.jsPDF();
-            doc.text("Relatório Selos", 10, 10);
-            doc.autoTable({ html: '#tabela-registros', startY: 20 });
-            doc.save('selos.pdf');
+            doc.text("Relatório de Selos - ECO Oncologia", 14, 15);
+            
+            // Cabeçalhos
+            const head = [['Paciente', 'Secretária', 'Tipo', 'Data', 'Entrada', 'Saída', 'Total', 'Selos']];
+            
+            // Corpo gerado direto do banco de memória filtrado (Ignora a paginação)
+            const body = currentFilteredSelos.map(s => {
+                const sec = secretarias.find(x => x.id_firebase === s.secretaria || x.nome === s.secretaria)?.nome || s.secretaria || '-';
+                const selosTxt = s.selosUtilizados?.map(u => `${u.quantidade}x ${formatarDuracao(u.duracao)}`).join(', ') || '-';
+                return [
+                    s.paciente, 
+                    sec, 
+                    s.tipo, 
+                    formatarData(s.data), 
+                    s.horaEntrada, 
+                    s.horaSaida, 
+                    s.horasTotal, 
+                    selosTxt
+                ];
+            });
+
+            doc.autoTable({ 
+                head: head, 
+                body: body,
+                startY: 25,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [0, 133, 91] } // Verde da Eco!
+            });
+            doc.save('relatorio_selos.pdf');
         };
 
         function normalizeData(d) {
