@@ -267,7 +267,9 @@
 
                 <label class="form-label" style="margin-top: 10px;">Vincular Médicos ao Grupo</label>
                 <div id="groupDoctorsCheckboxes" style="max-height: 150px; overflow-y: auto; border: 1px solid #d1d5db; border-radius:6px; padding:10px; background:#f9fafb;">
-                    </div>
+                   
+                
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-sync" style="background: #9ca3af;" onclick="clearGroupForm()">Limpar Form</button>
@@ -731,7 +733,7 @@
             docsOrdenados.forEach(([id, doc]) => {
                 if (doc.prescritor === 'sim' || doc.encaminhador === 'sim') {
                     html += `<label style="display:flex; align-items:center; font-size:12px; color:#374151; margin-bottom:8px; cursor:pointer;">
-                        <input type="checkbox" value="${id}" class="group-doc-cb"> <span style="margin-left:8px;">${doc.nome}</span>
+                        <input type="checkbox" value="${id}" class="group-doc-cb" style="    width: 100;"> <span style="margin-left:8px;">${doc.nome}</span>
                     </label>`;
                 }
             });
