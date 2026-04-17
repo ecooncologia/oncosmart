@@ -86,19 +86,31 @@
         .group-doc-cb { margin-right: 8px; transform: scale(1.2); }
 
         /* ==========================================
-           NOVO DESIGN: MODAL DE VÍNCULO DE MÉDICOS
+           NOVO DESIGN PREMIUM: MODAL DE VÍNCULO DE MÉDICOS
            ========================================== */
+        
+        /* Blindagem para impedir que o CSS Global quebre o layout deste modal */
+        #linkModal .modal-body {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 15px !important;
+            padding: 24px !important;
+        }
+
         .patient-highlight {
             display: flex; align-items: center; gap: 15px;
             background: #f3f4f6; padding: 15px 20px;
-            border-radius: 10px; margin-bottom: 20px;
-            border: 1px solid #e5e7eb;
+            border-radius: 10px; border: 1px solid #e5e7eb;
+            width: 100%; box-sizing: border-box;
         }
+
         .doctor-select-card {
-            display: flex; gap: 15px; padding: 16px;
-            border-radius: 10px; margin-bottom: 15px;
+            display: flex; flex-direction: row; align-items: center; gap: 15px;
+            padding: 16px; border-radius: 10px;
             border: 1px solid transparent; transition: all 0.2s ease;
+            width: 100%; box-sizing: border-box;
         }
+        
         .doctor-select-card.prescritor-card { background: #fdf2f8; border-color: #fbcfe8; }
         .doctor-select-card.prescritor-card:focus-within { box-shadow: 0 0 0 3px rgba(190, 24, 93, 0.1); border-color: #f9a8d4; }
         
@@ -113,15 +125,18 @@
         .prescritor-card .card-icon { background: #fce7f3; color: #be185d; }
         .encaminhador-card .card-icon { background: #ffedd5; color: #c2410c; }
         
-        .card-content { flex: 1; }
-        .card-content .form-label { font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
-        .input-helper { font-size: 11px; color: #6b7280; margin: 0 0 8px 0; }
+        .card-content {
+            flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+        }
+        
+        .card-content .form-label { font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 0; }
+        .input-helper { font-size: 11px; color: #6b7280; margin: 0 0 4px 0; }
         
         .custom-select {
-            width: 100%; padding: 10px; border-radius: 6px; font-size: 13px; box-sizing: border-box;
+            width: 100%; padding: 8px 10px; border-radius: 6px; font-size: 13px; box-sizing: border-box;
             margin-bottom: 0; background-color: white;
             border: 1px solid #d1d5db; font-weight: 600; color: #374151;
-            cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05); height: 38px;
         }
         .prescritor-card .custom-select:focus { border-color: #be185d; outline: none; }
         .encaminhador-card .custom-select:focus { border-color: #c2410c; outline: none; }
@@ -234,7 +249,7 @@
                 <button class="modal-close" onclick="closeModals()"><i class="fas fa-times"></i></button>
             </div>
             
-            <div class="modal-body" style="padding: 24px;">
+            <div class="modal-body">
                 
                 <div class="patient-highlight">
                     <i class="fas fa-user-injured" style="color: #9ca3af; font-size: 24px;"></i>
