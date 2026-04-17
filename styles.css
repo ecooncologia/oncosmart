@@ -170,7 +170,7 @@ body.sidebar-expanded .container {
 input,
 select,
 textarea {
-    width: 100%;
+    width: 5%;
     padding: 11px 14px;
     border: 1px solid #cbd5e1;
     background: var(--surface-soft);
