@@ -860,7 +860,7 @@
 
         function openModalFromGrid(hosp, hour, min) {
             openModal();
-            document.getElementById('hospital').value = hosp;
+            document.getElementById('hospital').value = (hosp === 'Não Definido') ? '' : hosp;
             document.getElementById('data_cirurgia').value = document.getElementById('filterDataAgenda').value;
             const hh = hour.toString().padStart(2, '0');
             const mm = min.toString().padStart(2, '0');
@@ -896,14 +896,20 @@
 
             if(!dataSel) { container.innerHTML = '<div class="agenda-empty">Selecione uma data para ver a agenda.</div>'; return; }
 
-            let agendamentos = guiasData.filter(g => g.data_cirurgia === dataSel && g.hora_cirurgia);
+            let agendamentos = guiasData.filter(g => g.data_cirurgia === dataSel);
             if(term) agendamentos = agendamentos.filter(g => `${g.paciente||''} ${g.procedimento||''} ${g.hospital||''}`.toLowerCase().includes(term));
             if(medSel !== 'todos') agendamentos = agendamentos.filter(g => g.medico === medSel);
-            if(hospSel !== 'todos') agendamentos = agendamentos.filter(g => g.hospital === hospSel);
 
             const HORA_INICIO = 6; const HORA_FIM = 22; const TOTAL_HORAS = HORA_FIM - HORA_INICIO;
-            let colunasHospitais = hospitaisAtivos;
+            
+            let colunasHospitais = [...hospitaisAtivos];
             if(hospSel !== 'todos') colunasHospitais = hospitaisAtivos.filter(h => h.name === hospSel);
+            
+            const hasNoHosp = agendamentos.some(g => !g.hospital || !hospitaisAtivos.find(h => h.name === g.hospital));
+            if(hasNoHosp && (hospSel === 'todos' || hospSel === 'Não Definido')) {
+                colunasHospitais.push({ name: 'Não Definido', color: '#94a3b8' });
+            }
+
             if(colunasHospitais.length === 0) { container.innerHTML = `<div class="agenda-empty">Nenhum hospital selecionado ou cadastrado.</div>`; return; }
 
             let html = `<div class="agenda-v-wrapper"><div class="agenda-v-header"><div class="agenda-v-time-corner"></div>`;
@@ -928,16 +934,22 @@
                 }
                 html += `</div>`;
 
-                let evs = agendamentos.filter(g => g.hospital === hosp.name);
-                evs.sort((a,b) => parseTimeToFloat(a.hora_cirurgia) - parseTimeToFloat(b.hora_cirurgia));
+                let evs = agendamentos.filter(g => {
+                    if (hosp.name === 'Não Definido') {
+                        return !g.hospital || !hospitaisAtivos.find(h => h.name === g.hospital);
+                    }
+                    return g.hospital === hosp.name;
+                });
+
+                evs.sort((a,b) => parseTimeToFloat(a.hora_cirurgia || '07:00') - parseTimeToFloat(b.hora_cirurgia || '07:00'));
                 
                 let colunasDeEventos = [];
                 evs.forEach(ev => {
-                    let start = parseTimeToFloat(ev.hora_cirurgia); let dur = parseFloat(ev.duracao) || 1.5;
+                    let start = parseTimeToFloat(ev.hora_cirurgia || '07:00'); let dur = parseFloat(ev.duracao) || 1.5;
                     let colocado = false;
                     for(let i=0; i<colunasDeEventos.length; i++) {
                         let ultEv = colunasDeEventos[i][colunasDeEventos[i].length-1];
-                        let ultEnd = parseTimeToFloat(ultEv.hora_cirurgia) + (parseFloat(ultEv.duracao) || 1.5);
+                        let ultEnd = parseTimeToFloat(ultEv.hora_cirurgia || '07:00') + (parseFloat(ultEv.duracao) || 1.5);
                         if(start >= ultEnd) { colunasDeEventos[i].push(ev); ev._colIndex = i; colocado = true; break; }
                     }
                     if(!colocado) { colunasDeEventos.push([ev]); ev._colIndex = colunasDeEventos.length - 1; }
@@ -946,39 +958,42 @@
                 let numSubColunas = colunasDeEventos.length || 1; let widthPercent = 100 / numSubColunas;
 
                 evs.forEach(ev => {
-                    let start = parseTimeToFloat(ev.hora_cirurgia);
-                    if(start >= HORA_INICIO && start <= HORA_FIM) {
-                        let dur = parseFloat(ev.duracao) || 1.5;
-                        let topPerc = ((start - HORA_INICIO) / TOTAL_HORAS) * 100; let heightPerc = (dur / TOTAL_HORAS) * 100;
-                        let leftPercent = ev._colIndex * widthPercent;
-                        
-                        let stConfig = statusConfig.find(s => s.name === ev.status) || statusConfig[0];
-                        let medicoNome = ev.medico.replace(/^Dr\.?\s*|^Dra\.?\s*/i, ''); 
-                        
-                        let procLabelArr = [];
-                        let pListForCard = ev.procedimentos || [{nome: ev.procedimento}];
-                        pListForCard.forEach(p => {
-                            let lbl = p.nome;
-                            let tags = [];
-                            if(p.codigo_tuss) tags.push(`TUSS: ${p.codigo_tuss}`);
-                            if(p.cid) tags.push(`CID: ${p.cid}`);
-                            if(tags.length > 0) lbl += `<br><span style="font-size:7px; color:#475569; opacity:0.8;">[${tags.join(' | ')}]</span>`;
-                            procLabelArr.push(lbl);
-                        });
-                        let procLabel = procLabelArr.join('<br>');
+                    let start = parseTimeToFloat(ev.hora_cirurgia || '07:00');
+                    if (start < HORA_INICIO) start = HORA_INICIO; 
+                    if (start > HORA_FIM - 1) start = HORA_FIM - 1;
 
-                        html += `
-                            <div class="agenda-v-card" 
-                                style="top: ${topPerc}%; height: ${heightPerc}%; left: ${leftPercent}%; width: ${widthPercent}%; background-color: ${stConfig.bg}; border-left-color: ${stConfig.border}; color: ${stConfig.text};" 
-                                onclick="openViewModal('${ev.id_firebase}')">
-                                <div class="card-doctor">
-                                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><i class="fas fa-user-md" style="opacity:0.7;"></i> ${medicoNome}</span>
-                                </div>
-                                <div class="card-paciente">${ev.paciente}</div>
-                                <div class="card-proc">${procLabel}</div>
+                    let dur = parseFloat(ev.duracao) || 1.5;
+                    let topPerc = ((start - HORA_INICIO) / TOTAL_HORAS) * 100; let heightPerc = (dur / TOTAL_HORAS) * 100;
+                    let leftPercent = ev._colIndex * widthPercent;
+                    
+                    let stConfig = statusConfig.find(s => s.name === ev.status) || statusConfig[0];
+                    let medicoNome = ev.medico.replace(/^Dr\.?\s*|^Dra\.?\s*/i, ''); 
+                    
+                    let procLabelArr = [];
+                    let pListForCard = ev.procedimentos || [{nome: ev.procedimento}];
+                    let timeIndicator = ev.hora_cirurgia ? '' : '<span style="color:#dc2626; font-size:8px;">[Sem Horário]</span> ';
+                    
+                    pListForCard.forEach(p => {
+                        let lbl = p.nome;
+                        let tags = [];
+                        if(p.codigo_tuss) tags.push(`TUSS: ${p.codigo_tuss}`);
+                        if(p.cid) tags.push(`CID: ${p.cid}`);
+                        if(tags.length > 0) lbl += `<br><span style="font-size:7px; color:#475569; opacity:0.8;">[${tags.join(' | ')}]</span>`;
+                        procLabelArr.push(lbl);
+                    });
+                    let procLabel = procLabelArr.join('<br>');
+
+                    html += `
+                        <div class="agenda-v-card" 
+                            style="top: ${topPerc}%; height: ${heightPerc}%; left: ${leftPercent}%; width: ${widthPercent}%; background-color: ${stConfig.bg}; border-left-color: ${stConfig.border}; color: ${stConfig.text};" 
+                            onclick="openViewModal('${ev.id_firebase}')">
+                            <div class="card-doctor">
+                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><i class="fas fa-user-md" style="opacity:0.7;"></i> ${timeIndicator}${medicoNome}</span>
                             </div>
-                        `;
-                    }
+                            <div class="card-paciente">${ev.paciente}</div>
+                            <div class="card-proc">${procLabel}</div>
+                        </div>
+                    `;
                 });
                 html += `</div>`;
             });
@@ -993,7 +1008,7 @@
             document.getElementById('viewGuiaId').value = id;
             document.getElementById('viewPaciente').innerText = guia.paciente;
             document.getElementById('viewMedico').innerText = guia.medico;
-            document.getElementById('viewHosp').innerText = guia.hospital;
+            document.getElementById('viewHosp').innerText = guia.hospital || 'Não Definido';
             
             const vList = document.getElementById('viewProcsList');
             vList.innerHTML = '';
@@ -1011,16 +1026,20 @@
             vList.innerHTML += `<div style="font-size:14px; color:#00855B; display:flex; justify-content:space-between; padding-top:6px; font-weight:bold;"><span>Total:</span><span>R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>`;
 
             let timeStr = "Sem horário definido";
-            if(guia.data_cirurgia && guia.hora_cirurgia) {
+            if(guia.data_cirurgia) {
                 const dataFmt = guia.data_cirurgia.split('-').reverse().join('/');
-                const startFloat = parseTimeToFloat(guia.hora_cirurgia);
-                const durFloat = parseFloat(guia.duracao) || 1.5;
-                const endFloat = startFloat + durFloat;
-                const endH = Math.floor(endFloat);
-                const endM = Math.round((endFloat - endH) * 60);
-                timeStr = `${dataFmt} ⋅ ${guia.hora_cirurgia} – ${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+                if(guia.hora_cirurgia) {
+                    const startFloat = parseTimeToFloat(guia.hora_cirurgia);
+                    const durFloat = parseFloat(guia.duracao) || 1.5;
+                    const endFloat = startFloat + durFloat;
+                    const endH = Math.floor(endFloat);
+                    const endM = Math.round((endFloat - endH) * 60);
+                    timeStr = `${dataFmt} ⋅ ${guia.hora_cirurgia} – ${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+                } else {
+                    timeStr = `${dataFmt} ⋅ <span style="color:#dc2626;">Horário A Definir</span>`;
+                }
             }
-            document.getElementById('viewHorario').innerText = timeStr;
+            document.getElementById('viewHorario').innerHTML = timeStr;
 
             let stConfig = statusConfig.find(s => s.name === guia.status) || statusConfig[0];
             document.getElementById('viewColorBadge').style.backgroundColor = stConfig.border;
@@ -1043,6 +1062,15 @@
                 const res = await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'DELETE', headers: API_HEADERS });
                 if (!res.ok) throw new Error('Erro ao excluir');
                 closeModal('viewGuiaModal');
+                await loadGuias();
+            } catch (err) { alert('Erro: ' + err.message); }
+        }
+        
+        async function deleteGuia(id) {
+            if (!confirm('Excluir toda essa guia cirúrgica do sistema?')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'DELETE', headers: API_HEADERS });
+                if (!res.ok) throw new Error('Erro ao excluir');
                 await loadGuias();
             } catch (err) { alert('Erro: ' + err.message); }
         }
@@ -1100,7 +1128,7 @@
                     const dM = Math.round((g.duracao - dH)*60);
                     durText = `${dH}h${dM > 0 ? dM + 'm' : ''}`;
                 }
-                let cirurgiaInfo = (g.data_cirurgia && g.hora_cirurgia) ? `<br><span style="font-size:10px; color:#00855B; font-weight:bold;"><i class="fas fa-calendar-check"></i> ${g.data_cirurgia.split('-').reverse().join('/')} às ${g.hora_cirurgia} (${durText})</span>` : '';
+                let cirurgiaInfo = g.data_cirurgia ? `<br><span style="font-size:10px; color:#00855B; font-weight:bold;"><i class="fas fa-calendar-check"></i> ${g.data_cirurgia.split('-').reverse().join('/')} ${g.hora_cirurgia ? 'às ' + g.hora_cirurgia : '(Sem Hora)'}</span>` : '';
                 let procsLabel = (g.procedimentos && g.procedimentos.length > 1) ? `<span style="color:#00855B; font-weight:bold;">[${g.procedimentos.length} Procedimentos]</span><br>` + g.procedimentos.map(p => `• ${p.nome}`).join('<br>') : (g.procedimento || '-');
 
                 html += `
@@ -1285,14 +1313,14 @@
             if (mode === 'diario') {
                 const dataSel = document.getElementById('filterDataAgenda').value;
                 if(!dataSel) return alert("Selecione uma data para gerar o Mapa Cirúrgico Diário.");
-                agendamentos = guiasData.filter(g => g.data_cirurgia === dataSel && g.hora_cirurgia);
+                agendamentos = guiasData.filter(g => g.data_cirurgia === dataSel);
                 tituloPDF = `Mapa Cirúrgico Diário - ${dataSel.split('-').reverse().join('/')}`;
             } else {
                 const mesSel = document.getElementById('filterMes').value;
                 const anoSel = document.getElementById('filterAno').value;
                 if(mesSel === 'todos') return alert("Selecione um MÊS específico para gerar o Mapa Mensal.");
                 agendamentos = guiasData.filter(g => {
-                    if(!g.data_cirurgia || !g.hora_cirurgia) return false;
+                    if(!g.data_cirurgia) return false;
                     const [ano, mes, dia] = g.data_cirurgia.split('-');
                     return ano === anoSel && mes === mesSel;
                 });
@@ -1301,20 +1329,27 @@
             }
 
             if(medSel !== 'todos') agendamentos = agendamentos.filter(g => g.medico === medSel);
-            if(hospSel !== 'todos') agendamentos = agendamentos.filter(g => g.hospital === hospSel);
 
             if(agendamentos.length === 0) return alert("Nenhuma cirurgia agendada para os filtros atuais.");
 
             agendamentos.sort((a,b) => {
                 if(a.data_cirurgia !== b.data_cirurgia) return a.data_cirurgia.localeCompare(b.data_cirurgia);
-                return parseTimeToFloat(a.hora_cirurgia) - parseTimeToFloat(b.hora_cirurgia);
+                return parseTimeToFloat(a.hora_cirurgia || '07:00') - parseTimeToFloat(b.hora_cirurgia || '07:00');
             });
             
             const grupos = {};
             agendamentos.forEach(g => {
-                if(!grupos[g.hospital]) grupos[g.hospital] = [];
-                grupos[g.hospital].push(g);
+                let hName = g.hospital;
+                if (!hName || !hospitaisAtivos.find(h => h.name === hName)) hName = 'Não Definido';
+                
+                // Se o filtro de hospital estiver ativo, só inclui se combinar
+                if (hospSel !== 'todos' && hName !== hospSel) return;
+                
+                if(!grupos[hName]) grupos[hName] = [];
+                grupos[hName].push(g);
             });
+
+            if(Object.keys(grupos).length === 0) return alert("Nenhuma cirurgia agendada para o hospital selecionado.");
 
             const win = window.open('', '_blank'); const LOGO_URL = "https://imgur.com/nWWyEBG.png";
             
@@ -1334,7 +1369,7 @@
             
             Object.keys(grupos).sort().forEach(hosp => {
                 let hConfig = hospitaisAtivos.find(h => h.name === hosp);
-                let hColor = hConfig ? hConfig.color : '#00855B';
+                let hColor = hConfig ? hConfig.color : '#94a3b8';
                 
                 html += `<div class="hosp-title" style="border-left-color: ${hColor}; color: ${hColor};">${hosp}</div>`;
                 html += `<table><thead><tr><th style="width:70px;">Horário</th><th>Paciente</th><th>Procedimentos (CID/TUSS)</th><th>Médico Responsável</th><th>Convênio</th><th style="width:100px;">Status</th><th style="width:180px;">Observações</th></tr></thead><tbody>`;
@@ -1358,8 +1393,10 @@
                         procsHtml += `<div style="margin-bottom:6px; border-bottom:1px dotted #e2e8f0; padding-bottom:4px;">• ${p.nome}${tagsHtml}</div>`;
                     });
 
+                    let horaDisplay = g.hora_cirurgia ? g.hora_cirurgia : '<span style="color:#dc2626;">A Definir</span>';
+
                     html += `<tr>
-                        <td style="font-size:13px;"><b>${g.hora_cirurgia}</b><br><span style="font-size:10px; color:#64748b; font-weight:normal;">Dur: ${durTxt}</span>${dataSpan}</td>
+                        <td style="font-size:13px;"><b>${horaDisplay}</b><br><span style="font-size:10px; color:#64748b; font-weight:normal;">Dur: ${durTxt}</span>${dataSpan}</td>
                         <td style="font-size:12px; font-weight:bold;">${g.paciente}</td>
                         <td style="font-size:11px;">${procsHtml}</td>
                         <td>${g.medico}</td>
