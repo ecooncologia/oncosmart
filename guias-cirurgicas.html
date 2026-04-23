@@ -58,6 +58,8 @@
         .st-pendente { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
         .st-autorizado { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .st-agendada { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+        .st-reagendar { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .st-realizado { background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; }
         .status-date { display: block; font-size: 9px; color: #94a3b8; margin-top: 4px; font-weight: 600; }
 
         .action-btns { display: flex; gap: 8px; justify-content: center; }
@@ -144,6 +146,7 @@
         .btn-icon-light { background: transparent; border: none; color: #64748b; font-size: 16px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-icon-light:hover { background: #e2e8f0; color: #0f172a; }
         .btn-icon-light.delete:hover { background: #fee2e2; color: #dc2626; }
+        .btn-icon-light.attach:hover { background: #ede9fe; color: #8b5cf6; }
     </style>
 </head>
 <body>
@@ -299,6 +302,8 @@
                                 <option value="Pendente de documento">Pendente de documento</option>
                                 <option value="Autorizado">Autorizado</option>
                                 <option value="Cirurgia agendada">Cirurgia agendada</option>
+                                <option value="Reagendar">Reagendar</option>
+                                <option value="Realizado">Realizado</option>
                             </select>
                         </div>
 
@@ -381,6 +386,13 @@
                             <label class="form-label">Observação</label>
                             <textarea id="observacao" class="form-input" placeholder="Anotações adicionais..."></textarea>
                         </div>
+
+                        <div class="section-title">Anexos (Documentos / Imagens)</div>
+                        <div class="form-group full-width">
+                            <div id="formAnexosList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+                            <input type="file" id="formFileInput" accept=".pdf, image/jpeg, image/png" multiple onchange="handleFormAnexosUpload(this)" style="display:none;">
+                            <button type="button" class="btn-outline" onclick="document.getElementById('formFileInput').click()" style="width: fit-content; font-size:11px; padding:6px 12px;"><i class="fas fa-paperclip"></i> Adicionar Arquivos</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -394,6 +406,7 @@
     <div class="modal-overlay" id="viewGuiaModal">
         <div class="modal-content small" style="max-width: 500px; border-radius: 12px; overflow: hidden;">
             <div class="view-modal-header">
+                <button class="btn-icon-light attach" onclick="openAnexosModal(document.getElementById('viewGuiaId').value); closeModal('viewGuiaModal');" title="Ver Anexos"><i class="fas fa-paperclip"></i></button>
                 <button class="btn-icon-light" onclick="openModal(document.getElementById('viewGuiaId').value); closeModal('viewGuiaModal');" title="Expandir/Editar"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon-light delete" onclick="deleteGuiaAndClose(document.getElementById('viewGuiaId').value)" title="Excluir Agenda"><i class="fas fa-trash-alt"></i></button>
                 <button class="btn-icon-light" onclick="closeModal('viewGuiaModal')" title="Fechar"><i class="fas fa-times"></i></button>
@@ -504,7 +517,7 @@
                     <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #94a3b8; margin-bottom: 10px;"></i>
                     <div style="font-size: 13px; font-weight: 600; color: #475569;">Clique aqui para anexar</div>
                     <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">PDF, JPG ou PNG (Máx 2MB)</div>
-                    <input type="file" id="fileInput" accept=".pdf, image/jpeg, image/png" onchange="uploadAttachment(this)">
+                    <input type="file" id="fileInput" accept=".pdf, image/jpeg, image/png" multiple onchange="uploadAttachment(this)">
                 </div>
             </div>
         </div>
@@ -512,7 +525,7 @@
 
     <script>
         const API_TABLE = 'guias_cirurgicas';
-        const API_HOSPITAIS = 'hospitais'; // BANCO DE DADOS DOS HOSPITAIS
+        const API_HOSPITAIS = 'hospitais'; 
         
         let guiasData = [];
         let procedimentosList = [];
@@ -521,6 +534,7 @@
         let currentView = 'list'; 
         let hospitaisAtivos = []; 
         let currentProcs = []; 
+        let currentAnexos = []; 
 
         const statusConfig = [
             { name: 'Enviado', class: 'st-enviado', icon: 'fa-paper-plane', bg: '#e0f2fe', border: '#0284c7', text: '#0369a1' },
@@ -528,7 +542,9 @@
             { name: 'Recebido pelo hospital', class: 'st-recebido', icon: 'fa-hospital-user', bg: '#fce7f3', border: '#db2777', text: '#be185d' },
             { name: 'Pendente de documento', class: 'st-pendente', icon: 'fa-exclamation-triangle', bg: '#fee2e2', border: '#dc2626', text: '#b91c1c' },
             { name: 'Autorizado', class: 'st-autorizado', icon: 'fa-check-circle', bg: '#dcfce7', border: '#166534', text: '#15803d' },
-            { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check', bg: '#f3e8ff', border: '#7e22ce', text: '#6b21a8' }
+            { name: 'Cirurgia agendada', class: 'st-agendada', icon: 'fa-calendar-check', bg: '#f3e8ff', border: '#7e22ce', text: '#6b21a8' },
+            { name: 'Reagendar', class: 'st-reagendar', icon: 'fa-calendar-minus', bg: '#f1f5f9', border: '#cbd5e1', text: '#475569' },
+            { name: 'Realizado', class: 'st-realizado', icon: 'fa-check-double', bg: '#ecfdf5', border: '#6ee7b7', text: '#047857' }
         ];
 
         async function startApp() {
@@ -550,7 +566,7 @@
                 renderLegend();
 
                 await Promise.all([ loadProcedimentos(), loadMedicos(), loadGuias() ]);
-                await loadHospitais(); // Agora aguarda carregar os hospitais do Banco
+                await loadHospitais(); 
             } else {
                 setTimeout(startApp, 100);
             }
@@ -564,7 +580,6 @@
             legendDiv.innerHTML = html;
         }
 
-        // ALTERAÇÃO: Toggle de visão Mensal / Diário para a Agenda
         function changeView(view) {
             currentView = view;
             document.getElementById('btnViewList').classList.toggle('active', view === 'list');
@@ -604,12 +619,8 @@
             refreshViews();
         }
 
-        // ==========================================
-        // HOSPITAIS 100% BLINDADOS NO BANCO DE DADOS
-        // ==========================================
         async function loadHospitais() {
             try {
-                // Tenta puxar do backend permanentemente
                 const res = await fetch(`${API_BASE_URL}/${API_HOSPITAIS}`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
@@ -621,13 +632,11 @@
                     }
                 }
             } catch(e) {
-                // Fallback silencioso caso a rota /hospitais ainda não tenha sido criada no Make.com
                 console.warn("Rota /hospitais não encontrada. Usando cache local temporário.");
                 const saved = localStorage.getItem('ecoHospitaisMaster');
                 if (saved) hospitaisAtivos = JSON.parse(saved);
             }
 
-            // Auto-recuperação de segurança: se a guia tem hospital, ele garante que não suma da lista
             const hospitaisNoBanco = [...new Set(guiasData.map(g => g.hospital).filter(Boolean))];
             hospitaisNoBanco.forEach(hb => {
                 if(!hospitaisAtivos.find(s => s.name === hb)) {
@@ -705,7 +714,6 @@
             syncHospitalColors();
             
             try {
-                // Salva cada hospital individualmente na tabela do banco
                 for (let hosp of hospitaisAtivos) {
                     if (hosp.id_firebase) {
                         await fetch(`${API_BASE_URL}/${API_HOSPITAIS}/${hosp.id_firebase}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(hosp) });
@@ -713,9 +721,8 @@
                         await fetch(`${API_BASE_URL}/${API_HOSPITAIS}`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(hosp) });
                     }
                 }
-                await loadHospitais(); // Recarrega para pegar os IDs oficiais
+                await loadHospitais(); 
             } catch(e) {
-                // Fallback seguro local caso a API falhe
                 localStorage.setItem('ecoHospitaisMaster', JSON.stringify(hospitaisAtivos));
                 updateHospitalSelects();
                 if(currentView === 'agenda') renderAgenda();
@@ -725,9 +732,6 @@
             closeModal('hospitaisModal');
         }
 
-        // ==========================================
-        // DADOS E FILTRO ESTRITO DE CIRURGIA
-        // ==========================================
         async function loadProcedimentos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
@@ -738,7 +742,6 @@
                         rawList.push({ ...val, ...extras }); 
                     });
                     
-                    // FILTRO ESTRITO: Apenas os cadastrados como 'Cirurgia' no Cadastro de Procedimentos
                     procedimentosList = rawList
                         .filter(p => p.tipo === 'Cirurgia')
                         .sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
@@ -804,7 +807,6 @@
                 }
                 currentProcs[index].valor = somaTotal;
                 
-                // SALVANDO CID E TUSS NO CARRINHO
                 currentProcs[index].cid = procObj.cid || '';
                 currentProcs[index].codigo_tuss = procObj.codigo_tuss || '';
             } else {
@@ -953,7 +955,6 @@
                         let stConfig = statusConfig.find(s => s.name === ev.status) || statusConfig[0];
                         let medicoNome = ev.medico.replace(/^Dr\.?\s*|^Dra\.?\s*/i, ''); 
                         
-                        // LÓGICA DO CARD: Renderizar CID e TUSS
                         let procLabelArr = [];
                         let pListForCard = ev.procedimentos || [{nome: ev.procedimento}];
                         pListForCard.forEach(p => {
@@ -1113,9 +1114,10 @@
                         <td style="text-align: right; font-weight: bold; color: #00855B;">R$ ${valorFormatado}</td>
                         <td style="text-align: center;">
                             <div class="action-btns">
-                                <button class="btn-icon status" onclick="openStatusModal('${g.id_firebase}', '${(g.paciente||'').replace(/'/g, "\\'")}')"><i class="fas fa-sync-alt"></i></button>
-                                <button class="btn-icon edit" onclick="openModal('${g.id_firebase}')"><i class="fas fa-edit"></i></button>
-                                <button class="btn-icon delete" onclick="deleteGuia('${g.id_firebase}')"><i class="fas fa-trash-alt"></i></button>
+                                <button class="btn-icon attach" onclick="openAnexosModal('${g.id_firebase}')" title="Anexos"><i class="fas fa-paperclip"></i></button>
+                                <button class="btn-icon status" onclick="openStatusModal('${g.id_firebase}', '${(g.paciente||'').replace(/'/g, "\\'")}')" title="Atualizar Status"><i class="fas fa-sync-alt"></i></button>
+                                <button class="btn-icon edit" onclick="openModal('${g.id_firebase}')" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button class="btn-icon delete" onclick="deleteGuia('${g.id_firebase}')" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -1134,6 +1136,7 @@
             document.getElementById('guia_id').value = '';
             document.getElementById('responsavel').value = userLogged.nome || 'Usuário Desconhecido';
             currentProcs = [];
+            currentAnexos = [];
             
             if (id) {
                 const guia = guiasData.find(g => g.id_firebase === id);
@@ -1156,6 +1159,10 @@
                     } else {
                         currentProcs.push({nome: guia.procedimento || '', valor: parseFloat(guia.valor)||0, cid: '', codigo_tuss: ''});
                     }
+
+                    if(guia.anexos) {
+                        currentAnexos = JSON.parse(JSON.stringify(guia.anexos));
+                    }
                 }
             } else {
                 document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
@@ -1165,6 +1172,7 @@
             
             updateDurationLabel();
             renderProcRows();
+            renderFormAnexos();
             showModalElement('guiaModal');
         }
 
@@ -1209,7 +1217,7 @@
                 duracao: (parseInt(document.getElementById('duracao_m').value) || 0) / 60,
                 historico_status: hist,
                 responsavel: document.getElementById('responsavel').value,
-                anexos: guiaAnterior.anexos || [],
+                anexos: currentAnexos,
                 atualizado_em: new Date().toISOString()
             };
 
@@ -1225,7 +1233,6 @@
         // GERAÇÃO DE PDF E MAPA MENSAL / DIÁRIO
         // ==========================================
         function generatePDF() {
-            // Rotina de impressão da Tabela Lista
             const tbody = document.querySelector('#guiasTable tbody');
             if (tbody.innerText.includes('Nenhuma guia') || tbody.innerText.includes('Carregando')) return alert("Não há dados para exportar.");
             
@@ -1298,7 +1305,6 @@
 
             if(agendamentos.length === 0) return alert("Nenhuma cirurgia agendada para os filtros atuais.");
 
-            // Ordena os agendamentos primeiro por data (se for mensal) e depois por horário
             agendamentos.sort((a,b) => {
                 if(a.data_cirurgia !== b.data_cirurgia) return a.data_cirurgia.localeCompare(b.data_cirurgia);
                 return parseTimeToFloat(a.hora_cirurgia) - parseTimeToFloat(b.hora_cirurgia);
@@ -1392,6 +1398,67 @@
             closeModal('statusModal'); await loadGuias();
         }
 
+        // ==========================================
+        // ANEXOS NO FORMULÁRIO PRINCIPAL
+        // ==========================================
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function handleFormAnexosUpload(inputEl) {
+            const files = inputEl.files;
+            if (!files || files.length === 0) return;
+            
+            let hasLargeFile = false;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.size > 2097152) { 
+                    hasLargeFile = true; 
+                    continue; 
+                }
+                const base64 = await toBase64(file);
+                currentAnexos.push({ nome: file.name, base64: base64, data_upload: new Date().toISOString() });
+            }
+            
+            if (hasLargeFile) alert("Um ou mais arquivos eram maiores que 2MB e foram ignorados.");
+            inputEl.value = '';
+            renderFormAnexos();
+        }
+
+        function renderFormAnexos() {
+            const container = document.getElementById('formAnexosList');
+            container.innerHTML = '';
+            if(currentAnexos.length === 0) {
+                container.innerHTML = '<div style="font-size:11px; color:#94a3b8; font-style:italic;">Nenhum arquivo anexado.</div>';
+                return;
+            }
+            currentAnexos.forEach((anx, idx) => {
+                let icone = anx.nome.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image';
+                container.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                    <div style="display:flex; align-items:center; gap:8px; font-size:11px; font-weight:600; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        <i class="fas ${icone}" style="color:#64748b;"></i> ${anx.nome}
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button type="button" class="btn-danger-sm" style="padding:4px 6px;" onclick="removeFormAnexo(${idx})" title="Remover"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function removeFormAnexo(idx) {
+            currentAnexos.splice(idx, 1);
+            renderFormAnexos();
+        }
+
+        // ==========================================
+        // ANEXOS NO ACESSO RÁPIDO (LISTA / MODAL AGENDA)
+        // ==========================================
         function openAnexosModal(id) { document.getElementById('anexosGuiaId').value = id; renderAnexosList(id); showModalElement('anexosModal'); }
 
         window.visualizarAnexo = function(guiaId, anexoIdx) {
@@ -1416,7 +1483,7 @@
             else {
                 anexos.forEach((anx, idx) => {
                     let icone = anx.nome.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image';
-                    container.innerHTML += `<div class="anexo-item">
+                    container.innerHTML += `<div class="anexo-item" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 12px; margin-bottom:8px;">
                         <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 60%;"><i class="fas ${icone}" style="color:#64748b;"></i> ${anx.nome}</div>
                         <div style="display:flex; gap:5px;">
                             <button class="btn-sm" style="background:#e0f2fe; color:#0284c7; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;" onclick="visualizarAnexo('${id}', ${idx})" title="Visualizar"><i class="fas fa-eye"></i></button>
@@ -1427,21 +1494,35 @@
             }
         }
 
-        function uploadAttachment(inputEl) {
-            const file = inputEl.files[0]; if(!file) return;
-            if (file.size > 2097152) { alert("Arquivo muito grande! (Máx 2MB)."); inputEl.value = ''; return; }
-            const id = document.getElementById('anexosGuiaId').value; const guia = guiasData.find(g => g.id_firebase === id); if(!guia) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                let anexos = guia.anexos || [];
-                anexos.push({ nome: file.name, base64: e.target.result, data_upload: new Date().toISOString() });
-                guia.anexos = anexos;
-                try {
-                    await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia) });
-                    renderAnexosList(id); refreshViews(); 
-                } catch(err) { alert("Falha ao salvar anexo."); }
-            };
-            reader.readAsDataURL(file); inputEl.value = ''; 
+        async function uploadAttachment(inputEl) {
+            const files = inputEl.files;
+            if (!files || files.length === 0) return;
+            const id = document.getElementById('anexosGuiaId').value; 
+            const guia = guiasData.find(g => g.id_firebase === id); 
+            if(!guia) return;
+
+            let anexos = guia.anexos || [];
+            let hasLargeFile = false;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.size > 2097152) { 
+                    hasLargeFile = true; 
+                    continue; 
+                }
+                const base64 = await toBase64(file);
+                anexos.push({ nome: file.name, base64: base64, data_upload: new Date().toISOString() });
+            }
+
+            if (hasLargeFile) alert("Um ou mais arquivos eram maiores que 2MB e foram ignorados.");
+
+            guia.anexos = anexos;
+            try {
+                await fetch(`${API_BASE_URL}/${API_TABLE}/${id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(guia) });
+                renderAnexosList(id); refreshViews(); 
+            } catch(err) { alert("Falha ao salvar anexos."); }
+            
+            inputEl.value = ''; 
         }
 
         async function deleteAttachment(id, idx) {
