@@ -1160,6 +1160,8 @@
         }
 
         function openModal(id = null) {
+            if (typeof id !== 'string') id = null; 
+
             document.getElementById('guiaForm').reset();
             document.getElementById('guia_id').value = '';
             document.getElementById('responsavel').value = userLogged.nome || 'Usuário Desconhecido';
@@ -1182,18 +1184,19 @@
                     document.getElementById('hora_cirurgia').value = guia.hora_cirurgia || '';
                     document.getElementById('duracao_m').value = Math.round((parseFloat(guia.duracao) || 1.5) * 60);
 
-                    if(guia.procedimentos && guia.procedimentos.length > 0) {
+                    if (Array.isArray(guia.procedimentos) && guia.procedimentos.length > 0) {
                         currentProcs = JSON.parse(JSON.stringify(guia.procedimentos));
                     } else {
                         currentProcs.push({nome: guia.procedimento || '', valor: parseFloat(guia.valor)||0, cid: '', codigo_tuss: ''});
                     }
 
-                    if(guia.anexos) {
+                    if (Array.isArray(guia.anexos)) {
                         currentAnexos = JSON.parse(JSON.stringify(guia.anexos));
                     }
                 }
             } else {
                 document.getElementById('data_envio').value = new Date().toISOString().split('T')[0];
+                document.getElementById('data_cirurgia').value = document.getElementById('filterDataAgenda').value || new Date().toISOString().split('T')[0];
                 document.getElementById('duracao_m').value = 30;
                 currentProcs.push({nome: '', valor: 0, cid: '', codigo_tuss: ''});
             }
@@ -1342,7 +1345,6 @@
                 let hName = g.hospital;
                 if (!hName || !hospitaisAtivos.find(h => h.name === hName)) hName = 'Não Definido';
                 
-                // Se o filtro de hospital estiver ativo, só inclui se combinar
                 if (hospSel !== 'todos' && hName !== hospSel) return;
                 
                 if(!grupos[hName]) grupos[hName] = [];
