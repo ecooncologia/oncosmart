@@ -430,7 +430,7 @@
             tbody.innerHTML = html;
         }
 
-        // ==========================================
+ // ==========================================
         // FLUXOS DE NEGÓCIO E E-MAILS
         // ==========================================
         async function salvarCampoRapido(id, campo, valor) {
@@ -447,15 +447,34 @@
                 'negado': "Tem certeza que deseja marcar este tratamento como NEGADO na Unimed?"
             };
 
-            // 🆕 NOVA FUNÇÃO: Retorna o status sem disparar e-mails (Ideal para testes)
-        async function reverterStatus(id, novoStatus) {
-            if(!confirm("Deseja retornar o status deste paciente para testes? (Nenhum e-mail será enviado nesta ação)")) return;
+            if(!confirm(mensagens[novoStatus])) return;
             
-            // Atualiza na tela
             pacientesFluxo[id].status = novoStatus;
             renderTabela(); 
             
-            // Salva no banco de dados
+            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
+            
+            if (novoStatus === 'nicolas' || novoStatus === 'autorizado') {
+                const acaoMail = novoStatus === 'nicolas' ? 'nicolas' : 'farmacia_enfermagem';
+                try {
+                    await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
+                        method: 'POST', headers: API_HEADERS,
+                        body: JSON.stringify({ pacienteNome: nomePaciente || pacientesFluxo[id].nome, acao: acaoMail, pacienteDados: pacientesFluxo[id] })
+                    });
+                    alert('Notificações de e-mail enviadas com sucesso!');
+                } catch (e) {
+                    alert('Status alterado, mas houve um erro ao enviar e-mails.');
+                }
+            }
+        }
+
+        // 🆕 FUNÇÃO DE REVERTER STATUS CORRIGIDA
+        async function reverterStatus(id, novoStatus) {
+            if(!confirm("Deseja retornar o status deste paciente para testes? (Nenhum e-mail será enviado nesta ação)")) return;
+            
+            pacientesFluxo[id].status = novoStatus;
+            renderTabela(); 
+            
             try {
                 await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { 
                     method: 'POST', 
@@ -486,7 +505,6 @@
                     alert('Status alterado, mas houve um erro ao enviar e-mails.');
                 }
             }
-        }
 
         // ==========================================
         // MODAL DE CADASTRO E EDIÇÃO
