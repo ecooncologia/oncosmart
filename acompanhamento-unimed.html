@@ -343,7 +343,7 @@
                     printHtml = `<a href="${API_BASE_URL}${p.print_url}" target="_blank" style="color:#0284c7; text-decoration:none; font-weight:bold; font-size:11px; display:inline-block; margin-bottom:4px;"><i class="fas fa-image"></i> Ver Print da Guia</a>`;
                 }
 
-                // Coluna de Ações reorganizada
+                // Coluna de Ações reorganizada com os botões de Reverter Status
                 let acoesHtml = `<div class="action-buttons-container">`;
                 
                 acoesHtml += `<button class="btn-table btn-t-edit" onclick="abrirModalEditar('${p.id_firebase}')" title="Editar dados do paciente"><i class="fas fa-edit"></i> Editar</button>`;
@@ -355,15 +355,13 @@
                     acoesHtml += `<button class="btn-table btn-t-auth" onclick="alterarStatus('${p.id_firebase}', 'autorizado', '${p.nome}')" title="Aprova a dosagem e avisa Enfermagem/Farmácia."><i class="fas fa-check-double"></i> Aprovar</button>`;
                 } else if (p.status === 'autorizado') {
                     acoesHtml += `<span style="font-size:11px; color:#059669; font-weight:bold; display:block; text-align:center; padding-top: 5px;"><i class="fas fa-check"></i> Finalizado</span>`;
-                    // 🆕 NOVO: Botão para retornar status silenciosamente
                     acoesHtml += `<button class="btn-table" style="background:#64748b; margin-top:5px;" onclick="reverterStatus('${p.id_firebase}', 'nicolas')" title="Retornar para testes"><i class="fas fa-undo"></i> Retornar Status</button>`;
                 } else if (p.status === 'negado') {
                     acoesHtml += `<span style="font-size:11px; color:#dc2626; font-weight:bold; display:block; text-align:center; padding-top: 5px;"><i class="fas fa-ban"></i> Negado</span>`;
-                    // 🆕 NOVO: Botão para retornar status silenciosamente
                     acoesHtml += `<button class="btn-table" style="background:#64748b; margin-top:5px;" onclick="reverterStatus('${p.id_firebase}', 'em_analise')" title="Retornar para testes"><i class="fas fa-undo"></i> Retornar Status</button>`;
                 }
 
-                acoesHtml += `</div>`; // Fechamento da div .action-buttons-container
+                acoesHtml += `</div>`;
 
                 html += `
                     <tr>
@@ -430,7 +428,7 @@
             tbody.innerHTML = html;
         }
 
- // ==========================================
+        // ==========================================
         // FLUXOS DE NEGÓCIO E E-MAILS
         // ==========================================
         async function salvarCampoRapido(id, campo, valor) {
@@ -468,7 +466,7 @@
             }
         }
 
-        // 🆕 FUNÇÃO DE REVERTER STATUS CORRIGIDA
+        // NOVA FUNÇÃO: Reverte o status para testes
         async function reverterStatus(id, novoStatus) {
             if(!confirm("Deseja retornar o status deste paciente para testes? (Nenhum e-mail será enviado nesta ação)")) return;
             
@@ -485,26 +483,6 @@
                 alert("Erro ao retornar o status no banco de dados.");
             }
         }
-
-            if(!confirm(mensagens[novoStatus])) return;
-            
-            pacientesFluxo[id].status = novoStatus;
-            renderTabela(); 
-            
-            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
-            
-            if (novoStatus === 'nicolas' || novoStatus === 'autorizado') {
-                const acaoMail = novoStatus === 'nicolas' ? 'nicolas' : 'farmacia_enfermagem';
-                try {
-                    await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
-                        method: 'POST', headers: API_HEADERS,
-                        body: JSON.stringify({ pacienteNome: nomePaciente || pacientesFluxo[id].nome, acao: acaoMail, pacienteDados: pacientesFluxo[id] })
-                    });
-                    alert('Notificações de e-mail enviadas com sucesso!');
-                } catch (e) {
-                    alert('Status alterado, mas houve um erro ao enviar e-mails.');
-                }
-            }
 
         // ==========================================
         // MODAL DE CADASTRO E EDIÇÃO
