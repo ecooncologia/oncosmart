@@ -27,11 +27,11 @@
         
         .transport-section { margin-top: 30px; border-top: 2px dashed #cbd5e1; padding-top: 20px; }
         .badge-faturamento { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        .fat-vita { background: #e0f2fe; color: #0369a1; }
-        .fat-eco { background: #dcfce7; color: #15803d; }
-        .fat-cionc { background: #fef3c7; color: #b45309; }
-
+        
         .manual-form { display: flex; gap: 10px; align-items: flex-end; background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+
+        /* Ajuste fino para a tabela da View Tasy ficar legível com muitas colunas */
+        #table-tasy-vita th, #table-tasy-vita td { font-size: 12px; padding: 10px; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -67,14 +67,15 @@
                     <table id="table-tasy-vita">
                         <thead>
                             <tr>
-                                <th>Data</th>
+                                <th>Data Atend.</th>
+                                <th>Nº Prescrição</th>
                                 <th>Paciente</th>
-                                <th>Medicação</th>
-                                <th>Convênio</th>
-                                <th>Dose</th>
-                                <th>Valor (R$)</th>
-                                <th>Imposto (%)</th>
-                                <th>Faturamento</th>
+                                <th>Material Conta</th>
+                                <th>Material (Medicação)</th>
+                                <th>Dose Cabine</th>
+                                <th>Custo Antigo</th>
+                                <th>Custo Unit. Manip</th>
+                                <th>Custo Total Manip</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-custo-vita">
@@ -152,7 +153,7 @@
                 
                 await loadCustoVita();
                 await loadContasFaturadas();
-                loadTransporteLocal(); // Carrega do LocalStorage ou Banco
+                loadTransporteLocal(); 
             } else {
                 setTimeout(initPage, 100);
             }
@@ -171,21 +172,21 @@
         async function loadCustoVita() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-custo-vita');
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Buscando dados no Tasy...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center"><i class="fas fa-spinner fa-spin"></i> Buscando dados no banco Tasy...</td></tr>';
 
             try {
-                // Aqui você deve apontar para a sua View do Tasy via API
-                const res = await fetch(`${API_BASE_URL}/view_tasy_vita?mes=${mes}`, { headers: API_HEADERS });
+                // A ROTA ABAIXO DEVE CHAMAR A SUA API (NODE OU PHP) QUE LÊ O .ENV E EXECUTA O SELECT!
+                const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
                     dataCustoVita = Object.values(data);
                     renderTableVita(dataCustoVita);
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Nenhum dado encontrado para este mês.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">Nenhum dado encontrado para este mês.</td></tr>';
                 }
             } catch (e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red">Erro ao carregar dados.</td></tr>';
+                console.error("Erro ao buscar dados do Tasy:", e);
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:red">Erro ao conectar com a API do Tasy. Verifique o servidor.</td></tr>';
             }
         }
 
@@ -193,18 +194,36 @@
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '';
 
+            if(list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">Nenhum registro encontrado no filtro.</td></tr>';
+                return;
+            }
+
             list.forEach(item => {
-                const fatClass = item.faturamento.toLowerCase();
+                // Blindagem para chaves em maiúsculo (comum em retornos do Oracle/Tasy)
+                const dataAtend = item.dt_atendimento || item.DT_ATENDIMENTO;
+                const paciente = item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-';
+                const nrPrescricao = item.nr_prescricao || item.NR_PRESCRICAO || '-';
+                const matConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
+                const material = item.ds_material || item.DS_MATERIAL || '-';
+                const dose = item.qt_dose_cabine || item.QT_DOSE_CABINE || '-';
+                
+                // Conversão segura de valores monetários
+                const custoAntigo = parseFloat(item.custo_antigo || item.CUSTO_ANTIGO || 0);
+                const custoUnit = parseFloat(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP || 0);
+                const custoTotal = parseFloat(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP || 0);
+
                 tbody.innerHTML += `
                     <tr>
-                        <td>${formatDate(item.data)}</td>
-                        <td>${item.paciente.toUpperCase()}</td>
-                        <td>${item.medicacao}</td>
-                        <td>${item.convenio}</td>
-                        <td>${item.dose}</td>
-                        <td>R$ ${parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                        <td>${item.imposto}%</td>
-                        <td><span class="badge-faturamento fat-${fatClass}">${item.faturamento}</span></td>
+                        <td>${formatDate(dataAtend)}</td>
+                        <td>${nrPrescricao}</td>
+                        <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
+                        <td>${matConta}</td>
+                        <td>${material}</td>
+                        <td style="text-align: center;">${dose}</td>
+                        <td style="color: #64748b;">R$ ${custoAntigo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${custoUnit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td style="font-weight: 800; color: #00855B;">R$ ${custoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                     </tr>
                 `;
             });
@@ -214,17 +233,28 @@
             const tbody = document.getElementById('tbody-contas-faturadas');
             try {
                 const res = await fetch(`${API_BASE_URL}/contas_faturadas`, { headers: API_HEADERS });
+                if(!res.ok) return;
                 const data = await res.json();
                 dataContas = Object.values(data);
                 
                 tbody.innerHTML = '';
+                if(dataContas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Nenhuma conta faturada.</td></tr>';
+                    return;
+                }
+
                 dataContas.forEach(c => {
+                    const paciente = c.paciente || c.PACIENTE || '-';
+                    const dataC = c.data || c.DATA;
+                    const numConta = c.num_conta || c.NUM_CONTA || '-';
+                    const valorC = parseFloat(c.valor || c.VALOR || 0);
+
                     tbody.innerHTML += `
                         <tr>
-                            <td>${c.paciente.toUpperCase()}</td>
-                            <td>${formatDate(c.data)}</td>
-                            <td><strong>${c.num_conta}</strong></td>
-                            <td>R$ ${parseFloat(c.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                            <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
+                            <td>${formatDate(dataC)}</td>
+                            <td><span class="badge-faturamento fat-vita" style="font-size: 11px;"># ${numConta}</span></td>
+                            <td style="font-weight: bold;">R$ ${valorC.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                         </tr>
                     `;
                 });
@@ -243,7 +273,6 @@
             const novo = { id: Date.now(), data, valor };
             dataTransporte.push(novo);
             
-            // Salvar no seu banco (Ex: Firebase)
             saveTransporte(novo);
             
             renderTransporte();
@@ -254,11 +283,17 @@
         function renderTransporte() {
             const tbody = document.getElementById('tbody-transporte');
             tbody.innerHTML = '';
+            
+            if(dataTransporte.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">Nenhum transporte cadastrado.</td></tr>';
+                return;
+            }
+
             dataTransporte.sort((a,b) => new Date(b.data) - new Date(a.data)).forEach(t => {
                 tbody.innerHTML += `
                     <tr>
                         <td>${formatDate(t.data)}</td>
-                        <td>R$ ${parseFloat(t.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td style="font-weight:bold;">R$ ${parseFloat(t.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                         <td>
                             <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
                         </td>
@@ -268,39 +303,52 @@
         }
 
         async function saveTransporte(item) {
-            await fetch(`${API_BASE_URL}/custo_vita_transporte`, {
-                method: 'POST',
-                headers: API_HEADERS,
-                body: JSON.stringify(item)
-            });
+            try {
+                await fetch(`${API_BASE_URL}/custo_vita_transporte`, {
+                    method: 'POST',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(item)
+                });
+            } catch(e) { console.error(e); }
         }
 
         async function deleteTransporte(id) {
-            if(!confirm("Excluir este transporte?")) return;
-            await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS });
-            dataTransporte = dataTransporte.filter(t => t.id !== id);
-            renderTransporte();
+            if(!confirm("Tem certeza que deseja excluir este transporte?")) return;
+            try {
+                await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS });
+                dataTransporte = dataTransporte.filter(t => t.id !== id);
+                renderTransporte();
+            } catch(e) { console.error(e); }
         }
 
         async function loadTransporteLocal() {
-            const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS });
-            if(res.ok) {
-                const data = await res.json();
-                dataTransporte = Object.values(data);
-                renderTransporte();
-            }
+            try {
+                const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    dataTransporte = Object.values(data);
+                    renderTransporte();
+                }
+            } catch(e) { console.error(e); }
         }
 
-        // --- Filtros ---
+        // --- Filtros e Formatação ---
         function filterTable() {
             const term = document.getElementById('filter-paciente').value.toUpperCase();
-            const filtered = dataCustoVita.filter(i => i.paciente.toUpperCase().includes(term));
+            
+            const filtered = dataCustoVita.filter(item => {
+                const nome = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase();
+                return nome.includes(term);
+            });
+            
             renderTableVita(filtered);
         }
 
         function formatDate(dateStr) {
             if(!dateStr) return '-';
+            // Corrige fuso horário se vier do banco com "T00:00:00Z" ou similar
             const d = new Date(dateStr);
+            if(isNaN(d.getTime())) return dateStr; // Retorna como string se o Tasy mandar fora de padrão Date
             return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
         }
     </script>
