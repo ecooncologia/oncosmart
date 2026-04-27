@@ -179,7 +179,7 @@
         </div>
 
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab('custo-vita', this)">Custo por Prescrição</button>
+            <button class="tab-btn active" onclick="switchTab('custo-vita', this)">Custo por Paciente</button>
             <button class="tab-btn" onclick="switchTab('contas-faturadas', this)">Contas Faturadas</button>
         </div>
 
@@ -201,18 +201,16 @@
 
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-file-invoice-dollar"></i> Agrupamento por Prescrição (Tasy)
+                    <i class="fas fa-file-invoice-dollar"></i> Agrupamento Total por Paciente (Tasy)
                 </div>
                 <div class="table-container">
                     <table id="table-tasy-vita">
                         <thead>
                             <tr>
                                 <th style="width: 40px;"></th>
-                                <th>Nº Prescrição</th>
-                                <th>Data Atend.</th>
                                 <th>Paciente</th>
-                                <th style="text-align: center;">Itens</th>
-                                <th style="text-align: right;">Total Prescrição</th>
+                                <th style="text-align: center;">Itens Totais (Mês)</th>
+                                <th style="text-align: right;">Custo Total Paciente</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-custo-vita">
@@ -390,7 +388,7 @@
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-custo-vita');
             
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando banco Tasy...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando banco Tasy...</td></tr>';
 
             try {
                 const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
@@ -399,11 +397,11 @@
                     dataCustoVita = Object.values(data);
                     renderTableVita(dataCustoVita);
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Nenhum dado encontrado para este mês.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum dado encontrado para este mês.</td></tr>';
                 }
             } catch (e) {
                 console.error(e);
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red; padding: 20px;">Erro de conexão com o banco de dados.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding: 20px;">Erro de conexão com o banco de dados.</td></tr>';
             }
         }
 
@@ -412,32 +410,30 @@
             tbody.innerHTML = '';
             
             if(list.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Sem registros correspondentes ao filtro.</td></tr>'; 
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Sem registros correspondentes ao filtro.</td></tr>'; 
                 return; 
             }
 
-            // 1. AGRUPAMENTO POR NÚMERO DE PRESCRIÇÃO
+            // 1. AGRUPAMENTO POR PACIENTE
             const grupos = {};
             
             list.forEach(item => {
-                const nrPrescricao = item.nr_prescricao || item.NR_PRESCRICAO || 'SEM_NUMERO';
+                const paciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase();
                 
-                if(!grupos[nrPrescricao]) {
-                    grupos[nrPrescricao] = {
-                        nrPrescricao: nrPrescricao,
-                        paciente: (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase(),
-                        data: formatDate(item.dt_atendimento || item.DT_ATENDIMENTO),
+                if(!grupos[paciente]) {
+                    grupos[paciente] = {
+                        paciente: paciente,
                         totalCusto: 0,
                         itens: []
                     };
                 }
                 
-                // Converte de forma segura o valor total
+                // Converte de forma segura o valor total do item
                 const custoTotalItem = parseOracleNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
                 
-                // Adiciona ao total da prescrição
-                grupos[nrPrescricao].totalCusto += custoTotalItem;
-                grupos[nrPrescricao].itens.push(item);
+                // Soma esse item no montante global do paciente
+                grupos[paciente].totalCusto += custoTotalItem;
+                grupos[paciente].itens.push(item);
             });
 
             // 2. RENDERIZAR OS GRUPOS NA TABELA (LINHAS PAIS E FILHAS)
@@ -445,10 +441,10 @@
             
             for (const key in grupos) {
                 const g = grupos[key];
-                const groupId = `presc_${index}`;
+                const groupId = `paciente_${index}`;
                 index++;
 
-                // LINHA PAI (A linha clicável com o total da prescrição)
+                // LINHA PAI (Nome do Paciente e o Custo Total do Mês dele)
                 const parentRow = document.createElement('tr');
                 parentRow.className = 'parent-row';
                 parentRow.onclick = function() { toggleGroup(groupId); };
@@ -457,28 +453,31 @@
                     <td style="text-align: center;">
                         <i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i>
                     </td>
-                    <td style="font-weight:bold; color:var(--primary);">
-                        # ${g.nrPrescricao}
-                    </td>
-                    <td>
-                        ${g.data}
-                    </td>
-                    <td style="font-weight:600;">
+                    <td style="font-weight:bold; color:var(--primary); font-size: 14px;">
                         ${g.paciente}
                     </td>
                     <td style="text-align: center;">
                         <span class="badge-count">${g.itens.length}</span>
                     </td>
-                    <td style="text-align: right; font-weight: 800; color: #00855B;">
+                    <td style="text-align: right; font-weight: 800; color: #00855B; font-size: 14px;">
                         R$ ${formatCurrency(g.totalCusto)}
                     </td>
                 `;
                 
                 tbody.appendChild(parentRow);
 
+                // Opcional: ordenar os itens internos por data, para as medicações ficarem na ordem cronológica
+                g.itens.sort((a,b) => {
+                   const dataA = new Date(a.dt_atendimento || a.DT_ATENDIMENTO || 0);
+                   const dataB = new Date(b.dt_atendimento || b.DT_ATENDIMENTO || 0);
+                   return dataA - dataB;
+                });
+
                 // GERAR O HTML DOS ITENS INTERNOS (MEDICAMENTOS)
                 let subTableRows = '';
                 g.itens.forEach(item => {
+                    const dataFormatada = formatDate(item.dt_atendimento || item.DT_ATENDIMENTO);
+                    const nrPrescricao = item.nr_prescricao || item.NR_PRESCRICAO || '-';
                     const materialConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
                     const medicacao = item.ds_material || item.DS_MATERIAL || '-';
                     
@@ -489,6 +488,8 @@
 
                     subTableRows += `
                         <tr>
+                            <td>${dataFormatada}</td>
+                            <td style="font-weight: 600; color: #475569;"># ${nrPrescricao}</td>
                             <td>${materialConta}</td>
                             <td>${medicacao}</td>
                             <td style="text-align: center;">${doseFormatada}</td>
@@ -499,18 +500,21 @@
                     `;
                 });
 
-                // LINHA FILHA (A sub-tabela oculta)
+                // LINHA FILHA (A sub-tabela oculta contendo tudo o que o paciente usou)
+                // Note que colspan é "4" porque a tabela "pai" só tem 4 colunas agora
                 const childRow = document.createElement('tr');
                 childRow.id = `child-${groupId}`;
                 childRow.className = 'child-row';
                 childRow.style.display = 'none';
                 
                 childRow.innerHTML = `
-                    <td colspan="6" style="padding: 0;">
+                    <td colspan="4" style="padding: 0;">
                         <div class="sub-table-container">
                             <table class="sub-table">
                                 <thead>
                                     <tr>
+                                        <th>Data</th>
+                                        <th>Prescrição</th>
                                         <th>Material Conta</th>
                                         <th>Medicação</th>
                                         <th style="text-align: center;">Dose</th>
@@ -595,7 +599,6 @@
             saveTransporte(novoTransporte);
             renderTransporte();
             
-            // Limpa apenas o campo de valor para facilitar a próxima inserção
             document.getElementById('transp-valor').value = '';
         }
 
