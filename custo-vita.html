@@ -178,17 +178,29 @@
         }
 
         // ==========================================
-        // FUNÇÕES DE FORMATAÇÃO
+        // LIMPAGEM E FORMATAÇÃO DE NÚMEROS (BLINDAGEM ORACLE)
         // ==========================================
+        function cleanNumber(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return val;
+            
+            let s = String(val).trim();
+            // Se tiver vírgula (formato brasileiro), arranca os pontos de milhar e troca vírgula por ponto
+            if (s.includes(',')) {
+                s = s.replace(/\./g, '');
+                s = s.replace(',', '.');
+            }
+            const num = parseFloat(s);
+            return isNaN(num) ? 0 : num;
+        }
+
         function formatCurrency(valor) {
-            let num = parseFloat(valor || 0);
-            if (isNaN(num)) num = 0;
+            const num = cleanNumber(valor);
             return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function formatDose(valor) {
-            let num = parseFloat(valor || 0);
-            if (isNaN(num)) num = 0;
+            const num = cleanNumber(valor);
             return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
         }
 
@@ -269,7 +281,8 @@
                     };
                 }
                 
-                const custoTotalItem = parseFloat(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP || 0);
+                // Agora o cleanNumber garante que a soma fique correta, independentemente se vier com vírgula!
+                const custoTotalItem = cleanNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
                 grupos[groupKey].totalCusto += custoTotalItem;
                 grupos[groupKey].itens.push(item);
             });
@@ -299,6 +312,7 @@
                     const matConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
                     const material = item.ds_material || item.DS_MATERIAL || '-';
                     const dose = formatDose(item.qt_dose_cabine || item.QT_DOSE_CABINE);
+                    
                     const custoAntigo = formatCurrency(item.custo_antigo || item.CUSTO_ANTIGO);
                     const custoUnit = formatCurrency(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP);
                     const custoTotal = formatCurrency(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
@@ -384,7 +398,7 @@
 
             if(!data || !valor) return alert("Preencha data e valor do transporte!");
 
-            const valorLimpo = parseFloat(valor.replace(',', '.'));
+            const valorLimpo = cleanNumber(valor);
 
             const novo = { id: Date.now(), data, valor: valorLimpo };
             dataTransporte.push(novo);
