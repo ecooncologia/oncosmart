@@ -15,35 +15,158 @@
     </script>
 
     <style>
-        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
-        .tab-btn { padding: 12px 20px; border: 1px solid #e2e8f0; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 13px; background: #f8fafc; }
-        .tab-btn.active { color: var(--primary); border-top: 4px solid var(--primary); background: white; margin-bottom: -2px; }
+        /* ==========================================
+           ESTILOS GERAIS DA PÁGINA E ABAS
+           ========================================== */
+        .tabs-nav { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #e2e8f0; 
+        }
         
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-btn { 
+            padding: 12px 20px; 
+            border: 1px solid #e2e8f0; 
+            border-bottom: none; 
+            font-weight: 700; 
+            color: #64748b; 
+            cursor: pointer; 
+            border-radius: 10px 10px 0 0; 
+            transition: 0.3s; 
+            font-size: 13px; 
+            background: #f8fafc; 
+        }
+        
+        .tab-btn.active { 
+            color: var(--primary); 
+            border-top: 4px solid var(--primary); 
+            background: white; 
+            margin-bottom: -2px; 
+        }
+        
+        .tab-content { 
+            display: none; 
+        }
+        
+        .tab-content.active { 
+            display: block; 
+        }
 
-        .filter-bar { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .filter-bar { 
+            display: flex; 
+            gap: 15px; 
+            align-items: flex-end; 
+            flex-wrap: wrap; 
+            margin-bottom: 20px; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 1px solid #e2e8f0; 
+        }
         
-        .transport-section { margin-top: 30px; border-top: 2px dashed #cbd5e1; padding-top: 20px; }
-        .badge-faturamento { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .transport-section { 
+            margin-top: 30px; 
+            border-top: 2px dashed #cbd5e1; 
+            padding-top: 20px; 
+        }
         
-        .manual-form { display: flex; gap: 10px; align-items: flex-end; background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .badge-faturamento { 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+        }
+        
+        .manual-form { 
+            display: flex; 
+            gap: 10px; 
+            align-items: flex-end; 
+            background: #f1f5f9; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+        }
 
-        #table-tasy-vita th, #table-tasy-vita td { font-size: 13px; padding: 12px 10px; white-space: nowrap; }
+        /* ==========================================
+           ESTILOS ESPECÍFICOS DO ACORDEÃO (CASCATA)
+           ========================================== */
+        #table-tasy-vita th, #table-tasy-vita td { 
+            font-size: 13px; 
+            padding: 12px 10px; 
+            white-space: nowrap; 
+        }
         
-        /* ESTILOS DO ACORDEÃO (LINHAS EM CASCATA) */
-        .parent-row { cursor: pointer; transition: background 0.2s; }
-        .parent-row:hover { background-color: var(--primary-light) !important; }
-        .icon-expand { width: 20px; transition: transform 0.3s ease; color: var(--primary); text-align: center; }
-        .icon-expand.open { transform: rotate(90deg); }
+        .parent-row { 
+            cursor: pointer; 
+            transition: background 0.2s; 
+        }
         
-        .child-row { background-color: #f8fafc; }
-        .sub-table-container { padding: 15px 25px 25px 40px; border-bottom: 2px solid var(--primary-soft); box-shadow: inset 0 3px 6px rgba(0,0,0,0.02); }
-        .sub-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
-        .sub-table th { background: #e2e8f0; padding: 8px 12px; font-size: 11px; color: #475569; text-transform: uppercase; }
-        .sub-table td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #f1f5f9; }
-        .sub-table tr:last-child td { border-bottom: none; }
-        .sub-table tr:hover td { background-color: #f8fafc; }
+        .parent-row:hover { 
+            background-color: var(--primary-light) !important; 
+        }
+        
+        .icon-expand { 
+            width: 20px; 
+            transition: transform 0.3s ease; 
+            color: var(--primary); 
+            text-align: center; 
+        }
+        
+        .icon-expand.open { 
+            transform: rotate(90deg); 
+        }
+        
+        .child-row { 
+            background-color: #f8fafc; 
+        }
+        
+        .sub-table-container { 
+            padding: 15px 25px 25px 40px; 
+            border-bottom: 2px solid var(--primary-soft); 
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.02); 
+        }
+        
+        .sub-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            background: white; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            overflow: hidden; 
+        }
+        
+        .sub-table th { 
+            background: #e2e8f0; 
+            padding: 8px 12px; 
+            font-size: 11px; 
+            color: #475569; 
+            text-transform: uppercase; 
+        }
+        
+        .sub-table td { 
+            padding: 8px 12px; 
+            font-size: 12px; 
+            border-bottom: 1px solid #f1f5f9; 
+        }
+        
+        .sub-table tr:last-child td { 
+            border-bottom: none; 
+        }
+        
+        .sub-table tr:hover td { 
+            background-color: #f8fafc; 
+        }
+        
+        .badge-count { 
+            background: #e2e8f0; 
+            color: #475569; 
+            padding: 2px 8px; 
+            border-radius: 10px; 
+            font-size: 11px; 
+            font-weight: bold; 
+        }
     </style>
 </head>
 <body>
@@ -56,11 +179,12 @@
         </div>
 
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab('custo-vita', this)">Custo somente VITA</button>
+            <button class="tab-btn active" onclick="switchTab('custo-vita', this)">Custo por Prescrição</button>
             <button class="tab-btn" onclick="switchTab('contas-faturadas', this)">Contas Faturadas</button>
         </div>
 
         <div id="custo-vita" class="tab-content active">
+            
             <div class="filter-bar">
                 <div class="col">
                     <label class="card-label">Mês de Referência</label>
@@ -70,21 +194,25 @@
                     <label class="card-label">Paciente</label>
                     <input type="text" id="filter-paciente" class="form-control" placeholder="Buscar paciente..." onkeyup="filterTable()">
                 </div>
-                <button class="btn btn-success" onclick="loadCustoVita()"><i class="fas fa-sync"></i> Atualizar Dados</button>
+                <button class="btn btn-success" onclick="loadCustoVita()">
+                    <i class="fas fa-sync"></i> Atualizar Dados
+                </button>
             </div>
 
             <div class="card">
-                <div class="card-header"><i class="fas fa-file-invoice-dollar"></i> Relatório Agrupado (VITA)</div>
+                <div class="card-header">
+                    <i class="fas fa-file-invoice-dollar"></i> Agrupamento por Prescrição (Tasy)
+                </div>
                 <div class="table-container">
                     <table id="table-tasy-vita">
                         <thead>
                             <tr>
-                                <th style="width: 40px; text-align: center;"><i class="fas fa-list"></i></th>
-                                <th>Data Atend.</th>
+                                <th style="width: 40px;"></th>
                                 <th>Nº Prescrição</th>
+                                <th>Data Atend.</th>
                                 <th>Paciente</th>
                                 <th style="text-align: center;">Itens</th>
-                                <th style="text-align: right;">Custo Total</th>
+                                <th style="text-align: right;">Total Prescrição</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-custo-vita">
@@ -95,20 +223,22 @@
 
             <div class="transport-section">
                 <div class="card">
-                    <div class="card-header"><i class="fas fa-truck-loading"></i> Transporte (Inserção Manual)</div>
-                    
+                    <div class="card-header">
+                        <i class="fas fa-truck-loading"></i> Transporte (Inserção Manual)
+                    </div>
                     <div class="manual-form">
                         <div style="flex: 1;">
-                            <label class="card-label">Data do Transporte</label>
+                            <label class="card-label">Data</label>
                             <input type="date" id="transp-data" class="form-control">
                         </div>
                         <div style="flex: 1;">
-                            <label class="card-label">Valor do Transporte</label>
+                            <label class="card-label">Valor (R$)</label>
                             <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
                         </div>
-                        <button class="btn btn-primary" onclick="addTransporte()"><i class="fas fa-plus"></i> Adicionar</button>
+                        <button class="btn btn-primary" onclick="addTransporte()">
+                            <i class="fas fa-plus"></i> Adicionar
+                        </button>
                     </div>
-
                     <div class="table-container">
                         <table id="table-transporte">
                             <thead>
@@ -128,7 +258,9 @@
 
         <div id="contas-faturadas" class="tab-content">
             <div class="card">
-                <div class="card-header"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</div>
+                <div class="card-header">
+                    <i class="fas fa-check-double"></i> Relatório de Contas Faturadas
+                </div>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -156,9 +288,11 @@
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('custo-vita', 'Custo Operação VITA');
                 
+                // Define o mês atual no filtro por padrão
                 const now = new Date();
                 document.getElementById('filter-mes').value = now.toISOString().substring(0, 7);
                 
+                // Carrega os dados iniciais
                 await loadCustoVita();
                 await loadContasFaturadas();
                 loadTransporteLocal(); 
@@ -170,80 +304,93 @@
         document.addEventListener('DOMContentLoaded', initPage);
 
         function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            // Esconde todas as abas
+            document.querySelectorAll('.tab-content').forEach(t => {
+                t.classList.remove('active');
+            });
             
+            // Tira a marcação de todos os botões
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            
+            // Ativa apenas a aba selecionada
             document.getElementById(tabId).classList.add('active');
             btn.classList.add('active');
         }
 
         // ==========================================
-        // LEITURA ESTRITA DE NÚMEROS DO ORACLE
+        // FUNÇÕES DE FORMATAÇÃO E PARSER DE NÚMEROS
         // ==========================================
         function parseOracleNumber(val) {
             if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return val;
             
-            let s = String(val).trim();
+            // Remove qualquer coisa que não seja dígito, vírgula, ponto ou sinal negativo
+            let s = String(val).trim().replace(/[^\d.,-]/g, '');
             
-            // Lógica rigorosa: Se tem ponto E vírgula (Ex: 1.250,50 ou 1,250.50)
+            // Se possui vírgula E ponto
             if (s.includes(',') && s.includes('.')) {
                 if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
-                    // Padrão Brasileiro: "1.250,50"
+                    // Padrão Brasileiro: "1.250,50" -> Vira "1250.50"
                     s = s.replace(/\./g, '').replace(',', '.');
                 } else {
-                    // Padrão Americano: "1,250.50"
+                    // Padrão Americano: "1,250.50" -> Vira "1250.50"
                     s = s.replace(/,/g, '');
                 }
             } 
-            // Se tem SÓ vírgula (Ex: "1250,50")
+            // Se possui APENAS vírgula (Ex: "1250,50")
             else if (s.includes(',')) {
                 s = s.replace(',', '.');
             }
             
-            // O que sobrar (Ex: "1250.50" ou "1250") é convertido pra float puro
             const num = parseFloat(s);
             return isNaN(num) ? 0 : num;
         }
 
         function formatCurrency(valor) {
-            return parseFloat(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const num = parseFloat(valor || 0);
+            return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function formatDose(valor) {
-            return parseFloat(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+            const num = parseFloat(valor || 0);
+            return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
         }
 
         function formatDate(dateStr) {
             if(!dateStr) return '-';
             const d = new Date(dateStr);
-            if(isNaN(d.getTime())) return dateStr; 
+            if (isNaN(d.getTime())) {
+                return dateStr;
+            }
             return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
         }
 
-        // ==========================================
-        // LÓGICA DO ACORDEÃO / CASCADE
-        // ==========================================
+        // Função para expandir/recolher a linha da tabela (Acordeão)
         function toggleGroup(groupId) {
             const childRow = document.getElementById(`child-${groupId}`);
             const icon = document.getElementById(`icon-${groupId}`);
             
-            if (childRow.style.display === 'none') {
-                childRow.style.display = 'table-row';
-                icon.classList.add('open');
-            } else {
+            const isVisible = childRow.style.display === 'table-row';
+            
+            if (isVisible) {
                 childRow.style.display = 'none';
                 icon.classList.remove('open');
+            } else {
+                childRow.style.display = 'table-row';
+                icon.classList.add('open');
             }
         }
 
         // ==========================================
-        // CARREGAMENTO E RENDERIZAÇÃO
+        // LÓGICA PRINCIPAL: CARREGAR DADOS TASY
         // ==========================================
         async function loadCustoVita() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-custo-vita');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center"><i class="fas fa-spinner fa-spin"></i> Buscando dados no banco Tasy...</td></tr>';
+            
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando banco Tasy...</td></tr>';
 
             try {
                 const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
@@ -252,177 +399,203 @@
                     dataCustoVita = Object.values(data);
                     renderTableVita(dataCustoVita);
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum dado encontrado para este mês.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Nenhum dado encontrado para este mês.</td></tr>';
                 }
             } catch (e) {
-                console.error("Erro ao buscar dados do Tasy:", e);
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red">Erro ao conectar com a API do Tasy. Verifique o servidor.</td></tr>';
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red; padding: 20px;">Erro de conexão com o banco de dados.</td></tr>';
             }
         }
 
         function renderTableVita(list) {
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '';
-
-            if(list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Nenhum registro encontrado no filtro.</td></tr>';
-                return;
+            
+            if(list.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Sem registros correspondentes ao filtro.</td></tr>'; 
+                return; 
             }
 
+            // 1. AGRUPAMENTO POR NÚMERO DE PRESCRIÇÃO
             const grupos = {};
             
             list.forEach(item => {
-                const dataAtend = item.dt_atendimento || item.DT_ATENDIMENTO;
-                const paciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase();
-                const nrPrescricao = item.nr_prescricao || item.NR_PRESCRICAO || '-';
-                const dataFmt = formatDate(dataAtend);
+                const nrPrescricao = item.nr_prescricao || item.NR_PRESCRICAO || 'SEM_NUMERO';
                 
-                const groupKey = `${paciente}_${dataFmt}`;
-                
-                if(!grupos[groupKey]) {
-                    grupos[groupKey] = {
-                        paciente: paciente,
-                        data: dataFmt,
+                if(!grupos[nrPrescricao]) {
+                    grupos[nrPrescricao] = {
                         nrPrescricao: nrPrescricao,
+                        paciente: (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase(),
+                        data: formatDate(item.dt_atendimento || item.DT_ATENDIMENTO),
                         totalCusto: 0,
                         itens: []
                     };
                 }
                 
-                // Extrai ESTRITAMENTE o que o banco mandou (removido qualquer cálculo de emergência)
-                let dose = parseOracleNumber(item.qt_dose_cabine || item.QT_DOSE_CABINE);
-                let custoUnit = parseOracleNumber(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP);
-                let custoTotalItem = parseOracleNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
-                let custoAntigo = parseOracleNumber(item.custo_antigo || item.CUSTO_ANTIGO);
-
-                item._doseCorrigida = dose;
-                item._custoUnitCorrigido = custoUnit;
-                item._custoTotalCorrigido = custoTotalItem; // <- É exatamente este número que dita a tabela
-                item._custoAntigoCorrigido = custoAntigo;
-
-                grupos[groupKey].totalCusto += custoTotalItem;
-                grupos[groupKey].itens.push(item);
+                // Converte de forma segura o valor total
+                const custoTotalItem = parseOracleNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
+                
+                // Adiciona ao total da prescrição
+                grupos[nrPrescricao].totalCusto += custoTotalItem;
+                grupos[nrPrescricao].itens.push(item);
             });
 
+            // 2. RENDERIZAR OS GRUPOS NA TABELA (LINHAS PAIS E FILHAS)
             let index = 0;
+            
             for (const key in grupos) {
                 const g = grupos[key];
-                const groupId = `grp_${index}`;
+                const groupId = `presc_${index}`;
                 index++;
 
-                // LINHA PAI (Resumo do Dia)
-                tbody.innerHTML += `
-                    <tr class="parent-row" onclick="toggleGroup('${groupId}')">
-                        <td style="text-align: center;"><i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i></td>
-                        <td>${g.data}</td>
-                        <td>${g.nrPrescricao}</td>
-                        <td style="font-weight: 600;">${g.paciente}</td>
-                        <td style="text-align: center;"><span class="badge badge-neutral">${g.itens.length} itens</span></td>
-                        <td style="text-align: right; font-weight: 800; color: #00855B;">R$ ${formatCurrency(g.totalCusto)}</td>
-                    </tr>
+                // LINHA PAI (A linha clicável com o total da prescrição)
+                const parentRow = document.createElement('tr');
+                parentRow.className = 'parent-row';
+                parentRow.onclick = function() { toggleGroup(groupId); };
+                
+                parentRow.innerHTML = `
+                    <td style="text-align: center;">
+                        <i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i>
+                    </td>
+                    <td style="font-weight:bold; color:var(--primary);">
+                        # ${g.nrPrescricao}
+                    </td>
+                    <td>
+                        ${g.data}
+                    </td>
+                    <td style="font-weight:600;">
+                        ${g.paciente}
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="badge-count">${g.itens.length}</span>
+                    </td>
+                    <td style="text-align: right; font-weight: 800; color: #00855B;">
+                        R$ ${formatCurrency(g.totalCusto)}
+                    </td>
                 `;
+                
+                tbody.appendChild(parentRow);
 
-                // LINHA FILHA (Sub-tabela)
-                let childRowsHTML = '';
+                // GERAR O HTML DOS ITENS INTERNOS (MEDICAMENTOS)
+                let subTableRows = '';
                 g.itens.forEach(item => {
-                    const matConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
-                    const material = item.ds_material || item.DS_MATERIAL || '-';
+                    const materialConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
+                    const medicacao = item.ds_material || item.DS_MATERIAL || '-';
                     
-                    const doseFmt = formatDose(item._doseCorrigida);
-                    const custoAntigoFmt = formatCurrency(item._custoAntigoCorrigido);
-                    const custoUnitFmt = formatCurrency(item._custoUnitCorrigido);
-                    const custoTotalFmt = formatCurrency(item._custoTotalCorrigido);
+                    const doseFormatada = formatDose(parseOracleNumber(item.qt_dose_cabine || item.QT_DOSE_CABINE));
+                    const custoAntigoFormatado = formatCurrency(parseOracleNumber(item.custo_antigo || item.CUSTO_ANTIGO));
+                    const custoUnitFormatado = formatCurrency(parseOracleNumber(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP));
+                    const custoTotalItemFormatado = formatCurrency(parseOracleNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP));
 
-                    childRowsHTML += `
+                    subTableRows += `
                         <tr>
-                            <td>${matConta}</td>
-                            <td>${material}</td>
-                            <td style="text-align: center;">${doseFmt}</td>
-                            <td style="color: #94a3b8;">R$ ${custoAntigoFmt}</td>
-                            <td>R$ ${custoUnitFmt}</td>
-                            <td style="font-weight: bold;">R$ ${custoTotalFmt}</td>
+                            <td>${materialConta}</td>
+                            <td>${medicacao}</td>
+                            <td style="text-align: center;">${doseFormatada}</td>
+                            <td style="color: #94a3b8;">R$ ${custoAntigoFormatado}</td>
+                            <td>R$ ${custoUnitFormatado}</td>
+                            <td style="font-weight: bold;">R$ ${custoTotalItemFormatado}</td>
                         </tr>
                     `;
                 });
 
-                tbody.innerHTML += `
-                    <tr id="child-${groupId}" class="child-row" style="display: none;">
-                        <td colspan="6" style="padding: 0;">
-                            <div class="sub-table-container">
-                                <table class="sub-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Material Conta</th>
-                                            <th>Medicação</th>
-                                            <th style="text-align: center;">Dose Cabine</th>
-                                            <th>Custo Antigo</th>
-                                            <th>Custo Unit. Manip</th>
-                                            <th>Custo Total Manip</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${childRowsHTML}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>
+                // LINHA FILHA (A sub-tabela oculta)
+                const childRow = document.createElement('tr');
+                childRow.id = `child-${groupId}`;
+                childRow.className = 'child-row';
+                childRow.style.display = 'none';
+                
+                childRow.innerHTML = `
+                    <td colspan="6" style="padding: 0;">
+                        <div class="sub-table-container">
+                            <table class="sub-table">
+                                <thead>
+                                    <tr>
+                                        <th>Material Conta</th>
+                                        <th>Medicação</th>
+                                        <th style="text-align: center;">Dose</th>
+                                        <th>Custo Antigo</th>
+                                        <th>Custo Unit.</th>
+                                        <th>Total Item</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${subTableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
                 `;
+                
+                tbody.appendChild(childRow);
             }
         }
 
         // ==========================================
-        // DEMAIS FUNÇÕES (Contas, Transporte, Filtros)
+        // LÓGICA: CONTAS FATURADAS
         // ==========================================
         async function loadContasFaturadas() {
             const tbody = document.getElementById('tbody-contas-faturadas');
+            
             try {
                 const res = await fetch(`${API_BASE_URL}/contas_faturadas`, { headers: API_HEADERS });
                 if(!res.ok) return;
+                
                 const data = await res.json();
                 dataContas = Object.values(data);
                 
                 tbody.innerHTML = '';
+                
                 if(dataContas.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Nenhuma conta faturada.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 15px;">Nenhuma conta faturada.</td></tr>';
                     return;
                 }
 
                 dataContas.forEach(c => {
                     const paciente = c.paciente || c.PACIENTE || '-';
-                    const dataC = c.data || c.DATA;
+                    const dataConta = c.data || c.DATA;
                     const numConta = c.num_conta || c.NUM_CONTA || '-';
-                    const valorC = formatCurrency(parseOracleNumber(c.valor || c.VALOR));
+                    const valorFormatado = formatCurrency(parseOracleNumber(c.valor || c.VALOR));
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
-                            <td>${formatDate(dataC)}</td>
-                            <td><span class="badge-faturamento fat-vita" style="font-size: 11px;"># ${numConta}</span></td>
-                            <td style="font-weight: bold;">R$ ${valorC}</td>
-                        </tr>
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
+                        <td>${formatDate(dataConta)}</td>
+                        <td><span class="badge-faturamento fat-vita"># ${numConta}</span></td>
+                        <td style="font-weight: bold;">R$ ${valorFormatado}</td>
                     `;
+                    tbody.appendChild(tr);
                 });
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Erro ao carregar contas.</td></tr>';
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding: 15px;">Erro ao buscar contas.</td></tr>';
             }
         }
 
+        // ==========================================
+        // LÓGICA: TRANSPORTE (INSERÇÃO MANUAL)
+        // ==========================================
         function addTransporte() {
             const data = document.getElementById('transp-data').value;
-            const valor = document.getElementById('transp-valor').value;
-
-            if(!data || !valor) return alert("Preencha data e valor do transporte!");
-
-            const valorLimpo = parseOracleNumber(valor);
-
-            const novo = { id: Date.now(), data, valor: valorLimpo };
-            dataTransporte.push(novo);
+            const valorInput = document.getElementById('transp-valor').value;
             
-            saveTransporte(novo);
+            if(!data || !valorInput) {
+                return alert("Por favor, preencha a data e o valor do transporte.");
+            }
+
+            const valorNumerico = parseOracleNumber(valorInput);
+
+            const novoTransporte = { 
+                id: Date.now(), 
+                data: data, 
+                valor: valorNumerico 
+            };
             
+            dataTransporte.push(novoTransporte);
+            saveTransporte(novoTransporte);
             renderTransporte();
-            document.getElementById('transp-data').value = '';
+            
+            // Limpa apenas o campo de valor para facilitar a próxima inserção
             document.getElementById('transp-valor').value = '';
         }
 
@@ -430,65 +603,81 @@
             const tbody = document.getElementById('tbody-transporte');
             tbody.innerHTML = '';
             
-            if(dataTransporte.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">Nenhum transporte cadastrado.</td></tr>';
-                return;
+            if(dataTransporte.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum custo de transporte lançado.</td></tr>'; 
+                return; 
             }
-
-            dataTransporte.sort((a,b) => new Date(b.data) - new Date(a.data)).forEach(t => {
-                const valorFormatado = formatCurrency(t.valor); 
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${formatDate(t.data)}</td>
-                        <td style="font-weight:bold;">R$ ${valorFormatado}</td>
-                        <td>
-                            <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
+            
+            dataTransporte.sort((a,b) => new Date(b.data) - new Date(a.data));
+            
+            dataTransporte.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatDate(t.data)}</td>
+                    <td style="font-weight:bold;">R$ ${formatCurrency(t.valor)}</td>
+                    <td>
+                        <button class="btn-icon danger" onclick="deleteTransporte(${t.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 `;
+                tbody.appendChild(tr);
             });
         }
 
         async function saveTransporte(item) {
-            try {
-                await fetch(`${API_BASE_URL}/custo_vita_transporte`, {
-                    method: 'POST',
-                    headers: API_HEADERS,
-                    body: JSON.stringify(item)
-                });
-            } catch(e) { console.error(e); }
+            try { 
+                await fetch(`${API_BASE_URL}/custo_vita_transporte`, { 
+                    method: 'POST', 
+                    headers: API_HEADERS, 
+                    body: JSON.stringify(item) 
+                }); 
+            } catch(e) {
+                console.error("Erro ao salvar transporte:", e);
+            }
         }
 
         async function deleteTransporte(id) {
-            if(!confirm("Tem certeza que deseja excluir este transporte?")) return;
-            try {
-                await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS });
-                dataTransporte = dataTransporte.filter(t => t.id !== id);
-                renderTransporte();
-            } catch(e) { console.error(e); }
+            if(!confirm("Tem certeza que deseja excluir este custo de transporte?")) return;
+            
+            try { 
+                await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { 
+                    method: 'DELETE', 
+                    headers: API_HEADERS 
+                }); 
+                
+                dataTransporte = dataTransporte.filter(t => t.id !== id); 
+                renderTransporte(); 
+            } catch(e) {
+                console.error("Erro ao deletar transporte:", e);
+            }
         }
 
         async function loadTransporteLocal() {
             try {
                 const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS });
-                if(res.ok) {
-                    const data = await res.json();
-                    dataTransporte = Object.values(data);
-                    renderTransporte();
+                if(res.ok) { 
+                    const dadosRetornados = await res.json();
+                    dataTransporte = Object.values(dadosRetornados); 
+                    renderTransporte(); 
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) {
+                console.error("Erro ao carregar transportes locais:", e);
+            }
         }
 
+        // ==========================================
+        // FILTROS
+        // ==========================================
         function filterTable() {
             const term = document.getElementById('filter-paciente').value.toUpperCase();
             
-            const filtered = dataCustoVita.filter(item => {
-                const nome = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase();
-                return nome.includes(term);
+            const filteredData = dataCustoVita.filter(item => {
+                const nomePaciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase();
+                return nomePaciente.includes(term);
             });
             
-            renderTableVita(filtered);
+            renderTableVita(filteredData);
         }
     </script>
 </body>
