@@ -481,7 +481,7 @@
                     const materialConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
                     const medicacao = item.ds_material || item.DS_MATERIAL || '-';
                     
-                    const doseFormatada = formatDose(parseOracleNumber(item.qt_dose_cabine || item.QT_DOSE_CABINE));
+                    const doseFormatada = formatDose(parseOracleNumber(item.dose_real_custo || item.dose_real_custo));
                     const custoAntigoFormatado = formatCurrency(parseOracleNumber(item.custo_antigo || item.CUSTO_ANTIGO));
                     const custoUnitFormatado = formatCurrency(parseOracleNumber(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP));
                     const custoTotalItemFormatado = formatCurrency(parseOracleNumber(item.vl_custo_real_manip || item.VL_CUSTO_REAL_MANIP));
