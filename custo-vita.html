@@ -178,30 +178,30 @@
         }
 
         // ==========================================
-        // LIMPAGEM E FORMATAÇÃO (BLINDAGEM MAXIMA)
+        // LEITURA ESTRITA DE NÚMEROS DO ORACLE
         // ==========================================
-        function cleanNumber(val) {
+        function parseOracleNumber(val) {
             if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return val;
             
             let s = String(val).trim();
             
-            // Remove tudo que não for dígito, ponto, vírgula ou sinal negativo
-            s = s.replace(/[^\d.,-]/g, '');
-            
-            // Lógica para converter padrão brasileiro (1.250,50) para padrão matemático (1250.50)
+            // Lógica rigorosa: Se tem ponto E vírgula (Ex: 1.250,50 ou 1,250.50)
             if (s.includes(',') && s.includes('.')) {
-                let lastDot = s.lastIndexOf('.');
-                let lastComma = s.lastIndexOf(',');
-                if (lastComma > lastDot) {
+                if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+                    // Padrão Brasileiro: "1.250,50"
                     s = s.replace(/\./g, '').replace(',', '.');
                 } else {
+                    // Padrão Americano: "1,250.50"
                     s = s.replace(/,/g, '');
                 }
-            } else if (s.includes(',')) {
+            } 
+            // Se tem SÓ vírgula (Ex: "1250,50")
+            else if (s.includes(',')) {
                 s = s.replace(',', '.');
             }
             
+            // O que sobrar (Ex: "1250.50" ou "1250") é convertido pra float puro
             const num = parseFloat(s);
             return isNaN(num) ? 0 : num;
         }
@@ -289,24 +289,17 @@
                     };
                 }
                 
-                // 💡 SOLUÇÃO DO BUG: Limpeza rigorosa e cálculo automático caso o banco mande 0
-                let dose = cleanNumber(item.qt_dose_cabine || item.QT_DOSE_CABINE);
-                let custoUnit = cleanNumber(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP);
-                let custoTotalItem = cleanNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
-                let custoAntigo = cleanNumber(item.custo_antigo || item.CUSTO_ANTIGO);
-                
-                // Se o Oracle retornar 0 no total, nós calculamos na hora (Dose x Valor Unitário)
-                if (custoTotalItem === 0 && custoUnit > 0) {
-                    custoTotalItem = dose > 0 ? (dose * custoUnit) : custoUnit;
-                }
+                // Extrai ESTRITAMENTE o que o banco mandou (removido qualquer cálculo de emergência)
+                let dose = parseOracleNumber(item.qt_dose_cabine || item.QT_DOSE_CABINE);
+                let custoUnit = parseOracleNumber(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP);
+                let custoTotalItem = parseOracleNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
+                let custoAntigo = parseOracleNumber(item.custo_antigo || item.CUSTO_ANTIGO);
 
-                // Salvamos os valores já corrigidos matematicamente dentro do objeto do item
                 item._doseCorrigida = dose;
                 item._custoUnitCorrigido = custoUnit;
-                item._custoTotalCorrigido = custoTotalItem;
+                item._custoTotalCorrigido = custoTotalItem; // <- É exatamente este número que dita a tabela
                 item._custoAntigoCorrigido = custoAntigo;
 
-                // Soma o total do paciente
                 grupos[groupKey].totalCusto += custoTotalItem;
                 grupos[groupKey].itens.push(item);
             });
@@ -317,7 +310,7 @@
                 const groupId = `grp_${index}`;
                 index++;
 
-                // LINHA PAI (Resumo)
+                // LINHA PAI (Resumo do Dia)
                 tbody.innerHTML += `
                     <tr class="parent-row" onclick="toggleGroup('${groupId}')">
                         <td style="text-align: center;"><i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i></td>
@@ -335,7 +328,6 @@
                     const matConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
                     const material = item.ds_material || item.DS_MATERIAL || '-';
                     
-                    // Formata para R$ os valores matemáticos que corrigimos lá em cima
                     const doseFmt = formatDose(item._doseCorrigida);
                     const custoAntigoFmt = formatCurrency(item._custoAntigoCorrigido);
                     const custoUnitFmt = formatCurrency(item._custoUnitCorrigido);
@@ -400,7 +392,7 @@
                     const paciente = c.paciente || c.PACIENTE || '-';
                     const dataC = c.data || c.DATA;
                     const numConta = c.num_conta || c.NUM_CONTA || '-';
-                    const valorC = formatCurrency(cleanNumber(c.valor || c.VALOR));
+                    const valorC = formatCurrency(parseOracleNumber(c.valor || c.VALOR));
 
                     tbody.innerHTML += `
                         <tr>
@@ -422,7 +414,7 @@
 
             if(!data || !valor) return alert("Preencha data e valor do transporte!");
 
-            const valorLimpo = cleanNumber(valor);
+            const valorLimpo = parseOracleNumber(valor);
 
             const novo = { id: Date.now(), data, valor: valorLimpo };
             dataTransporte.push(novo);
