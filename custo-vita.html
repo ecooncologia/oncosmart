@@ -15,7 +15,6 @@
     </script>
 
     <style>
-        /* Estilos específicos para esta página para manter o layout "justo" */
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
         .tab-btn { padding: 12px 20px; border: 1px solid #e2e8f0; border-bottom: none; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 13px; background: #f8fafc; }
         .tab-btn.active { color: var(--primary); border-top: 4px solid var(--primary); background: white; margin-bottom: -2px; }
@@ -30,7 +29,6 @@
         
         .manual-form { display: flex; gap: 10px; align-items: flex-end; background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 
-        /* Ajuste fino para a tabela da View Tasy ficar legível com muitas colunas */
         #table-tasy-vita th, #table-tasy-vita td { font-size: 12px; padding: 10px; white-space: nowrap; }
     </style>
 </head>
@@ -72,7 +70,7 @@
                                 <th>Paciente</th>
                                 <th>Material Conta</th>
                                 <th>Material (Medicação)</th>
-                                <th>Dose Cabine</th>
+                                <th style="text-align: center;">Dose Cabine</th>
                                 <th>Custo Antigo</th>
                                 <th>Custo Unit. Manip</th>
                                 <th>Custo Total Manip</th>
@@ -95,7 +93,7 @@
                         </div>
                         <div style="flex: 1;">
                             <label class="card-label">Valor do Transporte</label>
-                            <input type="number" id="transp-valor" class="form-control" placeholder="0,00">
+                            <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
                         </div>
                         <button class="btn btn-primary" onclick="addTransporte()"><i class="fas fa-plus"></i> Adicionar</button>
                     </div>
@@ -147,7 +145,6 @@
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('custo-vita', 'Custo Operação VITA');
                 
-                // Setar mês atual no filtro
                 const now = new Date();
                 document.getElementById('filter-mes').value = now.toISOString().substring(0, 7);
                 
@@ -169,13 +166,29 @@
             btn.classList.add('active');
         }
 
+        // ==========================================
+        // FUNÇÕES DE FORMATAÇÃO DE CASAS DECIMAIS
+        // ==========================================
+        function formatCurrency(valor) {
+            let num = parseFloat(valor || 0);
+            if (isNaN(num)) num = 0;
+            // Trava estritamente em 2 casas decimais (ex: 1.250,50)
+            return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDose(valor) {
+            let num = parseFloat(valor || 0);
+            if (isNaN(num)) num = 0;
+            // A dose não precisa de 2 casas obrigatoriamente (ex: se for 100, exibe 100. Se for 100.55, exibe 100,55)
+            return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+        }
+
         async function loadCustoVita() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '<tr><td colspan="9" style="text-align:center"><i class="fas fa-spinner fa-spin"></i> Buscando dados no banco Tasy...</td></tr>';
 
             try {
-                // A ROTA ABAIXO DEVE CHAMAR A SUA API (NODE OU PHP) QUE LÊ O .ENV E EXECUTA O SELECT!
                 const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
@@ -200,18 +213,17 @@
             }
 
             list.forEach(item => {
-                // Blindagem para chaves em maiúsculo (comum em retornos do Oracle/Tasy)
                 const dataAtend = item.dt_atendimento || item.DT_ATENDIMENTO;
                 const paciente = item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-';
                 const nrPrescricao = item.nr_prescricao || item.NR_PRESCRICAO || '-';
                 const matConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
                 const material = item.ds_material || item.DS_MATERIAL || '-';
-                const dose = item.qt_dose_cabine || item.QT_DOSE_CABINE || '-';
                 
-                // Conversão segura de valores monetários
-                const custoAntigo = parseFloat(item.custo_antigo || item.CUSTO_ANTIGO || 0);
-                const custoUnit = parseFloat(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP || 0);
-                const custoTotal = parseFloat(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP || 0);
+                // Formatação blindada dos valores numéricos
+                const dose = formatDose(item.qt_dose_cabine || item.QT_DOSE_CABINE);
+                const custoAntigo = formatCurrency(item.custo_antigo || item.CUSTO_ANTIGO);
+                const custoUnit = formatCurrency(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP);
+                const custoTotal = formatCurrency(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
 
                 tbody.innerHTML += `
                     <tr>
@@ -220,10 +232,10 @@
                         <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
                         <td>${matConta}</td>
                         <td>${material}</td>
-                        <td style="text-align: center;">${dose}</td>
-                        <td style="color: #64748b;">R$ ${custoAntigo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                        <td>R$ ${custoUnit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                        <td style="font-weight: 800; color: #00855B;">R$ ${custoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: center; font-weight: 600;">${dose}</td>
+                        <td style="color: #64748b;">R$ ${custoAntigo}</td>
+                        <td>R$ ${custoUnit}</td>
+                        <td style="font-weight: 800; color: #00855B;">R$ ${custoTotal}</td>
                     </tr>
                 `;
             });
@@ -247,14 +259,14 @@
                     const paciente = c.paciente || c.PACIENTE || '-';
                     const dataC = c.data || c.DATA;
                     const numConta = c.num_conta || c.NUM_CONTA || '-';
-                    const valorC = parseFloat(c.valor || c.VALOR || 0);
+                    const valorC = formatCurrency(c.valor || c.VALOR); // Usando a nova formatação
 
                     tbody.innerHTML += `
                         <tr>
                             <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
                             <td>${formatDate(dataC)}</td>
                             <td><span class="badge-faturamento fat-vita" style="font-size: 11px;"># ${numConta}</span></td>
-                            <td style="font-weight: bold;">R$ ${valorC.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                            <td style="font-weight: bold;">R$ ${valorC}</td>
                         </tr>
                     `;
                 });
@@ -263,14 +275,16 @@
             }
         }
 
-        // --- Lógica Manual do Transporte ---
         function addTransporte() {
             const data = document.getElementById('transp-data').value;
             const valor = document.getElementById('transp-valor').value;
 
             if(!data || !valor) return alert("Preencha data e valor do transporte!");
 
-            const novo = { id: Date.now(), data, valor };
+            // Limpa o valor para Float (caso usuário tenha digitado com vírgula)
+            const valorLimpo = parseFloat(valor.replace(',', '.'));
+
+            const novo = { id: Date.now(), data, valor: valorLimpo };
             dataTransporte.push(novo);
             
             saveTransporte(novo);
@@ -290,10 +304,12 @@
             }
 
             dataTransporte.sort((a,b) => new Date(b.data) - new Date(a.data)).forEach(t => {
+                const valorFormatado = formatCurrency(t.valor); // Usando a formatação corrigida
+                
                 tbody.innerHTML += `
                     <tr>
                         <td>${formatDate(t.data)}</td>
-                        <td style="font-weight:bold;">R$ ${parseFloat(t.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td style="font-weight:bold;">R$ ${valorFormatado}</td>
                         <td>
                             <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
                         </td>
@@ -332,7 +348,6 @@
             } catch(e) { console.error(e); }
         }
 
-        // --- Filtros e Formatação ---
         function filterTable() {
             const term = document.getElementById('filter-paciente').value.toUpperCase();
             
@@ -346,9 +361,8 @@
 
         function formatDate(dateStr) {
             if(!dateStr) return '-';
-            // Corrige fuso horário se vier do banco com "T00:00:00Z" ou similar
             const d = new Date(dateStr);
-            if(isNaN(d.getTime())) return dateStr; // Retorna como string se o Tasy mandar fora de padrão Date
+            if(isNaN(d.getTime())) return dateStr; 
             return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
         }
     </script>
