@@ -429,7 +429,7 @@
                 }
                 
                 // Converte de forma segura o valor total do item
-                const custoTotalItem = parseOracleNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP);
+                const custoTotalItem = parseOracleNumber(item.vl_custo_real_manip || item.VL_CUSTO_REAL_MANIP);
                 
                 // Soma esse item no montante global do paciente
                 grupos[paciente].totalCusto += custoTotalItem;
@@ -484,7 +484,7 @@
                     const doseFormatada = formatDose(parseOracleNumber(item.qt_dose_cabine || item.QT_DOSE_CABINE));
                     const custoAntigoFormatado = formatCurrency(parseOracleNumber(item.custo_antigo || item.CUSTO_ANTIGO));
                     const custoUnitFormatado = formatCurrency(parseOracleNumber(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP));
-                    const custoTotalItemFormatado = formatCurrency(parseOracleNumber(item.vl_custo_total_manip || item.VL_CUSTO_TOTAL_MANIP));
+                    const custoTotalItemFormatado = formatCurrency(parseOracleNumber(item.vl_custo_real_manip || item.VL_CUSTO_REAL_MANIP));
 
                     subTableRows += `
                         <tr>
