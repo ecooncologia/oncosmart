@@ -18,6 +18,8 @@
         /* ==========================================
            ESTILOS GERAIS E LAYOUT (TELA)
            ========================================== */
+        body { box-sizing: border-box; }
+        
         .filter-bar { 
             display: flex; 
             gap: 15px; 
@@ -139,51 +141,50 @@
             font-weight: bold; 
         }
 
-        .print-header-info { display: none; } /* Esconde a info de impressão na web */
+        .print-header-info { display: none; }
 
         /* ==========================================
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            @page { size: A4 portrait; margin: 15mm; }
+            @page { size: A4 landscape; margin: 15mm; }
             body { 
                 background: white; 
                 color: #1e293b; 
                 font-family: 'Segoe UI', system-ui, sans-serif; 
                 -webkit-print-color-adjust: exact; 
                 print-color-adjust: exact; 
+                margin: 0;
+                padding: 0;
             }
             
-            /* Ocultar elementos desnecessários na impressão */
             #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button { 
                 display: none !important; 
             }
             
-            .container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
             
-            /* Título do Relatório Impresso */
             .header-center { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;}
             .header-center p { font-size: 20px !important; color: #0f172a !important; margin: 0; font-weight: bold;}
             .header-center p::after { content: " - Relatório Financeiro Mensal"; }
             .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; }
             
-            /* Quebra de página por bloco */
             .print-section { break-before: page; padding-top: 20px; }
             .print-section:first-of-type { break-before: avoid; padding-top: 0; }
             
-            /* Estilização moderna das tabelas e blocos */
             .section-title { font-size: 16px; font-weight: bold; color: #0f172a !important; margin-bottom: 10px; margin-top: 0; }
             .card { border: none !important; box-shadow: none !important; margin-bottom: 0 !important; }
-            .card-header { display: none !important; } /* Trocado pelo section-title na impressão */
+            .card-header { display: none !important; } 
             
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            /* Correção do corte na tabela */
+            .table-container { width: 100% !important; overflow: hidden !important; }
+            table { width: 100% !important; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
             th { background-color: #0f172a !important; color: #ffffff !important; padding: 10px; font-size: 12px; text-transform: uppercase; border: 1px solid #0f172a;}
-            td { border-bottom: 1px solid #cbd5e1 !important; padding: 8px 10px; font-size: 12px; color: #1e293b !important; }
+            td { border-bottom: 1px solid #cbd5e1 !important; padding: 8px 10px; font-size: 12px; color: #1e293b !important; word-wrap: break-word; }
             
             /* FORÇAR A OCULTAÇÃO DA CASCATA E DO ÍCONE NO TASY */
             .child-row { display: none !important; }
             
-            /* Badges */
             .badge-count { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
             .badge-faturamento { background: transparent !important; border: 1px solid #cbd5e1; color: #1e293b !important; }
         }
@@ -229,8 +230,8 @@
                             <tr>
                                 <th class="no-print" style="width: 40px;"></th>
                                 <th>Paciente</th>
-                                <th style="text-align: center;">Itens Totais (Mês)</th>
-                                <th style="text-align: right;">Custo Total Paciente</th>
+                                <th style="text-align: center; width: 150px;">Itens Totais (Mês)</th>
+                                <th style="text-align: right; width: 200px;">Custo Total Paciente</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-custo-vita">
@@ -251,8 +252,8 @@
                         <thead>
                             <tr>
                                 <th>Nome do Médico</th>
-                                <th style="text-align: center;">Qtd. Plantões no Mês</th>
-                                <th style="text-align: right;">Valor Total (R$)</th>
+                                <th style="text-align: center; width: 200px;">Qtd. Plantões no Mês</th>
+                                <th style="text-align: right; width: 200px;">Valor Total (R$)</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-plantoes">
@@ -273,9 +274,9 @@
                         <thead>
                             <tr>
                                 <th>Paciente</th>
-                                <th>Data</th>
-                                <th>Nº Conta</th>
-                                <th>Valor (R$)</th>
+                                <th style="width: 150px;">Data</th>
+                                <th style="width: 150px;">Nº Conta</th>
+                                <th style="text-align: right; width: 200px;">Valor (R$)</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-contas-faturadas">
@@ -311,8 +312,8 @@
                         <thead>
                             <tr>
                                 <th>Data</th>
-                                <th>Valor (R$)</th>
-                                <th class="no-print" style="width: 100px;">Ações</th>
+                                <th style="text-align: right;">Valor (R$)</th>
+                                <th class="no-print" style="width: 100px; text-align: center;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-transporte">
@@ -441,18 +442,18 @@
             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando banco Tasy...</td></tr>';
 
             try {
-                // Buscando tudo do Tasy para fazer o filtro exato no Frontend
-                const res = await fetch(`${API_BASE_URL}/view_vita`, { headers: API_HEADERS });
+                // Revertido: A API do Node.js provavelmente exige o parâmetro `mes` na rota, 
+                // então adicionamos ?mes= de volta para evitar o Erro 400.
+                const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
                     const rawList = Object.values(data);
                     
-                    // Lógica para filtrar apenas o mês selecionado
+                    // O filtro extra no frontend garante que funcione caso a view no Oracle não filtre
                     dataCustoVita = rawList.filter(item => {
                         const dataAtend = item.dt_atendimento || item.DT_ATENDIMENTO || '';
                         if (!dataAtend) return false;
                         
-                        // Validação caso venha DD/MM/YYYY ou YYYY-MM-DD
                         if (dataAtend.includes('/')) {
                             const partes = dataAtend.split(' ')[0].split('/'); 
                             if (partes.length >= 3) {
@@ -466,7 +467,7 @@
 
                     renderTableVita(dataCustoVita);
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum dado retornado do servidor.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Erro: O servidor retornou status ' + res.status + '</td></tr>';
                 }
             } catch (e) {
                 console.error(e);
@@ -493,7 +494,6 @@
             });
 
             let index = 0;
-            // Ordenando pacientes por ordem alfabética
             const pacientesOrdenados = Object.values(grupos).sort((a,b) => a.paciente.localeCompare(b.paciente));
 
             pacientesOrdenados.forEach(g => {
@@ -722,7 +722,7 @@
                         <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
                         <td>${formatDate(dataConta)}</td>
                         <td><span class="badge-faturamento fat-vita"># ${numConta}</span></td>
-                        <td style="font-weight: bold;">R$ ${valorFormatado}</td>
+                        <td style="text-align: right; font-weight: bold;">R$ ${valorFormatado}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -768,8 +768,8 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${formatDate(t.data)}</td>
-                    <td style="font-weight:bold;">R$ ${formatCurrency(t.valor)}</td>
-                    <td class="no-print">
+                    <td style="text-align: right; font-weight:bold;">R$ ${formatCurrency(t.valor)}</td>
+                    <td class="no-print" style="text-align: center;">
                         <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
