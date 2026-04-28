@@ -146,7 +146,6 @@
             @page { size: A4 landscape; margin: 10mm; }
             body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            /* Ocultar elementos desnecessários na impressão */
             #global-header, #global-nav, .manual-form, .btn, .filter-bar button, #filter-paciente, label[for="filter-paciente"] { 
                 display: none !important; 
             }
@@ -155,12 +154,10 @@
             .card { border: 1px solid #ccc !important; box-shadow: none !important; margin-bottom: 20px !important; break-inside: avoid; }
             .card-header { background: #e2e8f0 !important; color: #000 !important; border-bottom: 1px solid #000 !important;}
             
-            /* FORÇAR ABERTURA DE TODAS AS CASCATAS NA IMPRESSÃO */
             .child-row { display: table-row !important; }
             .icon-expand { transform: rotate(90deg) !important; color: #000 !important; }
             .sub-table-container { padding: 10px !important; border-bottom: 1px solid #000 !important; }
             
-            /* Estilizar título de impressão */
             .header-center p { font-size: 24px !important; color: #000 !important; }
             .header-center p::after { content: " - Relatório Mensal"; font-size: 24px; }
         }
@@ -300,11 +297,9 @@
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('custo-vita', 'Custo Operação VITA');
                 
-                // Define o mês atual no filtro por padrão
                 const now = new Date();
                 document.getElementById('filter-mes').value = now.toISOString().substring(0, 7);
                 
-                // Dispara o carregamento de todos os blocos
                 refreshAllData();
                 loadTransporteLocal(); 
             } else {
@@ -314,62 +309,71 @@
 
         document.addEventListener('DOMContentLoaded', initPage);
 
-        // Função para recarregar tudo com base no mês do filtro
         async function refreshAllData() {
             await loadCustoVita();
             await loadPlantoes();
             await loadContasFaturadas();
-            renderTransporte(); // Como o transporte é local, só chamamos o render que tem filtro embutido
+            renderTransporte();
         }
 
         // ==========================================
-        // FUNÇÕES DE FORMATAÇÃO E PARSER DE NÚMEROS
+        // FUNÇÕES GERAIS E FERRAMENTAS
         // ==========================================
         function parseOracleNumber(val) {
             if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return val;
-            
             let s = String(val).trim().replace(/[^\d.,-]/g, '');
-            
             if (s.includes(',') && s.includes('.')) {
-                if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
-                    s = s.replace(/\./g, '').replace(',', '.');
-                } else {
-                    s = s.replace(/,/g, '');
-                }
-            } 
-            else if (s.includes(',')) {
+                if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+                else s = s.replace(/,/g, '');
+            } else if (s.includes(',')) {
                 s = s.replace(',', '.');
             }
-            
             const num = parseFloat(s);
             return isNaN(num) ? 0 : num;
         }
 
         function formatCurrency(valor) {
-            const num = parseFloat(valor || 0);
-            return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return parseFloat(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function formatDose(valor) {
-            const num = parseFloat(valor || 0);
-            return num.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+            return parseFloat(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
         }
 
         function formatDate(dateStr) {
             if(!dateStr) return '-';
             const d = new Date(dateStr);
-            if (isNaN(d.getTime())) {
-                return dateStr;
-            }
+            if (isNaN(d.getTime())) return dateStr;
             return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
         }
 
-        // Lógica de Acordeão
+        function getHolidays(y) { 
+            const pad = n => String(n).padStart(2,'0');
+            const h = { 
+                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
+                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
+                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
+            }; 
+            const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
+            I = I - 30*Math.floor((I/30)); 
+            let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
+            J = J - 7*Math.floor(J/7); 
+            const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
+            const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
+            const add = (baseDate, days) => { 
+                const r = new Date(baseDate.getTime()); r.setDate(r.getDate() + days); 
+                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
+            }; 
+            h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
+            return h; 
+        }
+
         function toggleGroup(groupId) {
             const childRow = document.getElementById(`child-${groupId}`);
             const icon = document.getElementById(`icon-${groupId}`);
-            
             const isVisible = childRow.style.display === 'table-row';
             
             if (isVisible) {
@@ -415,53 +419,31 @@
             }
 
             const grupos = {};
-            
             list.forEach(item => {
                 const paciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase();
-                
-                if(!grupos[paciente]) {
-                    grupos[paciente] = { paciente: paciente, totalCusto: 0, itens: [] };
-                }
-                
+                if(!grupos[paciente]) grupos[paciente] = { paciente: paciente, totalCusto: 0, itens: [] };
                 const custoTotalItem = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
-                
                 grupos[paciente].totalCusto += custoTotalItem;
                 grupos[paciente].itens.push(item);
             });
 
             let index = 0;
-            
             for (const key in grupos) {
                 const g = grupos[key];
-                const groupId = `paciente_${index}`;
-                index++;
+                const groupId = `paciente_${index++}`;
 
                 const parentRow = document.createElement('tr');
                 parentRow.className = 'parent-row';
                 parentRow.onclick = function() { toggleGroup(groupId); };
-                
                 parentRow.innerHTML = `
-                    <td style="text-align: center;">
-                        <i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i>
-                    </td>
-                    <td style="font-weight:bold; color:var(--primary); font-size: 14px;">
-                        ${g.paciente}
-                    </td>
-                    <td style="text-align: center;">
-                        <span class="badge-count">${g.itens.length}</span>
-                    </td>
-                    <td style="text-align: right; font-weight: 800; color: #00855B; font-size: 14px;">
-                        R$ ${formatCurrency(g.totalCusto)}
-                    </td>
+                    <td style="text-align: center;"><i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i></td>
+                    <td style="font-weight:bold; color:var(--primary); font-size: 14px;">${g.paciente}</td>
+                    <td style="text-align: center;"><span class="badge-count">${g.itens.length}</span></td>
+                    <td style="text-align: right; font-weight: 800; color: #00855B; font-size: 14px;">R$ ${formatCurrency(g.totalCusto)}</td>
                 `;
-                
                 tbody.appendChild(parentRow);
 
-                g.itens.sort((a,b) => {
-                   const dataA = new Date(a.dt_atendimento || a.DT_ATENDIMENTO || 0);
-                   const dataB = new Date(b.dt_atendimento || b.DT_ATENDIMENTO || 0);
-                   return dataA - dataB;
-                });
+                g.itens.sort((a,b) => new Date(a.dt_atendimento || a.DT_ATENDIMENTO || 0) - new Date(b.dt_atendimento || b.DT_ATENDIMENTO || 0));
 
                 let subTableRows = '';
                 g.itens.forEach(item => {
@@ -493,117 +475,151 @@
                 childRow.id = `child-${groupId}`;
                 childRow.className = 'child-row';
                 childRow.style.display = 'none';
-                
                 childRow.innerHTML = `
                     <td colspan="4" style="padding: 0;">
                         <div class="sub-table-container">
                             <table class="sub-table">
                                 <thead>
                                     <tr>
-                                        <th>Data</th>
-                                        <th>Prescrição</th>
-                                        <th>Material Conta</th>
-                                        <th>Medicação</th>
-                                        <th style="text-align: center;">Dose</th>
-                                        <th>Custo Antigo</th>
-                                        <th>Custo Unit.</th>
-                                        <th>Total Item</th>
+                                        <th>Data</th><th>Prescrição</th><th>Material Conta</th><th>Medicação</th>
+                                        <th style="text-align: center;">Dose</th><th>Custo Antigo</th><th>Custo Unit.</th><th>Total Item</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    ${subTableRows}
-                                </tbody>
+                                <tbody>${subTableRows}</tbody>
                             </table>
                         </div>
                     </td>
                 `;
-                
                 tbody.appendChild(childRow);
             }
         }
 
         function filterTableTasy() {
             const term = document.getElementById('filter-paciente').value.toUpperCase();
-            const filteredData = dataCustoVita.filter(item => {
-                const nomePaciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase();
-                return nomePaciente.includes(term);
-            });
+            const filteredData = dataCustoVita.filter(item => (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase().includes(term));
             renderTableVita(filteredData);
         }
 
         // ==========================================
-        // LÓGICA: BLOCO 2 (PLANTÕES / REPASSES)
+        // LÓGICA: BLOCO 2 (PLANTÕES - CÁLCULO IDÊNTICO AO REPASSE)
         // ==========================================
         async function loadPlantoes() {
-            const mes = document.getElementById('filter-mes').value;
-            const tbody = document.getElementById('tbody-plantoes');
+            const mesInput = document.getElementById('filter-mes').value;
+            if(!mesInput) return;
             
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px;"><i class="fas fa-spinner fa-spin"></i> Buscando escala de plantões...</td></tr>';
+            const [curYStr, curMStr] = mesInput.split('-');
+            const curY = parseInt(curYStr);
+            const curM = parseInt(curMStr) - 1; // Ajuste para 0-index do JS (0 = Janeiro)
+            const moStr = curMStr;
+
+            const tbody = document.getElementById('tbody-plantoes');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px;"><i class="fas fa-spinner fa-spin"></i> Calculando escala...</td></tr>';
 
             try {
-                // Chama a rota geral de repasses
-                const res = await fetch(`${API_BASE_URL}/repasses`, { headers: API_HEADERS });
-                if(!res.ok) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px;">Nenhum plantão localizado.</td></tr>';
-                    return;
-                }
-                
-                const data = await res.json();
-                const list = Object.values(data);
-                
-                const gruposMedicos = {};
-                
-                list.forEach(item => {
-                    // Extrai os campos corretos baseados no banco de dados (data, medico, plantao, valor)
-                    const dataPlantao = item.data || item.DATA || '';
-                    const plantao = (item.plantao || item.PLANTAO || '').toUpperCase();
-                    
-                    // Validação 1: O plantão pertence ao mês escolhido no filtro global?
-                    // Como a data vem como DD/MM/YYYY, precisamos transformar em YYYY-MM para comparar
-                    let pertenceAoMes = false;
-                    if (dataPlantao.includes('/')) {
-                        const partes = dataPlantao.split('/'); // [DD, MM, YYYY]
-                        if (partes.length === 3) {
-                            const stringMesBanco = `${partes[2]}-${partes[1]}`;
-                            if (stringMesBanco === mes) pertenceAoMes = true;
-                        }
-                    } else if (dataPlantao.startsWith(mes)) {
-                        pertenceAoMes = true; // Caso venha como YYYY-MM-DD
-                    }
+                // 1. Buscar Cadastro de Médicos (para mapear Nome)
+                const resMed = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
+                const dictMedicos = resMed.ok ? await resMed.json() : {};
 
-                    // Validação 2: É do setor desejado e do mês correto?
-                    if (pertenceAoMes && (plantao.includes('VITA') || plantao.includes('QUIMIO') || plantao.includes('CIRURG'))) {
-                        const medico = (item.medico || item.MEDICO || 'NÃO INFORMADO').toUpperCase();
-                        
-                        if (!gruposMedicos[medico]) {
-                            gruposMedicos[medico] = { medico: medico, qtdPlantoes: 0, valorTotal: 0 };
+                // 2. Buscar as Escalas (Aba Quimio e Aba Cirurgiões)
+                const searchIdQuimio = `${curYStr}-${moStr}-vita_quimio`;
+                const searchIdCirurgia = `${curYStr}-${moStr}-cirurgioes`;
+
+                const [resQuimio, resCirurgia] = await Promise.all([
+                    fetch(`${API_BASE_URL}/escala_mensal_vita_quimio`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/escala_mensal_cirurgioes`, { headers: API_HEADERS })
+                ]);
+
+                const dbQuimio = resQuimio.ok ? await resQuimio.json() : {};
+                const dbCirurgia = resCirurgia.ok ? await resCirurgia.json() : {};
+
+                // Helper para localizar o ID da escala independentemente do formato do JSON (string ou dict)
+                const getEscala = (db, sId) => {
+                    const foundKey = Object.keys(db).find(k => {
+                        let item = db[k];
+                        if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
+                        return item && (item.id_firebase === sId || item.id === sId || k === sId);
+                    });
+                    return foundKey ? (typeof db[foundKey] === 'string' ? JSON.parse(db[foundKey]) : db[foundKey]) : {};
+                };
+
+                const shiftsQuimio = getEscala(dbQuimio, searchIdQuimio);
+                const shiftsCirurgia = getEscala(dbCirurgia, searchIdCirurgia);
+
+                const holidays = getHolidays(curY);
+                const daysInMonth = new Date(curY, curM + 1, 0).getDate();
+                const consolidador = {};
+
+                // Processador que replica fielmente a regra de cálculo do módulo Repasse
+                const processarEscala = (shifts, tipo) => {
+                    Object.keys(shifts).forEach(docId => {
+                        if (docId === 'id' || docId === 'id_firebase') return;
+
+                        const medicoObj = dictMedicos[docId];
+                        // Se for um item de sistema e não médico, ignora
+                        if (!medicoObj) return;
+
+                        const medicoNome = medicoObj.nome;
+                        if (!consolidador[docId]) consolidador[docId] = { nome: medicoNome, qtd: 0, valor: 0 };
+
+                        for (let i = 1; i <= daysInMonth; i++) {
+                            const val = shifts[docId][i];
+                            if (!val) continue;
+
+                            const d = new Date(curY, curM, i, 12, 0, 0);
+                            const isWk = d.getDay() === 0 || d.getDay() === 6;
+                            const isoDateStr = `${curY}-${String(curM + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                            const isHol = !!holidays[isoDateStr];
+
+                            let money = 0;
+                            // Se for Sobreaviso
+                            if (val === 'S') {
+                                if (tipo === 'cirurgia') {
+                                    money = 500;
+                                    consolidador[docId].qtd += 1;
+                                } else {
+                                    money = 0; 
+                                    consolidador[docId].qtd += 1;
+                                }
+                            } else {
+                                // M/T conta como 2 plantões
+                                if (val === 'M/T') consolidador[docId].qtd += 2; 
+                                else consolidador[docId].qtd += 1;
+                                
+                                if (isWk || isHol) {
+                                    if (val === 'M/T') money = 900; else money = 450;
+                                } else {
+                                    if (val === 'M/T') money = 1000; else money = 500;
+                                }
+                            }
+                            consolidador[docId].valor += money;
                         }
-                        
-                        gruposMedicos[medico].qtdPlantoes += 1;
-                        gruposMedicos[medico].valorTotal += parseOracleNumber(item.valor || item.VALOR);
-                    }
-                });
+                    });
+                };
+
+                processarEscala(shiftsQuimio, 'quimio');
+                processarEscala(shiftsCirurgia, 'cirurgia');
 
                 tbody.innerHTML = '';
-                const medicosArray = Object.values(gruposMedicos);
-                
-                if(medicosArray.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum plantão de Sala Quimio ou Cirurgia registrado para este mês.</td></tr>';
+                // Filtra para remover quem só tem a key gerada vazia ou zerada
+                const medicosArray = Object.values(consolidador).filter(m => m.qtd > 0 || m.valor > 0);
+
+                if (medicosArray.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum plantão registrado nestas abas para o mês selecionado.</td></tr>';
                     return;
                 }
 
-                // Renderiza em ordem de maior custo
-                medicosArray.sort((a,b) => b.valorTotal - a.valorTotal).forEach(g => {
+                // Renderiza do maior para o menor ganho
+                medicosArray.sort((a, b) => b.valor - a.valor).forEach(g => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td style="font-weight: 600; font-size: 14px;">
-                            <i class="fas fa-user-md" style="color:#94a3b8; margin-right:8px;"></i> ${g.medico}
+                            <i class="fas fa-user-md" style="color:#94a3b8; margin-right:8px;"></i> ${g.nome}
                         </td>
                         <td style="text-align: center;">
-                            <span class="badge-count" style="background:#dcfce7; color:#166534;">${g.qtdPlantoes}</span>
+                            <span class="badge-count" style="background:#dcfce7; color:#166534;">${g.qtd}</span>
                         </td>
                         <td style="font-weight: bold; text-align: right; color: var(--primary);">
-                            R$ ${formatCurrency(g.valorTotal)}
+                            R$ ${formatCurrency(g.valor)}
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -611,7 +627,7 @@
 
             } catch (e) {
                 console.error(e);
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red; padding: 15px;">Erro ao buscar repasses.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red; padding: 15px;">Erro ao buscar escala de plantões.</td></tr>';
             }
         }
 
@@ -630,12 +646,7 @@
                 const list = Object.values(data);
                 
                 tbody.innerHTML = '';
-                
-                // Filtra as contas para o mês selecionado
-                const contasFiltradas = list.filter(c => {
-                    const dataConta = String(c.data || c.DATA || '');
-                    return dataConta.startsWith(mes);
-                });
+                const contasFiltradas = list.filter(c => String(c.data || c.DATA || '').startsWith(mes));
                 
                 if(contasFiltradas.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 15px;">Nenhuma conta faturada neste mês.</td></tr>';
@@ -670,17 +681,10 @@
             const data = document.getElementById('transp-data').value;
             const valorInput = document.getElementById('transp-valor').value;
             
-            if(!data || !valorInput) {
-                return alert("Por favor, preencha a data e o valor do transporte.");
-            }
+            if(!data || !valorInput) return alert("Por favor, preencha a data e o valor do transporte.");
 
             const valorNumerico = parseOracleNumber(valorInput);
-
-            const novoTransporte = { 
-                id: Date.now(), 
-                data: data, 
-                valor: valorNumerico 
-            };
+            const novoTransporte = { id: Date.now(), data: data, valor: valorNumerico };
             
             dataTransporte.push(novoTransporte);
             saveTransporte(novoTransporte);
@@ -694,10 +698,7 @@
             const tbody = document.getElementById('tbody-transporte');
             tbody.innerHTML = '';
             
-            // Filtra os transportes locais para exibir apenas o mês selecionado
-            const transportesFiltrados = dataTransporte.filter(t => {
-                return String(t.data).startsWith(mes);
-            });
+            const transportesFiltrados = dataTransporte.filter(t => String(t.data).startsWith(mes));
             
             if(transportesFiltrados.length === 0) { 
                 tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum transporte lançado neste mês.</td></tr>'; 
@@ -705,16 +706,13 @@
             }
             
             transportesFiltrados.sort((a,b) => new Date(b.data) - new Date(a.data));
-            
             transportesFiltrados.forEach(t => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${formatDate(t.data)}</td>
                     <td style="font-weight:bold;">R$ ${formatCurrency(t.valor)}</td>
                     <td>
-                        <button class="btn-icon danger" onclick="deleteTransporte(${t.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -723,30 +721,17 @@
 
         async function saveTransporte(item) {
             try { 
-                await fetch(`${API_BASE_URL}/custo_vita_transporte`, { 
-                    method: 'POST', 
-                    headers: API_HEADERS, 
-                    body: JSON.stringify(item) 
-                }); 
-            } catch(e) {
-                console.error("Erro ao salvar transporte:", e);
-            }
+                await fetch(`${API_BASE_URL}/custo_vita_transporte`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(item) }); 
+            } catch(e) { console.error("Erro ao salvar transporte:", e); }
         }
 
         async function deleteTransporte(id) {
             if(!confirm("Tem certeza que deseja excluir este custo de transporte?")) return;
-            
             try { 
-                await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { 
-                    method: 'DELETE', 
-                    headers: API_HEADERS 
-                }); 
-                
+                await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS }); 
                 dataTransporte = dataTransporte.filter(t => t.id !== id); 
                 renderTransporte(); 
-            } catch(e) {
-                console.error("Erro ao deletar transporte:", e);
-            }
+            } catch(e) { console.error("Erro ao deletar transporte:", e); }
         }
 
         async function loadTransporteLocal() {
@@ -757,9 +742,7 @@
                     dataTransporte = Object.values(dadosRetornados); 
                     renderTransporte(); 
                 }
-            } catch(e) {
-                console.error("Erro ao carregar transportes locais:", e);
-            }
+            } catch(e) { console.error("Erro ao carregar transportes:", e); }
         }
     </script>
 </body>
