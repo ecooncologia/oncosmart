@@ -16,7 +16,7 @@
 
     <style>
         /* ==========================================
-           ESTILOS GERAIS E LAYOUT
+           ESTILOS GERAIS E LAYOUT (TELA)
            ========================================== */
         .filter-bar { 
             display: flex; 
@@ -139,27 +139,53 @@
             font-weight: bold; 
         }
 
+        .print-header-info { display: none; } /* Esconde a info de impressão na web */
+
         /* ==========================================
-           LAYOUT DE IMPRESSÃO (PRINT)
+           LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            @page { size: A4 landscape; margin: 10mm; }
-            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { size: A4 portrait; margin: 15mm; }
+            body { 
+                background: white; 
+                color: #1e293b; 
+                font-family: 'Segoe UI', system-ui, sans-serif; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
             
-            #global-header, #global-nav, .manual-form, .btn, .filter-bar button, #filter-paciente, label[for="filter-paciente"] { 
+            /* Ocultar elementos desnecessários na impressão */
+            #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button { 
                 display: none !important; 
             }
             
             .container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
-            .card { border: 1px solid #ccc !important; box-shadow: none !important; margin-bottom: 20px !important; break-inside: avoid; }
-            .card-header { background: #e2e8f0 !important; color: #000 !important; border-bottom: 1px solid #000 !important;}
             
-            .child-row { display: table-row !important; }
-            .icon-expand { transform: rotate(90deg) !important; color: #000 !important; }
-            .sub-table-container { padding: 10px !important; border-bottom: 1px solid #000 !important; }
+            /* Título do Relatório Impresso */
+            .header-center { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;}
+            .header-center p { font-size: 20px !important; color: #0f172a !important; margin: 0; font-weight: bold;}
+            .header-center p::after { content: " - Relatório Financeiro Mensal"; }
+            .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; }
             
-            .header-center p { font-size: 24px !important; color: #000 !important; }
-            .header-center p::after { content: " - Relatório Mensal"; font-size: 24px; }
+            /* Quebra de página por bloco */
+            .print-section { break-before: page; padding-top: 20px; }
+            .print-section:first-of-type { break-before: avoid; padding-top: 0; }
+            
+            /* Estilização moderna das tabelas e blocos */
+            .section-title { font-size: 16px; font-weight: bold; color: #0f172a !important; margin-bottom: 10px; margin-top: 0; }
+            .card { border: none !important; box-shadow: none !important; margin-bottom: 0 !important; }
+            .card-header { display: none !important; } /* Trocado pelo section-title na impressão */
+            
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th { background-color: #0f172a !important; color: #ffffff !important; padding: 10px; font-size: 12px; text-transform: uppercase; border: 1px solid #0f172a;}
+            td { border-bottom: 1px solid #cbd5e1 !important; padding: 8px 10px; font-size: 12px; color: #1e293b !important; }
+            
+            /* FORÇAR A OCULTAÇÃO DA CASCATA E DO ÍCONE NO TASY */
+            .child-row { display: none !important; }
+            
+            /* Badges */
+            .badge-count { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
+            .badge-faturamento { background: transparent !important; border: 1px solid #cbd5e1; color: #1e293b !important; }
         }
     </style>
 </head>
@@ -168,8 +194,9 @@
         <div id="global-header"></div>
         <div id="global-nav"></div>
 
-        <div class="header-center" style="margin-bottom: 25px;">
+        <div class="header-center">
             <p><i class="fas fa-hand-holding-usd"></i> Custo Operação VITA</p>
+            <div class="print-header-info" id="print-month-label"></div>
         </div>
 
         <div class="filter-bar">
@@ -185,104 +212,113 @@
             <button class="btn btn-success" onclick="refreshAllData()">
                 <i class="fas fa-sync"></i> Atualizar Dados
             </button>
-            <button class="btn btn-primary" onclick="window.print()">
+            <button class="btn btn-primary" onclick="preparePrint()">
                 <i class="fas fa-print"></i> Imprimir Relatório
             </button>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-file-invoice-dollar"></i> Agrupamento Total por Paciente (Tasy)
-            </div>
-            <div class="table-container">
-                <table id="table-tasy-vita">
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;"></th>
-                            <th>Paciente</th>
-                            <th style="text-align: center;">Itens Totais (Mês)</th>
-                            <th style="text-align: right;">Custo Total Paciente</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-custo-vita">
-                        </tbody>
-                </table>
-            </div>
-        </div>
-
-        <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
-        <div class="card">
-            <div class="card-header" style="background-color: #f0fdf4; color: #166534;">
-                <i class="fas fa-stethoscope"></i> Médicos atuantes (VITA - Sala Quimio e Cirurgiões)
-            </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Nome do Médico</th>
-                            <th style="text-align: center;">Qtd. Plantões no Mês</th>
-                            <th style="text-align: right;">Valor Total (R$)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-plantoes">
-                        </tbody>
-                </table>
-            </div>
-        </div>
-
-        <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
-        <div class="card">
-            <div class="card-header" style="background-color: #f8fafc;">
-                <i class="fas fa-file-invoice"></i> Contas Fechadas no Mês
-            </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Paciente</th>
-                            <th>Data</th>
-                            <th>Nº Conta</th>
-                            <th>Valor (R$)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-contas-faturadas">
-                        </tbody>
-                </table>
-            </div>
-        </div>
-
-        <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
-        <div class="card">
-            <div class="card-header" style="background-color: #fdf4ff; color: #86198f;">
-                <i class="fas fa-car-side"></i> Lançamento Manual de Custos de Transporte
-            </div>
-            
-            <div class="manual-form">
-                <div style="flex: 1;">
-                    <label class="card-label">Data</label>
-                    <input type="date" id="transp-data" class="form-control">
+        <div class="print-section">
+            <h3 class="section-title"><i class="fas fa-file-invoice-dollar"></i> Agrupamento Total por Paciente (Tasy)</h3>
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-users"></i> Detalhamento de Custo por Paciente
                 </div>
-                <div style="flex: 1;">
-                    <label class="card-label">Valor (R$)</label>
-                    <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
+                <div class="table-container">
+                    <table id="table-tasy-vita">
+                        <thead>
+                            <tr>
+                                <th class="no-print" style="width: 40px;"></th>
+                                <th>Paciente</th>
+                                <th style="text-align: center;">Itens Totais (Mês)</th>
+                                <th style="text-align: right;">Custo Total Paciente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-custo-vita">
+                            </tbody>
+                    </table>
                 </div>
-                <button class="btn btn-primary" onclick="addTransporte()">
-                    <i class="fas fa-plus"></i> Adicionar
-                </button>
             </div>
+        </div>
 
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Valor (R$)</th>
-                            <th style="width: 100px;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-transporte">
-                        </tbody>
-                </table>
+        <div class="print-section">
+            <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
+            <div class="card">
+                <div class="card-header" style="background-color: #f0fdf4; color: #166534;">
+                    <i class="fas fa-stethoscope"></i> Médicos atuantes (VITA - Sala Quimio e Cirurgiões)
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome do Médico</th>
+                                <th style="text-align: center;">Qtd. Plantões no Mês</th>
+                                <th style="text-align: right;">Valor Total (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-plantoes">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="print-section">
+            <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
+            <div class="card">
+                <div class="card-header" style="background-color: #f8fafc;">
+                    <i class="fas fa-file-invoice"></i> Contas Fechadas no Mês
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Paciente</th>
+                                <th>Data</th>
+                                <th>Nº Conta</th>
+                                <th>Valor (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-contas-faturadas">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="print-section">
+            <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
+            <div class="card">
+                <div class="card-header" style="background-color: #fdf4ff; color: #86198f;">
+                    <i class="fas fa-car-side"></i> Lançamento Manual de Custos de Transporte
+                </div>
+                
+                <div class="manual-form">
+                    <div style="flex: 1;">
+                        <label class="card-label">Data</label>
+                        <input type="date" id="transp-data" class="form-control">
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="card-label">Valor (R$)</label>
+                        <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
+                    </div>
+                    <button class="btn btn-primary" onclick="addTransporte()">
+                        <i class="fas fa-plus"></i> Adicionar
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Valor (R$)</th>
+                                <th class="no-print" style="width: 100px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-transporte">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -314,6 +350,16 @@
             await loadPlantoes();
             await loadContasFaturadas();
             renderTransporte();
+        }
+
+        function preparePrint() {
+            const mes = document.getElementById('filter-mes').value;
+            if(mes) {
+                const [ano, m] = mes.split('-');
+                const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+                document.getElementById('print-month-label').innerText = `Competência: ${meses[parseInt(m)-1]} / ${ano}`;
+            }
+            window.print();
         }
 
         // ==========================================
@@ -395,13 +441,32 @@
             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando banco Tasy...</td></tr>';
 
             try {
-                const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
+                // Buscando tudo do Tasy para fazer o filtro exato no Frontend
+                const res = await fetch(`${API_BASE_URL}/view_vita`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
-                    dataCustoVita = Object.values(data);
+                    const rawList = Object.values(data);
+                    
+                    // Lógica para filtrar apenas o mês selecionado
+                    dataCustoVita = rawList.filter(item => {
+                        const dataAtend = item.dt_atendimento || item.DT_ATENDIMENTO || '';
+                        if (!dataAtend) return false;
+                        
+                        // Validação caso venha DD/MM/YYYY ou YYYY-MM-DD
+                        if (dataAtend.includes('/')) {
+                            const partes = dataAtend.split(' ')[0].split('/'); 
+                            if (partes.length >= 3) {
+                                return `${partes[2]}-${partes[1]}` === mes;
+                            }
+                        } else {
+                            return dataAtend.startsWith(mes);
+                        }
+                        return false;
+                    });
+
                     renderTableVita(dataCustoVita);
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum dado encontrado para este mês.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum dado retornado do servidor.</td></tr>';
                 }
             } catch (e) {
                 console.error(e);
@@ -414,7 +479,7 @@
             tbody.innerHTML = '';
             
             if(list.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Sem registros correspondentes ao filtro.</td></tr>'; 
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum custo registrado no Tasy para este mês.</td></tr>'; 
                 return; 
             }
 
@@ -428,15 +493,17 @@
             });
 
             let index = 0;
-            for (const key in grupos) {
-                const g = grupos[key];
+            // Ordenando pacientes por ordem alfabética
+            const pacientesOrdenados = Object.values(grupos).sort((a,b) => a.paciente.localeCompare(b.paciente));
+
+            pacientesOrdenados.forEach(g => {
                 const groupId = `paciente_${index++}`;
 
                 const parentRow = document.createElement('tr');
                 parentRow.className = 'parent-row';
                 parentRow.onclick = function() { toggleGroup(groupId); };
                 parentRow.innerHTML = `
-                    <td style="text-align: center;"><i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i></td>
+                    <td class="no-print" style="text-align: center;"><i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i></td>
                     <td style="font-weight:bold; color:var(--primary); font-size: 14px;">${g.paciente}</td>
                     <td style="text-align: center;"><span class="badge-count">${g.itens.length}</span></td>
                     <td style="text-align: right; font-weight: 800; color: #00855B; font-size: 14px;">R$ ${formatCurrency(g.totalCusto)}</td>
@@ -491,7 +558,7 @@
                     </td>
                 `;
                 tbody.appendChild(childRow);
-            }
+            });
         }
 
         function filterTableTasy() {
@@ -501,7 +568,7 @@
         }
 
         // ==========================================
-        // LÓGICA: BLOCO 2 (PLANTÕES - CÁLCULO IDÊNTICO AO REPASSE)
+        // LÓGICA: BLOCO 2 (PLANTÕES REPASSE)
         // ==========================================
         async function loadPlantoes() {
             const mesInput = document.getElementById('filter-mes').value;
@@ -509,18 +576,16 @@
             
             const [curYStr, curMStr] = mesInput.split('-');
             const curY = parseInt(curYStr);
-            const curM = parseInt(curMStr) - 1; // Ajuste para 0-index do JS (0 = Janeiro)
+            const curM = parseInt(curMStr) - 1; 
             const moStr = curMStr;
 
             const tbody = document.getElementById('tbody-plantoes');
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px;"><i class="fas fa-spinner fa-spin"></i> Calculando escala...</td></tr>';
 
             try {
-                // 1. Buscar Cadastro de Médicos (para mapear Nome)
                 const resMed = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 const dictMedicos = resMed.ok ? await resMed.json() : {};
 
-                // 2. Buscar as Escalas (Aba Quimio e Aba Cirurgiões)
                 const searchIdQuimio = `${curYStr}-${moStr}-vita_quimio`;
                 const searchIdCirurgia = `${curYStr}-${moStr}-cirurgioes`;
 
@@ -532,7 +597,6 @@
                 const dbQuimio = resQuimio.ok ? await resQuimio.json() : {};
                 const dbCirurgia = resCirurgia.ok ? await resCirurgia.json() : {};
 
-                // Helper para localizar o ID da escala independentemente do formato do JSON (string ou dict)
                 const getEscala = (db, sId) => {
                     const foundKey = Object.keys(db).find(k => {
                         let item = db[k];
@@ -549,13 +613,11 @@
                 const daysInMonth = new Date(curY, curM + 1, 0).getDate();
                 const consolidador = {};
 
-                // Processador que replica fielmente a regra de cálculo do módulo Repasse
                 const processarEscala = (shifts, tipo) => {
                     Object.keys(shifts).forEach(docId => {
                         if (docId === 'id' || docId === 'id_firebase') return;
 
                         const medicoObj = dictMedicos[docId];
-                        // Se for um item de sistema e não médico, ignora
                         if (!medicoObj) return;
 
                         const medicoNome = medicoObj.nome;
@@ -571,7 +633,6 @@
                             const isHol = !!holidays[isoDateStr];
 
                             let money = 0;
-                            // Se for Sobreaviso
                             if (val === 'S') {
                                 if (tipo === 'cirurgia') {
                                     money = 500;
@@ -581,7 +642,6 @@
                                     consolidador[docId].qtd += 1;
                                 }
                             } else {
-                                // M/T conta como 2 plantões
                                 if (val === 'M/T') consolidador[docId].qtd += 2; 
                                 else consolidador[docId].qtd += 1;
                                 
@@ -600,7 +660,6 @@
                 processarEscala(shiftsCirurgia, 'cirurgia');
 
                 tbody.innerHTML = '';
-                // Filtra para remover quem só tem a key gerada vazia ou zerada
                 const medicosArray = Object.values(consolidador).filter(m => m.qtd > 0 || m.valor > 0);
 
                 if (medicosArray.length === 0) {
@@ -608,7 +667,6 @@
                     return;
                 }
 
-                // Renderiza do maior para o menor ganho
                 medicosArray.sort((a, b) => b.valor - a.valor).forEach(g => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -711,7 +769,7 @@
                 tr.innerHTML = `
                     <td>${formatDate(t.data)}</td>
                     <td style="font-weight:bold;">R$ ${formatCurrency(t.valor)}</td>
-                    <td>
+                    <td class="no-print">
                         <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
