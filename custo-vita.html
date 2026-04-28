@@ -16,59 +16,19 @@
 
     <style>
         /* ==========================================
-           ESTILOS GERAIS DA PÁGINA E ABAS
+           ESTILOS GERAIS E LAYOUT
            ========================================== */
-        .tabs-nav { 
-            display: flex; 
-            gap: 8px; 
-            margin-bottom: 20px; 
-            border-bottom: 2px solid #e2e8f0; 
-        }
-        
-        .tab-btn { 
-            padding: 12px 20px; 
-            border: 1px solid #e2e8f0; 
-            border-bottom: none; 
-            font-weight: 700; 
-            color: #64748b; 
-            cursor: pointer; 
-            border-radius: 10px 10px 0 0; 
-            transition: 0.3s; 
-            font-size: 13px; 
-            background: #f8fafc; 
-        }
-        
-        .tab-btn.active { 
-            color: var(--primary); 
-            border-top: 4px solid var(--primary); 
-            background: white; 
-            margin-bottom: -2px; 
-        }
-        
-        .tab-content { 
-            display: none; 
-        }
-        
-        .tab-content.active { 
-            display: block; 
-        }
-
         .filter-bar { 
             display: flex; 
             gap: 15px; 
             align-items: flex-end; 
             flex-wrap: wrap; 
-            margin-bottom: 20px; 
+            margin-bottom: 25px; 
             background: white; 
-            padding: 15px; 
+            padding: 20px; 
             border-radius: 12px; 
-            border: 1px solid #e2e8f0; 
-        }
-        
-        .transport-section { 
-            margin-top: 30px; 
-            border-top: 2px dashed #cbd5e1; 
-            padding-top: 20px; 
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         
         .badge-faturamento { 
@@ -83,16 +43,32 @@
             display: flex; 
             gap: 10px; 
             align-items: flex-end; 
-            background: #f1f5f9; 
+            background: #f8fafc; 
             padding: 15px; 
             border-radius: 8px; 
-            margin-bottom: 15px; 
+            margin-bottom: 15px;
+            border: 1px dashed #cbd5e1;
+        }
+
+        .section-title {
+            margin: 30px 0 15px 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--primary);
         }
 
         /* ==========================================
-           ESTILOS ESPECÍFICOS DO ACORDEÃO (CASCATA)
+           ESTILOS DO ACORDEÃO (CASCATA TASY)
            ========================================== */
-        #table-tasy-vita th, #table-tasy-vita td { 
+        #table-tasy-vita th, #table-tasy-vita td,
+        .data-table th, .data-table td { 
             font-size: 13px; 
             padding: 12px 10px; 
             white-space: nowrap; 
@@ -151,21 +127,42 @@
             border-bottom: 1px solid #f1f5f9; 
         }
         
-        .sub-table tr:last-child td { 
-            border-bottom: none; 
-        }
-        
-        .sub-table tr:hover td { 
-            background-color: #f8fafc; 
-        }
+        .sub-table tr:last-child td { border-bottom: none; }
+        .sub-table tr:hover td { background-color: #f8fafc; }
         
         .badge-count { 
             background: #e2e8f0; 
             color: #475569; 
-            padding: 2px 8px; 
-            border-radius: 10px; 
+            padding: 4px 10px; 
+            border-radius: 12px; 
             font-size: 11px; 
             font-weight: bold; 
+        }
+
+        /* ==========================================
+           LAYOUT DE IMPRESSÃO (PRINT)
+           ========================================== */
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            /* Ocultar elementos desnecessários na impressão */
+            #global-header, #global-nav, .manual-form, .btn, .filter-bar button, #filter-paciente, label[for="filter-paciente"] { 
+                display: none !important; 
+            }
+            
+            .container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            .card { border: 1px solid #ccc !important; box-shadow: none !important; margin-bottom: 20px !important; break-inside: avoid; }
+            .card-header { background: #e2e8f0 !important; color: #000 !important; border-bottom: 1px solid #000 !important;}
+            
+            /* FORÇAR ABERTURA DE TODAS AS CASCATAS NA IMPRESSÃO */
+            .child-row { display: table-row !important; }
+            .icon-expand { transform: rotate(90deg) !important; color: #000 !important; }
+            .sub-table-container { padding: 10px !important; border-bottom: 1px solid #000 !important; }
+            
+            /* Estilizar título de impressão */
+            .header-center p { font-size: 24px !important; color: #000 !important; }
+            .header-center p::after { content: " - Relatório Mensal"; font-size: 24px; }
         }
     </style>
 </head>
@@ -178,103 +175,120 @@
             <p><i class="fas fa-hand-holding-usd"></i> Custo Operação VITA</p>
         </div>
 
-        <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab('custo-vita', this)">Custo por Paciente</button>
-            <button class="tab-btn" onclick="switchTab('contas-faturadas', this)">Contas Faturadas</button>
+        <div class="filter-bar">
+            <div class="col">
+                <label class="card-label">Mês de Referência (Filtro Global)</label>
+                <input type="month" id="filter-mes" class="form-control" onchange="refreshAllData()" style="font-weight: bold; font-size: 16px;">
+            </div>
+            <div class="col">
+                <label class="card-label" for="filter-paciente">Buscar Paciente (Apenas Tasy)</label>
+                <input type="text" id="filter-paciente" class="form-control" placeholder="Digite o nome..." onkeyup="filterTableTasy()">
+            </div>
+            <div style="flex: 1;"></div>
+            <button class="btn btn-success" onclick="refreshAllData()">
+                <i class="fas fa-sync"></i> Atualizar Dados
+            </button>
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir Relatório
+            </button>
         </div>
 
-        <div id="custo-vita" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-file-invoice-dollar"></i> Agrupamento Total por Paciente (Tasy)
+            </div>
+            <div class="table-container">
+                <table id="table-tasy-vita">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>Paciente</th>
+                            <th style="text-align: center;">Itens Totais (Mês)</th>
+                            <th style="text-align: right;">Custo Total Paciente</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-custo-vita">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
+        <div class="card">
+            <div class="card-header" style="background-color: #f0fdf4; color: #166534;">
+                <i class="fas fa-stethoscope"></i> Médicos atuantes (VITA - Sala Quimio e Cirurgiões)
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nome do Médico</th>
+                            <th style="text-align: center;">Qtd. Plantões no Mês</th>
+                            <th style="text-align: right;">Valor Total (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-plantoes">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
+        <div class="card">
+            <div class="card-header" style="background-color: #f8fafc;">
+                <i class="fas fa-file-invoice"></i> Contas Fechadas no Mês
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Data</th>
+                            <th>Nº Conta</th>
+                            <th>Valor (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-contas-faturadas">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
+        <div class="card">
+            <div class="card-header" style="background-color: #fdf4ff; color: #86198f;">
+                <i class="fas fa-car-side"></i> Lançamento Manual de Custos de Transporte
+            </div>
             
-            <div class="filter-bar">
-                <div class="col">
-                    <label class="card-label">Mês de Referência</label>
-                    <input type="month" id="filter-mes" class="form-control" onchange="loadCustoVita()">
+            <div class="manual-form">
+                <div style="flex: 1;">
+                    <label class="card-label">Data</label>
+                    <input type="date" id="transp-data" class="form-control">
                 </div>
-                <div class="col">
-                    <label class="card-label">Paciente</label>
-                    <input type="text" id="filter-paciente" class="form-control" placeholder="Buscar paciente..." onkeyup="filterTable()">
+                <div style="flex: 1;">
+                    <label class="card-label">Valor (R$)</label>
+                    <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
                 </div>
-                <button class="btn btn-success" onclick="loadCustoVita()">
-                    <i class="fas fa-sync"></i> Atualizar Dados
+                <button class="btn btn-primary" onclick="addTransporte()">
+                    <i class="fas fa-plus"></i> Adicionar
                 </button>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-file-invoice-dollar"></i> Agrupamento Total por Paciente (Tasy)
-                </div>
-                <div class="table-container">
-                    <table id="table-tasy-vita">
-                        <thead>
-                            <tr>
-                                <th style="width: 40px;"></th>
-                                <th>Paciente</th>
-                                <th style="text-align: center;">Itens Totais (Mês)</th>
-                                <th style="text-align: right;">Custo Total Paciente</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-custo-vita">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="transport-section">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-truck-loading"></i> Transporte (Inserção Manual)
-                    </div>
-                    <div class="manual-form">
-                        <div style="flex: 1;">
-                            <label class="card-label">Data</label>
-                            <input type="date" id="transp-data" class="form-control">
-                        </div>
-                        <div style="flex: 1;">
-                            <label class="card-label">Valor (R$)</label>
-                            <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
-                        </div>
-                        <button class="btn btn-primary" onclick="addTransporte()">
-                            <i class="fas fa-plus"></i> Adicionar
-                        </button>
-                    </div>
-                    <div class="table-container">
-                        <table id="table-transporte">
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Valor (R$)</th>
-                                    <th style="width: 100px;">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-transporte">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Valor (R$)</th>
+                            <th style="width: 100px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-transporte">
+                        </tbody>
+                </table>
             </div>
         </div>
 
-        <div id="contas-faturadas" class="tab-content">
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-check-double"></i> Relatório de Contas Faturadas
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Paciente</th>
-                                <th>Data</th>
-                                <th>Nº Conta</th>
-                                <th>Valor (R$)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-contas-faturadas">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -290,9 +304,8 @@
                 const now = new Date();
                 document.getElementById('filter-mes').value = now.toISOString().substring(0, 7);
                 
-                // Carrega os dados iniciais
-                await loadCustoVita();
-                await loadContasFaturadas();
+                // Dispara o carregamento de todos os blocos
+                refreshAllData();
                 loadTransporteLocal(); 
             } else {
                 setTimeout(initPage, 100);
@@ -301,20 +314,12 @@
 
         document.addEventListener('DOMContentLoaded', initPage);
 
-        function switchTab(tabId, btn) {
-            // Esconde todas as abas
-            document.querySelectorAll('.tab-content').forEach(t => {
-                t.classList.remove('active');
-            });
-            
-            // Tira a marcação de todos os botões
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.remove('active');
-            });
-            
-            // Ativa apenas a aba selecionada
-            document.getElementById(tabId).classList.add('active');
-            btn.classList.add('active');
+        // Função para recarregar tudo com base no mês do filtro
+        async function refreshAllData() {
+            await loadCustoVita();
+            await loadPlantoes();
+            await loadContasFaturadas();
+            renderTransporte(); // Como o transporte é local, só chamamos o render que tem filtro embutido
         }
 
         // ==========================================
@@ -324,20 +329,15 @@
             if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return val;
             
-            // Remove qualquer coisa que não seja dígito, vírgula, ponto ou sinal negativo
             let s = String(val).trim().replace(/[^\d.,-]/g, '');
             
-            // Se possui vírgula E ponto
             if (s.includes(',') && s.includes('.')) {
                 if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
-                    // Padrão Brasileiro: "1.250,50" -> Vira "1250.50"
                     s = s.replace(/\./g, '').replace(',', '.');
                 } else {
-                    // Padrão Americano: "1,250.50" -> Vira "1250.50"
                     s = s.replace(/,/g, '');
                 }
             } 
-            // Se possui APENAS vírgula (Ex: "1250,50")
             else if (s.includes(',')) {
                 s = s.replace(',', '.');
             }
@@ -365,7 +365,7 @@
             return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
         }
 
-        // Função para expandir/recolher a linha da tabela (Acordeão)
+        // Lógica de Acordeão
         function toggleGroup(groupId) {
             const childRow = document.getElementById(`child-${groupId}`);
             const icon = document.getElementById(`icon-${groupId}`);
@@ -382,7 +382,7 @@
         }
 
         // ==========================================
-        // LÓGICA PRINCIPAL: CARREGAR DADOS TASY
+        // LÓGICA: BLOCO 1 (CUSTO VITA - TASY)
         // ==========================================
         async function loadCustoVita() {
             const mes = document.getElementById('filter-mes').value;
@@ -414,29 +414,21 @@
                 return; 
             }
 
-            // 1. AGRUPAMENTO POR PACIENTE
             const grupos = {};
             
             list.forEach(item => {
                 const paciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase();
                 
                 if(!grupos[paciente]) {
-                    grupos[paciente] = {
-                        paciente: paciente,
-                        totalCusto: 0,
-                        itens: []
-                    };
+                    grupos[paciente] = { paciente: paciente, totalCusto: 0, itens: [] };
                 }
                 
-                // Converte de forma segura o valor total do item
                 const custoTotalItem = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
                 
-                // Soma esse item no montante global do paciente
                 grupos[paciente].totalCusto += custoTotalItem;
                 grupos[paciente].itens.push(item);
             });
 
-            // 2. RENDERIZAR OS GRUPOS NA TABELA (LINHAS PAIS E FILHAS)
             let index = 0;
             
             for (const key in grupos) {
@@ -444,7 +436,6 @@
                 const groupId = `paciente_${index}`;
                 index++;
 
-                // LINHA PAI (Nome do Paciente e o Custo Total do Mês dele)
                 const parentRow = document.createElement('tr');
                 parentRow.className = 'parent-row';
                 parentRow.onclick = function() { toggleGroup(groupId); };
@@ -466,14 +457,12 @@
                 
                 tbody.appendChild(parentRow);
 
-                // Opcional: ordenar os itens internos por data, para as medicações ficarem na ordem cronológica
                 g.itens.sort((a,b) => {
                    const dataA = new Date(a.dt_atendimento || a.DT_ATENDIMENTO || 0);
                    const dataB = new Date(b.dt_atendimento || b.DT_ATENDIMENTO || 0);
                    return dataA - dataB;
                 });
 
-                // GERAR O HTML DOS ITENS INTERNOS (MEDICAMENTOS)
                 let subTableRows = '';
                 g.itens.forEach(item => {
                     const dataFormatada = formatDate(item.dt_atendimento || item.DT_ATENDIMENTO);
@@ -500,8 +489,6 @@
                     `;
                 });
 
-                // LINHA FILHA (A sub-tabela oculta contendo tudo o que o paciente usou)
-                // Note que colspan é "4" porque a tabela "pai" só tem 4 colunas agora
                 const childRow = document.createElement('tr');
                 childRow.id = `child-${groupId}`;
                 childRow.className = 'child-row';
@@ -535,10 +522,104 @@
             }
         }
 
+        function filterTableTasy() {
+            const term = document.getElementById('filter-paciente').value.toUpperCase();
+            const filteredData = dataCustoVita.filter(item => {
+                const nomePaciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase();
+                return nomePaciente.includes(term);
+            });
+            renderTableVita(filteredData);
+        }
+
         // ==========================================
-        // LÓGICA: CONTAS FATURADAS
+        // LÓGICA: BLOCO 2 (PLANTÕES / REPASSES)
+        // ==========================================
+        async function loadPlantoes() {
+            const mes = document.getElementById('filter-mes').value;
+            const tbody = document.getElementById('tbody-plantoes');
+            
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px;"><i class="fas fa-spinner fa-spin"></i> Buscando escala de plantões...</td></tr>';
+
+            try {
+                // Chama a rota geral de repasses
+                const res = await fetch(`${API_BASE_URL}/repasses`, { headers: API_HEADERS });
+                if(!res.ok) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px;">Nenhum plantão localizado.</td></tr>';
+                    return;
+                }
+                
+                const data = await res.json();
+                const list = Object.values(data);
+                
+                const gruposMedicos = {};
+                
+                list.forEach(item => {
+                    // Extrai os campos corretos baseados no banco de dados (data, medico, plantao, valor)
+                    const dataPlantao = item.data || item.DATA || '';
+                    const plantao = (item.plantao || item.PLANTAO || '').toUpperCase();
+                    
+                    // Validação 1: O plantão pertence ao mês escolhido no filtro global?
+                    // Como a data vem como DD/MM/YYYY, precisamos transformar em YYYY-MM para comparar
+                    let pertenceAoMes = false;
+                    if (dataPlantao.includes('/')) {
+                        const partes = dataPlantao.split('/'); // [DD, MM, YYYY]
+                        if (partes.length === 3) {
+                            const stringMesBanco = `${partes[2]}-${partes[1]}`;
+                            if (stringMesBanco === mes) pertenceAoMes = true;
+                        }
+                    } else if (dataPlantao.startsWith(mes)) {
+                        pertenceAoMes = true; // Caso venha como YYYY-MM-DD
+                    }
+
+                    // Validação 2: É do setor desejado e do mês correto?
+                    if (pertenceAoMes && (plantao.includes('VITA') || plantao.includes('QUIMIO') || plantao.includes('CIRURG'))) {
+                        const medico = (item.medico || item.MEDICO || 'NÃO INFORMADO').toUpperCase();
+                        
+                        if (!gruposMedicos[medico]) {
+                            gruposMedicos[medico] = { medico: medico, qtdPlantoes: 0, valorTotal: 0 };
+                        }
+                        
+                        gruposMedicos[medico].qtdPlantoes += 1;
+                        gruposMedicos[medico].valorTotal += parseOracleNumber(item.valor || item.VALOR);
+                    }
+                });
+
+                tbody.innerHTML = '';
+                const medicosArray = Object.values(gruposMedicos);
+                
+                if(medicosArray.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum plantão de Sala Quimio ou Cirurgia registrado para este mês.</td></tr>';
+                    return;
+                }
+
+                // Renderiza em ordem de maior custo
+                medicosArray.sort((a,b) => b.valorTotal - a.valorTotal).forEach(g => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight: 600; font-size: 14px;">
+                            <i class="fas fa-user-md" style="color:#94a3b8; margin-right:8px;"></i> ${g.medico}
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge-count" style="background:#dcfce7; color:#166534;">${g.qtdPlantoes}</span>
+                        </td>
+                        <td style="font-weight: bold; text-align: right; color: var(--primary);">
+                            R$ ${formatCurrency(g.valorTotal)}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red; padding: 15px;">Erro ao buscar repasses.</td></tr>';
+            }
+        }
+
+        // ==========================================
+        // LÓGICA: BLOCO 3 (CONTAS FATURADAS)
         // ==========================================
         async function loadContasFaturadas() {
+            const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-contas-faturadas');
             
             try {
@@ -546,16 +627,22 @@
                 if(!res.ok) return;
                 
                 const data = await res.json();
-                dataContas = Object.values(data);
+                const list = Object.values(data);
                 
                 tbody.innerHTML = '';
                 
-                if(dataContas.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 15px;">Nenhuma conta faturada.</td></tr>';
+                // Filtra as contas para o mês selecionado
+                const contasFiltradas = list.filter(c => {
+                    const dataConta = String(c.data || c.DATA || '');
+                    return dataConta.startsWith(mes);
+                });
+                
+                if(contasFiltradas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 15px;">Nenhuma conta faturada neste mês.</td></tr>';
                     return;
                 }
 
-                dataContas.forEach(c => {
+                contasFiltradas.forEach(c => {
                     const paciente = c.paciente || c.PACIENTE || '-';
                     const dataConta = c.data || c.DATA;
                     const numConta = c.num_conta || c.NUM_CONTA || '-';
@@ -577,7 +664,7 @@
         }
 
         // ==========================================
-        // LÓGICA: TRANSPORTE (INSERÇÃO MANUAL)
+        // LÓGICA: BLOCO 4 (TRANSPORTE MANUAL)
         // ==========================================
         function addTransporte() {
             const data = document.getElementById('transp-data').value;
@@ -603,17 +690,23 @@
         }
 
         function renderTransporte() {
+            const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-transporte');
             tbody.innerHTML = '';
             
-            if(dataTransporte.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum custo de transporte lançado.</td></tr>'; 
+            // Filtra os transportes locais para exibir apenas o mês selecionado
+            const transportesFiltrados = dataTransporte.filter(t => {
+                return String(t.data).startsWith(mes);
+            });
+            
+            if(transportesFiltrados.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum transporte lançado neste mês.</td></tr>'; 
                 return; 
             }
             
-            dataTransporte.sort((a,b) => new Date(b.data) - new Date(a.data));
+            transportesFiltrados.sort((a,b) => new Date(b.data) - new Date(a.data));
             
-            dataTransporte.forEach(t => {
+            transportesFiltrados.forEach(t => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${formatDate(t.data)}</td>
@@ -667,20 +760,6 @@
             } catch(e) {
                 console.error("Erro ao carregar transportes locais:", e);
             }
-        }
-
-        // ==========================================
-        // FILTROS
-        // ==========================================
-        function filterTable() {
-            const term = document.getElementById('filter-paciente').value.toUpperCase();
-            
-            const filteredData = dataCustoVita.filter(item => {
-                const nomePaciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase();
-                return nomePaciente.includes(term);
-            });
-            
-            renderTableVita(filteredData);
         }
     </script>
 </body>
