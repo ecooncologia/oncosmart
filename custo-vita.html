@@ -84,9 +84,9 @@
         /* Oculta o cabeçalho executivo na tela */
         .print-only { display: none; }
 
-        /* Caixa do Resumo lado a lado na tela */
-        .summary-wrapper { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 40px; margin-bottom: 40px; }
-        .summary-box { flex: 1; min-width: 320px; }
+        /* Caixa do Resumo - Empilhadas Verticalmente */
+        .summary-wrapper { display: flex; flex-direction: column; gap: 30px; margin-top: 40px; margin-bottom: 40px; }
+        .summary-box { width: 100%; }
 
         /* ==========================================
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
@@ -134,41 +134,26 @@
             .child-row { display: none !important; }
             .badge-count, .badge-faturamento { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
 
-            /* RESUMO FIX: Flexbox com tamanhos controlados e fontes menores para caber lado a lado sem cortar */
+            /* RESUMO FIX: Tabelas empilhadas (uma em cima da outra) ocupando a largura total na impressão */
             .summary-wrapper {
-                display: flex !important;
-                flex-direction: row !important;
-                gap: 15px !important;
+                display: block !important;
                 width: 100% !important;
                 margin-top: 20px !important;
                 page-break-inside: avoid !important;
             }
             .summary-box { 
-                flex: 1 !important; 
-                width: 50% !important;
-                min-width: 0 !important; /* Permite que o container reduza se necessário */
+                display: block !important;
+                width: 100% !important;
+                margin-bottom: 25px !important;
             }
             .summary-box table {
-                table-layout: fixed !important; /* Força a tabela a respeitar a largura do container */
+                table-layout: auto !important;
+                width: 100% !important;
             }
             .summary-box th, .summary-box td {
-                padding: 6px 8px !important; /* Reduz bastante o espaçamento na impressão */
-                font-size: 11px !important;  /* Reduz o tamanho da fonte */
-                white-space: normal !important;
-                word-wrap: break-word !important;
-            }
-            .summary-box th[colspan="2"] {
+                padding: 10px !important;
                 font-size: 13px !important;
-                padding: 8px !important;
-            }
-            /* Sobrescrevendo o tamanho gigante do total na hora da impressão para caber na folha */
-            #grand-total-val {
-                font-size: 16px !important; 
-                padding: 10px !important;
-            }
-            #half-eco-val, #half-vita-val {
-                font-size: 14px !important;
-                padding: 10px !important;
+                white-space: normal !important;
             }
         }
     </style>
@@ -237,7 +222,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-custo-vita"></tbody>
-                            <!-- FOOTER CORRIGIDO COM CELULA NO-PRINT -->
+                            <!-- FOOTER COM CELULA NO-PRINT -->
                             <tfoot>
                                 <tr>
                                     <td class="no-print"></td>
@@ -371,7 +356,7 @@
             <!-- BLOCO FINAL: RESUMO E CUSTO TOTAL DA OPERAÇÃO 50/50 -->
             <div class="print-section summary-wrapper">
                 
-                <!-- Resumo dos Custos -->
+                <!-- Resumo dos Custos (Empilhado em cima) -->
                 <div class="summary-box">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
@@ -398,7 +383,7 @@
                     </table>
                 </div>
 
-                <!-- Divisão 50/50 -->
+                <!-- Divisão 50/50 (Empilhado embaixo) -->
                 <div class="summary-box">
                     <table style="width: 100%; border-collapse: collapse; text-align: center;">
                         <tr>
