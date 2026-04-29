@@ -41,7 +41,7 @@
         .section-title i { color: var(--primary); }
 
         /* ==========================================
-           SISTEMA DE ABAS (TABS)
+           SISTEMA DE ABAS E BOTÕES DE AÇÃO
            ========================================== */
         .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .tab-btn { 
@@ -54,6 +54,13 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Botões da Tabela (Ações) */
+        .btn-icon { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; margin: 0 2px; font-size: 13px; }
+        .btn-icon.danger { background-color: #fee2e2; color: #dc2626; }
+        .btn-icon.danger:hover { background-color: #fca5a5; }
+        .btn-icon.warning { background-color: #fef3c7; color: #d97706; }
+        .btn-icon.warning:hover { background-color: #fde68a; }
 
         /* ==========================================
            ESTILOS DO ACORDEÃO E TABELAS
@@ -247,7 +254,12 @@
                             <label class="card-label">Valor (R$)</label>
                             <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01" style="width: 150px;">
                         </div>
-                        <button type="button" class="btn btn-primary" onclick="addTransporte()">
+                        
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-transporte" style="display: none;" onclick="cancelEditTransporte()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        
+                        <button type="button" class="btn btn-primary" id="btn-add-transporte" onclick="addTransporte()">
                             <i class="fas fa-plus"></i> Adicionar
                         </button>
                     </div>
@@ -258,7 +270,7 @@
                                     <th style="width: 150px;">Data</th>
                                     <th>Descrição</th>
                                     <th style="text-align: right; width: 200px;">Valor (R$)</th>
-                                    <th class="no-print" style="width: 100px; text-align: center;">Ações</th>
+                                    <th class="no-print" style="width: 120px; text-align: center;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-transporte"></tbody>
@@ -287,7 +299,12 @@
                             <label class="card-label">Valor (R$)</label>
                             <input type="number" id="div-valor" class="form-control" placeholder="0.00" step="0.01">
                         </div>
-                        <button type="button" class="btn btn-primary" onclick="addDiversos()">
+                        
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-diversos" style="display: none;" onclick="cancelEditDiversos()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        
+                        <button type="button" class="btn btn-primary" id="btn-add-diversos" onclick="addDiversos()">
                             <i class="fas fa-plus"></i> Adicionar
                         </button>
                     </div>
@@ -297,7 +314,7 @@
                                 <tr>
                                     <th>Descrição / Nome do Custo</th>
                                     <th style="text-align: right; width: 200px;">Valor (R$)</th>
-                                    <th class="no-print" style="width: 100px; text-align: center;">Ações</th>
+                                    <th class="no-print" style="width: 120px; text-align: center;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-diversos"></tbody>
@@ -408,12 +425,15 @@
         let dataDiversos = [];
         let dataContas = [];
 
-        // Variáveis globais para cálculo dos totais
+        // Variáveis globais de controle e totais
         let valTasyGlobal = 0;
         let valPlantoesGlobal = 0;
         let valTransporteGlobal = 0;
         let valDiversosGlobal = 0;
         let valContasGlobal = 0;
+
+        let editIdTransporte = null;
+        let editIdDiversos = null;
 
         async function initPage() {
             if (typeof initGlobal !== 'undefined') {
@@ -675,7 +695,7 @@
         }
 
         // ==========================================
-        // LÓGICA: BLOCO 3 (TRANSPORTE MANUAL)
+        // LÓGICA: BLOCO 3 (TRANSPORTE) COM EDIÇÃO
         // ==========================================
         function addTransporte() {
             const d = document.getElementById('transp-data').value;
@@ -684,12 +704,54 @@
             
             if(!d || !desc || isNaN(v)) return alert("Por favor, preencha a data, descrição e o valor.");
             
-            const n = { id: Date.now(), data: d, desc: desc, valor: v };
-            dataTransporte.push(n); saveTransporte(n); renderTransporte(); updateGrandTotal();
+            if (editIdTransporte) {
+                const index = dataTransporte.findIndex(t => t.id === editIdTransporte);
+                if (index > -1) {
+                    dataTransporte[index].data = d;
+                    dataTransporte[index].desc = desc;
+                    dataTransporte[index].valor = v;
+                    updateTransporteAPI(dataTransporte[index]);
+                }
+                cancelEditTransporte();
+            } else {
+                const n = { id: Date.now(), data: d, desc: desc, valor: v };
+                dataTransporte.push(n); 
+                saveTransporte(n); 
+                document.getElementById('transp-desc').value = '';
+                document.getElementById('transp-valor').value = '';
+            }
             
+            renderTransporte(); 
+            updateGrandTotal();
+        }
+
+        function editTransporte(id) {
+            const item = dataTransporte.find(t => t.id === id);
+            if (!item) return;
+            
+            document.getElementById('transp-data').value = item.data || item.DATA || '';
+            document.getElementById('transp-desc').value = item.desc || item.DESC || '';
+            document.getElementById('transp-valor').value = item.valor !== undefined ? item.valor : item.VALOR;
+            
+            editIdTransporte = id;
+            
+            const btn = document.getElementById('btn-add-transporte');
+            btn.innerHTML = '<i class="fas fa-save"></i> Salvar Edição';
+            btn.className = 'btn btn-warning';
+            document.getElementById('btn-cancel-transporte').style.display = 'inline-block';
+        }
+
+        function cancelEditTransporte() {
+            editIdTransporte = null;
             document.getElementById('transp-desc').value = '';
             document.getElementById('transp-valor').value = '';
+            
+            const btn = document.getElementById('btn-add-transporte');
+            btn.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+            btn.className = 'btn btn-primary';
+            document.getElementById('btn-cancel-transporte').style.display = 'none';
         }
+
         function renderTransporte() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-transporte'); tbody.innerHTML = '';
@@ -703,25 +765,75 @@
                     <td>${formatDate(t.data||t.DATA)}</td>
                     <td>${t.desc || t.DESC || '-'}</td>
                     <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
-                    <td class="no-print" style="text-align:center;"><button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button></td>
+                    <td class="no-print" style="text-align:center;">
+                        <button class="btn-icon warning" onclick="editTransporte(${t.id})" title="Editar"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="btn-icon danger" onclick="deleteTransporte(${t.id})" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </td>
                 </tr>`;
             });
         }
+        
         async function saveTransporte(i) { try { await fetch(`${API_BASE_URL}/custo_vita_transporte`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
+        async function updateTransporteAPI(i) { try { await fetch(`${API_BASE_URL}/custo_vita_transporte/${i.id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
         async function deleteTransporte(id) { if(!confirm("Excluir transporte?")) return; try { await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS }); dataTransporte = dataTransporte.filter(t => t.id !== id); renderTransporte(); updateGrandTotal(); } catch(e){} }
         async function loadTransporteLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS }); if(res.ok) dataTransporte = Object.values(await res.json()); } catch(e){} }
 
         // ==========================================
-        // LÓGICA: BLOCO 4 (CUSTOS DIVERSOS)
+        // LÓGICA: BLOCO 4 (CUSTOS DIVERSOS) COM EDIÇÃO
         // ==========================================
         function addDiversos() {
-            const n = document.getElementById('div-nome').value, v = parseFloat(document.getElementById('div-valor').value);
+            const n = document.getElementById('div-nome').value;
+            const v = parseFloat(document.getElementById('div-valor').value);
             const mes = document.getElementById('filter-mes').value;
+            
             if(!n || isNaN(v) || !mes) return alert('Preencha nome e valor.');
-            const novo = { id: Date.now(), mes_ref: mes, nome: n, valor: v };
-            dataDiversos.push(novo); saveDiversos(novo); renderDiversos(); updateGrandTotal();
-            document.getElementById('div-nome').value = ''; document.getElementById('div-valor').value = '';
+            
+            if (editIdDiversos) {
+                const index = dataDiversos.findIndex(d => d.id === editIdDiversos);
+                if (index > -1) {
+                    dataDiversos[index].nome = n;
+                    dataDiversos[index].valor = v;
+                    updateDiversosAPI(dataDiversos[index]);
+                }
+                cancelEditDiversos();
+            } else {
+                const novo = { id: Date.now(), mes_ref: mes, nome: n, valor: v };
+                dataDiversos.push(novo); 
+                saveDiversos(novo); 
+                document.getElementById('div-nome').value = ''; 
+                document.getElementById('div-valor').value = '';
+            }
+            
+            renderDiversos(); 
+            updateGrandTotal();
         }
+
+        function editDiversos(id) {
+            const item = dataDiversos.find(d => d.id === id);
+            if (!item) return;
+            
+            document.getElementById('div-nome').value = item.nome || item.NOME || '';
+            document.getElementById('div-valor').value = item.valor !== undefined ? item.valor : item.VALOR;
+            
+            editIdDiversos = id;
+            
+            const btn = document.getElementById('btn-add-diversos');
+            btn.innerHTML = '<i class="fas fa-save"></i> Salvar Edição';
+            btn.className = 'btn btn-warning';
+            document.getElementById('btn-cancel-diversos').style.display = 'inline-block';
+        }
+
+        function cancelEditDiversos() {
+            editIdDiversos = null;
+            document.getElementById('div-nome').value = '';
+            document.getElementById('div-valor').value = '';
+            
+            const btn = document.getElementById('btn-add-diversos');
+            btn.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+            btn.className = 'btn btn-primary';
+            document.getElementById('btn-cancel-diversos').style.display = 'none';
+        }
+
         function renderDiversos() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-diversos'); tbody.innerHTML = '';
@@ -731,11 +843,19 @@
             list.forEach(d => {
                 const val = d.valor !== undefined ? d.valor : d.VALOR;
                 valDiversosGlobal += val;
-                tbody.innerHTML += `<tr><td>${d.nome || d.NOME}</td><td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
-                    <td class="no-print" style="text-align:center;"><button class="btn-icon danger" onclick="deleteDiversos(${d.id})"><i class="fas fa-trash"></i></button></td></tr>`;
+                tbody.innerHTML += `<tr>
+                    <td>${d.nome || d.NOME}</td>
+                    <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
+                    <td class="no-print" style="text-align:center;">
+                        <button class="btn-icon warning" onclick="editDiversos(${d.id})" title="Editar"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="btn-icon danger" onclick="deleteDiversos(${d.id})" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
             });
         }
+        
         async function saveDiversos(i) { try { await fetch(`${API_BASE_URL}/custo_vita_diversos`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
+        async function updateDiversosAPI(i) { try { await fetch(`${API_BASE_URL}/custo_vita_diversos/${i.id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
         async function deleteDiversos(id) { if(!confirm("Excluir custo diverso?")) return; try { await fetch(`${API_BASE_URL}/custo_vita_diversos/${id}`, { method: 'DELETE', headers: API_HEADERS }); dataDiversos = dataDiversos.filter(t => t.id !== id); renderDiversos(); updateGrandTotal(); } catch(e){} }
         async function loadDiversosLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_diversos`, { headers: API_HEADERS }); if(res.ok) dataDiversos = Object.values(await res.json()); } catch(e){} }
 
