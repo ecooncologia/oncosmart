@@ -66,33 +66,6 @@
             color: var(--primary);
         }
 
-        /* Novo Cabeçalho para Tela */
-        .header-report {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid var(--primary);
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
-
-        .header-report h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #0f172a;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-report h1 i {
-            color: var(--primary);
-        }
-
-        .header-report-subtitle {
-            display: none; /* Escondido na tela, exibido na impressão */
-        }
-
         /* ==========================================
            ESTILOS DO ACORDEÃO (CASCATA TASY)
            ========================================== */
@@ -168,14 +141,14 @@
             font-weight: bold; 
         }
 
-        .print-header-info { display: none; }
-        .print-footer-logo { display: none; }
+        /* Oculta elementos que são apenas para impressão na tela do sistema */
+        .print-header-info, .print-footer-logo, .header-center { display: none; }
 
         /* ==========================================
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            /* Margem inferior maior para caber a logo no rodapé sem encostar no texto */
+            /* Aumentada a margem inferior para dar espaço real para a logo (25mm) */
             @page { size: A4 landscape; margin: 15mm 15mm 25mm 15mm; }
             body { 
                 background: white; 
@@ -190,35 +163,33 @@
             #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button { 
                 display: none !important; 
             }
+
+            /* REMOVER EMOJIS/ÍCONES NO RELATÓRIO */
+            i.fas, i.fa { display: none !important; }
             
             .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
             
-            /* Ajustes do Cabeçalho Elegante na Impressão */
-            .header-report { 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: flex-end; 
-                border-bottom: 3px solid #0f172a; 
-                padding-bottom: 10px; 
-                margin-bottom: 20px;
-            }
-            .header-report h1 { font-size: 22px !important; color: #0f172a !important; margin: 0; font-weight: bold;}
-            .header-report h1 i { display: none; } /* Oculta ícone no PDF */
-            .header-report-subtitle { display: inline; font-weight: normal; color: #475569; font-size: 20px; }
-            .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; text-align: right; }
+            /* Exibe o cabeçalho apenas na impressão e formata de forma limpa */
+            .header-center { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;}
+            .header-center p { font-size: 20px !important; color: #0f172a !important; margin: 0; font-weight: bold;}
+            .header-center p::after { content: " - Relatório Financeiro Mensal"; }
+            .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; }
             
-            /* Logo fixa no rodapé esquerdo de todas as páginas */
+            /* Logo Fixa no rodapé de todas as páginas */
             .print-footer-logo {
                 display: block !important;
                 position: fixed;
-                bottom: -5mm; /* Ajuste fino de distanciamento da borda da folha */
+                bottom: 0; /* Agora a margem @page protege a logo contra cortes */
                 left: 0;
-                height: 50px;
+                height: 40px;
                 width: auto;
+                z-index: 1000;
             }
 
+            /* Bloco Inicial forçado na mesma página */
+            .first-print-section { break-before: avoid !important; page-break-before: avoid !important; }
+            /* Blocos seguintes quebram a página */
             .print-section { break-before: page; padding-top: 20px; }
-            .print-section:first-of-type { break-before: avoid; padding-top: 0; }
             
             .section-title { font-size: 16px; font-weight: bold; color: #0f172a !important; margin-bottom: 10px; margin-top: 0; }
             .card { border: none !important; box-shadow: none !important; margin-bottom: 0 !important; }
@@ -230,7 +201,7 @@
             th { background-color: #0f172a !important; color: #ffffff !important; padding: 10px; font-size: 12px; text-transform: uppercase; border: 1px solid #0f172a;}
             td { border-bottom: 1px solid #cbd5e1 !important; padding: 8px 10px; font-size: 12px; color: #1e293b !important; word-wrap: break-word; }
             
-            /* FORÇAR A OCULTAÇÃO DA CASCATA E DO ÍCONE NO TASY */
+            /* FORÇAR A OCULTAÇÃO DA CASCATA NO TASY */
             .child-row { display: none !important; }
             
             .badge-count { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
@@ -243,19 +214,16 @@
         <div id="global-header"></div>
         <div id="global-nav"></div>
 
-        <!-- Logo que aparecerá no rodapé do PDF -->
-        <img src="https://i.imgur.com/nWWyEBG.png" class="print-footer-logo" alt="Logo ONCO SMART">
+        <!-- LOGO NO RODAPÉ DO PDF -->
+        <img src="https://i.imgur.com/nWWyEBG.png" class="print-footer-logo" alt="Logo">
 
-        <!-- Novo Cabeçalho Elegante -->
-        <div class="header-report">
-            <h1>
-                <i class="fas fa-hand-holding-usd"></i> Custo Operação VITA
-                <span class="header-report-subtitle"> - Relatório Financeiro Mensal</span>
-            </h1>
+        <!-- CABEÇALHO DO PDF (Invisível na tela) -->
+        <div class="header-center">
+            <p>Custo Operação VITA</p>
             <div class="print-header-info" id="print-month-label"></div>
         </div>
 
-        <div class="filter-bar no-print">
+        <div class="filter-bar">
             <div class="col">
                 <label class="card-label">Mês de Referência (Filtro Global)</label>
                 <input type="month" id="filter-mes" class="form-control" onchange="refreshAllData()" style="font-weight: bold; font-size: 16px;">
@@ -265,17 +233,18 @@
                 <input type="text" id="filter-paciente" class="form-control" placeholder="Digite o nome..." onkeyup="filterTableTasy()">
             </div>
             <div style="flex: 1;"></div>
-            <button class="btn btn-success" onclick="refreshAllData()">
+            <!-- TYPE="BUTTON" ADICIONADO PARA EVITAR RELOAD INDESEJADO -->
+            <button type="button" class="btn btn-success" onclick="refreshAllData()">
                 <i class="fas fa-sync"></i> Atualizar Dados
             </button>
-            <button class="btn btn-primary" onclick="preparePrint()">
+            <button type="button" class="btn btn-primary" onclick="preparePrint()">
                 <i class="fas fa-print"></i> Imprimir Relatório
             </button>
         </div>
 
-        <!-- BLOCO 1: TASY (Sem título h3, entra direto na tabela) -->
-        <div class="print-section">
-            <div class="card">
+        <!-- BLOCO 1: TASY (Mesma página do cabeçalho / Título repetitivo removido) -->
+        <div class="first-print-section">
+            <div class="card" style="margin-top: 15px;">
                 <div class="card-header no-print">
                     <i class="fas fa-users"></i> Detalhamento de Custo por Paciente
                 </div>
@@ -297,6 +266,7 @@
             </div>
         </div>
 
+        <!-- BLOCO 2: PLANTÕES -->
         <div class="print-section">
             <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
             <div class="card">
@@ -320,6 +290,7 @@
             </div>
         </div>
 
+        <!-- BLOCO 3: CONTAS FATURADAS -->
         <div class="print-section">
             <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
             <div class="card">
@@ -344,6 +315,7 @@
             </div>
         </div>
 
+        <!-- BLOCO 4: TRANSPORTE -->
         <div class="print-section">
             <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
             <div class="card">
@@ -360,7 +332,8 @@
                         <label class="card-label">Valor (R$)</label>
                         <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
                     </div>
-                    <button class="btn btn-primary" onclick="addTransporte()">
+                    <!-- TYPE="BUTTON" ADICIONADO PARA CORRIGIR O BUG DO FORMULÁRIO -->
+                    <button type="button" class="btn btn-primary" onclick="addTransporte()">
                         <i class="fas fa-plus"></i> Adicionar
                     </button>
                 </div>
@@ -417,8 +390,7 @@
             if(mes) {
                 const [ano, m] = mes.split('-');
                 const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-                const dataAtual = new Date().toLocaleDateString('pt-BR');
-                document.getElementById('print-month-label').innerHTML = `Competência: ${meses[parseInt(m)-1]} / ${ano}<br><span style="font-size:11px; font-weight:normal;">Emitido em: ${dataAtual}</span>`;
+                document.getElementById('print-month-label').innerText = `Competência: ${meses[parseInt(m)-1]} / ${ano}`;
             }
             window.print();
         }
@@ -798,7 +770,10 @@
             
             if(!data || !valorInput) return alert("Por favor, preencha a data e o valor do transporte.");
 
-            const valorNumerico = parseOracleNumber(valorInput);
+            // Utilizado parseFloat nativo para garantir que a entrada padrão HTML não seja danificada
+            const valorNumerico = parseFloat(valorInput);
+            if(isNaN(valorNumerico)) return;
+
             const novoTransporte = { id: Date.now(), data: data, valor: valorNumerico };
             
             dataTransporte.push(novoTransporte);
@@ -813,19 +788,23 @@
             const tbody = document.getElementById('tbody-transporte');
             tbody.innerHTML = '';
             
-            const transportesFiltrados = dataTransporte.filter(t => String(t.data).startsWith(mes));
+            const transportesFiltrados = dataTransporte.filter(t => {
+                const dataRegistro = t.data || t.DATA || '';
+                return String(dataRegistro).startsWith(mes);
+            });
             
             if(transportesFiltrados.length === 0) { 
                 tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum transporte lançado neste mês.</td></tr>'; 
                 return; 
             }
             
-            transportesFiltrados.sort((a,b) => new Date(b.data) - new Date(a.data));
+            transportesFiltrados.sort((a,b) => new Date(b.data || b.DATA) - new Date(a.data || a.DATA));
             transportesFiltrados.forEach(t => {
+                const valorAExibir = t.valor !== undefined ? t.valor : t.VALOR;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${formatDate(t.data)}</td>
-                    <td style="text-align: right; font-weight:bold;">R$ ${formatCurrency(t.valor)}</td>
+                    <td>${formatDate(t.data || t.DATA)}</td>
+                    <td style="text-align: right; font-weight:bold;">R$ ${formatCurrency(valorAExibir)}</td>
                     <td class="no-print" style="text-align: center;">
                         <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
                     </td>
