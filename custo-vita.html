@@ -84,7 +84,7 @@
         /* Oculta o cabeçalho executivo na tela */
         .print-only { display: none; }
 
-        /* Caixa do Resumo lado a lado */
+        /* Caixa do Resumo lado a lado na tela */
         .summary-wrapper { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 40px; margin-bottom: 40px; }
         .summary-box { flex: 1; min-width: 320px; }
 
@@ -134,17 +134,42 @@
             .child-row { display: none !important; }
             .badge-count, .badge-faturamento { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
 
-            /* RESUMO FIX: Layout inquebrável para impressão (Trava as duas metades) */
+            /* RESUMO FIX: Flexbox com tamanhos controlados e fontes menores para caber lado a lado sem cortar */
             .summary-wrapper {
-                display: block !important;
+                display: flex !important;
+                flex-direction: row !important;
+                gap: 15px !important;
                 width: 100% !important;
                 margin-top: 20px !important;
                 page-break-inside: avoid !important;
             }
-            .summary-box { display: block !important; }
-            .summary-box:nth-child(1) { float: left !important; width: 48% !important; }
-            .summary-box:nth-child(2) { float: right !important; width: 48% !important; }
-            .summary-wrapper::after { content: ""; display: table; clear: both; }
+            .summary-box { 
+                flex: 1 !important; 
+                width: 50% !important;
+                min-width: 0 !important; /* Permite que o container reduza se necessário */
+            }
+            .summary-box table {
+                table-layout: fixed !important; /* Força a tabela a respeitar a largura do container */
+            }
+            .summary-box th, .summary-box td {
+                padding: 6px 8px !important; /* Reduz bastante o espaçamento na impressão */
+                font-size: 11px !important;  /* Reduz o tamanho da fonte */
+                white-space: normal !important;
+                word-wrap: break-word !important;
+            }
+            .summary-box th[colspan="2"] {
+                font-size: 13px !important;
+                padding: 8px !important;
+            }
+            /* Sobrescrevendo o tamanho gigante do total na hora da impressão para caber na folha */
+            #grand-total-val {
+                font-size: 16px !important; 
+                padding: 10px !important;
+            }
+            #half-eco-val, #half-vita-val {
+                font-size: 14px !important;
+                padding: 10px !important;
+            }
         }
     </style>
 </head>
@@ -153,7 +178,7 @@
         <div id="global-header"></div>
         <div id="global-nav"></div>
 
-        <!-- CABEÇALHO DO PDF (Invisível na tela, contém a logo agora para não bugar) -->
+        <!-- CABEÇALHO DO PDF (Invisível na tela, contém a logo para não bugar) -->
         <div class="print-only">
             <img src="https://i.imgur.com/nWWyEBG.png" alt="Logo ECO ONCOLOGIA" style="height: 55px; object-fit: contain;">
             <div style="text-align: right;">
