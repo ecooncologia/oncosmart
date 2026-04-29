@@ -83,7 +83,6 @@
 
         /* Oculta o cabeçalho executivo na tela */
         .print-only { display: none; }
-        .print-footer-logo { display: none; }
 
         /* Caixa do Resumo lado a lado */
         .summary-wrapper { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 40px; margin-bottom: 40px; }
@@ -93,8 +92,7 @@
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            /* Definindo a margem inferior para dar espaço seguro para a logo */
-            @page { size: A4 landscape; margin: 15mm 15mm 30mm 15mm; }
+            @page { size: A4 landscape; margin: 15mm 15mm 20mm 15mm; }
             body { background: white; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             
             #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button, .tabs-container { display: none !important; }
@@ -105,27 +103,16 @@
             
             .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
             
+            /* Cabeçalho de Impressão com a Logo blindada no topo */
             .print-only { 
-                display: flex !important; justify-content: space-between; align-items: flex-end; 
-                border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;
+                display: flex !important; justify-content: space-between; align-items: center; 
+                border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px;
             }
             .print-only p { font-size: 20px !important; color: #0f172a !important; margin: 0; font-weight: bold; }
             .print-only p::after { content: " - Relatório Financeiro Mensal"; }
             .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; text-align: right; }
             
             .tab-content { display: block !important; }
-
-            /* LOGO FIX: Posicionada 22mm para baixo, entrando exatamente na margem de 30mm da página. 
-               Assim ela NUNCA sobrepõe a tabela, porque o navegador para a tabela antes. */
-            .print-footer-logo { 
-                display: block !important; 
-                position: fixed; 
-                bottom: -22mm; 
-                left: 0; 
-                height: 45px; 
-                width: auto; 
-                z-index: 1000; 
-            }
             
             .first-print-section, .print-section { break-inside: avoid; page-break-inside: avoid; padding-top: 15px; margin-bottom: 25px; }
             tr { break-inside: avoid; page-break-inside: avoid; }
@@ -147,29 +134,17 @@
             .child-row { display: none !important; }
             .badge-count, .badge-faturamento { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
 
-            /* RESUMO FIX: Travar as duas caixas em 48% lado a lado sem quebra de flex */
+            /* RESUMO FIX: Layout inquebrável para impressão (Trava as duas metades) */
             .summary-wrapper {
-                display: flex !important;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                justify-content: space-between !important;
-                gap: 20px !important;
+                display: block !important;
                 width: 100% !important;
                 margin-top: 20px !important;
                 page-break-inside: avoid !important;
             }
-            .summary-box {
-                flex: 0 0 48% !important;
-                width: 48% !important;
-                min-width: 0 !important;
-            }
-            .summary-box table {
-                table-layout: fixed !important;
-                margin-bottom: 0 !important;
-            }
-            .summary-box th, .summary-box td {
-                white-space: normal !important;
-            }
+            .summary-box { display: block !important; }
+            .summary-box:nth-child(1) { float: left !important; width: 48% !important; }
+            .summary-box:nth-child(2) { float: right !important; width: 48% !important; }
+            .summary-wrapper::after { content: ""; display: table; clear: both; }
         }
     </style>
 </head>
@@ -178,12 +153,13 @@
         <div id="global-header"></div>
         <div id="global-nav"></div>
 
-        <img src="https://i.imgur.com/nWWyEBG.png" class="print-footer-logo" alt="Logo">
-
-        <!-- CABEÇALHO DO PDF (Invisível na tela) -->
+        <!-- CABEÇALHO DO PDF (Invisível na tela, contém a logo agora para não bugar) -->
         <div class="print-only">
-            <p>Custo Operação VITA</p>
-            <div class="print-header-info" id="print-month-label"></div>
+            <img src="https://i.imgur.com/nWWyEBG.png" alt="Logo ECO ONCOLOGIA" style="height: 55px; object-fit: contain;">
+            <div style="text-align: right;">
+                <p>Custo Operação VITA</p>
+                <div class="print-header-info" id="print-month-label"></div>
+            </div>
         </div>
 
         <div class="filter-bar no-print">
@@ -236,9 +212,11 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-custo-vita"></tbody>
+                            <!-- FOOTER CORRIGIDO COM CELULA NO-PRINT -->
                             <tfoot>
                                 <tr>
-                                    <td colspan="3" style="text-align: right; font-weight: bold;">TOTAL TASY:</td>
+                                    <td class="no-print"></td>
+                                    <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL TASY:</td>
                                     <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-tasy">R$ 0,00</td>
                                 </tr>
                             </tfoot>
