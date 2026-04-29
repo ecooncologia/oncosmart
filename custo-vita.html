@@ -18,194 +18,102 @@
         /* ==========================================
            ESTILOS GERAIS E LAYOUT (TELA)
            ========================================== */
-        body { box-sizing: border-box; }
+        body { box-sizing: border-box; background-color: #f1f5f9; }
         
         .filter-bar { 
-            display: flex; 
-            gap: 15px; 
-            align-items: flex-end; 
-            flex-wrap: wrap; 
-            margin-bottom: 25px; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 12px; 
-            border: 1px solid #e2e8f0;
+            display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; 
+            margin-bottom: 20px; background: white; padding: 20px; 
+            border-radius: 12px; border: 1px solid #e2e8f0;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         
         .badge-faturamento { 
-            padding: 4px 8px; 
-            border-radius: 6px; 
-            font-size: 10px; 
-            font-weight: 800; 
-            text-transform: uppercase; 
+            padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; 
         }
         
         .manual-form { 
-            display: flex; 
-            gap: 10px; 
-            align-items: flex-end; 
-            background: #f8fafc; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 15px;
-            border: 1px dashed #cbd5e1;
+            display: flex; gap: 10px; align-items: flex-end; background: #f8fafc; 
+            padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #cbd5e1;
         }
 
-        .section-title {
-            margin: 30px 0 15px 0;
-            font-size: 18px;
-            font-weight: 700;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title i {
-            color: var(--primary);
-        }
+        .section-title { margin: 30px 0 15px 0; font-size: 18px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        .section-title i { color: var(--primary); }
 
         /* ==========================================
-           ESTILOS DO ACORDEÃO (CASCATA TASY)
+           SISTEMA DE ABAS (TABS)
            ========================================== */
-        #table-tasy-vita th, #table-tasy-vita td,
-        .data-table th, .data-table td { 
-            font-size: 13px; 
-            padding: 12px 10px; 
-            white-space: nowrap; 
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { 
+            padding: 10px 20px; border: none; background: #f8fafc; border-radius: 8px; 
+            cursor: pointer; font-weight: bold; color: #64748b; transition: all 0.2s;
+            border: 1px solid #e2e8f0;
         }
-        
-        .parent-row { 
-            cursor: pointer; 
-            transition: background 0.2s; 
-        }
-        
-        .parent-row:hover { 
-            background-color: var(--primary-light) !important; 
-        }
-        
-        .icon-expand { 
-            width: 20px; 
-            transition: transform 0.3s ease; 
-            color: var(--primary); 
-            text-align: center; 
-        }
-        
-        .icon-expand.open { 
-            transform: rotate(90deg); 
-        }
-        
-        .child-row { 
-            background-color: #f8fafc; 
-        }
-        
-        .sub-table-container { 
-            padding: 15px 25px 25px 40px; 
-            border-bottom: 2px solid var(--primary-soft); 
-            box-shadow: inset 0 3px 6px rgba(0,0,0,0.02); 
-        }
-        
-        .sub-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            background: white; 
-            border: 1px solid #cbd5e1; 
-            border-radius: 8px; 
-            overflow: hidden; 
-        }
-        
-        .sub-table th { 
-            background: #e2e8f0; 
-            padding: 8px 12px; 
-            font-size: 11px; 
-            color: #475569; 
-            text-transform: uppercase; 
-        }
-        
-        .sub-table td { 
-            padding: 8px 12px; 
-            font-size: 12px; 
-            border-bottom: 1px solid #f1f5f9; 
-        }
-        
-        .sub-table tr:last-child td { border-bottom: none; }
-        .sub-table tr:hover td { background-color: #f8fafc; }
-        
-        .badge-count { 
-            background: #e2e8f0; 
-            color: #475569; 
-            padding: 4px 10px; 
-            border-radius: 12px; 
-            font-size: 11px; 
-            font-weight: bold; 
-        }
+        .tab-btn:hover { background: #e2e8f0; }
+        .tab-btn.active { background: #00855B; color: white; border-color: #00855B; box-shadow: 0 4px 6px -1px rgba(0,133,91,0.2); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Oculta elementos que são apenas para impressão na tela do sistema */
-        .print-header-info, .print-footer-logo, .header-center { display: none; }
+        /* ==========================================
+           ESTILOS DO ACORDEÃO (CASCATA TASY) E TABELAS
+           ========================================== */
+        #table-tasy-vita th, #table-tasy-vita td, .data-table th, .data-table td { font-size: 13px; padding: 12px 10px; white-space: nowrap; }
+        .parent-row { cursor: pointer; transition: background 0.2s; }
+        .parent-row:hover { background-color: #f0fdf4 !important; }
+        .icon-expand { width: 20px; transition: transform 0.3s ease; color: #00855B; text-align: center; }
+        .icon-expand.open { transform: rotate(90deg); }
+        .child-row { background-color: #f8fafc; }
+        .sub-table-container { padding: 15px 25px 25px 40px; border-bottom: 2px solid #e2e8f0; }
+        .sub-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .sub-table th { background: #f1f5f9; padding: 8px 12px; font-size: 11px; color: #475569; text-transform: uppercase; }
+        .sub-table td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #f1f5f9; }
+        .badge-count { background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+
+        /* Oculta o cabeçalho executivo na tela */
+        .print-only { display: none; }
+        .print-footer-logo { display: none; }
 
         /* ==========================================
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            /* Aumentada a margem inferior para dar espaço real para a logo (25mm) */
             @page { size: A4 landscape; margin: 15mm 15mm 25mm 15mm; }
-            body { 
-                background: white; 
-                color: #1e293b; 
-                font-family: 'Segoe UI', system-ui, sans-serif; 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-                margin: 0;
-                padding: 0;
-            }
+            body { background: white; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             
-            #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button { 
-                display: none !important; 
-            }
-
-            /* REMOVER EMOJIS/ÍCONES NO RELATÓRIO */
-            i.fas, i.fa { display: none !important; }
+            #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button, .tabs-container { display: none !important; }
+            
+            /* Remove ícones/emojis na impressão */
+            i.fas, i.fa, .icon-expand { display: none !important; }
             
             .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
             
-            /* Exibe o cabeçalho apenas na impressão e formata de forma limpa */
-            .header-center { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;}
-            .header-center p { font-size: 20px !important; color: #0f172a !important; margin: 0; font-weight: bold;}
-            .header-center p::after { content: " - Relatório Financeiro Mensal"; }
-            .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; }
-            
-            /* Logo Fixa no rodapé de todas as páginas */
-            .print-footer-logo {
-                display: block !important;
-                position: fixed;
-                bottom: 0; /* Agora a margem @page protege a logo contra cortes */
-                left: 0;
-                height: 40px;
-                width: auto;
-                z-index: 1000;
+            /* Exibe o cabeçalho executivo e força as abas a aparecerem na impressão */
+            .print-only { 
+                display: flex !important; justify-content: space-between; align-items: flex-end; 
+                border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;
             }
+            .print-only p { font-size: 20px !important; color: #0f172a !important; margin: 0; font-weight: bold; }
+            .print-only p::after { content: " - Relatório Financeiro Mensal"; }
+            .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; text-align: right; }
+            
+            .tab-content { display: block !important; } /* Imprime todas as abas juntas */
 
-            /* Bloco Inicial forçado na mesma página */
+            .print-footer-logo { display: block !important; position: fixed; bottom: -5mm; left: 0; height: 40px; width: auto; z-index: 1000; }
+            
             .first-print-section { break-before: avoid !important; page-break-before: avoid !important; }
-            /* Blocos seguintes quebram a página */
             .print-section { break-before: page; padding-top: 20px; }
             
             .section-title { font-size: 16px; font-weight: bold; color: #0f172a !important; margin-bottom: 10px; margin-top: 0; }
             .card { border: none !important; box-shadow: none !important; margin-bottom: 0 !important; }
             .card-header { display: none !important; } 
             
-            /* Correção do corte na tabela */
             .table-container { width: 100% !important; overflow: hidden !important; }
             table { width: 100% !important; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
             th { background-color: #0f172a !important; color: #ffffff !important; padding: 10px; font-size: 12px; text-transform: uppercase; border: 1px solid #0f172a;}
             td { border-bottom: 1px solid #cbd5e1 !important; padding: 8px 10px; font-size: 12px; color: #1e293b !important; word-wrap: break-word; }
             
-            /* FORÇAR A OCULTAÇÃO DA CASCATA NO TASY */
             .child-row { display: none !important; }
-            
-            .badge-count { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
-            .badge-faturamento { background: transparent !important; border: 1px solid #cbd5e1; color: #1e293b !important; }
+            .badge-count, .badge-faturamento { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
         }
     </style>
 </head>
@@ -214,16 +122,15 @@
         <div id="global-header"></div>
         <div id="global-nav"></div>
 
-        <!-- LOGO NO RODAPÉ DO PDF -->
         <img src="https://i.imgur.com/nWWyEBG.png" class="print-footer-logo" alt="Logo">
 
         <!-- CABEÇALHO DO PDF (Invisível na tela) -->
-        <div class="header-center">
+        <div class="print-only">
             <p>Custo Operação VITA</p>
             <div class="print-header-info" id="print-month-label"></div>
         </div>
 
-        <div class="filter-bar">
+        <div class="filter-bar no-print">
             <div class="col">
                 <label class="card-label">Mês de Referência (Filtro Global)</label>
                 <input type="month" id="filter-mes" class="form-control" onchange="refreshAllData()" style="font-weight: bold; font-size: 16px;">
@@ -233,7 +140,6 @@
                 <input type="text" id="filter-paciente" class="form-control" placeholder="Digite o nome..." onkeyup="filterTableTasy()">
             </div>
             <div style="flex: 1;"></div>
-            <!-- TYPE="BUTTON" ADICIONADO PARA EVITAR RELOAD INDESEJADO -->
             <button type="button" class="btn btn-success" onclick="refreshAllData()">
                 <i class="fas fa-sync"></i> Atualizar Dados
             </button>
@@ -242,115 +148,172 @@
             </button>
         </div>
 
-        <!-- BLOCO 1: TASY (Mesma página do cabeçalho / Título repetitivo removido) -->
-        <div class="first-print-section">
-            <div class="card" style="margin-top: 15px;">
-                <div class="card-header no-print">
-                    <i class="fas fa-users"></i> Detalhamento de Custo por Paciente
-                </div>
-                <div class="table-container">
-                    <table id="table-tasy-vita">
-                        <thead>
-                            <tr>
-                                <th class="no-print" style="width: 40px;"></th>
-                                <th>Paciente</th>
-                                <th style="text-align: center; width: 150px;">Itens Totais (Mês)</th>
-                                <th style="text-align: right; width: 200px;">Custo Total Paciente</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-custo-vita">
-                            <!-- Preenchido via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <!-- CONTROLES DAS ABAS -->
+        <div class="tabs-container no-print">
+            <button id="btn-tab-custos" class="tab-btn active" onclick="openTab('tab-custos')">
+                <i class="fas fa-hand-holding-usd"></i> Custos Operacionais
+            </button>
+            <button id="btn-tab-faturamento" class="tab-btn" onclick="openTab('tab-faturamento')">
+                <i class="fas fa-file-invoice"></i> Relatório de Faturamento
+            </button>
         </div>
 
-        <!-- BLOCO 2: PLANTÕES -->
-        <div class="print-section">
-            <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
-            <div class="card">
-                <div class="card-header no-print" style="background-color: #f0fdf4; color: #166534;">
-                    <i class="fas fa-stethoscope"></i> Médicos atuantes (VITA - Sala Quimio e Cirurgiões)
-                </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Nome do Médico</th>
-                                <th style="text-align: center; width: 200px;">Qtd. Plantões no Mês</th>
-                                <th style="text-align: right; width: 200px;">Valor Total (R$)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-plantoes">
-                            <!-- Preenchido via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- BLOCO 3: CONTAS FATURADAS -->
-        <div class="print-section">
-            <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
-            <div class="card">
-                <div class="card-header no-print" style="background-color: #f8fafc;">
-                    <i class="fas fa-file-invoice"></i> Contas Fechadas no Mês
-                </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Paciente</th>
-                                <th style="width: 150px;">Data</th>
-                                <th style="width: 150px;">Nº Conta</th>
-                                <th style="text-align: right; width: 200px;">Valor (R$)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-contas-faturadas">
-                            <!-- Preenchido via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- BLOCO 4: TRANSPORTE -->
-        <div class="print-section">
-            <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
-            <div class="card">
-                <div class="card-header no-print" style="background-color: #fdf4ff; color: #86198f;">
-                    <i class="fas fa-car-side"></i> Lançamento Manual de Custos de Transporte
-                </div>
-                
-                <div class="manual-form no-print">
-                    <div style="flex: 1;">
-                        <label class="card-label">Data</label>
-                        <input type="date" id="transp-data" class="form-control">
+        <!-- ==========================================
+             ABA 1: CUSTOS OPERACIONAIS
+             ========================================== -->
+        <div id="tab-custos" class="tab-content active">
+            
+            <!-- BLOCO 1: TASY -->
+            <div class="first-print-section">
+                <div class="card">
+                    <div class="card-header no-print">
+                        <i class="fas fa-users"></i> Detalhamento de Custo por Paciente (Tasy)
                     </div>
-                    <div style="flex: 1;">
-                        <label class="card-label">Valor (R$)</label>
-                        <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
+                    <div class="table-container">
+                        <table id="table-tasy-vita">
+                            <thead>
+                                <tr>
+                                    <th class="no-print" style="width: 40px;"></th>
+                                    <th>Paciente</th>
+                                    <th style="text-align: center; width: 150px;">Itens Totais (Mês)</th>
+                                    <th style="text-align: right; width: 200px;">Custo Total Paciente</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-custo-vita"></tbody>
+                        </table>
                     </div>
-                    <!-- TYPE="BUTTON" ADICIONADO PARA CORRIGIR O BUG DO FORMULÁRIO -->
-                    <button type="button" class="btn btn-primary" onclick="addTransporte()">
-                        <i class="fas fa-plus"></i> Adicionar
-                    </button>
                 </div>
+            </div>
 
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th style="text-align: right;">Valor (R$)</th>
-                                <th class="no-print" style="width: 100px; text-align: center;">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-transporte">
-                            <!-- Preenchido via JavaScript -->
-                        </tbody>
-                    </table>
+            <!-- BLOCO 2: PLANTÕES -->
+            <div class="print-section">
+                <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome do Médico</th>
+                                    <th style="text-align: center; width: 200px;">Qtd. Plantões no Mês</th>
+                                    <th style="text-align: right; width: 200px;">Valor Total (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-plantoes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOCO 3: TRANSPORTE -->
+            <div class="print-section">
+                <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
+                <div class="card">
+                    <div class="manual-form no-print">
+                        <div style="flex: 1;">
+                            <label class="card-label">Data</label>
+                            <input type="date" id="transp-data" class="form-control">
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="card-label">Valor (R$)</label>
+                            <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="addTransporte()">
+                            <i class="fas fa-plus"></i> Adicionar
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th style="text-align: right;">Valor (R$)</th>
+                                    <th class="no-print" style="width: 100px; text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-transporte"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOCO 4: CUSTOS DIVERSOS (NOVO) -->
+            <div class="print-section">
+                <h3 class="section-title"><i class="fas fa-boxes"></i> Custos Diversos</h3>
+                <div class="card">
+                    <div class="manual-form no-print">
+                        <div style="flex: 1;">
+                            <label class="card-label">Nome do Custo</label>
+                            <input type="text" id="div-nome" class="form-control" placeholder="Ex: Material de escritório">
+                        </div>
+                        <div style="width: 150px;">
+                            <label class="card-label">Valor (R$)</label>
+                            <input type="number" id="div-valor" class="form-control" placeholder="0.00" step="0.01">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="addDiversos()">
+                            <i class="fas fa-plus"></i> Adicionar
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Descrição / Nome do Custo</th>
+                                    <th style="text-align: right; width: 200px;">Valor (R$)</th>
+                                    <th class="no-print" style="width: 100px; text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-diversos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOCO FINAL: CUSTO TOTAL DA OPERAÇÃO 50/50 -->
+            <div class="print-section" style="margin-top: 40px; margin-bottom: 40px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                    <tr>
+                        <th colspan="2" style="background-color: #dcfce7 !important; color: #000 !important; font-size: 20px !important; padding: 12px; border: 1px solid #cbd5e1;">
+                            CUSTO TOTAL DA OPERAÇÃO
+                        </th>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="background-color: #dcfce7 !important; color: #000 !important; font-size: 24px !important; font-weight: bold; padding: 15px; border: 1px solid #cbd5e1;" id="grand-total-val">
+                            R$ 0,00
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #2e7d32 !important; color: white !important; font-weight: bold; padding: 10px; width: 50%; border: 1px solid #cbd5e1;">ECO</td>
+                        <td style="background-color: #1565c0 !important; color: white !important; font-weight: bold; padding: 10px; width: 50%; border: 1px solid #cbd5e1;">VITA</td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #2e7d32 !important; color: white !important; font-weight: bold; font-size: 18px !important; padding: 15px; border: 1px solid #cbd5e1;" id="half-eco-val">R$ 0,00</td>
+                        <td style="background-color: #1565c0 !important; color: white !important; font-weight: bold; font-size: 18px !important; padding: 15px; border: 1px solid #cbd5e1;" id="half-vita-val">R$ 0,00</td>
+                    </tr>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- ==========================================
+             ABA 2: RELATÓRIO DE FATURAMENTO
+             ========================================== -->
+        <div id="tab-faturamento" class="tab-content">
+            <div class="print-section">
+                <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th style="width: 150px;">Data</th>
+                                    <th style="width: 150px;">Nº Conta</th>
+                                    <th style="text-align: right; width: 200px;">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-contas-faturadas"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -360,17 +323,26 @@
     <script>
         let dataCustoVita = [];
         let dataTransporte = [];
+        let dataDiversos = [];
         let dataContas = [];
+
+        // Variáveis globais para cálculo do Total da Operação
+        let valTasyGlobal = 0;
+        let valPlantoesGlobal = 0;
+        let valTransporteGlobal = 0;
+        let valDiversosGlobal = 0;
 
         async function initPage() {
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('custo-vita', 'Custo Operação VITA');
-                
                 const now = new Date();
                 document.getElementById('filter-mes').value = now.toISOString().substring(0, 7);
                 
+                await Promise.all([
+                    loadTransporteLocal(),
+                    loadDiversosLocal()
+                ]);
                 refreshAllData();
-                loadTransporteLocal(); 
             } else {
                 setTimeout(initPage, 100);
             }
@@ -378,11 +350,35 @@
 
         document.addEventListener('DOMContentLoaded', initPage);
 
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
+        }
+
         async function refreshAllData() {
-            await loadCustoVita();
-            await loadPlantoes();
-            await loadContasFaturadas();
+            valTasyGlobal = 0;
+            valPlantoesGlobal = 0;
+            
+            await Promise.all([
+                loadCustoVita(),
+                loadPlantoes(),
+                loadContasFaturadas()
+            ]);
+            
             renderTransporte();
+            renderDiversos();
+            updateGrandTotal();
+        }
+
+        function updateGrandTotal() {
+            const totalOperacao = valTasyGlobal + valPlantoesGlobal + valTransporteGlobal + valDiversosGlobal;
+            const metade = totalOperacao / 2;
+            
+            document.getElementById('grand-total-val').innerText = 'R$ ' + formatCurrency(totalOperacao);
+            document.getElementById('half-eco-val').innerText = 'R$ ' + formatCurrency(metade);
+            document.getElementById('half-vita-val').innerText = 'R$ ' + formatCurrency(metade);
         }
 
         function preparePrint() {
@@ -390,7 +386,8 @@
             if(mes) {
                 const [ano, m] = mes.split('-');
                 const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-                document.getElementById('print-month-label').innerText = `Competência: ${meses[parseInt(m)-1]} / ${ano}`;
+                const dataAtual = new Date().toLocaleDateString('pt-BR');
+                document.getElementById('print-month-label').innerHTML = `Competência: ${meses[parseInt(m)-1]} / ${ano}<br><span style="font-size:11px; font-weight:normal;">Emitido em: ${dataAtual}</span>`;
             }
             window.print();
         }
@@ -405,47 +402,29 @@
             if (s.includes(',') && s.includes('.')) {
                 if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
                 else s = s.replace(/,/g, '');
-            } else if (s.includes(',')) {
-                s = s.replace(',', '.');
-            }
+            } else if (s.includes(',')) s = s.replace(',', '.');
             const num = parseFloat(s);
             return isNaN(num) ? 0 : num;
         }
 
-        function formatCurrency(valor) {
-            return parseFloat(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        function formatDose(valor) {
-            return parseFloat(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-        }
-
+        function formatCurrency(valor) { return parseFloat(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function formatDose(valor) { return parseFloat(valor || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
         function formatDate(dateStr) {
             if(!dateStr) return '-';
             const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+            return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
         }
 
         function getHolidays(y) { 
             const pad = n => String(n).padStart(2,'0');
-            const h = { 
-                [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', 
-                [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', 
-                [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' 
-            }; 
+            const h = { [`${y}-01-01`]:'Ano Novo', [`${y}-04-21`]:'Tiradentes', [`${y}-05-01`]:'Trabalho', [`${y}-09-07`]:'Independência', [`${y}-10-12`]:'N. Sra Aparecida', [`${y}-11-02`]:'Finados', [`${y}-11-15`]:'Proclamação', [`${y}-12-25`]:'Natal' }; 
             const C = Math.floor(y/100), N = y - 19*Math.floor(y/19), K = Math.floor((C - 17)/25); 
-            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; 
-            I = I - 30*Math.floor((I/30)); 
+            let I = C - Math.floor(C/4) - Math.floor((C - K)/3) + 19*N + 15; I = I - 30*Math.floor((I/30)); 
             let I2 = I - Math.floor(I/28)*(1 - Math.floor(I/28)*Math.floor(29/(I + 1))*Math.floor((21 - N)/11)); 
-            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); 
-            J = J - 7*Math.floor(J/7); 
+            let J = y + Math.floor(y/4) + I2 + 2 - C + Math.floor(C/4); J = J - 7*Math.floor(J/7); 
             const L = I2 - J, mo = 3 + Math.floor((L + 40)/44), da = L + 28 - 31*Math.floor(mo/4); 
             const pascoa = new Date(y, mo - 1, da, 12, 0, 0); 
-            const add = (baseDate, days) => { 
-                const r = new Date(baseDate.getTime()); r.setDate(r.getDate() + days); 
-                return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; 
-            }; 
+            const add = (baseDate, days) => { const r = new Date(baseDate.getTime()); r.setDate(r.getDate() + days); return `${r.getFullYear()}-${pad(r.getMonth() + 1)}-${pad(r.getDate())}`; }; 
             h[add(pascoa, -47)] = 'Carnaval'; h[add(pascoa, -2)] = 'Sexta Santa'; h[add(pascoa, 60)] = 'Corpus Christi'; 
             return h; 
         }
@@ -453,9 +432,7 @@
         function toggleGroup(groupId) {
             const childRow = document.getElementById(`child-${groupId}`);
             const icon = document.getElementById(`icon-${groupId}`);
-            const isVisible = childRow.style.display === 'table-row';
-            
-            if (isVisible) {
+            if (childRow.style.display === 'table-row') {
                 childRow.style.display = 'none';
                 icon.classList.remove('open');
             } else {
@@ -470,130 +447,82 @@
         async function loadCustoVita() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-custo-vita');
-            
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando banco Tasy...</td></tr>';
-
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando Tasy...</td></tr>';
             try {
                 const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
-                    const rawList = Object.values(data);
-                    
-                    dataCustoVita = rawList.filter(item => {
-                        const dataAtend = item.dt_atendimento || item.DT_ATENDIMENTO || '';
-                        if (!dataAtend) return false;
-                        
-                        if (dataAtend.includes('/')) {
-                            const partes = dataAtend.split(' ')[0].split('/'); 
-                            if (partes.length >= 3) {
-                                return `${partes[2]}-${partes[1]}` === mes;
-                            }
-                        } else {
-                            return dataAtend.startsWith(mes);
+                    dataCustoVita = Object.values(data).filter(item => {
+                        const dt = item.dt_atendimento || item.DT_ATENDIMENTO || '';
+                        if (!dt) return false;
+                        if (dt.includes('/')) {
+                            const p = dt.split(' ')[0].split('/'); return `${p[2]}-${p[1]}` === mes;
                         }
-                        return false;
+                        return dt.startsWith(mes);
                     });
-
                     renderTableVita(dataCustoVita);
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Erro: O servidor retornou status ' + res.status + '</td></tr>';
-                }
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding: 20px;">Erro de conexão com o banco de dados.</td></tr>';
-            }
+                } else { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Erro na requisição.</td></tr>'; }
+            } catch (e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Erro de conexão Tasy.</td></tr>'; }
         }
 
         function renderTableVita(list) {
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '';
-            
-            if(list.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum custo registrado no Tasy para este mês.</td></tr>'; 
-                return; 
-            }
+            if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum custo registrado.</td></tr>'; return; }
 
             const grupos = {};
             list.forEach(item => {
-                const paciente = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase();
-                if(!grupos[paciente]) grupos[paciente] = { paciente: paciente, totalCusto: 0, itens: [] };
-                const custoTotalItem = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
-                grupos[paciente].totalCusto += custoTotalItem;
-                grupos[paciente].itens.push(item);
+                const p = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase();
+                if(!grupos[p]) grupos[p] = { paciente: p, totalCusto: 0, itens: [] };
+                const custo = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
+                grupos[p].totalCusto += custo;
+                valTasyGlobal += custo; // Soma total global
+                grupos[p].itens.push(item);
             });
 
             let index = 0;
-            const pacientesOrdenados = Object.values(grupos).sort((a,b) => a.paciente.localeCompare(b.paciente));
-
-            pacientesOrdenados.forEach(g => {
-                const groupId = `paciente_${index++}`;
-
-                const parentRow = document.createElement('tr');
-                parentRow.className = 'parent-row';
-                parentRow.onclick = function() { toggleGroup(groupId); };
-                parentRow.innerHTML = `
-                    <td class="no-print" style="text-align: center;"><i class="fas fa-chevron-right icon-expand" id="icon-${groupId}"></i></td>
-                    <td style="font-weight:bold; color:var(--primary); font-size: 14px;">${g.paciente}</td>
-                    <td style="text-align: center;"><span class="badge-count">${g.itens.length}</span></td>
-                    <td style="text-align: right; font-weight: 800; color: #00855B; font-size: 14px;">R$ ${formatCurrency(g.totalCusto)}</td>
-                `;
-                tbody.appendChild(parentRow);
+            Object.values(grupos).sort((a,b) => a.paciente.localeCompare(b.paciente)).forEach(g => {
+                const id = `paciente_${index++}`;
+                const parent = document.createElement('tr');
+                parent.className = 'parent-row';
+                parent.onclick = () => toggleGroup(id);
+                parent.innerHTML = `<td class="no-print" style="text-align:center;"><i class="fas fa-chevron-right icon-expand" id="icon-${id}"></i></td>
+                                    <td style="font-weight:bold; color:var(--primary);">${g.paciente}</td>
+                                    <td style="text-align:center;"><span class="badge-count">${g.itens.length}</span></td>
+                                    <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(g.totalCusto)}</td>`;
+                tbody.appendChild(parent);
 
                 g.itens.sort((a,b) => new Date(a.dt_atendimento || a.DT_ATENDIMENTO || 0) - new Date(b.dt_atendimento || b.DT_ATENDIMENTO || 0));
-
-                let subTableRows = '';
-                g.itens.forEach(item => {
-                    const dataFormatada = formatDate(item.dt_atendimento || item.DT_ATENDIMENTO);
-                    const nrPrescricao = item.nr_prescricao || item.NR_PRESCRICAO || '-';
-                    const materialConta = item.ds_material_conta || item.DS_MATERIAL_CONTA || '-';
-                    const medicacao = item.ds_material || item.DS_MATERIAL || '-';
-                    
-                    const doseFormatada = formatDose(parseOracleNumber(item.dose_real_custo || item.DOSE_REAL_CUSTO));
-                    const custoAntigoFormatado = formatCurrency(parseOracleNumber(item.custo_antigo || item.CUSTO_ANTIGO));
-                    const custoUnitFormatado = formatCurrency(parseOracleNumber(item.vl_custo_unitario_manip || item.VL_CUSTO_UNITARIO_MANIP));
-                    const custoTotalItemFormatado = formatCurrency(parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO));
-
-                    subTableRows += `
-                        <tr>
-                            <td>${dataFormatada}</td>
-                            <td style="font-weight: 600; color: #475569;"># ${nrPrescricao}</td>
-                            <td>${materialConta}</td>
-                            <td>${medicacao}</td>
-                            <td style="text-align: center;">${doseFormatada}</td>
-                            <td style="color: #94a3b8;">R$ ${custoAntigoFormatado}</td>
-                            <td>R$ ${custoUnitFormatado}</td>
-                            <td style="font-weight: bold;">R$ ${custoTotalItemFormatado}</td>
-                        </tr>
-                    `;
+                let sub = '';
+                g.itens.forEach(i => {
+                    sub += `<tr><td>${formatDate(i.dt_atendimento || i.DT_ATENDIMENTO)}</td>
+                            <td style="font-weight:600; color:#475569;"># ${i.nr_prescricao || i.NR_PRESCRICAO || '-'}</td>
+                            <td>${i.ds_material_conta || i.DS_MATERIAL_CONTA || '-'}</td>
+                            <td>${i.ds_material || i.DS_MATERIAL || '-'}</td>
+                            <td style="text-align:center;">${formatDose(parseOracleNumber(i.dose_real_custo || i.DOSE_REAL_CUSTO))}</td>
+                            <td style="color:#94a3b8;">R$ ${formatCurrency(parseOracleNumber(i.custo_antigo || i.CUSTO_ANTIGO))}</td>
+                            <td>R$ ${formatCurrency(parseOracleNumber(i.vl_custo_unitario_manip || i.VL_CUSTO_UNITARIO_MANIP))}</td>
+                            <td style="font-weight:bold;">R$ ${formatCurrency(parseOracleNumber(i.custo_total_antigo || i.CUSTO_TOTAL_ANTIGO))}</td></tr>`;
                 });
 
-                const childRow = document.createElement('tr');
-                childRow.id = `child-${groupId}`;
-                childRow.className = 'child-row';
-                childRow.style.display = 'none';
-                childRow.innerHTML = `
-                    <td colspan="4" style="padding: 0;">
-                        <div class="sub-table-container">
-                            <table class="sub-table">
-                                <thead>
-                                    <tr>
-                                        <th>Data</th><th>Prescrição</th><th>Material Conta</th><th>Medicação</th>
-                                        <th style="text-align: center;">Dose</th><th>Custo Antigo</th><th>Custo Unit.</th><th>Total Item</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${subTableRows}</tbody>
-                            </table>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(childRow);
+                const child = document.createElement('tr');
+                child.id = `child-${id}`; child.className = 'child-row'; child.style.display = 'none';
+                child.innerHTML = `<td colspan="4" style="padding:0;"><div class="sub-table-container"><table class="sub-table">
+                                   <thead><tr><th>Data</th><th>Prescrição</th><th>Mat. Conta</th><th>Medicação</th><th>Dose</th><th>Custo Ant.</th><th>Unit.</th><th>Total</th></tr></thead>
+                                   <tbody>${sub}</tbody></table></div></td>`;
+                tbody.appendChild(child);
             });
         }
 
         function filterTableTasy() {
             const term = document.getElementById('filter-paciente').value.toUpperCase();
-            const filteredData = dataCustoVita.filter(item => (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '').toUpperCase().includes(term));
-            renderTableVita(filteredData);
+            const filtered = dataCustoVita.filter(i => (i.nm_pessoa_fisica || i.NM_PESSOA_FISICA || '').toUpperCase().includes(term));
+            
+            // Recalcula o total apenas para exibição temporária ou mantem original? Vamos recalcular para bater com a tela.
+            valTasyGlobal = 0;
+            filtered.forEach(item => { valTasyGlobal += parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO); });
+            renderTableVita(filtered);
+            updateGrandTotal();
         }
 
         // ==========================================
@@ -602,241 +531,127 @@
         async function loadPlantoes() {
             const mesInput = document.getElementById('filter-mes').value;
             if(!mesInput) return;
-            
-            const [curYStr, curMStr] = mesInput.split('-');
-            const curY = parseInt(curYStr);
-            const curM = parseInt(curMStr) - 1; 
-            const moStr = curMStr;
-
+            const [curY, curMStr] = mesInput.split('-'); const curM = parseInt(curMStr) - 1; 
             const tbody = document.getElementById('tbody-plantoes');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px;"><i class="fas fa-spinner fa-spin"></i> Calculando escala...</td></tr>';
-
             try {
-                const resMed = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
-                const dictMedicos = resMed.ok ? await resMed.json() : {};
-
-                const searchIdQuimio = `${curYStr}-${moStr}-vita_quimio`;
-                const searchIdCirurgia = `${curYStr}-${moStr}-cirurgioes`;
-
-                const [resQuimio, resCirurgia] = await Promise.all([
+                const [resMed, resQ, resC] = await Promise.all([
+                    fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/escala_mensal_vita_quimio`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/escala_mensal_cirurgioes`, { headers: API_HEADERS })
                 ]);
-
-                const dbQuimio = resQuimio.ok ? await resQuimio.json() : {};
-                const dbCirurgia = resCirurgia.ok ? await resCirurgia.json() : {};
-
+                const dictMedicos = resMed.ok ? await resMed.json() : {};
                 const getEscala = (db, sId) => {
-                    const foundKey = Object.keys(db).find(k => {
-                        let item = db[k];
-                        if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
-                        return item && (item.id_firebase === sId || item.id === sId || k === sId);
+                    const k = Object.keys(db).find(key => {
+                        let i = db[key]; if(typeof i==='string') { try{i=JSON.parse(i);}catch(e){} }
+                        return i && (i.id_firebase === sId || i.id === sId || key === sId);
                     });
-                    return foundKey ? (typeof db[foundKey] === 'string' ? JSON.parse(db[foundKey]) : db[foundKey]) : {};
+                    return k ? (typeof db[k]==='string' ? JSON.parse(db[k]) : db[k]) : {};
                 };
-
-                const shiftsQuimio = getEscala(dbQuimio, searchIdQuimio);
-                const shiftsCirurgia = getEscala(dbCirurgia, searchIdCirurgia);
-
-                const holidays = getHolidays(curY);
-                const daysInMonth = new Date(curY, curM + 1, 0).getDate();
-                const consolidador = {};
+                const sQ = getEscala(resQ.ok ? await resQ.json() : {}, `${curY}-${curMStr}-vita_quimio`);
+                const sC = getEscala(resC.ok ? await resC.json() : {}, `${curY}-${curMStr}-cirurgioes`);
+                const hol = getHolidays(parseInt(curY)), days = new Date(curY, curM + 1, 0).getDate(), cons = {};
 
                 const processarEscala = (shifts, tipo) => {
-                    Object.keys(shifts).forEach(docId => {
-                        if (docId === 'id' || docId === 'id_firebase') return;
-
-                        const medicoObj = dictMedicos[docId];
-                        if (!medicoObj) return;
-
-                        const medicoNome = medicoObj.nome;
-                        if (!consolidador[docId]) consolidador[docId] = { nome: medicoNome, qtd: 0, valor: 0 };
-
-                        for (let i = 1; i <= daysInMonth; i++) {
-                            const val = shifts[docId][i];
-                            if (!val) continue;
-
-                            const d = new Date(curY, curM, i, 12, 0, 0);
-                            const isWk = d.getDay() === 0 || d.getDay() === 6;
-                            const isoDateStr = `${curY}-${String(curM + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                            const isHol = !!holidays[isoDateStr];
-
+                    Object.keys(shifts).forEach(id => {
+                        if (id === 'id' || id === 'id_firebase' || !dictMedicos[id]) return;
+                        if (!cons[id]) cons[id] = { nome: dictMedicos[id].nome, qtd: 0, valor: 0 };
+                        for (let i = 1; i <= days; i++) {
+                            const val = shifts[id][i]; if (!val) continue;
+                            const wk = new Date(curY, curM, i).getDay()===0||new Date(curY, curM, i).getDay()===6;
+                            const isHol = !!hol[`${curY}-${String(curM + 1).padStart(2,'0')}-${String(i).padStart(2,'0')}`];
                             let money = 0;
-                            if (val === 'S') {
-                                if (tipo === 'cirurgia') {
-                                    money = 500;
-                                    consolidador[docId].qtd += 1;
-                                } else {
-                                    money = 0; 
-                                    consolidador[docId].qtd += 1;
-                                }
-                            } else {
-                                if (val === 'M/T') consolidador[docId].qtd += 2; 
-                                else consolidador[docId].qtd += 1;
-                                
-                                if (isWk || isHol) {
-                                    if (val === 'M/T') money = 900; else money = 450;
-                                } else {
-                                    if (val === 'M/T') money = 1000; else money = 500;
-                                }
-                            }
-                            consolidador[docId].valor += money;
+                            if (val === 'S') { if (tipo === 'C') { money = 500; cons[id].qtd++; } else { cons[id].qtd++; } }
+                            else { cons[id].qtd += (val==='M/T'?2:1); money = (wk||isHol) ? (val==='M/T'?900:450) : (val==='M/T'?1000:500); }
+                            cons[id].valor += money;
+                            valPlantoesGlobal += money; // Soma global
                         }
                     });
                 };
-
-                processarEscala(shiftsQuimio, 'quimio');
-                processarEscala(shiftsCirurgia, 'cirurgia');
-
+                processarEscala(sQ, 'Q'); processarEscala(sC, 'C');
                 tbody.innerHTML = '';
-                const medicosArray = Object.values(consolidador).filter(m => m.qtd > 0 || m.valor > 0);
-
-                if (medicosArray.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum plantão registrado nestas abas para o mês selecionado.</td></tr>';
-                    return;
-                }
-
-                medicosArray.sort((a, b) => b.valor - a.valor).forEach(g => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td style="font-weight: 600; font-size: 14px;">
-                            <i class="fas fa-user-md" style="color:#94a3b8; margin-right:8px;"></i> ${g.nome}
-                        </td>
-                        <td style="text-align: center;">
-                            <span class="badge-count" style="background:#dcfce7; color:#166534;">${g.qtd}</span>
-                        </td>
-                        <td style="font-weight: bold; text-align: right; color: var(--primary);">
-                            R$ ${formatCurrency(g.valor)}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+                const arr = Object.values(cons).filter(m => m.qtd > 0 || m.valor > 0).sort((a,b) => b.valor - a.valor);
+                if (!arr.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sem plantões.</td></tr>'; return; }
+                arr.forEach(g => {
+                    tbody.innerHTML += `<tr><td style="font-weight:600;"><i class="fas fa-user-md"></i> ${g.nome}</td>
+                        <td style="text-align:center;"><span class="badge-count">${g.qtd}</span></td>
+                        <td style="font-weight:bold; text-align:right;">R$ ${formatCurrency(g.valor)}</td></tr>`;
                 });
-
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red; padding: 15px;">Erro ao buscar escala de plantões.</td></tr>';
-            }
+            } catch (e) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">Erro plantões.</td></tr>'; }
         }
 
         // ==========================================
-        // LÓGICA: BLOCO 3 (CONTAS FATURADAS)
+        // LÓGICA: BLOCO 3 (TRANSPORTE MANUAL)
+        // ==========================================
+        function addTransporte() {
+            const d = document.getElementById('transp-data').value, v = parseFloat(document.getElementById('transp-valor').value);
+            if(!d || isNaN(v)) return;
+            const n = { id: Date.now(), data: d, valor: v };
+            dataTransporte.push(n); saveTransporte(n); renderTransporte(); updateGrandTotal();
+            document.getElementById('transp-valor').value = '';
+        }
+        function renderTransporte() {
+            const mes = document.getElementById('filter-mes').value;
+            const tbody = document.getElementById('tbody-transporte'); tbody.innerHTML = '';
+            valTransporteGlobal = 0; // Zera para recalcular
+            const list = dataTransporte.filter(t => String(t.data||t.DATA).startsWith(mes));
+            if(!list.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sem registros.</td></tr>'; return; }
+            list.sort((a,b) => new Date(b.data||b.DATA) - new Date(a.data||a.DATA)).forEach(t => {
+                const val = t.valor !== undefined ? t.valor : t.VALOR;
+                valTransporteGlobal += val;
+                tbody.innerHTML += `<tr><td>${formatDate(t.data||t.DATA)}</td><td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
+                    <td class="no-print" style="text-align:center;"><button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+        }
+        async function saveTransporte(i) { try { await fetch(`${API_BASE_URL}/custo_vita_transporte`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
+        async function deleteTransporte(id) { if(!confirm("Excluir transporte?")) return; try { await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS }); dataTransporte = dataTransporte.filter(t => t.id !== id); renderTransporte(); updateGrandTotal(); } catch(e){} }
+        async function loadTransporteLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS }); if(res.ok) dataTransporte = Object.values(await res.json()); } catch(e){} }
+
+        // ==========================================
+        // LÓGICA: BLOCO 4 (CUSTOS DIVERSOS - NOVO)
+        // ==========================================
+        function addDiversos() {
+            const n = document.getElementById('div-nome').value, v = parseFloat(document.getElementById('div-valor').value);
+            const mes = document.getElementById('filter-mes').value;
+            if(!n || isNaN(v) || !mes) return alert('Preencha nome e valor.');
+            const novo = { id: Date.now(), mes_ref: mes, nome: n, valor: v };
+            dataDiversos.push(novo); saveDiversos(novo); renderDiversos(); updateGrandTotal();
+            document.getElementById('div-nome').value = ''; document.getElementById('div-valor').value = '';
+        }
+        function renderDiversos() {
+            const mes = document.getElementById('filter-mes').value;
+            const tbody = document.getElementById('tbody-diversos'); tbody.innerHTML = '';
+            valDiversosGlobal = 0;
+            const list = dataDiversos.filter(d => String(d.mes_ref || d.MES_REF) === mes);
+            if(!list.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sem custos diversos.</td></tr>'; return; }
+            list.forEach(d => {
+                const val = d.valor !== undefined ? d.valor : d.VALOR;
+                valDiversosGlobal += val;
+                tbody.innerHTML += `<tr><td>${d.nome || d.NOME}</td><td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
+                    <td class="no-print" style="text-align:center;"><button class="btn-icon danger" onclick="deleteDiversos(${d.id})"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+        }
+        async function saveDiversos(i) { try { await fetch(`${API_BASE_URL}/custo_vita_diversos`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
+        async function deleteDiversos(id) { if(!confirm("Excluir custo diverso?")) return; try { await fetch(`${API_BASE_URL}/custo_vita_diversos/${id}`, { method: 'DELETE', headers: API_HEADERS }); dataDiversos = dataDiversos.filter(t => t.id !== id); renderDiversos(); updateGrandTotal(); } catch(e){} }
+        async function loadDiversosLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_diversos`, { headers: API_HEADERS }); if(res.ok) dataDiversos = Object.values(await res.json()); } catch(e){} }
+
+        // ==========================================
+        // LÓGICA: CONTAS FATURADAS (ABA 2)
         // ==========================================
         async function loadContasFaturadas() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-contas-faturadas');
-            
             try {
                 const res = await fetch(`${API_BASE_URL}/contas_faturadas`, { headers: API_HEADERS });
                 if(!res.ok) return;
-                
                 const data = await res.json();
-                const list = Object.values(data);
-                
-                tbody.innerHTML = '';
-                const contasFiltradas = list.filter(c => String(c.data || c.DATA || '').startsWith(mes));
-                
-                if(contasFiltradas.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 15px;">Nenhuma conta faturada neste mês.</td></tr>';
-                    return;
-                }
-
-                contasFiltradas.forEach(c => {
-                    const paciente = c.paciente || c.PACIENTE || '-';
-                    const dataConta = c.data || c.DATA;
-                    const numConta = c.num_conta || c.NUM_CONTA || '-';
-                    const valorFormatado = formatCurrency(parseOracleNumber(c.valor || c.VALOR));
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td style="font-weight: 600;">${paciente.toUpperCase()}</td>
-                        <td>${formatDate(dataConta)}</td>
-                        <td><span class="badge-faturamento fat-vita"># ${numConta}</span></td>
-                        <td style="text-align: right; font-weight: bold;">R$ ${valorFormatado}</td>
-                    `;
-                    tbody.appendChild(tr);
+                const list = Object.values(data).filter(c => String(c.data || c.DATA || '').startsWith(mes));
+                tbody.innerHTML = list.length ? '' : '<tr><td colspan="4" style="text-align:center;">Nenhuma conta.</td></tr>';
+                list.forEach(c => {
+                    tbody.innerHTML += `<tr><td style="font-weight:600;">${(c.paciente || c.PACIENTE || '').toUpperCase()}</td>
+                        <td>${formatDate(c.data || c.DATA)}</td><td><span class="badge-faturamento fat-vita"># ${c.num_conta || c.NUM_CONTA || '-'}</span></td>
+                        <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(parseOracleNumber(c.valor || c.VALOR))}</td></tr>`;
                 });
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding: 15px;">Erro ao buscar contas.</td></tr>';
-            }
-        }
-
-        // ==========================================
-        // LÓGICA: BLOCO 4 (TRANSPORTE MANUAL)
-        // ==========================================
-        function addTransporte() {
-            const data = document.getElementById('transp-data').value;
-            const valorInput = document.getElementById('transp-valor').value;
-            
-            if(!data || !valorInput) return alert("Por favor, preencha a data e o valor do transporte.");
-
-            // Utilizado parseFloat nativo para garantir que a entrada padrão HTML não seja danificada
-            const valorNumerico = parseFloat(valorInput);
-            if(isNaN(valorNumerico)) return;
-
-            const novoTransporte = { id: Date.now(), data: data, valor: valorNumerico };
-            
-            dataTransporte.push(novoTransporte);
-            saveTransporte(novoTransporte);
-            renderTransporte();
-            
-            document.getElementById('transp-valor').value = '';
-        }
-
-        function renderTransporte() {
-            const mes = document.getElementById('filter-mes').value;
-            const tbody = document.getElementById('tbody-transporte');
-            tbody.innerHTML = '';
-            
-            const transportesFiltrados = dataTransporte.filter(t => {
-                const dataRegistro = t.data || t.DATA || '';
-                return String(dataRegistro).startsWith(mes);
-            });
-            
-            if(transportesFiltrados.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">Nenhum transporte lançado neste mês.</td></tr>'; 
-                return; 
-            }
-            
-            transportesFiltrados.sort((a,b) => new Date(b.data || b.DATA) - new Date(a.data || a.DATA));
-            transportesFiltrados.forEach(t => {
-                const valorAExibir = t.valor !== undefined ? t.valor : t.VALOR;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${formatDate(t.data || t.DATA)}</td>
-                    <td style="text-align: right; font-weight:bold;">R$ ${formatCurrency(valorAExibir)}</td>
-                    <td class="no-print" style="text-align: center;">
-                        <button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function saveTransporte(item) {
-            try { 
-                await fetch(`${API_BASE_URL}/custo_vita_transporte`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(item) }); 
-            } catch(e) { console.error("Erro ao salvar transporte:", e); }
-        }
-
-        async function deleteTransporte(id) {
-            if(!confirm("Tem certeza que deseja excluir este custo de transporte?")) return;
-            try { 
-                await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS }); 
-                dataTransporte = dataTransporte.filter(t => t.id !== id); 
-                renderTransporte(); 
-            } catch(e) { console.error("Erro ao deletar transporte:", e); }
-        }
-
-        async function loadTransporteLocal() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS });
-                if(res.ok) { 
-                    const dadosRetornados = await res.json();
-                    dataTransporte = Object.values(dadosRetornados); 
-                    renderTransporte(); 
-                }
-            } catch(e) { console.error("Erro ao carregar transportes:", e); }
+            } catch (e) { }
         }
     </script>
 </body>
