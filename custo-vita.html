@@ -34,6 +34,7 @@
         .manual-form { 
             display: flex; gap: 10px; align-items: flex-end; background: #f8fafc; 
             padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #cbd5e1;
+            flex-wrap: wrap;
         }
 
         .section-title { margin: 30px 0 15px 0; font-size: 18px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px; }
@@ -55,7 +56,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         /* ==========================================
-           ESTILOS DO ACORDEÃO (CASCATA TASY) E TABELAS
+           ESTILOS DO ACORDEÃO E TABELAS
            ========================================== */
         #table-tasy-vita th, #table-tasy-vita td, .data-table th, .data-table td { font-size: 13px; padding: 12px 10px; white-space: nowrap; }
         .parent-row { cursor: pointer; transition: background 0.2s; }
@@ -69,29 +70,33 @@
         .sub-table td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #f1f5f9; }
         .badge-count { background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
 
+        /* Estilos do Footer da Tabela */
+        tfoot tr { border-top: 2px solid #cbd5e1; background-color: #f8fafc; }
+        tfoot td { font-size: 14px !important; color: #0f172a !important; padding: 12px 10px; }
+
         /* Oculta o cabeçalho executivo na tela */
         .print-only { display: none; }
         .print-footer-logo { display: none; }
+
+        /* Caixa do Resumo lado a lado */
+        .summary-wrapper { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 40px; margin-bottom: 40px; }
+        .summary-box { flex: 1; min-width: 320px; }
 
         /* ==========================================
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            /* Margem ajustada: Mais espaço no bottom para a logo caber tranquila */
             @page { size: A4 landscape; margin: 15mm 15mm 30mm 15mm; }
             body { background: white; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             
             #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button, .tabs-container { display: none !important; }
             
-            /* Remove a segunda aba inteira na impressão */
             #tab-faturamento { display: none !important; }
             
-            /* Remove ícones/emojis na impressão */
             i.fas, i.fa, .icon-expand { display: none !important; }
             
             .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
             
-            /* Exibe o cabeçalho executivo */
             .print-only { 
                 display: flex !important; justify-content: space-between; align-items: flex-end; 
                 border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;
@@ -102,26 +107,9 @@
             
             .tab-content { display: block !important; }
 
-            /* Ajustes Logo Maior e Alinhada */
-            .print-footer-logo { 
-                display: block !important; 
-                position: fixed; 
-                bottom: 0; /* Cola na margem segura do @page */
-                left: 0; 
-                height: 55px; /* Tamanho ampliado */
-                width: auto; 
-                z-index: 1000; 
-            }
+            .print-footer-logo { display: block !important; position: fixed; bottom: 0; left: 0; height: 55px; width: auto; z-index: 1000; }
             
-            /* Melhorias nas Quebras de Página (Ficam na mesma folha se couberem) */
-            .first-print-section, .print-section { 
-                break-inside: avoid; 
-                page-break-inside: avoid; 
-                padding-top: 15px;
-                margin-bottom: 25px;
-            }
-            
-            /* Impede as linhas de quebrarem no meio do texto */
+            .first-print-section, .print-section { break-inside: avoid; page-break-inside: avoid; padding-top: 15px; margin-bottom: 25px; }
             tr { break-inside: avoid; page-break-inside: avoid; }
             
             .section-title { font-size: 16px; font-weight: bold; color: #0f172a !important; margin-bottom: 10px; margin-top: 0; }
@@ -130,11 +118,14 @@
             
             .table-container { width: 100% !important; overflow: hidden !important; }
             
-            /* Table-layout: auto resolve o problema da faixa preta não fechar até o final */
             table { width: 100% !important; border-collapse: collapse; margin-bottom: 20px; table-layout: auto !important; }
             th { background-color: #0f172a !important; color: #ffffff !important; padding: 10px; font-size: 12px; text-transform: uppercase; border: 1px solid #0f172a;}
             td { border-bottom: 1px solid #cbd5e1 !important; padding: 8px 10px; font-size: 12px; color: #1e293b !important; word-wrap: break-word; }
             
+            /* Impressão dos tfoots */
+            tfoot tr { background-color: #e2e8f0 !important; }
+            tfoot td { background-color: #e2e8f0 !important; font-weight: bold; border: 1px solid #cbd5e1 !important; }
+
             .child-row { display: none !important; }
             .badge-count, .badge-faturamento { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
         }
@@ -203,6 +194,12 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-custo-vita"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; font-weight: bold;">TOTAL TASY:</td>
+                                    <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-tasy">R$ 0,00</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -222,6 +219,12 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-plantoes"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL PLANTÕES:</td>
+                                    <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-plantoes">R$ 0,00</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -232,13 +235,17 @@
                 <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
                 <div class="card">
                     <div class="manual-form no-print">
-                        <div style="flex: 1;">
+                        <div>
                             <label class="card-label">Data</label>
-                            <input type="date" id="transp-data" class="form-control">
+                            <input type="date" id="transp-data" class="form-control" style="width: 150px;">
                         </div>
                         <div style="flex: 1;">
+                            <label class="card-label">Descrição</label>
+                            <input type="text" id="transp-desc" class="form-control" placeholder="Ex: Uber Paciente X">
+                        </div>
+                        <div>
                             <label class="card-label">Valor (R$)</label>
-                            <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01">
+                            <input type="number" id="transp-valor" class="form-control" placeholder="0.00" step="0.01" style="width: 150px;">
                         </div>
                         <button type="button" class="btn btn-primary" onclick="addTransporte()">
                             <i class="fas fa-plus"></i> Adicionar
@@ -248,12 +255,20 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Data</th>
-                                    <th style="text-align: right;">Valor (R$)</th>
+                                    <th style="width: 150px;">Data</th>
+                                    <th>Descrição</th>
+                                    <th style="text-align: right; width: 200px;">Valor (R$)</th>
                                     <th class="no-print" style="width: 100px; text-align: center;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-transporte"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL TRANSPORTE:</td>
+                                    <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-transporte">R$ 0,00</td>
+                                    <td class="no-print"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -286,33 +301,71 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-diversos"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td style="text-align: right; font-weight: bold;">TOTAL DIVERSOS:</td>
+                                    <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-diversos">R$ 0,00</td>
+                                    <td class="no-print"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- BLOCO FINAL: CUSTO TOTAL DA OPERAÇÃO 50/50 -->
-            <div class="print-section" style="margin-top: 40px; margin-bottom: 40px;">
-                <table style="width: 100%; border-collapse: collapse; text-align: center;">
-                    <tr>
-                        <th colspan="2" style="background-color: #dcfce7 !important; color: #000 !important; font-size: 20px !important; padding: 12px; border: 1px solid #cbd5e1;">
-                            CUSTO TOTAL DA OPERAÇÃO
-                        </th>
-                    </tr>
-                    <tr>
-                        <td colspan="2" style="background-color: #dcfce7 !important; color: #000 !important; font-size: 24px !important; font-weight: bold; padding: 15px; border: 1px solid #cbd5e1;" id="grand-total-val">
-                            R$ 0,00
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="background-color: #2e7d32 !important; color: white !important; font-weight: bold; padding: 10px; width: 50%; border: 1px solid #cbd5e1;">ECO</td>
-                        <td style="background-color: #1565c0 !important; color: white !important; font-weight: bold; padding: 10px; width: 50%; border: 1px solid #cbd5e1;">VITA</td>
-                    </tr>
-                    <tr>
-                        <td style="background-color: #2e7d32 !important; color: white !important; font-weight: bold; font-size: 18px !important; padding: 15px; border: 1px solid #cbd5e1;" id="half-eco-val">R$ 0,00</td>
-                        <td style="background-color: #1565c0 !important; color: white !important; font-weight: bold; font-size: 18px !important; padding: 15px; border: 1px solid #cbd5e1;" id="half-vita-val">R$ 0,00</td>
-                    </tr>
-                </table>
+            <!-- BLOCO FINAL: RESUMO E CUSTO TOTAL DA OPERAÇÃO 50/50 -->
+            <div class="print-section summary-wrapper">
+                
+                <!-- Resumo dos Custos -->
+                <div class="summary-box">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <th colspan="2" style="background-color: #0f172a !important; color: #fff !important; font-size: 16px; padding: 12px; border: 1px solid #cbd5e1; text-align: center;">
+                                RESUMO DE CUSTOS (COMPOSIÇÃO)
+                            </th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Tasy (Pacientes)</td>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #475569;" id="resumo-tasy">R$ 0,00</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Plantões Médicos</td>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #475569;" id="resumo-plantoes">R$ 0,00</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Transporte</td>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #475569;" id="resumo-transporte">R$ 0,00</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Custos Diversos</td>
+                            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #475569;" id="resumo-diversos">R$ 0,00</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Divisão 50/50 -->
+                <div class="summary-box">
+                    <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                        <tr>
+                            <th colspan="2" style="background-color: #dcfce7 !important; color: #000 !important; font-size: 18px !important; padding: 12px; border: 1px solid #cbd5e1;">
+                                CUSTO TOTAL DA OPERAÇÃO
+                            </th>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="background-color: #dcfce7 !important; color: #000 !important; font-size: 24px !important; font-weight: bold; padding: 15px; border: 1px solid #cbd5e1;" id="grand-total-val">
+                                R$ 0,00
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="background-color: #2e7d32 !important; color: white !important; font-weight: bold; padding: 10px; width: 50%; border: 1px solid #cbd5e1;">ECO (50%)</td>
+                            <td style="background-color: #1565c0 !important; color: white !important; font-weight: bold; padding: 10px; width: 50%; border: 1px solid #cbd5e1;">VITA (50%)</td>
+                        </tr>
+                        <tr>
+                            <td style="background-color: #2e7d32 !important; color: white !important; font-weight: bold; font-size: 18px !important; padding: 15px; border: 1px solid #cbd5e1;" id="half-eco-val">R$ 0,00</td>
+                            <td style="background-color: #1565c0 !important; color: white !important; font-weight: bold; font-size: 18px !important; padding: 15px; border: 1px solid #cbd5e1;" id="half-vita-val">R$ 0,00</td>
+                        </tr>
+                    </table>
+                </div>
             </div>
 
         </div>
@@ -335,6 +388,12 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-contas-faturadas"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; font-weight: bold;">TOTAL FATURADO:</td>
+                                    <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-faturamento">R$ 0,00</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -349,11 +408,12 @@
         let dataDiversos = [];
         let dataContas = [];
 
-        // Variáveis globais para cálculo do Total da Operação
+        // Variáveis globais para cálculo dos totais
         let valTasyGlobal = 0;
         let valPlantoesGlobal = 0;
         let valTransporteGlobal = 0;
         let valDiversosGlobal = 0;
+        let valContasGlobal = 0;
 
         async function initPage() {
             if (typeof initGlobal !== 'undefined') {
@@ -399,6 +459,19 @@
             const totalOperacao = valTasyGlobal + valPlantoesGlobal + valTransporteGlobal + valDiversosGlobal;
             const metade = totalOperacao / 2;
             
+            // Atualiza rodapés das tabelas
+            document.getElementById('footer-val-tasy').innerText = 'R$ ' + formatCurrency(valTasyGlobal);
+            document.getElementById('footer-val-plantoes').innerText = 'R$ ' + formatCurrency(valPlantoesGlobal);
+            document.getElementById('footer-val-transporte').innerText = 'R$ ' + formatCurrency(valTransporteGlobal);
+            document.getElementById('footer-val-diversos').innerText = 'R$ ' + formatCurrency(valDiversosGlobal);
+            
+            // Atualiza quadro resumo de composição
+            document.getElementById('resumo-tasy').innerText = 'R$ ' + formatCurrency(valTasyGlobal);
+            document.getElementById('resumo-plantoes').innerText = 'R$ ' + formatCurrency(valPlantoesGlobal);
+            document.getElementById('resumo-transporte').innerText = 'R$ ' + formatCurrency(valTransporteGlobal);
+            document.getElementById('resumo-diversos').innerText = 'R$ ' + formatCurrency(valDiversosGlobal);
+
+            // Atualiza divisão 50/50
             document.getElementById('grand-total-val').innerText = 'R$ ' + formatCurrency(totalOperacao);
             document.getElementById('half-eco-val').innerText = 'R$ ' + formatCurrency(metade);
             document.getElementById('half-vita-val').innerText = 'R$ ' + formatCurrency(metade);
@@ -499,7 +572,7 @@
                 if(!grupos[p]) grupos[p] = { paciente: p, totalCusto: 0, itens: [] };
                 const custo = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
                 grupos[p].totalCusto += custo;
-                valTasyGlobal += custo; // Soma total global
+                valTasyGlobal += custo; 
                 grupos[p].itens.push(item);
             });
 
@@ -585,7 +658,7 @@
                             if (val === 'S') { if (tipo === 'C') { money = 500; cons[id].qtd++; } else { cons[id].qtd++; } }
                             else { cons[id].qtd += (val==='M/T'?2:1); money = (wk||isHol) ? (val==='M/T'?900:450) : (val==='M/T'?1000:500); }
                             cons[id].valor += money;
-                            valPlantoesGlobal += money; // Soma global
+                            valPlantoesGlobal += money; 
                         }
                     });
                 };
@@ -605,23 +678,33 @@
         // LÓGICA: BLOCO 3 (TRANSPORTE MANUAL)
         // ==========================================
         function addTransporte() {
-            const d = document.getElementById('transp-data').value, v = parseFloat(document.getElementById('transp-valor').value);
-            if(!d || isNaN(v)) return;
-            const n = { id: Date.now(), data: d, valor: v };
+            const d = document.getElementById('transp-data').value;
+            const desc = document.getElementById('transp-desc').value.trim();
+            const v = parseFloat(document.getElementById('transp-valor').value);
+            
+            if(!d || !desc || isNaN(v)) return alert("Por favor, preencha a data, descrição e o valor.");
+            
+            const n = { id: Date.now(), data: d, desc: desc, valor: v };
             dataTransporte.push(n); saveTransporte(n); renderTransporte(); updateGrandTotal();
+            
+            document.getElementById('transp-desc').value = '';
             document.getElementById('transp-valor').value = '';
         }
         function renderTransporte() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-transporte'); tbody.innerHTML = '';
-            valTransporteGlobal = 0; // Zera para recalcular
+            valTransporteGlobal = 0;
             const list = dataTransporte.filter(t => String(t.data||t.DATA).startsWith(mes));
-            if(!list.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sem registros.</td></tr>'; return; }
+            if(!list.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sem registros.</td></tr>'; return; }
             list.sort((a,b) => new Date(b.data||b.DATA) - new Date(a.data||a.DATA)).forEach(t => {
                 const val = t.valor !== undefined ? t.valor : t.VALOR;
                 valTransporteGlobal += val;
-                tbody.innerHTML += `<tr><td>${formatDate(t.data||t.DATA)}</td><td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
-                    <td class="no-print" style="text-align:center;"><button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button></td></tr>`;
+                tbody.innerHTML += `<tr>
+                    <td>${formatDate(t.data||t.DATA)}</td>
+                    <td>${t.desc || t.DESC || '-'}</td>
+                    <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
+                    <td class="no-print" style="text-align:center;"><button class="btn-icon danger" onclick="deleteTransporte(${t.id})"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
             });
         }
         async function saveTransporte(i) { try { await fetch(`${API_BASE_URL}/custo_vita_transporte`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
@@ -629,7 +712,7 @@
         async function loadTransporteLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS }); if(res.ok) dataTransporte = Object.values(await res.json()); } catch(e){} }
 
         // ==========================================
-        // LÓGICA: BLOCO 4 (CUSTOS DIVERSOS - NOVO)
+        // LÓGICA: BLOCO 4 (CUSTOS DIVERSOS)
         // ==========================================
         function addDiversos() {
             const n = document.getElementById('div-nome').value, v = parseFloat(document.getElementById('div-valor').value);
@@ -662,6 +745,7 @@
         async function loadContasFaturadas() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-contas-faturadas');
+            valContasGlobal = 0;
             try {
                 const res = await fetch(`${API_BASE_URL}/contas_faturadas`, { headers: API_HEADERS });
                 if(!res.ok) return;
@@ -669,10 +753,15 @@
                 const list = Object.values(data).filter(c => String(c.data || c.DATA || '').startsWith(mes));
                 tbody.innerHTML = list.length ? '' : '<tr><td colspan="4" style="text-align:center;">Nenhuma conta.</td></tr>';
                 list.forEach(c => {
+                    const val = parseOracleNumber(c.valor || c.VALOR);
+                    valContasGlobal += val;
                     tbody.innerHTML += `<tr><td style="font-weight:600;">${(c.paciente || c.PACIENTE || '').toUpperCase()}</td>
                         <td>${formatDate(c.data || c.DATA)}</td><td><span class="badge-faturamento fat-vita"># ${c.num_conta || c.NUM_CONTA || '-'}</span></td>
-                        <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(parseOracleNumber(c.valor || c.VALOR))}</td></tr>`;
+                        <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td></tr>`;
                 });
+                
+                // Atualiza rodapé Faturado
+                document.getElementById('footer-val-faturamento').innerText = 'R$ ' + formatCurrency(valContasGlobal);
             } catch (e) { }
         }
     </script>
