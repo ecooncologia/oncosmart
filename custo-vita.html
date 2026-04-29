@@ -93,6 +93,7 @@
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
+            /* Definindo a margem inferior para dar espaço seguro para a logo */
             @page { size: A4 landscape; margin: 15mm 15mm 30mm 15mm; }
             body { background: white; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             
@@ -114,7 +115,17 @@
             
             .tab-content { display: block !important; }
 
-            .print-footer-logo { display: block !important; position: fixed; bottom: 0; left: 0; height: 55px; width: auto; z-index: 1000; }
+            /* LOGO FIX: Posicionada 22mm para baixo, entrando exatamente na margem de 30mm da página. 
+               Assim ela NUNCA sobrepõe a tabela, porque o navegador para a tabela antes. */
+            .print-footer-logo { 
+                display: block !important; 
+                position: fixed; 
+                bottom: -22mm; 
+                left: 0; 
+                height: 45px; 
+                width: auto; 
+                z-index: 1000; 
+            }
             
             .first-print-section, .print-section { break-inside: avoid; page-break-inside: avoid; padding-top: 15px; margin-bottom: 25px; }
             tr { break-inside: avoid; page-break-inside: avoid; }
@@ -135,6 +146,30 @@
 
             .child-row { display: none !important; }
             .badge-count, .badge-faturamento { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
+
+            /* RESUMO FIX: Travar as duas caixas em 48% lado a lado sem quebra de flex */
+            .summary-wrapper {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                justify-content: space-between !important;
+                gap: 20px !important;
+                width: 100% !important;
+                margin-top: 20px !important;
+                page-break-inside: avoid !important;
+            }
+            .summary-box {
+                flex: 0 0 48% !important;
+                width: 48% !important;
+                min-width: 0 !important;
+            }
+            .summary-box table {
+                table-layout: fixed !important;
+                margin-bottom: 0 !important;
+            }
+            .summary-box th, .summary-box td {
+                white-space: normal !important;
+            }
         }
     </style>
 </head>
