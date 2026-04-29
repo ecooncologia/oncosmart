@@ -66,6 +66,33 @@
             color: var(--primary);
         }
 
+        /* Novo Cabeçalho para Tela */
+        .header-report {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .header-report h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-report h1 i {
+            color: var(--primary);
+        }
+
+        .header-report-subtitle {
+            display: none; /* Escondido na tela, exibido na impressão */
+        }
+
         /* ==========================================
            ESTILOS DO ACORDEÃO (CASCATA TASY)
            ========================================== */
@@ -142,12 +169,14 @@
         }
 
         .print-header-info { display: none; }
+        .print-footer-logo { display: none; }
 
         /* ==========================================
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            @page { size: A4 landscape; margin: 15mm; }
+            /* Margem inferior maior para caber a logo no rodapé sem encostar no texto */
+            @page { size: A4 landscape; margin: 15mm 15mm 25mm 15mm; }
             body { 
                 background: white; 
                 color: #1e293b; 
@@ -164,11 +193,30 @@
             
             .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
             
-            .header-center { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;}
-            .header-center p { font-size: 20px !important; color: #0f172a !important; margin: 0; font-weight: bold;}
-            .header-center p::after { content: " - Relatório Financeiro Mensal"; }
-            .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; }
+            /* Ajustes do Cabeçalho Elegante na Impressão */
+            .header-report { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: flex-end; 
+                border-bottom: 3px solid #0f172a; 
+                padding-bottom: 10px; 
+                margin-bottom: 20px;
+            }
+            .header-report h1 { font-size: 22px !important; color: #0f172a !important; margin: 0; font-weight: bold;}
+            .header-report h1 i { display: none; } /* Oculta ícone no PDF */
+            .header-report-subtitle { display: inline; font-weight: normal; color: #475569; font-size: 20px; }
+            .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; text-align: right; }
             
+            /* Logo fixa no rodapé esquerdo de todas as páginas */
+            .print-footer-logo {
+                display: block !important;
+                position: fixed;
+                bottom: -5mm; /* Ajuste fino de distanciamento da borda da folha */
+                left: 0;
+                height: 50px;
+                width: auto;
+            }
+
             .print-section { break-before: page; padding-top: 20px; }
             .print-section:first-of-type { break-before: avoid; padding-top: 0; }
             
@@ -195,12 +243,19 @@
         <div id="global-header"></div>
         <div id="global-nav"></div>
 
-        <div class="header-center">
-            <p><i class="fas fa-hand-holding-usd"></i> Custo Operação VITA</p>
+        <!-- Logo que aparecerá no rodapé do PDF -->
+        <img src="https://i.imgur.com/nWWyEBG.png" class="print-footer-logo" alt="Logo ONCO SMART">
+
+        <!-- Novo Cabeçalho Elegante -->
+        <div class="header-report">
+            <h1>
+                <i class="fas fa-hand-holding-usd"></i> Custo Operação VITA
+                <span class="header-report-subtitle"> - Relatório Financeiro Mensal</span>
+            </h1>
             <div class="print-header-info" id="print-month-label"></div>
         </div>
 
-        <div class="filter-bar">
+        <div class="filter-bar no-print">
             <div class="col">
                 <label class="card-label">Mês de Referência (Filtro Global)</label>
                 <input type="month" id="filter-mes" class="form-control" onchange="refreshAllData()" style="font-weight: bold; font-size: 16px;">
@@ -218,10 +273,10 @@
             </button>
         </div>
 
+        <!-- BLOCO 1: TASY (Sem título h3, entra direto na tabela) -->
         <div class="print-section">
-            <h3 class="section-title"><i class="fas fa-file-invoice-dollar"></i> Agrupamento Total por Paciente (Tasy)</h3>
             <div class="card">
-                <div class="card-header">
+                <div class="card-header no-print">
                     <i class="fas fa-users"></i> Detalhamento de Custo por Paciente
                 </div>
                 <div class="table-container">
@@ -235,7 +290,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbody-custo-vita">
-                            </tbody>
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -244,7 +300,7 @@
         <div class="print-section">
             <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
             <div class="card">
-                <div class="card-header" style="background-color: #f0fdf4; color: #166534;">
+                <div class="card-header no-print" style="background-color: #f0fdf4; color: #166534;">
                     <i class="fas fa-stethoscope"></i> Médicos atuantes (VITA - Sala Quimio e Cirurgiões)
                 </div>
                 <div class="table-container">
@@ -257,7 +313,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbody-plantoes">
-                            </tbody>
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -266,7 +323,7 @@
         <div class="print-section">
             <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
             <div class="card">
-                <div class="card-header" style="background-color: #f8fafc;">
+                <div class="card-header no-print" style="background-color: #f8fafc;">
                     <i class="fas fa-file-invoice"></i> Contas Fechadas no Mês
                 </div>
                 <div class="table-container">
@@ -280,7 +337,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbody-contas-faturadas">
-                            </tbody>
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -289,11 +347,11 @@
         <div class="print-section">
             <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
             <div class="card">
-                <div class="card-header" style="background-color: #fdf4ff; color: #86198f;">
+                <div class="card-header no-print" style="background-color: #fdf4ff; color: #86198f;">
                     <i class="fas fa-car-side"></i> Lançamento Manual de Custos de Transporte
                 </div>
                 
-                <div class="manual-form">
+                <div class="manual-form no-print">
                     <div style="flex: 1;">
                         <label class="card-label">Data</label>
                         <input type="date" id="transp-data" class="form-control">
@@ -317,7 +375,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbody-transporte">
-                            </tbody>
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -358,7 +417,8 @@
             if(mes) {
                 const [ano, m] = mes.split('-');
                 const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-                document.getElementById('print-month-label').innerText = `Competência: ${meses[parseInt(m)-1]} / ${ano}`;
+                const dataAtual = new Date().toLocaleDateString('pt-BR');
+                document.getElementById('print-month-label').innerHTML = `Competência: ${meses[parseInt(m)-1]} / ${ano}<br><span style="font-size:11px; font-weight:normal;">Emitido em: ${dataAtual}</span>`;
             }
             window.print();
         }
@@ -442,14 +502,11 @@
             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando banco Tasy...</td></tr>';
 
             try {
-                // Revertido: A API do Node.js provavelmente exige o parâmetro `mes` na rota, 
-                // então adicionamos ?mes= de volta para evitar o Erro 400.
                 const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
                     const rawList = Object.values(data);
                     
-                    // O filtro extra no frontend garante que funcione caso a view no Oracle não filtre
                     dataCustoVita = rawList.filter(item => {
                         const dataAtend = item.dt_atendimento || item.DT_ATENDIMENTO || '';
                         if (!dataAtend) return false;
