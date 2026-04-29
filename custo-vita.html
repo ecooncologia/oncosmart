@@ -77,17 +77,21 @@
            LAYOUT DE IMPRESSÃO (PDF EXECUTIVO)
            ========================================== */
         @media print {
-            @page { size: A4 landscape; margin: 15mm 15mm 25mm 15mm; }
+            /* Margem ajustada: Mais espaço no bottom para a logo caber tranquila */
+            @page { size: A4 landscape; margin: 15mm 15mm 30mm 15mm; }
             body { background: white; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             
             #global-header, #global-nav, .filter-bar, .manual-form, .no-print, button, .tabs-container { display: none !important; }
+            
+            /* Remove a segunda aba inteira na impressão */
+            #tab-faturamento { display: none !important; }
             
             /* Remove ícones/emojis na impressão */
             i.fas, i.fa, .icon-expand { display: none !important; }
             
             .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
             
-            /* Exibe o cabeçalho executivo e força as abas a aparecerem na impressão */
+            /* Exibe o cabeçalho executivo */
             .print-only { 
                 display: flex !important; justify-content: space-between; align-items: flex-end; 
                 border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;
@@ -96,19 +100,38 @@
             .print-only p::after { content: " - Relatório Financeiro Mensal"; }
             .print-header-info { display: block; font-size: 14px; font-weight: bold; color: #475569; text-align: right; }
             
-            .tab-content { display: block !important; } /* Imprime todas as abas juntas */
+            .tab-content { display: block !important; }
 
-            .print-footer-logo { display: block !important; position: fixed; bottom: -5mm; left: 0; height: 40px; width: auto; z-index: 1000; }
+            /* Ajustes Logo Maior e Alinhada */
+            .print-footer-logo { 
+                display: block !important; 
+                position: fixed; 
+                bottom: 0; /* Cola na margem segura do @page */
+                left: 0; 
+                height: 55px; /* Tamanho ampliado */
+                width: auto; 
+                z-index: 1000; 
+            }
             
-            .first-print-section { break-before: avoid !important; page-break-before: avoid !important; }
-            .print-section { break-before: page; padding-top: 20px; }
+            /* Melhorias nas Quebras de Página (Ficam na mesma folha se couberem) */
+            .first-print-section, .print-section { 
+                break-inside: avoid; 
+                page-break-inside: avoid; 
+                padding-top: 15px;
+                margin-bottom: 25px;
+            }
+            
+            /* Impede as linhas de quebrarem no meio do texto */
+            tr { break-inside: avoid; page-break-inside: avoid; }
             
             .section-title { font-size: 16px; font-weight: bold; color: #0f172a !important; margin-bottom: 10px; margin-top: 0; }
             .card { border: none !important; box-shadow: none !important; margin-bottom: 0 !important; }
             .card-header { display: none !important; } 
             
             .table-container { width: 100% !important; overflow: hidden !important; }
-            table { width: 100% !important; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+            
+            /* Table-layout: auto resolve o problema da faixa preta não fechar até o final */
+            table { width: 100% !important; border-collapse: collapse; margin-bottom: 20px; table-layout: auto !important; }
             th { background-color: #0f172a !important; color: #ffffff !important; padding: 10px; font-size: 12px; text-transform: uppercase; border: 1px solid #0f172a;}
             td { border-bottom: 1px solid #cbd5e1 !important; padding: 8px 10px; font-size: 12px; color: #1e293b !important; word-wrap: break-word; }
             
@@ -236,7 +259,7 @@
                 </div>
             </div>
 
-            <!-- BLOCO 4: CUSTOS DIVERSOS (NOVO) -->
+            <!-- BLOCO 4: CUSTOS DIVERSOS -->
             <div class="print-section">
                 <h3 class="section-title"><i class="fas fa-boxes"></i> Custos Diversos</h3>
                 <div class="card">
@@ -295,7 +318,7 @@
         </div>
 
         <!-- ==========================================
-             ABA 2: RELATÓRIO DE FATURAMENTO
+             ABA 2: RELATÓRIO DE FATURAMENTO (Oculto na Impressão)
              ========================================== -->
         <div id="tab-faturamento" class="tab-content">
             <div class="print-section">
@@ -518,7 +541,6 @@
             const term = document.getElementById('filter-paciente').value.toUpperCase();
             const filtered = dataCustoVita.filter(i => (i.nm_pessoa_fisica || i.NM_PESSOA_FISICA || '').toUpperCase().includes(term));
             
-            // Recalcula o total apenas para exibição temporária ou mantem original? Vamos recalcular para bater com a tela.
             valTasyGlobal = 0;
             filtered.forEach(item => { valTasyGlobal += parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO); });
             renderTableVita(filtered);
