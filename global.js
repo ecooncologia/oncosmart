@@ -50,12 +50,13 @@ const APP_PAGES = [
 
     { id: 'marketing', label: 'Gerador de Artes', file: 'gerador-imagens.html', perm: 'marketing', icon: 'fas fa-palette' },
     { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas', icon: 'fas fa-file-medical-alt' },
-    { id: 'acompanhamento-unimed', label: 'Autorizações Unimed', file: 'acompanhamento-unimed.html', perm: 'acompanhamento-unimed', icon: 'fas fa-clipboard-check' }
+    { id: 'acompanhamento-unimed', label: 'Autorizações Unimed', file: 'acompanhamento-unimed.html', perm: 'acompanhamento-unimed', icon: 'fas fa-clipboard-check' },
+    { id: 'custo-vita', label: 'Custo Operação VITA', file: 'custo-vita.html', perm: 'custo-vita', icon: 'fas fa-chart-line' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
 const MENU_SECTORS = [
-    { name: "Financeiro", icon: "fas fa-chart-line", pages: ['dashboard', 'budget', 'budgets', 'sales', 'repass', 'dashboard-repasse', 'procedures'] },
+    { name: "Financeiro", icon: "fas fa-chart-line", pages: ['dashboard', 'budget', 'budgets', 'sales', 'repass', 'dashboard-repasse', 'procedures', 'custo-vita'] },
     { name: "Recepção", icon: "fas fa-concierge-bell", pages: ['transporte', 'stenci', 'selos', 'tuss'] },
     { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts', 'protocolos'] },
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
