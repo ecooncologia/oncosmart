@@ -163,7 +163,6 @@
         <div id="global-header"></div>
         <div id="global-nav"></div>
 
-        <!-- CABEÇALHO DO PDF (Invisível na tela, contém a logo para não bugar) -->
         <div class="print-only">
             <img src="https://i.imgur.com/nWWyEBG.png" alt="Logo ECO ONCOLOGIA" style="height: 55px; object-fit: contain;">
             <div style="text-align: right;">
@@ -182,15 +181,11 @@
                 <input type="text" id="filter-paciente" class="form-control" placeholder="Digite o nome..." onkeyup="filterTableTasy()">
             </div>
             <div style="flex: 1;"></div>
-            <button type="button" class="btn btn-success" onclick="refreshAllData()">
-                <i class="fas fa-sync"></i> Atualizar Dados
-            </button>
             <button type="button" class="btn btn-primary" onclick="preparePrint()">
                 <i class="fas fa-print"></i> Imprimir Relatório
             </button>
         </div>
 
-        <!-- CONTROLES DAS ABAS -->
         <div class="tabs-container no-print">
             <button id="btn-tab-custos" class="tab-btn active" onclick="openTab('tab-custos')">
                 <i class="fas fa-hand-holding-usd"></i> Custos Operacionais
@@ -200,12 +195,8 @@
             </button>
         </div>
 
-        <!-- ==========================================
-             ABA 1: CUSTOS OPERACIONAIS
-             ========================================== -->
         <div id="tab-custos" class="tab-content active">
             
-            <!-- BLOCO 1: TASY -->
             <div class="first-print-section">
                 <div class="card">
                     <div class="card-header no-print">
@@ -222,7 +213,6 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-custo-vita"></tbody>
-                            <!-- FOOTER COM CELULA NO-PRINT -->
                             <tfoot>
                                 <tr>
                                     <td class="no-print"></td>
@@ -235,7 +225,6 @@
                 </div>
             </div>
 
-            <!-- BLOCO 2: PLANTÕES -->
             <div class="print-section">
                 <h3 class="section-title"><i class="fas fa-user-md"></i> Plantões Médicos (Escala Repasse)</h3>
                 <div class="card">
@@ -260,7 +249,6 @@
                 </div>
             </div>
 
-            <!-- BLOCO 3: TRANSPORTE -->
             <div class="print-section">
                 <h3 class="section-title"><i class="fas fa-truck-loading"></i> Transporte Operacional</h3>
                 <div class="card">
@@ -309,7 +297,6 @@
                 </div>
             </div>
 
-            <!-- BLOCO 4: CUSTOS DIVERSOS -->
             <div class="print-section">
                 <h3 class="section-title"><i class="fas fa-boxes"></i> Custos Diversos</h3>
                 <div class="card">
@@ -353,10 +340,8 @@
                 </div>
             </div>
 
-            <!-- BLOCO FINAL: RESUMO E CUSTO TOTAL DA OPERAÇÃO 50/50 -->
             <div class="print-section summary-wrapper">
                 
-                <!-- Resumo dos Custos (Empilhado em cima) -->
                 <div class="summary-box">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
@@ -383,7 +368,6 @@
                     </table>
                 </div>
 
-                <!-- Divisão 50/50 (Empilhado embaixo) -->
                 <div class="summary-box">
                     <table style="width: 100%; border-collapse: collapse; text-align: center;">
                         <tr>
@@ -410,9 +394,6 @@
 
         </div>
 
-        <!-- ==========================================
-             ABA 2: RELATÓRIO DE FATURAMENTO (Oculto na Impressão)
-             ========================================== -->
         <div id="tab-faturamento" class="tab-content">
             <div class="print-section">
                 <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
