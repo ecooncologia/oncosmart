@@ -396,22 +396,23 @@
 
         <div id="tab-faturamento" class="tab-content">
             <div class="print-section">
-                <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas</h3>
+                <h3 class="section-title"><i class="fas fa-check-double"></i> Relatório de Contas Faturadas Tasy</h3>
                 <div class="card">
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Paciente</th>
-                                    <th style="width: 150px;">Data</th>
-                                    <th style="width: 150px;">Nº Conta</th>
-                                    <th style="text-align: right; width: 200px;">Valor (R$)</th>
+                                    <th style="width: 120px;">Data Entrada</th>
+                                    <th style="text-align: center; width: 120px;">Atendimento</th>
+                                    <th style="text-align: center; width: 120px;">Nº Conta</th>
+                                    <th style="text-align: right; width: 150px;">Valor (R$)</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-contas-faturadas"></tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="3" style="text-align: right; font-weight: bold;">TOTAL FATURADO:</td>
+                                    <td colspan="4" style="text-align: right; font-weight: bold;">TOTAL FATURADO NO PERÍODO:</td>
                                     <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-faturamento">R$ 0,00</td>
                                 </tr>
                             </tfoot>
@@ -867,26 +868,89 @@
         // LÓGICA: CONTAS FATURADAS (ABA 2)
         // ==========================================
         async function loadContasFaturadas() {
-            const mes = document.getElementById('filter-mes').value;
+            const mesInput = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-contas-faturadas');
             valContasGlobal = 0;
+            
+            if (!mesInput) return;
+            
+            const [y, m] = mesInput.split('-');
+            let year = parseInt(y);
+            let month = parseInt(m);
+            
+            let prevMonth = month - 1;
+            let prevYear = year;
+            if (prevMonth === 0) { 
+                prevMonth = 12; 
+                prevYear--; 
+            }
+            
+            const pad = n => String(n).padStart(2, '0');
+            
+            // Período: Do dia 15 do mês anterior até o dia 15 do mês atual
+            const dataInicioStr = `${prevYear}-${pad(prevMonth)}-15`;
+            const dataFimStr = `${year}-${pad(month)}-15`;
+
+            // Fronteiras para validação local no JS (garantia caso a API traga tudo)
+            const startDate = new Date(prevYear, prevMonth - 1, 15, 0, 0, 0);
+            const endDate = new Date(year, month - 1, 15, 23, 59, 59);
+
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Buscando Contas (15/${pad(prevMonth)} a 15/${pad(month)})...</td></tr>`;
+
             try {
-                const res = await fetch(`${API_BASE_URL}/contas_faturadas`, { headers: API_HEADERS });
-                if(!res.ok) return;
+                // Chama a API passando as datas de inicio e fim na URL
+                const res = await fetch(`${API_BASE_URL}/conta_paciente_eco?data_inicio=${dataInicioStr}&data_fim=${dataFimStr}`, { headers: API_HEADERS });
+                if(!res.ok) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro ao acessar as contas faturadas.</td></tr>';
+                    return;
+                }
+                
                 const data = await res.json();
-                const list = Object.values(data).filter(c => String(c.data || c.DATA || '').startsWith(mes));
-                tbody.innerHTML = list.length ? '' : '<tr><td colspan="4" style="text-align:center;">Nenhuma conta.</td></tr>';
-                list.forEach(c => {
-                    const val = parseOracleNumber(c.valor || c.VALOR);
+                
+                // Conversor da data que vem do banco para comparar no filtro local
+                const parseDataTasy = (dtStr) => {
+                    if (!dtStr) return new Date(0);
+                    if (dtStr.includes('/')) { 
+                        const [d, mo, y] = dtStr.split(' ')[0].split('/');
+                        return new Date(y, mo - 1, d);
+                    }
+                    const dtOnly = dtStr.split('T')[0].split(' ')[0];
+                    const [ano, mes, dia] = dtOnly.split('-');
+                    return new Date(ano, mes - 1, dia);
+                };
+
+                // Filtra para garantir que os dados estão estritamente dentro do dia 15 a 15
+                const list = Object.values(data).filter(c => {
+                    const dt = c.dt_entrada || c.DT_ENTRADA;
+                    const d = parseDataTasy(dt);
+                    return d >= startDate && d <= endDate;
+                });
+
+                tbody.innerHTML = list.length ? '' : `<tr><td colspan="5" style="text-align:center;">Nenhuma conta no período (15/${pad(prevMonth)} a 15/${pad(month)}).</td></tr>`;
+                
+                list.sort((a, b) => parseDataTasy(a.dt_entrada || a.DT_ENTRADA) - parseDataTasy(b.dt_entrada || b.DT_ENTRADA)).forEach(c => {
+                    const val = parseOracleNumber(c.valor_conta || c.VALOR_CONTA);
                     valContasGlobal += val;
-                    tbody.innerHTML += `<tr><td style="font-weight:600;">${(c.paciente || c.PACIENTE || '').toUpperCase()}</td>
-                        <td>${formatDate(c.data || c.DATA)}</td><td><span class="badge-faturamento fat-vita"># ${c.num_conta || c.NUM_CONTA || '-'}</span></td>
-                        <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td></tr>`;
+                    
+                    const paciente = c.nm_pessoa_fisica || c.NM_PESSOA_FISICA || '-';
+                    const dtEntrada = c.dt_entrada || c.DT_ENTRADA || '-';
+                    const atendimento = c.nr_atendimento || c.NR_ATENDIMENTO || '-';
+                    const conta = c.nr_interno_conta || c.NR_INTERNO_CONTA || '-';
+
+                    tbody.innerHTML += `<tr>
+                        <td style="font-weight:600; color:var(--primary);">${paciente.toUpperCase()}</td>
+                        <td>${formatDate(dtEntrada)}</td>
+                        <td style="text-align:center;"><span class="badge-count">${atendimento}</span></td>
+                        <td style="text-align:center;"><span class="badge-faturamento fat-vita"># ${conta}</span></td>
+                        <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
+                    </tr>`;
                 });
                 
                 // Atualiza rodapé Faturado
                 document.getElementById('footer-val-faturamento').innerText = 'R$ ' + formatCurrency(valContasGlobal);
-            } catch (e) { }
+            } catch (e) { 
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro de conexão (Contas Tasy).</td></tr>';
+            }
         }
     </script>
 </body>
