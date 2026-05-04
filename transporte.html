@@ -112,6 +112,14 @@
                     <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Nome Completo do Paciente</label>
                     <input type="text" id="ext-patient-name" class="form-control" placeholder="Digite aqui...">
                 </div>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 2px; padding: 0 10px;">
+                    <label for="ext-primeira-consulta" style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:12px; display:block; cursor:pointer;">1ª Consulta?</label>
+                    <div style="height: 30px; display: flex; align-items: center;">
+                        <input type="checkbox" id="ext-primeira-consulta" style="width: 20px; height: 20px; cursor: pointer; accent-color: #10B981;">
+                    </div>
+                </div>
+
                 <button class="btn btn-success" onclick="registerPatient()" style="height: 42px; padding: 0 25px; font-weight:bold;">
                     <i class="fas fa-paper-plane"></i> ENVIAR
                 </button>
@@ -319,10 +327,13 @@
                 // NOVO: Verifica se existe o posto cadastrado no fluxo e gera a tag visual
                 const postoDestino = d.posto ? `<div style="background: #1E293B; color: #F8FAFC; font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 8px; display: inline-block; margin-bottom: 12px; border: 2px solid #CBD5E0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-map-marker-alt" style="color: #F59E0B; margin-right: 5px;"></i> IR PARA: ${d.posto.toUpperCase()}</div><br>` : '';
 
+                // NOVO: Indicador visual se é primeira consulta
+                const badgePrimeiraConsulta = d.primeiraConsulta ? `<span style="background: #E11D48; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px; vertical-align: middle;">1ª CONSULTA</span>` : '';
+
                 grid.innerHTML += `
                     <div class="${cardClass}">
                         <div class="patient-header">
-                            <div class="patient-name">${ptName}</div>
+                            <div class="patient-name">${ptName} ${badgePrimeiraConsulta}</div>
                             <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
                         </div>
                         
@@ -365,8 +376,18 @@
 
         async function registerPatient() {
             const name = document.getElementById('ext-patient-name').value.trim();
+            const primeiraConsulta = document.getElementById('ext-primeira-consulta').checked; // CAPTURA DO NOVO CAMPO
+
             if(!name) return alert("Nome obrigatório");
-            const data = { name: name, origin: 'externa', timestamp: new Date().toISOString(), atendido: false, id_firebase: 'ext_' + Date.now() };
+            
+            const data = { 
+                name: name, 
+                origin: 'externa', 
+                timestamp: new Date().toISOString(), 
+                atendido: false, 
+                id_firebase: 'ext_' + Date.now(),
+                primeiraConsulta: primeiraConsulta // INSERÇÃO NO BANCO DE DADOS
+            };
             
             // BLINDADO
             await fetch(`${API_BASE_URL}/painAssessments`, { 
@@ -377,7 +398,11 @@
                 }, 
                 body:JSON.stringify(data) 
             });
+            
+            // RESET DOS CAMPOS
             document.getElementById('ext-patient-name').value = '';
+            document.getElementById('ext-primeira-consulta').checked = false;
+            
             loadData();
         }
 
