@@ -798,9 +798,7 @@
                     body: JSON.stringify(obj) 
                 });
 
-                // =========================================================================
-                // INÍCIO DA MÁGICA: Integração de Particulares no Repasse e Aba Pacientes
-                // =========================================================================
+                // AUTO-INSERÇÕES ABAS PACIENTE E REPASSE 
                 const procStr = document.getElementById('saleProcedureName').value.toUpperCase();
                 if (saleType === 'particular' && (procStr.includes('APLICAÇÃO') || procStr.includes('APLICACAO'))) {
                     
@@ -809,7 +807,6 @@
                     const pacIdCriado = 'pac_' + pacNomeBase.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                     
                     try {
-                        // 1. Cadastra na aba de Pacientes
                         const resPac = await fetch(`${API_BASE_URL}/pacientes/${pacIdCriado}`, { headers: API_HEADERS });
                         if (!resPac.ok || resPac.status === 404) {
                             let docIdParaVincular = Object.keys(doctors).find(k => doctors[k].nome === docNomeBase);
@@ -817,7 +814,7 @@
                                 id_firebase: pacIdCriado,
                                 nome: pacNomeBase.toUpperCase(),
                                 doctor_id: docIdParaVincular || '',
-                                status: 'Em Tratamento', // <- Garantindo o status para não ficar oculto no pacientes.html
+                                status: 'Em Tratamento', 
                                 prescritor_id: '',
                                 encaminhador_id: '',
                                 telefone: '',
@@ -832,19 +829,18 @@
                             });
                         }
 
-                        // 2. Injeta no Repasse Inteligente (/repasse_unimed) APENAS SE FOR NOVA VENDA
                         if (!id) {
                             const dateParts = obj.data.split('-');
-                            const compRepasse = `${dateParts[1]}/${dateParts[0]}`; // Transforma 2026-03-24 para 03/2026
+                            const compRepasse = `${dateParts[1]}/${dateParts[0]}`; 
                             
                             const repasseAuto = {
                                 id_firebase: 'rep_part_' + Date.now(),
                                 paciente: pacNomeBase.toUpperCase(),
                                 data_atendimento: obj.data,
                                 competencia: compRepasse,
-                                valor_pago: obj.valor_final, // Valor limpo (já sem a taxa da maquininha)
+                                valor_pago: obj.valor_final, 
                                 descricao: `Aplicação Particular - ${obj.procedimento}`,
-                                tipo: 'Particular', // Tag mágica para o Nicolas
+                                tipo: 'Particular', 
                                 custo_informado: 0,
                                 impostos_retidos: 0,
                                 dados_extras: JSON.stringify({ 
@@ -863,9 +859,6 @@
                         }
                     } catch(err) { console.error("Erro ao auto-cadastrar no repasse inteligente:", err); }
                 }
-                // =========================================================================
-                // FIM DA MÁGICA
-                // =========================================================================
 
                 alert(id ? "Atualizado com sucesso!" : "Registrado com sucesso!");
                 resetForm();
@@ -1138,17 +1131,21 @@
                         let displayVal = parseCurrency(ciclo.valor).toFixed(2);
                         
                         let badge = ''; let actions = '';
-                        let inputState = 'disabled'; 
+                        // Destravando o input para agendados para edição fluida:
+                        let inputState = (ciclo.status === 'presente' || ciclo.status === 'faltou') ? 'disabled' : ''; 
 
                         if (ciclo.status === 'presente') {
                             badge = '<span class="status-badge st-pago">Presente</span>';
+                        } else if (ciclo.status === 'faltou') {
+                            badge = '<span class="status-badge st-pendente">Faltou</span>';
+                            actions = `
+                                <button class="btn-remarcar" onclick="enableReschedule('${id}', ${i}, this)"><i class="fas fa-calendar-times"></i> Remarcar Falta</button>
+                            `;
                         } else {
-                            if (ciclo.status === 'faltou') badge = '<span class="status-badge st-pendente">Faltou</span>';
-                            else badge = '<span class="status-badge" style="background:#e2e8f0; color:#475569;">Agendado</span>';
-                            
+                            badge = '<span class="status-badge" style="background:#e2e8f0; color:#475569;">Agendado</span>';
                             actions = `
                                 <button class="btn-pay-parcel" onclick="markPresent('${id}', ${i})"><i class="fas fa-check"></i> Presente</button>
-                                <button class="btn-remarcar" onclick="enableReschedule('${id}', ${i}, this)"><i class="fas fa-calendar-times"></i> Remarcar Falta</button>
+                                <button class="btn-remarcar" style="background:#ef4444;" onclick="markFaltou('${id}', ${i})"><i class="fas fa-times"></i> Faltou</button>
                             `;
                         }
 
@@ -1156,7 +1153,7 @@
                             <div class="parcela-item">
                                 <div style="display:flex; align-items:center; gap:10px;">
                                     <strong style="width:50px; color:#3730a3;">Ciclo ${i}</strong>
-                                    <input type="date" id="lim-dat-${id}-${i}" class="inp-date" value="${displayDate}" ${inputState} title="Data do Ciclo">
+                                    <input type="date" id="lim-dat-${id}-${i}" class="inp-date" value="${displayDate}" ${inputState} onchange="cascadeLiminarDates('${id}', ${i}, ${totCiclos})" title="Data do Ciclo">
                                     <input type="number" id="lim-val-${id}-${i}" class="inp-parcela" value="${displayVal}" disabled title="Valor Rateado">
                                 </div>
                                 <div style="display:flex; align-items:center; gap:10px;">
@@ -1172,7 +1169,12 @@
                             <div class="cascade-container" style="border-left-color: #3730a3;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                     <h5 style="margin:0; color:#3730a3;">Controle de Ciclos da Liminar</h5>
-                                    <span style="font-size:11px; color:#666;">Data final projetada: ${safeDateDisplay(s.data_fim_prevista)}</span>
+                                    <div style="display:flex; align-items:center; gap:15px;">
+                                        <span style="font-size:11px; color:#666;">Data final projetada: ${safeDateDisplay(s.data_fim_prevista)}</span>
+                                        <button class="btn" style="background:#3730a3; color:white; padding:4px 10px; font-size:11px; border-radius:4px;" onclick="saveLiminarDates('${id}', ${totCiclos})">
+                                            <i class="fas fa-save"></i> Salvar Datas
+                                        </button>
+                                    </div>
                                 </div>
                                 ${htmlCiclos}
                             </div>
@@ -1276,6 +1278,57 @@
                 }
                 tbody.appendChild(trDetails);
             });
+        }
+
+        // ==========================================
+        // CASCATA E EDIÇÃO DE CICLOS DA LIMINAR
+        // ==========================================
+        window.cascadeLiminarDates = function(id, changedIndex, totCiclos) {
+            const sale = sales[id];
+            const interval = sale.intervalo_dias || 21;
+            const changedInput = document.getElementById(`lim-dat-${id}-${changedIndex}`);
+            if(!changedInput || !changedInput.value) return;
+            
+            let currentDate = new Date(changedInput.value + 'T12:00:00');
+
+            for(let j = changedIndex + 1; j <= totCiclos; j++) {
+                const nextInput = document.getElementById(`lim-dat-${id}-${j}`);
+                if(nextInput) {
+                    currentDate.setDate(currentDate.getDate() + interval);
+                    if (!nextInput.disabled) {
+                        nextInput.value = currentDate.toISOString().split('T')[0];
+                    }
+                }
+            }
+        }
+
+        window.saveLiminarDates = async function(id, totCiclos) {
+            const sale = sales[id];
+            const history = sale.historico_parcelas || {};
+            let lastDate = sale.data_fim_prevista;
+
+            for(let i=1; i<=totCiclos; i++) {
+                const el = document.getElementById(`lim-dat-${id}-${i}`);
+                if(el && el.value) {
+                    if(!history[i]) {
+                        history[i] = { status: 'agendado', valor: (parseCurrency(sale.valor_final)/totCiclos) };
+                    }
+                    history[i].data = el.value;
+                    lastDate = el.value;
+                }
+            }
+            sale.historico_parcelas = history;
+            sale.data_fim_prevista = lastDate;
+            
+            await updateSaleInDB(id, sale);
+            alert("Datas dos ciclos atualizadas com sucesso!");
+        }
+
+        window.markFaltou = async function(id, index) {
+            if(!confirm("Confirmar que a paciente faltou neste ciclo?")) return;
+            const sale = sales[id];
+            sale.historico_parcelas[index].status = 'faltou';
+            await updateSaleInDB(id, sale);
         }
 
         function toggleDetails(id) {
@@ -1419,29 +1472,23 @@
             const oldDateStr = history[index].data;
             
             if(!newDateStr) return alert("Por favor, informe uma data válida no campo do ciclo.");
-            if(newDateStr === oldDateStr) return alert("A data não foi alterada. Mude a data na caixinha antes de confirmar.");
+            if(newDateStr === oldDateStr) return alert("A data não foi alterada.");
 
-            if(!confirm(`Ao remarcar este ciclo para ${safeDateDisplay(newDateStr)}, todas as datas dos próximos ciclos pendentes serão empurradas para frente na mesma proporção.\n\nConfirma a remarcação?`)) return;
+            if(!confirm(`Confirma a remarcação? As datas seguintes se adequarão caso você tenha alterado e salvo via cronograma.`)) return;
 
-            const oldD = new Date(oldDateStr + 'T12:00:00');
-            const newD = new Date(newDateStr + 'T12:00:00');
-            const diffTime = newD - oldD;
-            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-            history[index].status = 'faltou';
-            history[index].data = newDateStr;
-
-            for(let i = index + 1; i <= sale.ciclos_total; i++) {
-                if(history[i] && history[i].status !== 'presente') {
-                    let nextD = new Date(history[i].data + 'T12:00:00');
-                    nextD.setDate(nextD.getDate() + diffDays);
-                    history[i].data = nextD.toISOString().split('T')[0];
+            let lastDate = sale.data_fim_prevista;
+            for(let i=1; i<=sale.ciclos_total; i++) {
+                const el = document.getElementById(`lim-dat-${id}-${i}`);
+                if(el && el.value) {
+                    history[i].data = el.value;
+                    lastDate = el.value;
                 }
             }
             
+            history[index].status = 'agendado';
+            
             sale.historico_parcelas = history;
-            const lastCycle = history[sale.ciclos_total];
-            if(lastCycle) sale.data_fim_prevista = lastCycle.data;
+            sale.data_fim_prevista = lastDate;
 
             await updateSaleInDB(id, sale);
         }
@@ -1521,57 +1568,122 @@
             });
         }
 
+        // ==========================================
+        // LÓGICA DE EXPLOSÃO DE RELATÓRIO P/ EXCEL E PDF
+        // ==========================================
+        function getReportItems() {
+            const start = document.getElementById('fStart').value;
+            const end = document.getElementById('fEnd').value;
+            const doctor = document.getElementById('fDoctor').value;
+            const procedure = document.getElementById('fProcedure').value;
+            const patient = document.getElementById('fPatient').value.toLowerCase();
+            const tipoReg = document.getElementById('fTipoRegistro').value;
+            const recebedor = document.getElementById('fRecebedor').value;
+
+            let items = [];
+
+            Object.entries(sales).forEach(([id, s]) => {
+                if (s.origem && s.origem !== 'manual' && s.origem !== 'importacao_excel') return;
+                if (doctor && s.medico !== doctor) return;
+                if (procedure && s.procedimento !== procedure) return;
+                if (patient && !(s.paciente || "").toLowerCase().includes(patient)) return;
+
+                const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
+                if (tipoReg === 'particular' && isLiminar) return;
+                if (tipoReg === 'liminar' && !isLiminar) return;
+
+                const recStr = s.recebedor || 'Clinica';
+                if (recebedor && recStr !== recebedor) return;
+
+                const history = s.historico_parcelas || {};
+                const totCiclos = isLiminar ? (s.ciclos_total || Object.keys(history).length || 1) : (parseInt((s.parcelas||'1x').replace('x','')) || 1);
+                const hasHistory = Object.keys(history).length > 0;
+
+                const totalLiquido = parseCurrency(s.valor_final);
+                const totalTaxa = parseCurrency(s.desconto);
+
+                if (hasHistory) {
+                    Object.entries(history).forEach(([cycleIndex, cycle]) => {
+                        const cycleDate = cycle.data;
+                        if (start && cycleDate < start) return;
+                        if (end && cycleDate > end) return;
+
+                        const baseAmount = parseCurrency(s.total_procedimento) || totalLiquido || 1;
+                        const proration = parseCurrency(cycle.valor) / baseAmount;
+                        const proratedLiquido = totalLiquido * proration;
+                        const proratedTaxa = totalTaxa * proration;
+
+                        items.push({
+                            parentSale: s,
+                            cycleIndex: cycleIndex,
+                            totCiclos: totCiclos,
+                            cycleDate: cycleDate,
+                            cycleValueLiquido: isLiminar ? parseCurrency(cycle.valor) : proratedLiquido,
+                            cycleTaxa: proratedTaxa,
+                            cycleStatus: cycle.status || (cycle.pago ? 'Pago' : 'Pendente'),
+                            cycleMethod: cycle.metodo || (isLiminar ? 'Liminar' : s.forma_pagamento)
+                        });
+                    });
+                } else {
+                    if (start && s.data < start) return;
+                    if (end && s.data > end) return;
+                    items.push({
+                        parentSale: s,
+                        cycleIndex: 1,
+                        totCiclos: totCiclos,
+                        cycleDate: s.data,
+                        cycleValueLiquido: totalLiquido,
+                        cycleTaxa: totalTaxa,
+                        cycleStatus: parseCurrency(s.valor_pago) >= totalLiquido ? 'Pago' : 'Pendente',
+                        cycleMethod: s.forma_pagamento
+                    });
+                }
+            });
+
+            // Ordena da data mais recente para a mais antiga (baseado no ciclo)
+            items.sort((a, b) => new Date(b.cycleDate + 'T12:00:00') - new Date(a.cycleDate + 'T12:00:00'));
+            return items;
+        }
+
         async function exportExcel() {
-            const rows = getFilteredData().map(i => i[1]);
-            if (rows.length === 0) { 
+            const items = getReportItems();
+            if (items.length === 0) { 
                 alert("Sem dados no filtro atual para exportar."); 
                 return; 
             }
 
             const excelData = [];
-            excelData.push(["Data", "Paciente", "Médico", "Procedimento", "Recebedor", "Pgto/Ciclos", "Taxa", "Total Líquido (R$)", "Valor Pago Bruto (R$)", "NF", "Usuário"]);
+            excelData.push(["Data", "Paciente", "Médico", "Procedimento", "Recebedor", "Parc/Ciclo", "Status", "Taxa Maq.", "Valor (R$)", "NF", "Usuário"]);
 
-            rows.forEach(s => {
+            items.forEach(item => {
+                const s = item.parentSale;
                 const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
                 const recStr = s.recebedor || 'Clinica';
-                
-                const bruto = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
-                const liquido = parseCurrency(s.valor_final);
-                
-                let pago = parseCurrency(s.valor_pago);
-                if (pago > 0 && Math.abs(pago - liquido) < 0.05 && parseCurrency(s.desconto) > 0 && !isLiminar) {
-                    pago = bruto; 
-                }
-
-                let pgto = '';
-                let taxaStr = '-';
-
-                if(isLiminar) {
-                    pgto = `Liminar (${s.ciclos_total || 1}x)`;
-                } else {
-                    pgto = s.forma_pagamento || '-';
-                    if (s.usa_dois_pagamentos && s.forma_pagamento_2) pgto += ` + ${s.forma_pagamento_2}`;
-                    pgto += ` (${s.parcelas || '1x'})`;
-
-                    if (s.desconto_percentual > 0) {
-                        if (s.desconto_percentual == 1.2) taxaStr = 'Déb. 1.2%';
-                        else if (s.desconto_percentual == 3.3) taxaStr = 'Créd. 3.3%';
-                        else taxaStr = `${s.desconto_percentual}%`;
-                    }
-                }
-                
                 const userName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
 
+                let cicloLabel = isLiminar ? `Liminar (${item.cycleIndex}/${item.totCiclos})`
+                                           : `${item.cycleMethod} (${item.cycleIndex}/${item.totCiclos})`;
+
+                let statusLabel = item.cycleStatus;
+                if(statusLabel === 'presente') statusLabel = 'Presente';
+                else if(statusLabel === 'faltou') statusLabel = 'Faltou';
+                else if(statusLabel === 'agendado') statusLabel = 'Agendado';
+
+                let taxaStr = '-';
+                if (!isLiminar && s.desconto_percentual > 0) {
+                    taxaStr = `${s.desconto_percentual}%`;
+                }
+
                 excelData.push([
-                    safeDateDisplay(s.data), 
+                    safeDateDisplay(item.cycleDate), 
                     s.paciente || '', 
                     s.medico || '', 
                     s.procedimento || '-', 
                     recStr === 'Clinica' ? 'Clínica' : 'Médico',
-                    pgto,
+                    cicloLabel,
+                    statusLabel,
                     taxaStr,
-                    liquido,
-                    pago,
+                    item.cycleValueLiquido,
                     s.nota_fiscal || '-',
                     userName
                 ]);
@@ -1579,7 +1691,7 @@
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Financeiro");
+            XLSX.utils.book_append_sheet(wb, ws, "Financeiro_Detalhado");
 
             const dataAtual = new Date().toISOString().slice(0,10);
             XLSX.writeFile(wb, `Relatorio_Financeiro_${dataAtual}.xlsx`);
@@ -1588,69 +1700,51 @@
         async function exportPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4'); 
-            const rows = getFilteredData().map(i => i[1]);
-            if (rows.length === 0) { alert("Sem dados no filtro atual para exportar."); return; }
+            const items = getReportItems();
+            
+            if (items.length === 0) { alert("Sem dados no filtro atual para exportar."); return; }
 
-            const tableColumn = ["Data", "Paciente", "Médico", "Procedimento", "Receb.", "Pgto/Ciclos", "Taxa", "Total Líquido", "V. Pago Bruto", "NF", "Usuário"];
+            const tableColumn = ["Data", "Paciente", "Médico", "Procedimento", "Receb.", "Parc/Ciclo", "Status", "Valor (R$)", "NF", "Usuário"];
             const tableRows = [];
             
             let sumTotalLiquido = 0; 
-            let sumPagoBruto = 0;
             let sumEcoCenter = 0;
             let sumRepasse = 0;
             let sumTaxas = 0;
 
-            rows.forEach(s => {
+            items.forEach(item => {
+                const s = item.parentSale;
                 const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
                 const recStr = s.recebedor || 'Clinica';
                 
-                const bruto = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
-                const liquido = parseCurrency(s.valor_final);
-                
-                let pago = parseCurrency(s.valor_pago);
-                if (pago > 0 && Math.abs(pago - liquido) < 0.05 && parseCurrency(s.desconto) > 0 && !isLiminar) {
-                    pago = bruto; 
-                }
-
-                sumTotalLiquido += liquido; 
-                sumPagoBruto += pago;
+                sumTotalLiquido += item.cycleValueLiquido; 
 
                 if (!isLiminar) {
                     const procName = (s.procedimento || '').toLowerCase();
-                    if (procName.includes('consulta')) sumRepasse += liquido;
-                    else sumEcoCenter += liquido;
-                    if (recStr === 'Clinica') sumTaxas += parseCurrency(s.desconto);
+                    if (procName.includes('consulta')) sumRepasse += item.cycleValueLiquido;
+                    else sumEcoCenter += item.cycleValueLiquido;
+                    if (recStr === 'Clinica') sumTaxas += item.cycleTaxa;
                 }
 
-                let pgto = '';
-                let taxaStr = '-';
+                let cicloLabel = isLiminar ? `Liminar (${item.cycleIndex}/${item.totCiclos})`
+                                           : `${item.cycleMethod} (${item.cycleIndex}/${item.totCiclos})`;
 
-                if(isLiminar) {
-                    pgto = `Liminar (${s.ciclos_total || 1}x)`;
-                } else {
-                    pgto = s.forma_pagamento || '-';
-                    if (s.usa_dois_pagamentos && s.forma_pagamento_2) pgto += ` + ${s.forma_pagamento_2}`;
-                    pgto += ` (${s.parcelas || '1x'})`;
+                let statusLabel = item.cycleStatus;
+                if(statusLabel === 'presente') statusLabel = 'Presente';
+                else if(statusLabel === 'faltou') statusLabel = 'Faltou';
+                else if(statusLabel === 'agendado') statusLabel = 'Agendado';
 
-                    if (s.desconto_percentual > 0) {
-                        if (s.desconto_percentual == 1.2) taxaStr = 'Déb. 1.2%';
-                        else if (s.desconto_percentual == 3.3) taxaStr = 'Créd. 3.3%';
-                        else taxaStr = `${s.desconto_percentual}%`;
-                    }
-                }
-                
                 const userName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
 
                 tableRows.push([
-                    safeDateDisplay(s.data), 
-                    s.paciente || '', 
-                    s.medico || '', 
-                    s.procedimento || '-', 
+                    safeDateDisplay(item.cycleDate), 
+                    (s.paciente || '').substring(0, 20), 
+                    (s.medico || '').substring(0, 15), 
+                    (s.procedimento || '-').substring(0, 15), 
                     recStr === 'Clinica' ? 'Clínica' : 'Médico',
-                    pgto,
-                    taxaStr,
-                    liquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}),
-                    pago.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}),
+                    cicloLabel,
+                    statusLabel,
+                    item.cycleValueLiquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}),
                     s.nota_fiscal || '-',
                     userName
                 ]);
@@ -1669,12 +1763,12 @@
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(20);
-            doc.text("RELATÓRIO FINANCEIRO", 40, 18); 
+            doc.text("RELATÓRIO FINANCEIRO DETALHADO", 40, 18); 
             
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             doc.setTextColor(209, 250, 229);
-            doc.text("Fechamento de Particulares e Liminares Judiciais", 40, 24);
+            doc.text("Análise Rateada por Parcela / Ciclo (Filtrado por competência)", 40, 24);
 
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(9);
@@ -1687,9 +1781,8 @@
                 head: [tableColumn], 
                 body: tableRows, 
                 foot: [[
-                    { content: 'VALOR TOTAL', colSpan: 7, styles: { halign: 'left', paddingLeft: 3 } },
+                    { content: 'VALOR TOTAL EXIBIDO', colSpan: 7, styles: { halign: 'left', paddingLeft: 3 } },
                     { content: sumTotalLiquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), styles: { halign: 'center' } },
-                    { content: sumPagoBruto.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), styles: { halign: 'center' } },
                     "",
                     ""
                 ]],
@@ -1729,16 +1822,15 @@
                 showFoot: 'lastPage',
                 columnStyles: {
                     0: { cellWidth: 16 }, 
-                    1: { cellWidth: 36 }, 
-                    2: { cellWidth: 24 },
-                    3: { cellWidth: 32 }, 
-                    4: { cellWidth: 15 }, 
-                    5: { cellWidth: 30 }, 
-                    6: { cellWidth: 16 }, 
+                    1: { cellWidth: 38 }, 
+                    2: { cellWidth: 26 },
+                    3: { cellWidth: 34 }, 
+                    4: { cellWidth: 16 }, 
+                    5: { cellWidth: 28 }, 
+                    6: { cellWidth: 20 }, 
                     7: { cellWidth: 28, fontStyle: 'bold', textColor: [0, 133, 91] }, 
-                    8: { cellWidth: 28 }, 
-                    9: { cellWidth: 14 },
-                    10: { cellWidth: 18 } 
+                    8: { cellWidth: 16 },
+                    9: { cellWidth: 20 } 
                 } 
             });
 
@@ -1758,13 +1850,13 @@
             doc.setFontSize(9);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 133, 91);
-            doc.text("RESUMO CONTÁBIL (VALORES LÍQUIDOS)", 15, startCardY + 5.5);
+            doc.text("RESUMO CONTÁBIL (DA PÁGINA ATUAL)", 15, startCardY + 5.5);
 
             doc.setFontSize(8);
             doc.setTextColor(71, 85, 105);
             
             doc.setFont("helvetica", "bold");
-            doc.text("ECO Center (Infusões):", 15, startCardY + 14);
+            doc.text("ECO Center (Infusões/Particular):", 15, startCardY + 14);
             doc.setFont("helvetica", "normal");
             doc.text(sumEcoCenter.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 14, { align: "right" });
 
@@ -1774,7 +1866,7 @@
             doc.text(sumRepasse.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 21, { align: "right" });
 
             doc.setFont("helvetica", "bold");
-            doc.text("Taxas de Maquininha (Clínica):", 15, startCardY + 28);
+            doc.text("Taxas de Maq. Projetada (Clínica):", 15, startCardY + 28);
             doc.setFont("helvetica", "normal");
             doc.text(sumTaxas.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 28, { align: "right" });
 
