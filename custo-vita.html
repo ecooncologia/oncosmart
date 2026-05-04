@@ -888,45 +888,44 @@
             const pad = n => String(n).padStart(2, '0');
             
             // Período: Do dia 15 do mês anterior até o dia 15 do mês atual
-            const dataInicioStr = `${prevYear}-${pad(prevMonth)}-15`;
-            const dataFimStr = `${year}-${pad(month)}-15`;
-
-            // Fronteiras para validação local no JS (garantia caso a API traga tudo)
             const startDate = new Date(prevYear, prevMonth - 1, 15, 0, 0, 0);
             const endDate = new Date(year, month - 1, 15, 23, 59, 59);
 
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Buscando Contas (15/${pad(prevMonth)} a 15/${pad(month)})...</td></tr>`;
 
             try {
-                // Chama a API passando as datas de inicio e fim na URL
-                const res = await fetch(`${API_BASE_URL}/conta_paciente_eco?data_inicio=${dataInicioStr}&data_fim=${dataFimStr}`, { headers: API_HEADERS });
+                // ATENÇÃO: Deixei a rota como /conta_paciente_eco 
+                // Se no seu backend você manteve a rota original, basta alterar esta variável para:
+                // const endpoint = `${API_BASE_URL}/contas_faturadas`;
+                const endpoint = `${API_BASE_URL}/conta_paciente_eco`;
+                
+                const res = await fetch(endpoint, { headers: API_HEADERS });
                 if(!res.ok) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro ao acessar as contas faturadas.</td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;"><b>Erro de API:</b> A rota <code>${endpoint}</code> retornou falha. Verifique o nome da rota no seu backend.</td></tr>`;
                     return;
                 }
                 
                 const data = await res.json();
                 
-                // Conversor da data que vem do banco para comparar no filtro local
                 const parseDataTasy = (dtStr) => {
                     if (!dtStr) return new Date(0);
                     if (dtStr.includes('/')) { 
-                        const [d, mo, y] = dtStr.split(' ')[0].split('/');
-                        return new Date(y, mo - 1, d);
+                        const [d, mo, yStr] = dtStr.split(' ')[0].split('/');
+                        return new Date(yStr, mo - 1, d);
                     }
                     const dtOnly = dtStr.split('T')[0].split(' ')[0];
                     const [ano, mes, dia] = dtOnly.split('-');
                     return new Date(ano, mes - 1, dia);
                 };
 
-                // Filtra para garantir que os dados estão estritamente dentro do dia 15 a 15
+                // Filtro local estrito (dia 15 ao dia 15)
                 const list = Object.values(data).filter(c => {
                     const dt = c.dt_entrada || c.DT_ENTRADA;
                     const d = parseDataTasy(dt);
                     return d >= startDate && d <= endDate;
                 });
 
-                tbody.innerHTML = list.length ? '' : `<tr><td colspan="5" style="text-align:center;">Nenhuma conta no período (15/${pad(prevMonth)} a 15/${pad(month)}).</td></tr>`;
+                tbody.innerHTML = list.length ? '' : `<tr><td colspan="5" style="text-align:center;">Nenhuma conta faturada no período (15/${pad(prevMonth)} a 15/${pad(month)}).</td></tr>`;
                 
                 list.sort((a, b) => parseDataTasy(a.dt_entrada || a.DT_ENTRADA) - parseDataTasy(b.dt_entrada || b.DT_ENTRADA)).forEach(c => {
                     const val = parseOracleNumber(c.valor_conta || c.VALOR_CONTA);
@@ -949,7 +948,8 @@
                 // Atualiza rodapé Faturado
                 document.getElementById('footer-val-faturamento').innerText = 'R$ ' + formatCurrency(valContasGlobal);
             } catch (e) { 
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro de conexão (Contas Tasy).</td></tr>';
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Erro de requisição (CORS ou Rota não encontrada no Backend).</td></tr>`;
             }
         }
     </script>
