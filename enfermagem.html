@@ -317,12 +317,15 @@
                     </div>
                 `;
 
+                // NOVO: Badge visual se é primeira consulta
+                const badgePrimeiraConsulta = p.primeiraConsulta ? `<span style="background: #E11D48; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px; vertical-align: middle;">1ª CONSULTA</span>` : '';
+
                 const html = `
                     <div class="${cardClass}">
                         <div class="card-header-row">
                             <div class="face-icon">${isExt ? '🏢' : (p.painEmoji || '😐')}</div>
                             <div class="patient-info">
-                                <h3>${p.name}</h3>
+                                <h3>${p.name} ${badgePrimeiraConsulta}</h3>
                                 <small><i class="far fa-clock"></i> ${new Date(p.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</small>
                             </div>
                         </div>
