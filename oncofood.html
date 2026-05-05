@@ -46,7 +46,7 @@
             font-family: 'DM Sans', sans-serif;
         }
 
-        /* Respeitando o global.js - evitando sobrescrever body agressivamente */
+        /* Container ajustado para não conflitar com nav-global */
         .oncofood-container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; background-color: var(--bg); min-height: 100vh;}
         
         /* Cabeçalho da Página */
@@ -375,12 +375,8 @@
         // ==========================================
         // VARIÁVEIS GLOBAIS
         // ==========================================
-        const API_BASE_URL = "https://api.ecooncologia.com.br:3000";
-        const API_HEADERS = { 'Content-Type': 'application/json', 'x-api-key': 'EcoOnco_Smart_Seguranca_2026!@' };
-        
-        const API_ONCOFOOD_ORDERS = '/oncofood_pedidos';
-        const API_ONCOFOOD_STOCK = '/oncofood_estoque';
-        const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; 
+        // As variáveis API_BASE_URL e API_HEADERS foram removidas daqui,
+        // pois elas já são chamadas e declaradas pelo seu global.js nativo!
         
         let loggedUser = "Sistema";
         let activeOrders = {};
@@ -388,6 +384,15 @@
         let inventoryItems = {};
         let foodCategories = {};
         let alertedLowStock = false; // Flag para não repetir o aviso de estoque
+
+        // Função nativa do Eco Oncologia restaurada
+        function getLoggedUserName() {
+            try {
+                let uStr = localStorage.getItem('ecoUser');
+                if(uStr) return JSON.parse(uStr).nome || "Sistema";
+            } catch(e) {}
+            return "Sistema";
+        }
 
         function normalizeData(apiData) {
             if (!apiData) return {}; 
@@ -401,8 +406,11 @@
         }
 
         async function apiFetch(endpoint, method = 'GET', bodyObj = null) {
+            // Utilizando o API_HEADERS do global.js
             let options = { method, headers: API_HEADERS };
             if (bodyObj) options.body = JSON.stringify(bodyObj);
+            
+            // Utilizando o API_BASE_URL do global.js
             const url = method === 'GET' ? `${API_BASE_URL}${endpoint}?t=${Date.now()}` : `${API_BASE_URL}${endpoint}`;
             const res = await fetch(url, options);
             if (!res.ok) throw new Error("Status " + res.status);
@@ -411,7 +419,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            if(typeof initGlobal === 'function') initGlobal('oncofood', 'Copa & Nutrição');
+            // Inicializa a navegação global puxando do global.js
+            if(typeof initGlobal === 'function') {
+                initGlobal('oncofood', 'Copa & Nutrição');
+            }
+            loggedUser = getLoggedUserName();
             
             await loadCategories(); 
             await loadInventory();  
@@ -434,6 +446,8 @@
         // ==========================================
         // CATEGORIAS
         // ==========================================
+        const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; 
+        
         async function loadCategories() {
             try {
                 const data = await apiFetch(API_ONCOFOOD_CATEGORIES);
@@ -531,6 +545,8 @@
         // ==========================================
         // LÓGICA DO ESTOQUE E CARDÁPIO
         // ==========================================
+        const API_ONCOFOOD_STOCK = '/oncofood_estoque';
+        
         async function loadInventory() {
             try { inventoryItems = await apiFetch(API_ONCOFOOD_STOCK); } 
             catch(e) { inventoryItems = {}; }
@@ -626,7 +642,7 @@
             item.estoque = newStock;
             
             const el = document.getElementById(`stock-val-${id}`);
-            if(el) { el.innerText = newStock; el.className = newStock <= 3 ? 'stock-val low' : 'stock-val'; }
+            if(el) { el.innerText = newStock; el.className = newStock <= 30 ? 'stock-val low' : 'stock-val'; }
             try { await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'PUT', item); populateOrderSelect(); } 
             catch(e) { console.error("Erro ao salvar estoque", e); }
         }
@@ -707,6 +723,8 @@
         // ==========================================
         // PEDIDOS (COZINHA)
         // ==========================================
+        const API_ONCOFOOD_ORDERS = '/oncofood_pedidos';
+        
         async function loadOrders() {
             try {
                 const allOrders = await apiFetch(API_ONCOFOOD_ORDERS);
