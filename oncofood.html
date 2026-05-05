@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel da Copa - ONCO SMART</title>
+    <title>Painel da Copa - ONCOFOOD</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <script>
         const versaoApp = Date.now();
         document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
@@ -14,153 +17,189 @@
     </script>
 
     <style>
-        body { background-color: #fafbfd; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; color: #1f2937; }
-        .container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
+        :root {
+            /* Paleta Eco Oncologia */
+            --primary: #00796b;
+            --primary-dark: #004d40;
+            --primary-light: #e0f2f1;
+            --accent: #f57c00;
+            --accent-dark: #e65100;
+            --accent-light: #fff3e0;
+            --green: #2e7d32;
+            --green-dark: #1b5e20;
+            --green-light: #e8f5e9;
+            --danger: #d32f2f;
+            --danger-light: #fee2e2;
+            
+            /* Cores de Fundo e Texto */
+            --bg: #F5F7F6;
+            --surface: #FFFFFF;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #cbd5e1;
+            
+            /* Arredondamentos */
+            --r-sm: 10px;
+            --r-md: 16px;
+            --r-lg: 24px;
+            
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        /* Correção do fundo branco e adaptação ao minimizar o nav-global */
+        html, body {
+            margin: 0; padding: 0; min-height: 100vh;
+            background-color: var(--bg);
+            display: flex; flex-direction: column;
+        }
+
+        .oncofood-container { 
+            flex: 1; /* Faz o container preencher todo o espaço restante */
+            width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px 40px; 
+            box-sizing: border-box; background-color: var(--bg);
+            transition: all 0.3s ease;
+        }
         
         /* Cabeçalho da Página */
-        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f9fafb; flex-shrink: 0;}
-        .dash-header-title h1 { margin: 0; font-size: 24px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 12px; }
-        .dash-header-title p { margin: 6px 0 0; color: #6b7280; font-size: 14px; font-weight: 500; }
-        .dash-header-title i { color: #f59e0b; }
-
-        /* Abas Estilo ONCO SMART (COM CORES SUAVES) */
-        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0; }
-        .tab-btn { padding: 12px 24px; border: 1px solid #e5e7eb; border-bottom: none; background: #f8fafc; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px 10px 0 0; transition: 0.3s; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-        .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
-        .tab-btn.active { color: #00995D; border-top: 4px solid #00995D; background: white; margin-bottom: -2px; padding-bottom: 14px; box-shadow: 0 -4px 6px -4px rgba(0,0,0,0.05);}
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: var(--primary); padding: 24px 30px; border-radius: var(--r-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); flex-shrink: 0; color: white;}
+        .dash-header-title h1 { margin: 0; font-size: 26px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 12px; }
+        .dash-header-title p { margin: 6px 0 0; color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 500; }
+        .dash-header-title i { color: var(--accent); }
         
-        .tab-content { display: none; animation: fadeIn 0.3s; }
+        /* Abas Estilo ONCOFOOD */
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 3px solid var(--border); padding-bottom: 0; }
+        .tab-btn { padding: 14px 24px; border: none; background: transparent; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--muted); cursor: pointer; border-radius: 12px 12px 0 0; transition: 0.3s; font-size: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 4px solid transparent; text-transform: uppercase; letter-spacing: 0.5px;}
+        .tab-btn:hover:not(.active) { color: var(--primary); background: rgba(0, 121, 107, 0.05); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); margin-bottom: -3px; background: rgba(0, 121, 107, 0.08); }
+        
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
         .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Formulários e Inputs */
-        .controls { background: white; padding: 20px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 1px solid #f9fafb;}
+        .controls { background: var(--surface); padding: 24px; border-radius: var(--r-md); margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between; border: 2px solid #e2e8f0;}
         .controls-group { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; width: 100%;}
         
-        .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px;}
-        .label-title { font-size: 11px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
-        .input-field { padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; color: #374151; height: 42px; box-sizing: border-box; outline: none; transition: 0.2s; background: #f9fafb; width: 100%;}
-        .input-field:focus { border-color: #00995D; background: #fff; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
+        .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px;}
+        .label-title { font-size: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-field { padding: 12px 15px; border: 2px solid var(--border); border-radius: var(--r-sm); font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; color: var(--text); height: 46px; box-sizing: border-box; outline: none; transition: 0.2s; background: #f8fafc; width: 100%;}
+        .input-field:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px var(--primary-light); }
         
-        .btn-add { background: #00995D; color: white; border: none; padding: 0 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0, 153, 93, 0.2); white-space: nowrap;}
-        .btn-add:hover { background: #007a4a; transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0, 153, 93, 0.3); }
+        .btn-add { background: var(--primary); color: white; border: none; padding: 0 24px; border-radius: var(--r-sm); cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 14px; display: flex; gap: 8px; align-items: center; height: 46px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0, 121, 107, 0.2); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.5px;}
+        .btn-add:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0, 121, 107, 0.3); }
+        .btn-add.accent { background: var(--accent); box-shadow: 0 4px 6px rgba(245, 124, 0, 0.2); }
+        .btn-add.accent:hover { background: var(--accent-dark); box-shadow: 0 6px 12px rgba(245, 124, 0, 0.3); }
         
-        .btn-action { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 42px; transition: 0.2s; }
-        .btn-action:hover { background: #e5e7eb; }
+        .btn-action { background: #f1f5f9; color: var(--muted); border: 2px solid var(--border); padding: 0 16px; border-radius: var(--r-sm); cursor: pointer; font-weight: 700; font-size: 13px; display: flex; gap: 8px; align-items: center; height: 46px; transition: 0.2s; }
+        .btn-action:hover { background: #e2e8f0; color: var(--primary); border-color: var(--primary);}
 
-        .btn-cancel { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: none; gap: 8px; align-items: center; height: 42px; transition: 0.2s; }
-        .btn-cancel:hover { background: #ef4444; color: white; }
+        .btn-cancel { background: var(--danger-light); color: var(--danger); border: 2px solid #fca5a5; padding: 0 16px; border-radius: var(--r-sm); cursor: pointer; font-weight: 700; font-size: 14px; display: none; gap: 8px; align-items: center; height: 46px; transition: 0.2s; }
+        .btn-cancel:hover { background: var(--danger); color: white; border-color: var(--danger);}
 
         /* Grid de Pedidos e Estoque */
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         
         /* Cards Modernos */
-        .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; position: relative; overflow: hidden;}
-        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .card { background: var(--surface); border-radius: var(--r-md); padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.04); border: 2px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; position: relative; overflow: hidden;}
+        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); border-color: var(--border); }
         
         /* Header do Card de Pedido */
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 1px dashed #e5e7eb; }
-        .patient-info h3 { margin: 0 0 5px 0; font-size: 16px; color: #111827; font-weight: 800; }
-        .patient-box { font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; display: inline-block; }
-        .order-time { font-size: 11px; color: #6b7280; font-weight: 600; text-align: right;}
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px dashed #e2e8f0; }
+        .patient-info h3 { margin: 0 0 6px 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; color: var(--text); font-weight: 800; }
+        .patient-box { font-size: 12px; font-weight: 800; color: var(--accent); background: var(--accent-light); padding: 6px 10px; border-radius: 8px; display: inline-block; }
+        .order-time { font-size: 12px; color: var(--muted); font-weight: 700; text-align: right; display: flex; align-items: center; gap: 4px;}
         
         /* Status Badges */
-        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
-        .st-pending { background: #fee2e2; color: #b91c1c; }
-        .st-preparing { background: #fef3c7; color: #d97706; }
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+        .st-pending { background: var(--danger-light); color: var(--danger); }
+        .st-preparing { background: var(--accent-light); color: var(--accent-dark); }
         .st-ready { background: #e0f2fe; color: #0284c7; }
-        .st-delivered { background: #dcfce7; color: #10b981; }
+        .st-delivered { background: var(--green-light); color: var(--green); }
 
         /* Lista de Itens do Pedido */
-        .order-items { flex: 1; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #4b5563; font-weight: 600; }
-        .order-items div { display: flex; align-items: center; gap: 8px; padding: 8px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;}
-        .order-items i { color: #f59e0b; font-size: 14px; }
+        .order-items { flex: 1; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--text); font-weight: 600; }
+        .order-items div { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;}
+        .order-items i { color: var(--accent); font-size: 16px; }
 
         /* Ações do Card de Pedido */
-        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
-        .btn-status { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; background: white; color: #4b5563;}
-        .btn-status:hover { background: #f3f4f6; }
+        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
+        .btn-status { padding: 12px; border: 2px solid var(--border); border-radius: 10px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; background: white; color: var(--muted); text-transform: uppercase;}
+        .btn-status:hover { background: #f1f5f9; color: var(--text); border-color: #94a3b8;}
         
-        .btn-status.action-pending:hover, .btn-status.action-pending.active { background: #fee2e2; border-color: #fca5a5; color: #b91c1c;}
-        .btn-status.action-preparing:hover, .btn-status.action-preparing.active { background: #fef3c7; border-color: #fcd34d; color: #d97706;}
-        .btn-status.action-ready:hover, .btn-status.action-ready.active { background: #e0f2fe; border-color: #7dd3fc; color: #0284c7;}
-        .btn-status.action-delivered:hover, .btn-status.action-delivered.active { background: #dcfce7; border-color: #86efac; color: #10b981;}
+        .btn-status.action-pending:hover, .btn-status.action-pending.active { background: var(--danger-light); border-color: var(--danger); color: var(--danger);}
+        .btn-status.action-preparing:hover, .btn-status.action-preparing.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent-dark);}
+        .btn-status.action-ready:hover, .btn-status.action-ready.active { background: #e0f2fe; border-color: #38bdf8; color: #0284c7;}
+        .btn-status.action-delivered:hover, .btn-status.action-delivered.active { background: var(--green-light); border-color: var(--green); color: var(--green);}
         
-        .btn-danger { grid-column: span 2; background: #fef2f2; color: #ef4444; border: 1px dashed #fca5a5; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 6px;}
-        .btn-danger:hover { background: #ef4444; color: white; border-style: solid;}
+        .btn-danger { grid-column: span 2; background: transparent; color: var(--danger); border: 2px dashed #fca5a5; padding: 12px; border-radius: 10px; cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; text-transform: uppercase;}
+        .btn-danger:hover { background: var(--danger-light); border-color: var(--danger); border-style: solid;}
 
-        /* Cores Vibrantes por Categoria no Card de Estoque */
-        .cat-Refeições { border-top: 5px solid #f59e0b; }
-        .cat-Lanches { border-top: 5px solid #8b5cf6; }
-        .cat-Sobremesas { border-top: 5px solid #ec4899; }
-        .cat-Bebidas { border-top: 5px solid #3b82f6; }
-        .cat-Insumos { border-top: 5px solid #9ca3af; }
-
-        /* Imagem do Estoque - CORRIGIDA PARA CONTAIN */
-        .stock-image { width: calc(100% + 40px); height: 160px; object-fit: contain; margin: -20px -20px 10px -20px; background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 10px; box-sizing: border-box;}
+        /* Imagem do Estoque Ajustada para não cortar (contain) */
+        .stock-image { width: 100%; height: 110px; object-fit: contain; margin-bottom: 15px; padding: 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--r-sm); }
         
         /* Controles de Estoque */
-        .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f9fafb; padding: 10px 15px; border-radius: 8px; border: 1px solid #e5e7eb; }
-        .stock-val { font-size: 20px; font-weight: 900; color: #00995D; }
-        .stock-val.low { color: #ef4444; }
+        .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 2px solid #e2e8f0; margin-top: auto;}
+        .stock-val { font-size: 22px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--primary); min-width: 40px; text-align: center;}
+        .stock-val.low { color: var(--danger); }
         
-        .qty-actions { display: flex; align-items: center; gap: 4px; }
-        .btn-qty { width: 32px; height: 32px; border-radius: 8px; background: white; border: 1px solid #d1d5db; color: #374151; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .btn-qty:hover { background: #00995D; color: white; border-color: #00995D;}
+        .qty-actions { display: flex; align-items: center; gap: 6px; }
+        .btn-qty { width: 36px; height: 36px; border-radius: 8px; background: white; border: 2px solid var(--border); color: var(--muted); font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-qty:hover { background: var(--primary); color: white; border-color: var(--primary);}
         
-        .btn-qty-manual { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; margin-left: 6px; }
-        .btn-qty-manual:hover { background: #0284c7; color: white; border-color: #0284c7; }
+        .btn-qty-manual { background: var(--accent-light); color: var(--accent-dark); border-color: #fdba74; margin-left: 8px; }
+        .btn-qty-manual:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-        .card-stock-actions { display: flex; gap: 10px; }
-        .btn-edit-item { flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;}
-        .btn-edit-item:hover { background: #3b82f6; color: white; border-color: #3b82f6;}
-        .btn-del-item { flex: 1; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;}
-        .btn-del-item:hover { background: #ef4444; color: white; border-style: solid;}
+        .card-stock-actions { display: flex; gap: 10px; margin-top: 15px;}
+        .btn-edit-item { flex: 1; background: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 10px; border-radius: 10px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 12px; cursor: pointer; transition: 0.2s; text-transform: uppercase;}
+        .btn-edit-item:hover { background: var(--primary-light); }
+        .btn-del-item { background: transparent; color: var(--danger); border: 2px solid #fca5a5; padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: 0.2s;}
+        .btn-del-item:hover { background: var(--danger-light); border-color: var(--danger); }
 
-        .empty-state { grid-column: 1 / -1; padding: 60px 20px; text-align: center; color: #9ca3af; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 15px; background: white; border-radius: 16px; border: 1px dashed #d1d5db;}
-        .empty-state i { font-size: 48px; color: #e5e7eb; }
+        .empty-state { grid-column: 1 / -1; padding: 80px 20px; text-align: center; color: var(--muted); font-size: 18px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 15px; background: white; border-radius: var(--r-md); border: 2px dashed var(--border);}
+        .empty-state i { font-size: 56px; color: #e2e8f0; }
 
         /* Categorias do Estoque */
-        .category-header { font-size: 18px; font-weight: 800; color: #1f2937; margin: 30px 0 15px 0; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;}
+        .category-header { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); margin: 35px 0 15px 0; display: flex; align-items: center; gap: 10px; border-bottom: 3px solid #e2e8f0; padding-bottom: 12px;}
         
         /* Modais Globais */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s;}
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s;}
         .modal-overlay.active { opacity: 1; visibility: visible; }
         
-        .modal-content { background: white; padding: 0; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); transform: scale(0.95); transition: 0.3s; overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;}
-        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-content { background: white; padding: 0; border-radius: var(--r-lg); width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95) translateY(20px); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;}
+        .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
         
-        .modal-header { padding: 20px 25px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; flex-shrink: 0;}
-        .modal-header h3 { margin: 0; font-size: 18px; color: #111827; display: flex; align-items: center; gap: 10px; }
-        .btn-close { background: none; border: none; font-size: 20px; color: #9ca3af; cursor: pointer; transition: 0.2s; }
-        .btn-close:hover { color: #ef4444; }
+        .modal-header { padding: 24px 30px; border-bottom: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; flex-shrink: 0;}
+        .modal-header h3 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; color: var(--text); display: flex; align-items: center; gap: 12px; }
+        .btn-close { background: none; border: none; font-size: 24px; color: var(--muted); cursor: pointer; transition: 0.2s; }
+        .btn-close:hover { color: var(--danger); transform: rotate(90deg);}
         
-        .modal-body { padding: 20px 25px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        .modal-body { padding: 24px 30px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
         
         /* Pop-up Customizado do Sistema (EcoDialog) */
-        #ecoDialogModal .modal-content { max-width: 400px; text-align: center; padding: 30px 20px; }
-        #ecoDialogIcon { font-size: 48px; margin-bottom: 15px; }
-        #ecoDialogTitle { font-size: 20px; font-weight: 800; color: #111827; margin-bottom: 8px; }
-        #ecoDialogText { font-size: 14px; color: #4b5563; margin-bottom: 20px; line-height: 1.5; }
-        #ecoDialogInput { margin-bottom: 20px; text-align: center; font-size: 18px; font-weight: bold; width: 100%; }
+        #ecoDialogModal .modal-content { max-width: 440px; text-align: center; padding: 40px 30px; border-radius: var(--r-lg);}
+        #ecoDialogIcon { font-size: 56px; margin-bottom: 15px; }
+        #ecoDialogTitle { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 12px; }
+        #ecoDialogText { font-size: 15px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; font-weight: 500;}
+        #ecoDialogInput { margin-bottom: 24px; text-align: center; font-size: 18px; font-weight: bold; width: 100%; }
         
-        .cat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: white; transition: 0.2s;}
-        .cat-list-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .cat-list-info { font-weight: 600; color: #374151; display: flex; align-items: center; gap: 10px;}
-        .cat-list-info i { color: #00995D; }
-        .cat-list-actions button { background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px; transition: 0.2s;}
-        .cat-list-actions .btn-ed { color: #3b82f6; margin-right: 5px;}
-        .cat-list-actions .btn-ed:hover { color: #2563eb; }
-        .cat-list-actions .btn-dl { color: #ef4444; }
-        .cat-list-actions .btn-dl:hover { color: #dc2626; }
+        .cat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: var(--r-sm); margin-bottom: 10px; background: white; transition: 0.2s;}
+        .cat-list-item:hover { border-color: var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); transform: translateY(-2px);}
+        .cat-list-info { font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 12px; font-size: 15px;}
+        .cat-list-actions button { background: none; border: none; font-size: 16px; cursor: pointer; padding: 6px; transition: 0.2s;}
+        .cat-list-actions .btn-ed { color: var(--primary); margin-right: 5px;}
+        .cat-list-actions .btn-ed:hover { color: var(--primary-dark); transform: scale(1.1);}
+        .cat-list-actions .btn-dl { color: var(--danger); }
+        .cat-list-actions .btn-dl:hover { color: #b91c1c; transform: scale(1.1);}
 
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="global-header"></div>
-        <div id="global-nav"></div>
+    <div id="global-header"></div>
+    <div id="global-nav"></div>
 
+    <audio id="som-alerta" src="alerta.mp3" preload="auto"></audio>
+
+    <div class="oncofood-container">
         <div class="dash-header">
             <div class="dash-header-title">
                 <h1><i class="fas fa-utensils"></i> Gestão de Copa & Nutrição</h1>
@@ -175,7 +214,6 @@
         </div>
 
         <div id="tab-estoque_itens" class="tab-content active">
-            
             <div class="controls">
                 <input type="hidden" id="editItemId">
                 <div class="controls-group">
@@ -183,21 +221,24 @@
                         <label class="label-title">Nome do Item</label>
                         <input type="text" id="newItemName" class="input-field" placeholder="Ex: Bolacha Maria">
                     </div>
-                    <div class="input-group" style="flex: 1;">
+                    <div class="input-group" style="flex: 1.5;">
                         <label class="label-title">Categoria</label>
-                        <select id="newItemCategory" class="input-field">
-                            </select>
+                        <select id="newItemCategory" class="input-field"></select>
                     </div>
                     <div class="input-group" style="flex: 1;">
                         <label class="label-title">Qtd. Inicial</label>
                         <input type="number" id="newItemStock" class="input-field" value="10" min="0">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label class="label-title">Alerta Mínimo</label>
+                        <input type="number" id="newItemMinStock" class="input-field" value="10" min="0">
                     </div>
                     <div class="input-group" style="flex: 2;">
                         <label class="label-title">Detalhes (Opcional)</label>
                         <input type="text" id="newItemDesc" class="input-field" placeholder="Ex: Sem açúcar, Diet...">
                     </div>
                     <div class="input-group" style="flex: 2;">
-                        <label class="label-title">URL da Imagem PNG/JPG (Opcional)</label>
+                        <label class="label-title">URL Imagem (Opcional)</label>
                         <input type="text" id="newItemImage" class="input-field" placeholder="Link da imagem na web...">
                     </div>
                     
@@ -219,7 +260,6 @@
         </div>
 
         <div id="tab-pedidos_ativos" class="tab-content">
-            
             <div class="controls">
                 <div class="controls-group">
                     <div class="input-group" style="flex: 2;">
@@ -236,8 +276,8 @@
                             <option value="">Carregando cardápio...</option>
                         </select>
                     </div>
-                    <button class="btn-add" onclick="createOrder()">
-                        <i class="fas fa-paper-plane"></i> Enviar Pedido
+                    <button class="btn-add accent" onclick="createOrder()">
+                        <i class="fas fa-paper-plane"></i> Lançar Pedido
                     </button>
                 </div>
             </div>
@@ -252,36 +292,31 @@
                 <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Carregando histórico...</div>
             </div>
         </div>
-
     </div>
 
     <div class="modal-overlay" id="categoryModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-tags"></i> Gerenciar Categorias</h3>
+                <h3><i class="fas fa-tags" style="color: var(--primary);"></i> Gerenciar Categorias</h3>
                 <button class="btn-close" type="button" onclick="closeModal('categoryModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <input type="text" id="newCatName" class="input-field" placeholder="Nome da nova categoria..." style="flex: 2;">
-                    
                     <select id="newCatIcon" class="input-field" style="flex: 1; padding: 0 10px;">
-                        <option value="fas fa-cookie">🍪 Biscoitos/Snacks</option>
-                        <option value="fas fa-mug-hot">☕ Quentes/Café</option>
-                        <option value="fas fa-glass-water">🥤 Frios/Sucos</option>
+                        <option value="fas fa-cookie">🍪 Snacks</option>
+                        <option value="fas fa-mug-hot">☕ Quentes</option>
+                        <option value="fas fa-glass-water">🥤 Frios</option>
                         <option value="fas fa-apple-alt">🍎 Frutas</option>
                         <option value="fas fa-bread-slice">🍞 Pães</option>
                         <option value="fas fa-hamburger">🍔 Lanches</option>
                         <option value="fas fa-candy-cane">🍬 Doces</option>
                         <option value="fas fa-utensils">🍲 Refeições</option>
-                        <option value="fas fa-box" selected>📦 Outros/Geral</option>
+                        <option value="fas fa-box" selected>📦 Outros</option>
                     </select>
-
-                    <button class="btn-add" style="height: 42px;" onclick="addCategory()">Adicionar</button>
+                    <button class="btn-add" style="height: 46px;" onclick="addCategory()">Adicionar</button>
                 </div>
-                
-                <div id="categoriesList" style="margin-top: 10px; border-top: 1px dashed #e5e7eb; padding-top: 15px;">
-                    </div>
+                <div id="categoriesList" style="margin-top: 10px; border-top: 2px dashed #e2e8f0; padding-top: 15px;"></div>
             </div>
         </div>
     </div>
@@ -291,11 +326,9 @@
             <div id="ecoDialogIcon"></div>
             <h3 id="ecoDialogTitle">Título</h3>
             <p id="ecoDialogText"></p>
-            
             <input type="text" id="ecoDialogInput" class="input-field" style="display: none;">
-            
-            <div style="display: flex; gap: 10px; justify-content: center; width: 100%;">
-                <button id="ecoDialogCancel" class="btn-action" style="display: none; flex: 1; justify-content: center;">Cancelar</button>
+            <div style="display: flex; gap: 15px; justify-content: center; width: 100%; margin-top: 10px;">
+                <button id="ecoDialogCancel" class="btn-action" style="display: none; flex: 1; justify-content: center; border: 2px solid var(--border);">Cancelar</button>
                 <button id="ecoDialogConfirm" class="btn-add" style="flex: 1; justify-content: center;">OK</button>
             </div>
         </div>
@@ -303,7 +336,7 @@
 
     <script>
         // ==========================================
-        // MÓDULO DE POP-UPS MODERNOS (EcoDialog)
+        // ECODIALOG (Pop-ups)
         // ==========================================
         const EcoDialog = {
             open: function(options) {
@@ -322,66 +355,58 @@
                     inputEl.placeholder = options.placeholder || '';
                     
                     if (options.type === 'error') {
-                        iconEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i>';
-                        btnConfirm.style.backgroundColor = '#ef4444';
-                        btnConfirm.style.boxShadow = '0 4px 6px rgba(239, 68, 68, 0.2)';
+                        iconEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger);"></i>';
+                        btnConfirm.style.backgroundColor = 'var(--danger)';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(211, 47, 47, 0.2)';
                     } else if (options.type === 'warning') {
-                        iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>';
-                        btnConfirm.style.backgroundColor = '#f59e0b';
-                        btnConfirm.style.boxShadow = '0 4px 6px rgba(245, 158, 11, 0.2)';
+                        iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--accent);"></i>';
+                        btnConfirm.style.backgroundColor = 'var(--accent)';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(245, 124, 0, 0.2)';
                     } else if (options.type === 'success') {
-                        iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i>';
-                        btnConfirm.style.backgroundColor = '#00995D';
-                        btnConfirm.style.boxShadow = '0 4px 6px rgba(0, 153, 93, 0.2)';
+                        iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--green);"></i>';
+                        btnConfirm.style.backgroundColor = 'var(--green)';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(46, 125, 50, 0.2)';
                     } else {
-                        iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #3b82f6;"></i>';
-                        btnConfirm.style.backgroundColor = '#00995D';
-                        btnConfirm.style.boxShadow = '0 4px 6px rgba(0, 153, 93, 0.2)';
+                        iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: var(--primary);"></i>';
+                        btnConfirm.style.backgroundColor = 'var(--primary)';
+                        btnConfirm.style.boxShadow = '0 4px 6px rgba(0, 121, 107, 0.2)';
                     }
 
                     inputEl.style.display = options.isPrompt ? 'block' : 'none';
                     btnCancel.style.display = options.showCancel ? 'flex' : 'none';
-                    
                     btnConfirm.innerText = options.confirmText || 'OK';
                     btnCancel.innerText = options.cancelText || 'Cancelar';
                     
                     overlay.classList.add('active');
                     if (options.isPrompt) inputEl.focus();
 
-                    btnConfirm.onclick = () => {
-                        overlay.classList.remove('active');
-                        resolve(options.isPrompt ? inputEl.value : true);
-                    };
-
-                    btnCancel.onclick = () => {
-                        overlay.classList.remove('active');
-                        resolve(options.isPrompt ? null : false);
-                    };
+                    btnConfirm.onclick = () => { overlay.classList.remove('active'); resolve(options.isPrompt ? inputEl.value : true); };
+                    btnCancel.onclick = () => { overlay.classList.remove('active'); resolve(options.isPrompt ? null : false); };
                 });
             },
-            alert: function(text, title = 'Aviso', type = 'info') {
-                return this.open({ text, title, type, showCancel: false });
-            },
-            confirm: function(text, title = 'Confirmação', type = 'warning', confirmText = 'Sim') {
-                return this.open({ text, title, type, showCancel: true, confirmText });
-            },
-            prompt: function(text, title = 'Entrada de Dados', defaultValue = '', placeholder = '') {
-                return this.open({ text, title, type: 'info', showCancel: true, isPrompt: true, defaultValue, placeholder, confirmText: 'Confirmar' });
-            }
+            alert: function(text, title = 'Aviso', type = 'info') { return this.open({ text, title, type, showCancel: false }); },
+            confirm: function(text, title = 'Confirmação', type = 'warning', confirmText = 'Sim') { return this.open({ text, title, type, showCancel: true, confirmText }); },
+            prompt: function(text, title = 'Entrada', defaultValue = '', placeholder = '') { return this.open({ text, title, type: 'info', showCancel: true, isPrompt: true, defaultValue, placeholder, confirmText: 'Confirmar' }); }
         };
 
         // ==========================================
-        // VARIÁVEIS GLOBAIS E INICIALIZAÇÃO
+        // VARIÁVEIS GLOBAIS
         // ==========================================
-        const API_ONCOFOOD_ORDERS = '/oncofood_pedidos';
-        const API_ONCOFOOD_STOCK = '/oncofood_estoque';
-        const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; 
-        
         let loggedUser = "Sistema";
         let activeOrders = {};
         let historyOrders = {};
         let inventoryItems = {};
         let foodCategories = {};
+        let alertedLowStock = false; 
+        let currentActiveCount = 0;
+
+        function getLoggedUserName() {
+            try {
+                let uStr = localStorage.getItem('ecoUser');
+                if(uStr) return JSON.parse(uStr).nome || "Sistema";
+            } catch(e) {}
+            return "Sistema";
+        }
 
         function normalizeData(apiData) {
             if (!apiData) return {}; 
@@ -394,33 +419,28 @@
             return normalized;
         }
 
-        function getLoggedUserName() {
-            try {
-                let uStr = localStorage.getItem('ecoUser');
-                if(uStr) return JSON.parse(uStr).nome || "Sistema";
-            } catch(e) {}
-            return "Sistema";
-        }
-
         async function apiFetch(endpoint, method = 'GET', bodyObj = null) {
             let options = { method, headers: API_HEADERS };
             if (bodyObj) options.body = JSON.stringify(bodyObj);
             
             const url = method === 'GET' ? `${API_BASE_URL}${endpoint}?t=${Date.now()}` : `${API_BASE_URL}${endpoint}`;
             const res = await fetch(url, options);
-            
             if (!res.ok) throw new Error("Status " + res.status);
             if (method === 'GET') return normalizeData(await res.json());
             return await res.json();
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            initGlobal('oncofood', 'Copa & Nutrição');
+            if(typeof initGlobal === 'function') {
+                initGlobal('oncofood', 'Copa & Nutrição');
+            }
             loggedUser = getLoggedUserName();
             
             await loadCategories(); 
             await loadInventory();  
-            await loadOrders();     
+            await loadOrders(true); 
+            
+            setInterval(() => loadOrders(false), 10000);
         });
 
         function openTab(tabId) { 
@@ -434,33 +454,32 @@
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
         // ==========================================
-        // GERENCIAMENTO DE CATEGORIAS
+        // CATEGORIAS
         // ==========================================
+        const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; 
+        
         async function loadCategories() {
             try {
                 const data = await apiFetch(API_ONCOFOOD_CATEGORIES);
                 if (Object.keys(data).length === 0) {
                     const defaults = [
-                        { nome: 'Refeições', icone: 'fas fa-utensils', cor: '#f59e0b' },
+                        { nome: 'Refeições', icone: 'fas fa-utensils', cor: '#f57c00' },
                         { nome: 'Lanches', icone: 'fas fa-hamburger', cor: '#8b5cf6' },
                         { nome: 'Sobremesas', icone: 'fas fa-apple-alt', cor: '#ec4899' },
-                        { nome: 'Bebidas', icone: 'fas fa-wine-glass-alt', cor: '#3b82f6' },
-                        { nome: 'Biscoitos', icone: 'fas fa-cookie', cor: '#d97706' },
-                        { nome: 'Insumos', icone: 'fas fa-cubes', cor: '#9ca3af' }
+                        { nome: 'Bebidas', icone: 'fas fa-wine-glass-alt', cor: '#0ea5e9' },
+                        { nome: 'Salgados', icone: 'fas fa-cookie', cor: '#d97706' },
+                        { nome: 'Doces', icone: 'fas fa-candy-cane', cor: '#e11d48' },
+                        { nome: 'Insumos', icone: 'fas fa-cubes', cor: '#94a3b8' }
                     ];
-                    
                     for (let d of defaults) {
                         let newId = 'cat_' + Date.now() + Math.floor(Math.random()*1000);
                         await apiFetch(API_ONCOFOOD_CATEGORIES, 'POST', { id_firebase: newId, ...d });
                     }
-                    const newData = await apiFetch(API_ONCOFOOD_CATEGORIES);
-                    foodCategories = newData;
+                    foodCategories = await apiFetch(API_ONCOFOOD_CATEGORIES);
                 } else {
                     foodCategories = data;
                 }
-            } catch(e) {
-                foodCategories = {};
-            }
+            } catch(e) { foodCategories = {}; }
 
             const sel = document.getElementById('newItemCategory');
             sel.innerHTML = '';
@@ -469,10 +488,7 @@
             });
         }
 
-        function openCategoryModal() {
-            renderCategoryList();
-            openModal('categoryModal');
-        }
+        function openCategoryModal() { renderCategoryList(); openModal('categoryModal'); }
 
         function renderCategoryList() {
             const listEl = document.getElementById('categoriesList');
@@ -480,7 +496,7 @@
             Object.values(foodCategories).sort((a,b) => a.nome.localeCompare(b.nome)).forEach(c => {
                 html += `
                     <div class="cat-list-item">
-                        <div class="cat-list-info"><i class="${c.icone || 'fas fa-tag'}" style="color:${c.cor || '#00995D'}"></i> ${c.nome}</div>
+                        <div class="cat-list-info"><i class="${c.icone || 'fas fa-tag'}" style="color:${c.cor || '#00796b'}"></i> ${c.nome}</div>
                         <div class="cat-list-actions">
                             <button class="btn-ed" onclick="editCategory('${c.id_firebase}')" title="Editar Nome"><i class="fas fa-pen"></i></button>
                             <button class="btn-dl" onclick="deleteCategory('${c.id_firebase}')" title="Excluir"><i class="fas fa-trash"></i></button>
@@ -492,131 +508,100 @@
         }
 
         async function addCategory() {
-            const nameInput = document.getElementById('newCatName');
-            const iconSelect = document.getElementById('newCatIcon');
-            const nome = nameInput.value.trim();
-            const icone = iconSelect.value;
-            
+            const nome = document.getElementById('newCatName').value.trim();
+            const icone = document.getElementById('newCatIcon').value;
             if(!nome) return;
-
             const id = 'cat_' + Date.now();
-            
-            const palette = ['#0ea5e9', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b', '#10b981'];
-            
-            const newCat = {
-                id_firebase: id,
-                nome: nome,
-                icone: icone,
-                cor: palette[Math.floor(Math.random() * palette.length)]
-            };
-
+            const palette = ['#0ea5e9', '#8b5cf6', '#d946ef', '#f43f5e', '#f57c00', '#10b981'];
+            const newCat = { id_firebase: id, nome: nome, icone: icone, cor: palette[Math.floor(Math.random() * palette.length)] };
             try {
                 await apiFetch(API_ONCOFOOD_CATEGORIES, 'POST', newCat);
-                nameInput.value = '';
-                await loadCategories();
-                renderCategoryList();
+                document.getElementById('newCatName').value = '';
+                await loadCategories(); renderCategoryList();
             } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
         async function editCategory(id) {
             const cat = foodCategories[id];
             if(!cat) return;
-
             const oldName = cat.nome;
             const newName = await EcoDialog.prompt("Digite o novo nome para esta categoria:", "Renomear Categoria", oldName);
-            
             if(newName === null || newName.trim() === '' || newName === oldName) return;
-
             cat.nome = newName.trim();
-
             try {
                 await apiFetch(`${API_ONCOFOOD_CATEGORIES}/${id}`, 'PUT', cat);
-                
-                let itemsUpdated = 0;
                 for (let itemId in inventoryItems) {
                     if (inventoryItems[itemId].categoria === oldName) {
                         inventoryItems[itemId].categoria = cat.nome;
                         await apiFetch(`${API_ONCOFOOD_STOCK}/${itemId}`, 'PUT', inventoryItems[itemId]);
-                        itemsUpdated++;
                     }
                 }
-                
-                await loadCategories();
-                await loadInventory(); 
-                renderCategoryList();
-                
-                if(itemsUpdated > 0) await EcoDialog.alert(`Categoria atualizada e ${itemsUpdated} itens foram movidos automaticamente para o novo nome.`, "Sucesso", "success");
-                
+                await loadCategories(); await loadInventory(); renderCategoryList();
             } catch(e) { await EcoDialog.alert("Erro ao editar: " + e.message, "Erro", "error"); }
         }
 
         async function deleteCategory(id) {
             const cat = foodCategories[id];
-            
-            const hasItems = Object.values(inventoryItems).some(i => i.categoria === cat.nome);
-            if (hasItems) {
-                await EcoDialog.alert(`Não é possível excluir. Existem itens cadastrados na categoria <b>${cat.nome}</b>.<br>Mova os itens editando a categoria deles antes de excluir esta.`, "Ação Bloqueada", "error");
-                return;
+            if (Object.values(inventoryItems).some(i => i.categoria === cat.nome)) {
+                return await EcoDialog.alert(`Existem itens na categoria <b>${cat.nome}</b>. Mova-os primeiro.`, "Ação Bloqueada", "error");
             }
-
-            if(!await EcoDialog.confirm(`Tem certeza que deseja excluir a categoria <b>${cat.nome}</b>?`, "Excluir Categoria", "error", "Sim, Excluir")) return;
-
+            if(!await EcoDialog.confirm(`Excluir a categoria <b>${cat.nome}</b>?`, "Excluir Categoria", "error")) return;
             try {
                 await apiFetch(`${API_ONCOFOOD_CATEGORIES}/${id}`, 'DELETE');
-                await loadCategories();
-                renderCategoryList();
-            } catch(e) { await EcoDialog.alert("Erro ao excluir: " + e.message, "Erro", "error"); }
+                await loadCategories(); renderCategoryList();
+            } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
         // ==========================================
         // LÓGICA DO ESTOQUE E CARDÁPIO
         // ==========================================
+        const API_ONCOFOOD_STOCK = '/oncofood_estoque';
+        
         async function loadInventory() {
-            try { 
-                inventoryItems = await apiFetch(API_ONCOFOOD_STOCK); 
-            } catch(e) { 
-                inventoryItems = {}; 
+            try { inventoryItems = await apiFetch(API_ONCOFOOD_STOCK); } 
+            catch(e) { inventoryItems = {}; }
+            
+            renderInventory(); populateOrderSelect();
+
+            let lowItems = Object.values(inventoryItems).filter(i => i.estoque <= (i.estoque_minimo || 10) && i.categoria !== 'Insumos');
+            if (lowItems.length > 0 && !alertedLowStock) {
+                alertedLowStock = true;
+                let msg = lowItems.map(i => `• <b>${i.nome}</b> (Apenas ${i.estoque} un - Mín: ${i.estoque_minimo || 10})`).join('<br>');
+                EcoDialog.alert(
+                    `Os seguintes itens atingiram o alerta de estoque mínimo:<br><br><div style="text-align:left; background:#fff3e0; padding:15px; border-radius:10px; border:1px solid #ffd0a0; font-size:14px; color:#e65100;">${msg}</div><br>Favor providenciar o reabastecimento.`, 
+                    "Alerta de Estoque Baixo", 
+                    "warning"
+                );
             }
-            renderInventory();
-            populateOrderSelect();
         }
 
         function populateOrderSelect() {
             const sel = document.getElementById('orderItem');
             sel.innerHTML = '<option value="">-- Selecione o que deseja pedir --</option>';
-            
-            Object.values(inventoryItems)
-                .filter(i => i.categoria !== 'Insumos')
-                .sort((a,b) => a.nome.localeCompare(b.nome))
-                .forEach(i => {
-                    const status = i.estoque <= 0 ? ' (ESGOTADO)' : '';
-                    sel.add(new Option(`${i.nome}${status}`, i.id_firebase, false, i.estoque <= 0));
-                });
+            Object.values(inventoryItems).filter(i => i.categoria !== 'Insumos').sort((a,b) => a.nome.localeCompare(b.nome)).forEach(i => {
+                const status = i.estoque <= 0 ? ' (ESGOTADO)' : '';
+                sel.add(new Option(`${i.nome}${status}`, i.id_firebase, false, i.estoque <= 0));
+            });
         }
 
         async function saveInventoryItem() {
             const id = document.getElementById('editItemId').value;
             const nome = document.getElementById('newItemName').value.trim();
-            const cat = document.getElementById('newItemCategory').value;
-            const estoque = parseInt(document.getElementById('newItemStock').value) || 0;
-            const desc = document.getElementById('newItemDesc').value.trim();
-            const img = document.getElementById('newItemImage').value.trim();
-
-            if (!nome) return await EcoDialog.alert("Por favor, preencha o nome do item.", "Atenção", "warning");
+            if (!nome) return await EcoDialog.alert("Preencha o nome do item.", "Atenção", "warning");
 
             const itemData = {
                 nome: nome,
-                categoria: cat,
-                estoque: estoque,
-                descricao: desc,
-                imagem: img, 
+                categoria: document.getElementById('newItemCategory').value,
+                estoque: parseInt(document.getElementById('newItemStock').value) || 0,
+                estoque_minimo: parseInt(document.getElementById('newItemMinStock').value) || 10,
+                descricao: document.getElementById('newItemDesc').value.trim(),
+                imagem: document.getElementById('newItemImage').value.trim(),
                 criado_por: loggedUser
             };
 
             const btn = document.getElementById('btnSaveItem');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
                 if (id && inventoryItems[id]) {
@@ -628,45 +613,36 @@
                     itemData.data_criacao = new Date().toISOString();
                     await apiFetch(API_ONCOFOOD_STOCK, 'POST', itemData);
                 }
-                
-                cancelEdit();
-                await loadInventory();
-            } catch (err) {
-                await EcoDialog.alert("Erro ao salvar item: " + err.message, "Erro", "error");
-            } finally {
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            }
+                cancelEdit(); await loadInventory();
+            } catch (err) { await EcoDialog.alert("Erro: " + err.message, "Erro", "error");
+            } finally { btn.innerHTML = originalHtml; btn.disabled = false; }
         }
 
         function editInventoryItem(id) {
             const item = inventoryItems[id];
             if(!item) return;
-
             document.getElementById('editItemId').value = id;
             document.getElementById('newItemName').value = item.nome;
             document.getElementById('newItemCategory').value = item.categoria;
             document.getElementById('newItemStock').value = item.estoque;
+            document.getElementById('newItemMinStock').value = item.estoque_minimo || 10;
             document.getElementById('newItemDesc').value = item.descricao || '';
             document.getElementById('newItemImage').value = item.imagem || '';
 
             document.getElementById('btnSaveItem').innerHTML = '<i class="fas fa-sync"></i> Atualizar Item';
             document.getElementById('btnCancelEdit').style.display = 'inline-flex';
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelEdit() {
             document.getElementById('editItemId').value = '';
             document.getElementById('newItemName').value = '';
-            
             const firstCat = Object.values(foodCategories)[0];
             if(firstCat) document.getElementById('newItemCategory').value = firstCat.nome;
-            
             document.getElementById('newItemStock').value = '10';
+            document.getElementById('newItemMinStock').value = '10';
             document.getElementById('newItemDesc').value = '';
             document.getElementById('newItemImage').value = '';
-
             document.getElementById('btnSaveItem').innerHTML = '<i class="fas fa-plus"></i> Cadastrar';
             document.getElementById('btnCancelEdit').style.display = 'none';
         }
@@ -674,64 +650,43 @@
         async function updateStock(id, amount) {
             const item = inventoryItems[id];
             if (!item) return;
-
-            let newStock = item.estoque + amount;
-            if (newStock < 0) newStock = 0; 
-
+            let newStock = Math.max(0, item.estoque + amount);
             item.estoque = newStock;
             
+            const minStock = item.estoque_minimo || 10;
             const el = document.getElementById(`stock-val-${id}`);
-            if(el) {
-                el.innerText = newStock;
-                el.className = newStock <= 3 ? 'stock-val low' : 'stock-val';
-            }
-
-            try {
-                await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'PUT', item);
-                populateOrderSelect(); 
-            } catch(e) {
-                console.error("Erro ao salvar estoque", e);
-            }
+            if(el) { el.innerText = newStock; el.className = newStock <= minStock ? 'stock-val low' : 'stock-val'; }
+            
+            try { await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'PUT', item); populateOrderSelect(); } 
+            catch(e) { console.error("Erro ao salvar estoque", e); }
         }
 
         async function addManualStock(id) {
             const item = inventoryItems[id];
             if (!item) return;
-
             const val = await EcoDialog.prompt(
-                `<div style="font-size: 13px; color:#4b5563; margin-bottom:10px;">Quantas unidades chegaram para <b>${item.nome}</b>?</div>
-                 <div style="font-size: 11px; color:#9ca3af; line-height:1.2;">*Dica: Para dar baixa manual sem ser pelo pedido, digite um número negativo. Ex: -5</div>`, 
-                "Entrada de Estoque Manual", 
-                '', 'Ex: 10 ou -5'
+                `<div style="font-size:14px; margin-bottom:10px;">Quantas unidades chegaram para <b>${item.nome}</b>?</div>
+                 <div style="font-size:12px; color:var(--muted);">*Para baixar manualmente use negativo, ex: -5</div>`, 
+                "Ajuste Manual", '', 'Ex: 10 ou -5'
             );
-            
             if (val === null || val.trim() === "") return; 
-            
             const amount = parseInt(val);
-            if (isNaN(amount)) {
-                await EcoDialog.alert("Por favor, digite um número inteiro válido.", "Valor Inválido", "error");
-                return;
-            }
-
-            if (amount === 0) return;
-            await updateStock(id, amount);
+            if (isNaN(amount)) return await EcoDialog.alert("Número inválido.", "Erro", "error");
+            if (amount !== 0) await updateStock(id, amount);
         }
 
         async function deleteInventoryItem(id) {
-            if (!await EcoDialog.confirm("Tem certeza que deseja excluir este item do cardápio/estoque?", "Excluir Item", "error", "Sim, Excluir")) return;
-            
+            if (!await EcoDialog.confirm("Excluir este item do cardápio/estoque?", "Excluir Item", "error")) return;
             try {
                 await apiFetch(`${API_ONCOFOOD_STOCK}/${id}`, 'DELETE');
                 await loadInventory();
-            } catch (e) {
-                await EcoDialog.alert("Erro ao excluir: " + e.message, "Erro", "error");
-            }
+            } catch (e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
         function renderInventory() {
             const container = document.getElementById('inventoryContainer');
             if (Object.keys(inventoryItems).length === 0) {
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i> O estoque está vazio. Cadastre novos itens acima.</div>';
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i> O estoque está vazio.</div>';
                 return;
             }
 
@@ -742,34 +697,30 @@
             });
 
             let html = '';
-            
-            const fallbackImg = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=200&fit=crop";
+            const fallbackImg = "https://placehold.co/400x200/f8fafc/94a3b8?font=DM+Sans&text=Sem+Imagem";
 
             Object.keys(grouped).sort().forEach(catName => {
-                
-                const catObj = Object.values(foodCategories).find(c => c.nome === catName) || { icone: 'fas fa-box', cor: '#9ca3af'};
-                
-                html += `<div class="category-header"><i class="${catObj.icone}" style="color:${catObj.cor}"></i> ${catName}</div>`;
-                html += `<div class="grid-container">`;
+                const catObj = Object.values(foodCategories).find(c => c.nome === catName) || { icone: 'fas fa-box', cor: '#94a3b8'};
+                html += `<div class="category-header"><i class="${catObj.icone}" style="color:${catObj.cor}"></i> ${catName}</div><div class="grid-container">`;
                 
                 grouped[catName].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(item => {
-                    const isLow = item.estoque <= 3 ? 'low' : '';
+                    const minStock = item.estoque_minimo || 10;
+                    const isLow = item.estoque <= minStock ? 'low' : '';
                     const imgSrc = item.imagem || fallbackImg;
-
+                    
                     html += `
-                        <div class="card" style="border-top: 5px solid ${catObj.cor};">
+                        <div class="card" style="border-top: 4px solid ${catObj.cor};">
                             <img src="${imgSrc}" class="stock-image" onerror="this.src='${fallbackImg}'" alt="${item.nome}">
-                            <h3 style="margin:0; font-size:18px; color:#111827; font-weight:800;">${item.nome}</h3>
-                            <p style="margin:0; font-size:12px; color:#6b7280; min-height: 18px;">${item.descricao || 'Sem detalhes adic.'}</p>
+                            <h3 style="margin:0; font-family:'Bricolage Grotesque'; font-size:18px; color:var(--text); font-weight:800;">${item.nome}</h3>
+                            <p style="margin:0; font-size:13px; color:var(--muted); min-height: 18px;">${item.descricao || 'Sem detalhes adic.'}</p>
                             
                             <div class="stock-controls">
-                                <span style="font-size:12px; font-weight:700; color:#4b5563;">ESTOQUE:</span>
+                                <span style="font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase;">Estoque:</span>
                                 <div class="qty-actions">
                                     <button class="btn-qty" onclick="updateStock('${item.id_firebase}', -1)"><i class="fas fa-minus"></i></button>
                                     <span class="stock-val ${isLow}" id="stock-val-${item.id_firebase}">${item.estoque}</span>
                                     <button class="btn-qty" onclick="updateStock('${item.id_firebase}', 1)"><i class="fas fa-plus"></i></button>
-                                    
-                                    <button class="btn-qty btn-qty-manual" onclick="addManualStock('${item.id_firebase}')" title="Ajuste Manual Rápido"><i class="fas fa-dolly"></i></button>
+                                    <button class="btn-qty btn-qty-manual" onclick="addManualStock('${item.id_firebase}')" title="Ajuste Rápido"><i class="fas fa-dolly"></i></button>
                                 </div>
                             </div>
                             
@@ -780,29 +731,34 @@
                         </div>
                     `;
                 });
-                
                 html += `</div>`;
             });
-
             container.innerHTML = html;
         }
 
         // ==========================================
-        // LÓGICA DE PEDIDOS (COZINHA)
+        // PEDIDOS (COZINHA) E SOM DE ALERTA
         // ==========================================
-        async function loadOrders() {
+        const API_ONCOFOOD_ORDERS = '/oncofood_pedidos';
+        
+        async function loadOrders(isInitialLoad = false) {
             try {
                 const allOrders = await apiFetch(API_ONCOFOOD_ORDERS);
-                activeOrders = {};
-                historyOrders = {};
-
+                activeOrders = {}; historyOrders = {};
+                
                 Object.values(allOrders).forEach(o => {
                     if (o.status === 'delivered') historyOrders[o.id_firebase] = o;
                     else activeOrders[o.id_firebase] = o;
                 });
-            } catch(e) {
-                console.warn("Nenhum pedido encontrado.", e);
-            }
+                
+                let newActiveCount = Object.keys(activeOrders).length;
+                if (!isInitialLoad && newActiveCount > currentActiveCount) {
+                    const audio = document.getElementById('som-alerta');
+                    if(audio) audio.play().catch(e => console.log("Áudio bloqueado pelo navegador", e));
+                }
+                currentActiveCount = newActiveCount;
+                
+            } catch(e) { console.warn("Nenhum pedido ou erro.", e); }
             renderOrders();
         }
 
@@ -811,70 +767,53 @@
             const box = document.getElementById('orderBox').value.trim();
             const itemId = document.getElementById('orderItem').value;
 
-            if (!pac || !itemId) return await EcoDialog.alert("Preencha o Paciente e selecione um Item.", "Atenção", "warning");
-            
+            if (!pac || !itemId) return await EcoDialog.alert("Preencha Paciente e selecione um Item.", "Atenção", "warning");
             const itemObj = inventoryItems[itemId];
             if (!itemObj) return await EcoDialog.alert("Item inválido.", "Erro", "error");
 
             if (itemObj.estoque <= 0) {
-                if(!await EcoDialog.confirm(`O item <b>${itemObj.nome}</b> está sem estoque no sistema.<br>Deseja enviar o pedido assim mesmo?`, "Estoque Esgotado", "warning", "Sim, Enviar")) return;
+                if(!await EcoDialog.confirm(`<b>${itemObj.nome}</b> está esgotado no sistema. Lançar mesmo assim?`, "Aviso", "warning")) return;
             }
 
             const newOrder = {
-                id_firebase: 'pedido_' + Date.now(),
-                paciente: pac,
-                leito: box || 'Não inf.',
+                id_firebase: 'pedido_manual_' + Date.now(),
+                paciente: pac, leito: box || 'Não inf.',
                 itens: [{ id: itemId, nome: itemObj.nome, qtd: 1 }], 
-                status: 'pending',
-                solicitado_por: loggedUser,
-                data_solicitacao: new Date().toISOString()
+                status: 'pending', solicitado_por: loggedUser, data_solicitacao: new Date().toISOString()
             };
 
             const btn = event.currentTarget;
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
                 await apiFetch(API_ONCOFOOD_ORDERS, 'POST', newOrder);
                 await updateStock(itemId, -1);
-                
                 document.getElementById('orderPatient').value = '';
                 document.getElementById('orderBox').value = '';
                 document.getElementById('orderItem').value = '';
-                
-                await loadOrders();
-            } catch(err) {
-                await EcoDialog.alert("Erro ao enviar pedido: " + err.message, "Erro", "error");
-            } finally {
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            }
+                await loadOrders(); 
+            } catch(err) { await EcoDialog.alert("Erro: " + err.message, "Erro", "error");
+            } finally { btn.innerHTML = originalHtml; btn.disabled = false; }
         }
 
         async function updateOrderStatus(id, newStatus) {
             let order = activeOrders[id];
             if (!order) return;
-
             order.status = newStatus;
             order.data_atualizacao = new Date().toISOString();
-
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'PUT', order);
                 await loadOrders(); 
-            } catch(e) {
-                await EcoDialog.alert("Erro ao atualizar status: " + e.message, "Erro", "error");
-            }
+            } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
         async function deleteOrder(id) {
-            if (!await EcoDialog.confirm("Tem certeza que deseja cancelar e excluir este pedido permanentemente?", "Cancelar Pedido", "error", "Sim, Cancelar")) return;
+            if (!await EcoDialog.confirm("Cancelar e excluir este pedido permanentemente?", "Atenção", "error")) return;
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'DELETE');
                 await loadOrders();
-            } catch(e) {
-                await EcoDialog.alert("Erro ao excluir: " + e.message, "Erro", "error");
-            }
+            } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
         function getStatusInfo(status) {
@@ -887,25 +826,19 @@
             return map[status] || { label: status, class: 'st-pending' };
         }
 
-        function formatTime(isoString) {
-            if (!isoString) return '--:--';
-            const d = new Date(isoString);
-            return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        function formatTime(isoStr) {
+            if (!isoStr) return '--:--';
+            return new Date(isoStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         }
-
-        function formatDate(isoString) {
-            if (!isoString) return '--/--/----';
-            const d = new Date(isoString);
-            return d.toLocaleDateString('pt-BR');
+        function formatDate(isoStr) {
+            if (!isoStr) return '--/--/----';
+            return new Date(isoStr).toLocaleDateString('pt-BR');
         }
 
         function generateOrderCard(o, isHistory = false) {
             const st = getStatusInfo(o.status);
-            
             let itemsHtml = '';
-            (o.itens || []).forEach(it => {
-                itemsHtml += `<div><i class="fas fa-utensils"></i> 1x ${it.nome}</div>`;
-            });
+            (o.itens || []).forEach(it => { itemsHtml += `<div><i class="fas fa-utensils"></i> 1x ${it.nome}</div>`; });
 
             let actionsHtml = '';
             if (!isHistory) {
@@ -913,42 +846,33 @@
                 const isPrep = o.status === 'preparing' ? 'active' : '';
                 const isRead = o.status === 'ready' ? 'active' : '';
                 const isDelv = o.status === 'delivered' ? 'active' : '';
-
                 actionsHtml = `
                     <div class="card-actions">
                         <button class="btn-status action-pending ${isPend}" onclick="updateOrderStatus('${o.id_firebase}', 'pending')">Pendente</button>
                         <button class="btn-status action-preparing ${isPrep}" onclick="updateOrderStatus('${o.id_firebase}', 'preparing')">Preparando</button>
                         <button class="btn-status action-ready ${isRead}" onclick="updateOrderStatus('${o.id_firebase}', 'ready')">Pronto</button>
                         <button class="btn-status action-delivered ${isDelv}" onclick="updateOrderStatus('${o.id_firebase}', 'delivered')"><i class="fas fa-check"></i> Entregue</button>
-                        
-                        <button class="btn-danger" onclick="deleteOrder('${o.id_firebase}')"><i class="fas fa-trash"></i> Cancelar Pedido</button>
-                    </div>
-                `;
+                        <button class="btn-danger" onclick="deleteOrder('${o.id_firebase}')"><i class="fas fa-trash"></i> Cancelar</button>
+                    </div>`;
             } else {
-                actionsHtml = `
-                    <div style="font-size: 11px; color: #6b7280; text-align: center; margin-top: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px;">
-                        Entregue em: ${formatDate(o.data_atualizacao)} às ${formatTime(o.data_atualizacao)}
-                    </div>
-                `;
+                actionsHtml = `<div style="font-size:12px; font-weight:700; color:var(--muted); text-align:center; margin-top:10px; border-top:2px dashed var(--border); padding-top:14px;">Entregue em: ${formatDate(o.data_atualizacao)} às ${formatTime(o.data_atualizacao)}</div>`;
             }
 
+            const borderColor = o.status === 'pending' ? 'var(--danger)' : o.status === 'preparing' ? 'var(--accent)' : o.status === 'ready' ? '#38bdf8' : 'var(--green)';
+
             return `
-                <div class="card" style="border-top: 4px solid #00995D;">
+                <div class="card" style="border-left: 6px solid ${borderColor}; padding-left: 16px;">
                     <div class="card-header">
                         <div class="patient-info">
                             <h3>${o.paciente}</h3>
                             <div class="patient-box"><i class="fas fa-bed"></i> ${o.leito}</div>
                         </div>
-                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
                             <span class="status-badge ${st.class}">${st.label}</span>
                             <span class="order-time"><i class="far fa-clock"></i> ${formatTime(o.data_solicitacao)}</span>
                         </div>
                     </div>
-                    
-                    <div class="order-items">
-                        ${itemsHtml}
-                    </div>
-
+                    <div class="order-items">${itemsHtml}</div>
                     ${actionsHtml}
                 </div>
             `;
@@ -957,27 +881,17 @@
         function renderOrders() {
             const activeContainer = document.getElementById('activeOrdersGrid');
             const activeArr = Object.values(activeOrders).sort((a,b) => {
-                const statusWeight = { 'pending': 1, 'preparing': 2, 'ready': 3 };
-                const wA = statusWeight[a.status] || 9;
-                const wB = statusWeight[b.status] || 9;
+                const weights = { 'pending': 1, 'preparing': 2, 'ready': 3 };
+                const wA = weights[a.status] || 9; const wB = weights[b.status] || 9;
                 if (wA !== wB) return wA - wB;
-                return new Date(b.data_solicitacao) - new Date(a.data_solicitacao);
+                return new Date(a.data_solicitacao) - new Date(b.data_solicitacao);
             });
 
-            if (activeArr.length === 0) {
-                activeContainer.innerHTML = '<div class="empty-state"><i class="fas fa-mug-hot"></i> Nenhum pedido ativo na copa no momento.</div>';
-            } else {
-                activeContainer.innerHTML = activeArr.map(o => generateOrderCard(o, false)).join('');
-            }
+            activeContainer.innerHTML = activeArr.length === 0 ? '<div class="empty-state"><i class="fas fa-mug-hot"></i> Nenhum pedido pendente.</div>' : activeArr.map(o => generateOrderCard(o, false)).join('');
 
             const historyContainer = document.getElementById('historyOrdersGrid');
             const historyArr = Object.values(historyOrders).sort((a,b) => new Date(b.data_atualizacao) - new Date(a.data_atualizacao));
-
-            if (historyArr.length === 0) {
-                historyContainer.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i> Nenhum histórico de pedidos finalizados.</div>';
-            } else {
-                historyContainer.innerHTML = historyArr.slice(0, 50).map(o => generateOrderCard(o, true)).join('');
-            }
+            historyContainer.innerHTML = historyArr.length === 0 ? '<div class="empty-state"><i class="fas fa-history"></i> Nenhum histórico de pedidos.</div>' : historyArr.slice(0, 50).map(o => generateOrderCard(o, true)).join('');
         }
     </script>
 </body>

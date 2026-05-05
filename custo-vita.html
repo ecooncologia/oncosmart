@@ -402,17 +402,17 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th class="no-print" style="width: 40px;"></th>
                                     <th>Paciente</th>
-                                    <th style="width: 120px;">Data Entrada</th>
-                                    <th style="text-align: center; width: 120px;">Atendimento</th>
-                                    <th style="text-align: center; width: 120px;">Nº Conta</th>
-                                    <th style="text-align: right; width: 150px;">Valor (R$)</th>
+                                    <th style="text-align: center; width: 150px;">Qtd. Contas</th>
+                                    <th style="text-align: right; width: 200px;">Valor Total Faturado</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-contas-faturadas"></tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4" style="text-align: right; font-weight: bold;">TOTAL FATURADO NO PERÍODO:</td>
+                                    <td class="no-print"></td>
+                                    <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL FATURADO NO PERÍODO:</td>
                                     <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-faturamento">R$ 0,00</td>
                                 </tr>
                             </tfoot>
@@ -865,7 +865,7 @@
         async function loadDiversosLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_diversos`, { headers: API_HEADERS }); if(res.ok) dataDiversos = Object.values(await res.json()); } catch(e){} }
 
         // ==========================================
-        // LÓGICA: CONTAS FATURADAS (ABA 2)
+        // LÓGICA: CONTAS FATURADAS TASY (AGRUPADO)
         // ==========================================
         async function loadContasFaturadas() {
             const mesInput = document.getElementById('filter-mes').value;
@@ -891,17 +891,14 @@
             const startDate = new Date(prevYear, prevMonth - 1, 15, 0, 0, 0);
             const endDate = new Date(year, month - 1, 15, 23, 59, 59);
 
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Buscando Contas (15/${pad(prevMonth)} a 15/${pad(month)})...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Buscando Contas (15/${pad(prevMonth)} a 15/${pad(month)})...</td></tr>`;
 
             try {
-                // ATENÇÃO: Deixei a rota como /conta_paciente_eco 
-                // Se no seu backend você manteve a rota original, basta alterar esta variável para:
-                // const endpoint = `${API_BASE_URL}/contas_faturadas`;
                 const endpoint = `${API_BASE_URL}/conta_paciente_eco`;
-                
                 const res = await fetch(endpoint, { headers: API_HEADERS });
+                
                 if(!res.ok) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;"><b>Erro de API:</b> A rota <code>${endpoint}</code> retornou falha. Verifique o nome da rota no seu backend.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;"><b>Erro de API:</b> A rota retornou falha.</td></tr>`;
                     return;
                 }
                 
@@ -925,31 +922,93 @@
                     return d >= startDate && d <= endDate;
                 });
 
-                tbody.innerHTML = list.length ? '' : `<tr><td colspan="5" style="text-align:center;">Nenhuma conta faturada no período (15/${pad(prevMonth)} a 15/${pad(month)}).</td></tr>`;
-                
-                list.sort((a, b) => parseDataTasy(a.dt_entrada || a.DT_ENTRADA) - parseDataTasy(b.dt_entrada || b.DT_ENTRADA)).forEach(c => {
-                    const val = parseOracleNumber(c.valor_conta || c.VALOR_CONTA);
-                    valContasGlobal += val;
-                    
-                    const paciente = c.nm_pessoa_fisica || c.NM_PESSOA_FISICA || '-';
-                    const dtEntrada = c.dt_entrada || c.DT_ENTRADA || '-';
-                    const atendimento = c.nr_atendimento || c.NR_ATENDIMENTO || '-';
-                    const conta = c.nr_interno_conta || c.NR_INTERNO_CONTA || '-';
+                tbody.innerHTML = '';
 
-                    tbody.innerHTML += `<tr>
-                        <td style="font-weight:600; color:var(--primary);">${paciente.toUpperCase()}</td>
-                        <td>${formatDate(dtEntrada)}</td>
-                        <td style="text-align:center;"><span class="badge-count">${atendimento}</span></td>
-                        <td style="text-align:center;"><span class="badge-faturamento fat-vita"># ${conta}</span></td>
-                        <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
-                    </tr>`;
+                if (list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma conta faturada no período (15/${pad(prevMonth)} a 15/${pad(month)}).</td></tr>`;
+                    document.getElementById('footer-val-faturamento').innerText = 'R$ 0,00';
+                    return;
+                }
+
+                // Agrupando por Paciente
+                const gruposContas = {};
+                list.forEach(c => {
+                    const paciente = (c.nm_pessoa_fisica || c.NM_PESSOA_FISICA || '-').toUpperCase();
+                    if(!gruposContas[paciente]) {
+                        gruposContas[paciente] = { paciente: paciente, totalValor: 0, itens: [] };
+                    }
+                    const val = parseOracleNumber(c.valor_conta || c.VALOR_CONTA);
+                    gruposContas[paciente].totalValor += val;
+                    valContasGlobal += val;
+                    gruposContas[paciente].itens.push(c);
+                });
+
+                // Renderizando Tabela em Cascata
+                let indexConta = 0;
+                Object.values(gruposContas).sort((a,b) => a.paciente.localeCompare(b.paciente)).forEach(g => {
+                    const id = `conta_pac_${indexConta++}`;
+                    
+                    // LINHA PAI
+                    const parent = document.createElement('tr');
+                    parent.className = 'parent-row';
+                    parent.onclick = () => toggleGroup(id);
+                    parent.innerHTML = `
+                        <td class="no-print" style="text-align:center;"><i class="fas fa-chevron-right icon-expand" id="icon-${id}"></i></td>
+                        <td style="font-weight:bold; color:var(--primary);">${g.paciente}</td>
+                        <td style="text-align:center;"><span class="badge-count">${g.itens.length}</span></td>
+                        <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(g.totalValor)}</td>
+                    `;
+                    tbody.appendChild(parent);
+
+                    // Ordena contas do paciente pela data de entrada
+                    g.itens.sort((a, b) => parseDataTasy(a.dt_entrada || a.DT_ENTRADA) - parseDataTasy(b.dt_entrada || b.DT_ENTRADA));
+                    
+                    let sub = '';
+                    g.itens.forEach(i => {
+                        const dtEntrada = i.dt_entrada || i.DT_ENTRADA || '-';
+                        const atendimento = i.nr_atendimento || i.NR_ATENDIMENTO || '-';
+                        const conta = i.nr_interno_conta || i.NR_INTERNO_CONTA || '-';
+                        const val = parseOracleNumber(i.valor_conta || i.VALOR_CONTA);
+                        
+                        sub += `<tr>
+                            <td>${formatDate(dtEntrada)}</td>
+                            <td style="text-align:center;">${atendimento}</td>
+                            <td style="text-align:center;"><span class="badge-faturamento fat-vita" style="background:#e0f2fe; color:#0369a1;"># ${conta}</span></td>
+                            <td style="text-align:right; font-weight:bold; color:#475569;">R$ ${formatCurrency(val)}</td>
+                        </tr>`;
+                    });
+
+                    // LINHA FILHA (Tabela Secundária)
+                    const child = document.createElement('tr');
+                    child.id = `child-${id}`; 
+                    child.className = 'child-row'; 
+                    child.style.display = 'none';
+                    child.innerHTML = `
+                        <td colspan="4" style="padding:0;">
+                            <div class="sub-table-container">
+                                <table class="sub-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 150px;">Data Entrada</th>
+                                            <th style="text-align:center; width: 150px;">Nº Atendimento</th>
+                                            <th style="text-align:center; width: 150px;">Nº Conta Tasy</th>
+                                            <th style="text-align:right;">Valor da Conta (R$)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${sub}</tbody>
+                                </table>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(child);
                 });
                 
-                // Atualiza rodapé Faturado
+                // Atualiza rodapé Faturado Total
                 document.getElementById('footer-val-faturamento').innerText = 'R$ ' + formatCurrency(valContasGlobal);
+
             } catch (e) { 
                 console.error(e);
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Erro de requisição (CORS ou Rota não encontrada no Backend).</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Erro de requisição (CORS ou Rota não encontrada).</td></tr>`;
             }
         }
     </script>

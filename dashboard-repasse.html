@@ -390,6 +390,7 @@
         let doctors = {};
         let pacientesDb = {};
         let docGroups = {};
+        let dbProcedimentos = {}; // ADDED para cruzar custo do particular idêntico ao medical-repass
 
         const IMPOSTO_TAXA = 0.1233; 
         const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
@@ -434,22 +435,11 @@
             return isNaN(num) ? 0 : parseFloat(num.toFixed(2));
         }
 
-        function getComissaoInfo(pName, eName) {
+        // UPDATE: Agora a função recebe os IDs para puxar dinamicamente os percentuais do banco! Igual no medical-repass
+        function getComissaoInfo(pId, eId) {
             let percP = 0; let percE = 0;
-            const grupoMama = [
-                'ALESSANDRA AMATUZZI', 'ANA CLEA SANTOS', 'ANA MARIA DE OLIVEIRA',
-                'CICERO ANDRADE URBAN', 'CLEVERTON SPAUTZ', 'EDUARDO KULAK', 
-                'FLAVIA KURODA', 'IRIS RABINOVICH', 'ISABELA MONTEIRO SOARES', 
-                'KARINA FURLAN ANSELMI', 'LEONARDO NISSEN', 'MAIRA DORIA', 'OTAVIO AUGUSTO',
-                'MAIKOL'
-            ];
-            const isSpecial = (name) => {
-                if(!name) return false;
-                let upper = String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                return grupoMama.some(m => upper.includes(m));
-            };
-            if (pName) percP = 12.50; 
-            if (eName) percE = isSpecial(eName) ? 37.50 : 12.50; 
+            if (pId && doctors[pId]) percP = doctors[pId].perc_prescritor !== undefined ? parseFloat(doctors[pId].perc_prescritor) : 12.50;
+            if (eId && doctors[eId]) percE = doctors[eId].perc_encaminhador !== undefined ? parseFloat(doctors[eId].perc_encaminhador) : 12.50;
             return { percP, percE, totalPerc: percP + percE };
         }
 
@@ -505,10 +495,19 @@
             document.getElementById('dashSelectMonth').addEventListener('change', renderDashboard);
             document.getElementById('dashSelectYear').addEventListener('change', renderDashboard);
 
+            // Carregamentos
+            await loadProcedimentos();
             await loadDoctors();
             await loadGrupos();
             await loadPacientesDb();
         });
+
+        async function loadProcedimentos() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/procedimentos`, { headers: API_HEADERS });
+                if(res.ok) dbProcedimentos = normalizeData(await res.json());
+            } catch(e) {}
+        }
 
         async function loadDoctors() { 
             try { 
@@ -588,7 +587,7 @@
                 return;
             }
 
-            // 💡 ALTERAÇÃO DE LAYOUT SE FOR GRUPO (ESCONDER CARDS IRRELEVANTES E MUDAR CABEÇALHO DA TABELA)
+            // 💡 ALTERAÇÃO DE LAYOUT SE FOR GRUPO
             const elsToHideInGroup = ['kpiCardPlantao', 'kpiCardParticular', 'detailsColPlantPart', 'detailsCardConv'];
             elsToHideInGroup.forEach(id => {
                 const el = document.getElementById(id);
@@ -614,7 +613,6 @@
                     <th style="width: 25%; text-align: center;">Origem</th>
                 </tr>`;
             }
-
 
             // CALCULO DE COMPETÊNCIAS E FLAGS
             const compUnimed = `${String(mo+1).padStart(2,'0')}/${yr}`;
@@ -724,9 +722,10 @@
                     if (isLiminar) return; 
 
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
-                    let procNormalizado = String(v.procedimento || '').toUpperCase();
+                    let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
-                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICA')) {
+                    // UPDATE: Filtro idêntico ao medical-repass (ignorando TAXAS no faturamento de tratamento e pegando a base correta)
+                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
@@ -736,17 +735,32 @@
                                         let isPartExt = false;
                                         if (d.dados_extras) {
                                             let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
-                                            isPartExt = ext.origem === 'venda_particular' || String(d.tipo).toUpperCase() === 'PARTICULAR';
+                                            isPartExt = ext.origem === 'venda_particular' || ext.origem === 'particular' || String(d.tipo).toUpperCase() === 'PARTICULAR';
                                         }
                                         return isPartExt && d.data_atendimento === v.data && String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
                                     } catch(e) { return false; }
                                 });
                                 
                                 if (!alreadyExists) {
+                                    // 💡 O Pulo do gato: Pegar o valor base do Procedimento (Custo Medicamento) para evitar que o lucro dispare!
+                                    let valorBaseParaComissao = 0;
+                                    let procIdVinculado = v.procedimento_id;
+                                    
+                                    if (procIdVinculado && dbProcedimentos[procIdVinculado]) {
+                                        valorBaseParaComissao = parseFloat(dbProcedimentos[procIdVinculado].custo_medicamento || 0);
+                                    } else {
+                                        let dbProcNameMatch = Object.values(dbProcedimentos).find(p => String(p.nome).trim().toUpperCase() === String(v.procedimento).trim().toUpperCase());
+                                        if (dbProcNameMatch) {
+                                            valorBaseParaComissao = parseFloat(dbProcNameMatch.custo_medicamento || 0);
+                                        } else {
+                                            valorBaseParaComissao = parseFloat(v.valor_final || v.valor || 0);
+                                        }
+                                    }
+
                                     dadosFiltrados.push({
                                         id_firebase: 'virt_part_' + vId, paciente: String(v.paciente).toUpperCase().trim(), data_atendimento: v.data, competencia: vComp,
-                                        carteirinha: '', descricao: `Aplicação Particular - ${v.procedimento}`, valor_pago: parseFloat(v.valor_final || v.valor || 0), quantidade: parseFloat(v.aplicacoes_realizadas || 1),
-                                        tipo: 'PARTICULAR', custo_errado: v.custo_errado || 0, custo_informado: v.custo_informado || 0, dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
+                                        carteirinha: '', descricao: `Aplicação Particular - ${v.procedimento}`, valor_pago: valorBaseParaComissao, quantidade: parseFloat(v.aplicacoes_realizadas || 1),
+                                        tipo: 'PARTICULAR', custo_correto: v.custo_correto || 0, custo_errado: v.custo_errado || 0, custo_informado: v.custo_informado || 0, dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                     });
                                 }
                             }
@@ -769,12 +783,15 @@
                     }
                 });
 
-                let excelData = dadosFiltrados.map(row => {
+                let rawExcelData = dadosFiltrados.map(row => {
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     let custo_informado_antigo = row.custo_informado || extras.custo_informado || 0;
-                    let custoAtual = (row.custo_errado !== undefined && row.custo_errado !== null && parseFloat(row.custo_errado) > 0)
-                        ? parseFloat(row.custo_errado) 
-                        : parseFloat(custo_informado_antigo);
+                    
+                    // Prioridade rigorosa para o custo (idêntico ao medical-repass)
+                    let custo_correto = row.custo_correto !== undefined ? parseFloat(row.custo_correto) : (extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : 0);
+                    let custo_errado = row.custo_errado !== undefined ? parseFloat(row.custo_errado) : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
+                    
+                    let custoAtual = custo_correto > 0 ? custo_correto : (custo_errado > 0 ? custo_errado : custo_informado_antigo);
 
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
@@ -799,7 +816,29 @@
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) return false;
+                    if (medNormalized.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) return false;
                     return true;
+                });
+
+                // 💡 Aplicar agrupamento do OPDIVO no Dashboard para os centavos baterem milimetricamente!
+                let excelData = [];
+                let opdivoMap = {};
+
+                rawExcelData.forEach(item => {
+                    let medNorm = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    if (medNorm.includes("OPDIVO")) {
+                        let key = item.paciente + "_" + item.data;
+                        if (!opdivoMap[key]) {
+                            opdivoMap[key] = { ...item, medicamento: "OPDIVO (UNIFICADO)" };
+                            excelData.push(opdivoMap[key]);
+                        } else {
+                            opdivoMap[key].valor += item.valor;
+                            opdivoMap[key].mg += item.mg;
+                            opdivoMap[key].custo_informado = Math.max(opdivoMap[key].custo_informado, item.custo_informado);
+                        }
+                    } else {
+                        excelData.push(item);
+                    }
                 });
 
                 const patientsTableObj = {};
@@ -810,7 +849,7 @@
                     }
                     const patId = generatePatientId(d.paciente);
                     const patDb = pacientesDb[patId];
-                    if (patDb) {
+                    if (patDb && patDb.status !== 'inativo') {
                         patientsTableObj[p].pId = patDb.prescritor_id || (!patDb.prescritor_id && !patDb.encaminhador_id ? patDb.doctor_id : null);
                         patientsTableObj[p].eId = patDb.encaminhador_id;
                         if (patientsTableObj[p].pId && doctors[patientsTableObj[p].pId]) patientsTableObj[p].pName = doctors[patientsTableObj[p].pId].nome;
@@ -827,10 +866,10 @@
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
                     
-                    // Verifica se o paciente possui vínculo com qualquer um dos médicos alvo
                     if (!targetDocs.includes(String(pat.pId)) && !targetDocs.includes(String(pat.eId))) return;
 
-                    const comissaoInfo = getComissaoInfo(pat.pName, pat.eName);
+                    // 💡 Puxando comissão dinâmica baseada no ID do médico igualzinho no medical-repass
+                    const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
                     let hasTratamentoRepasseParaEsteMedico = false;
                     let repUnimedPac = 0; let repPartPac = 0; let datesOfPac = [];
 
@@ -842,7 +881,7 @@
 
                         let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
                         let canP = !!pat.pId; let canE = !!pat.eId; 
-                        let hasGrazielly = (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')); 
+                        let hasGrazielly = (pat.eName && pat.eName.toUpperCase().includes('GRAZIELLY')) || (pat.pName && pat.pName.toUpperCase().includes('GRAZIELLY')); 
 
                         if (isTaxa && !hasGrazielly) { canP = false; canE = false; }
 
