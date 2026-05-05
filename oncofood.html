@@ -12,9 +12,8 @@
     
     <script>
         const versaoApp = Date.now();
-        // Fallback scripts caso utilize arquivos externos (mantidos do original)
-        // document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
-        // document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
     </script>
 
     <style>
@@ -47,8 +46,8 @@
             font-family: 'DM Sans', sans-serif;
         }
 
-        body { background-color: var(--bg); margin: 0; color: var(--text); }
-        .container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; }
+        /* Respeitando o global.js - evitando sobrescrever body agressivamente */
+        .oncofood-container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px 40px; box-sizing: border-box; background-color: var(--bg); min-height: 100vh;}
         
         /* Cabeçalho da Página */
         .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: var(--primary); padding: 24px 30px; border-radius: var(--r-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); flex-shrink: 0; color: white;}
@@ -56,10 +55,6 @@
         .dash-header-title p { margin: 6px 0 0; color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 500; }
         .dash-header-title i { color: var(--accent); }
         
-        .sync-status { font-size: 13px; font-weight: 700; background: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
-        .sync-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
-
         /* Abas Estilo ONCOFOOD */
         .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 3px solid var(--border); padding-bottom: 0; }
         .tab-btn { padding: 14px 24px; border: none; background: transparent; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--muted); cursor: pointer; border-radius: 12px 12px 0 0; transition: 0.3s; font-size: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 4px solid transparent; text-transform: uppercase; letter-spacing: 0.5px;}
@@ -170,7 +165,7 @@
         .modal-body { padding: 24px 30px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
         
         /* Pop-up Customizado do Sistema (EcoDialog) */
-        #ecoDialogModal .modal-content { max-width: 420px; text-align: center; padding: 40px 30px; border-radius: var(--r-lg);}
+        #ecoDialogModal .modal-content { max-width: 440px; text-align: center; padding: 40px 30px; border-radius: var(--r-lg);}
         #ecoDialogIcon { font-size: 56px; margin-bottom: 15px; }
         #ecoDialogTitle { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 12px; }
         #ecoDialogText { font-size: 15px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; font-weight: 500;}
@@ -188,17 +183,14 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="global-header"></div>
-        <div id="global-nav"></div>
+    <div id="global-header"></div>
+    <div id="global-nav"></div>
 
+    <div class="oncofood-container">
         <div class="dash-header">
             <div class="dash-header-title">
                 <h1><i class="fas fa-utensils"></i> Gestão de Copa & Nutrição</h1>
                 <p>Controle de pedidos aos pacientes e gestão de estoque em tempo real</p>
-            </div>
-            <div class="sync-status" title="Sincronização Automática com Totens Ativa">
-                <div class="sync-dot"></div> Auto-Sync Online
             </div>
         </div>
 
@@ -389,13 +381,13 @@
         const API_ONCOFOOD_ORDERS = '/oncofood_pedidos';
         const API_ONCOFOOD_STOCK = '/oncofood_estoque';
         const API_ONCOFOOD_CATEGORIES = '/oncofood_categorias'; 
-        const API_ASSESSMENTS = '/painAssessments'; 
         
         let loggedUser = "Sistema";
         let activeOrders = {};
         let historyOrders = {};
         let inventoryItems = {};
         let foodCategories = {};
+        let alertedLowStock = false; // Flag para não repetir o aviso de estoque
 
         function normalizeData(apiData) {
             if (!apiData) return {}; 
@@ -419,12 +411,14 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            if(typeof initGlobal === 'function') initGlobal('oncofood', 'Copa & Nutrição');
+            
             await loadCategories(); 
             await loadInventory();  
             await loadOrders();     
-
-            // Inicia Sincronização Automática (Verifica a cada 15 segundos)
-            setInterval(syncOnlineOrders, 15000);
+            
+            // Recarrega pedidos novos a cada 10s
+            setInterval(loadOrders, 10000);
         });
 
         function openTab(tabId) { 
@@ -438,71 +432,6 @@
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
         // ==========================================
-        // SINCRONIZAÇÃO AUTOMÁTICA (AUTO-SYNC)
-        // ==========================================
-        async function syncOnlineOrders() {
-            try {
-                const assessments = await apiFetch(API_ASSESSMENTS);
-                let hasNewOrders = false;
-
-                for (const [id, a] of Object.entries(assessments)) {
-                    if (a.oncofood_synced) continue; // Já processado
-                    
-                    let pedidosPac = Array.isArray(a.pedido_oncofood_paciente) ? a.pedido_oncofood_paciente : [];
-                    let pedidosAcc = Array.isArray(a.pedido_oncofood_acompanhante) ? a.pedido_oncofood_acompanhante : [];
-                    let todosPedidos = [...pedidosPac, ...pedidosAcc];
-
-                    if (todosPedidos.length === 0) {
-                        a.oncofood_synced = true;
-                        await apiFetch(`${API_ASSESSMENTS}/${id}`, 'PUT', a);
-                        continue;
-                    }
-
-                    // Processa os itens e baixa no estoque
-                    let orderItems = [];
-                    for (const itemName of todosPedidos) {
-                        // Busca o item no estoque ignorando modificadores, ex: "Café Preto (Com Açúcar)"
-                        let invItem = Object.values(inventoryItems).find(inv => itemName.startsWith(inv.nome));
-                        
-                        if (invItem) {
-                            orderItems.push({ id: invItem.id_firebase, nome: itemName, qtd: 1 });
-                            // Baixa Automática no Estoque
-                            invItem.estoque = Math.max(0, invItem.estoque - 1);
-                            await apiFetch(`${API_ONCOFOOD_STOCK}/${invItem.id_firebase}`, 'PUT', invItem);
-                        } else {
-                            orderItems.push({ id: 'avulso', nome: itemName, qtd: 1 });
-                        }
-                    }
-
-                    // Cria Pedido na Copa
-                    const newOrder = {
-                        id_firebase: 'pedido_auto_' + Date.now() + Math.floor(Math.random()*1000),
-                        paciente: a.name || 'Paciente Triagem',
-                        leito: 'Triagem Online',
-                        itens: orderItems,
-                        status: 'pending',
-                        solicitado_por: 'Totem/Paciente',
-                        data_solicitacao: a.timestamp || new Date().toISOString()
-                    };
-                    await apiFetch(API_ONCOFOOD_ORDERS, 'POST', newOrder);
-
-                    // Marca Avaliação como Sincronizada
-                    a.oncofood_synced = true;
-                    await apiFetch(`${API_ASSESSMENTS}/${id}`, 'PUT', a);
-                    hasNewOrders = true;
-                }
-
-                if (hasNewOrders) {
-                    await loadInventory();
-                    await loadOrders();
-                }
-
-            } catch (err) {
-                console.error("Erro no Auto-Sync OncoFood:", err);
-            }
-        }
-
-        // ==========================================
         // CATEGORIAS
         // ==========================================
         async function loadCategories() {
@@ -514,7 +443,8 @@
                         { nome: 'Lanches', icone: 'fas fa-hamburger', cor: '#8b5cf6' },
                         { nome: 'Sobremesas', icone: 'fas fa-apple-alt', cor: '#ec4899' },
                         { nome: 'Bebidas', icone: 'fas fa-wine-glass-alt', cor: '#0ea5e9' },
-                        { nome: 'Biscoitos', icone: 'fas fa-cookie', cor: '#d97706' },
+                        { nome: 'Salgados', icone: 'fas fa-cookie', cor: '#d97706' },
+                        { nome: 'Doces', icone: 'fas fa-candy-cane', cor: '#e11d48' },
                         { nome: 'Insumos', icone: 'fas fa-cubes', cor: '#94a3b8' }
                     ];
                     for (let d of defaults) {
@@ -604,7 +534,20 @@
         async function loadInventory() {
             try { inventoryItems = await apiFetch(API_ONCOFOOD_STOCK); } 
             catch(e) { inventoryItems = {}; }
+            
             renderInventory(); populateOrderSelect();
+
+            // Lógica de Notificação de Estoque Baixo (< 30)
+            let lowItems = Object.values(inventoryItems).filter(i => i.estoque < 30 && i.categoria !== 'Insumos');
+            if (lowItems.length > 0 && !alertedLowStock) {
+                alertedLowStock = true; // Marca para não encher a paciência do usuário toda hora
+                let msg = lowItems.map(i => `• <b>${i.nome}</b> (Apenas ${i.estoque} un)`).join('<br>');
+                EcoDialog.alert(
+                    `Os seguintes itens do cardápio estão acabando:<br><br><div style="text-align:left; background:#fff3e0; padding:15px; border-radius:10px; border:1px solid #ffd0a0; font-size:14px; color:#e65100;">${msg}</div><br>Favor providenciar o reabastecimento.`, 
+                    "Alerta de Estoque Baixo", 
+                    "warning"
+                );
+            }
         }
 
         function populateOrderSelect() {
@@ -731,7 +674,7 @@
                 html += `<div class="category-header"><i class="${catObj.icone}" style="color:${catObj.cor}"></i> ${catName}</div><div class="grid-container">`;
                 
                 grouped[catName].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(item => {
-                    const isLow = item.estoque <= 3 ? 'low' : '';
+                    const isLow = item.estoque <= 30 ? 'low' : '';
                     const imgSrc = item.imagem || fallbackImg;
                     html += `
                         <div class="card" style="border-top: 4px solid ${catObj.cor};">
@@ -786,7 +729,7 @@
             if (!itemObj) return await EcoDialog.alert("Item inválido.", "Erro", "error");
 
             if (itemObj.estoque <= 0) {
-                if(!await EcoDialog.confirm(`<b>${itemObj.nome}</b> está esgotado. Lançar mesmo assim?`, "Aviso", "warning")) return;
+                if(!await EcoDialog.confirm(`<b>${itemObj.nome}</b> está esgotado no sistema. Lançar mesmo assim?`, "Aviso", "warning")) return;
             }
 
             const newOrder = {
@@ -802,7 +745,7 @@
 
             try {
                 await apiFetch(API_ONCOFOOD_ORDERS, 'POST', newOrder);
-                await updateStock(itemId, -1);
+                await updateStock(itemId, -1); // Já dá baixa direto pelo lançamento manual
                 document.getElementById('orderPatient').value = '';
                 document.getElementById('orderBox').value = '';
                 document.getElementById('orderItem').value = '';
@@ -823,7 +766,7 @@
         }
 
         async function deleteOrder(id) {
-            if (!await EcoDialog.confirm("Cancelar e excluir este pedido?", "Atenção", "error")) return;
+            if (!await EcoDialog.confirm("Cancelar e excluir este pedido permanentemente?", "Atenção", "error")) return;
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'DELETE');
                 await loadOrders();
