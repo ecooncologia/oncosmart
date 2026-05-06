@@ -63,6 +63,24 @@
         .btn-icon.warning:hover { background-color: #fde68a; }
 
         /* ==========================================
+           MODAL DE CONFIGURAÇÃO DE FLAGS
+           ========================================== */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 450px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.2); overflow: hidden; animation: fadeIn 0.3s; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+        .modal-body { padding: 20px; overflow-y: auto; max-height: 60vh; }
+        
+        .flag-select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            outline: none;
+        }
+
+        /* ==========================================
            ESTILOS DO ACORDEÃO E TABELAS
            ========================================== */
         #table-tasy-vita th, #table-tasy-vita td, .data-table th, .data-table td { font-size: 13px; padding: 12px 10px; white-space: nowrap; }
@@ -82,7 +100,7 @@
         tfoot td { font-size: 14px !important; color: #0f172a !important; padding: 12px 10px; }
 
         /* Estilos da Flag de Faturamento */
-        .print-flag { display: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; text-transform: uppercase; }
+        .print-flag { display: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
 
         /* Oculta o cabeçalho executivo na tela */
         .print-only { display: none; }
@@ -140,27 +158,11 @@
             /* Mostra a Flag limpa na impressão */
             .print-flag { display: inline-block !important; }
 
-            /* RESUMO FIX: Tabelas empilhadas (uma em cima da outra) ocupando a largura total na impressão */
-            .summary-wrapper {
-                display: block !important;
-                width: 100% !important;
-                margin-top: 20px !important;
-                page-break-inside: avoid !important;
-            }
-            .summary-box { 
-                display: block !important;
-                width: 100% !important;
-                margin-bottom: 25px !important;
-            }
-            .summary-box table {
-                table-layout: auto !important;
-                width: 100% !important;
-            }
-            .summary-box th, .summary-box td {
-                padding: 10px !important;
-                font-size: 13px !important;
-                white-space: normal !important;
-            }
+            /* RESUMO FIX: Tabelas empilhadas ocupando a largura total na impressão */
+            .summary-wrapper { display: block !important; width: 100% !important; margin-top: 20px !important; page-break-inside: avoid !important; }
+            .summary-box { display: block !important; width: 100% !important; margin-bottom: 25px !important; }
+            .summary-box table { table-layout: auto !important; width: 100% !important; }
+            .summary-box th, .summary-box td { padding: 10px !important; font-size: 13px !important; white-space: normal !important; }
         }
     </style>
 </head>
@@ -168,6 +170,24 @@
     <div class="container">
         <div id="global-header"></div>
         <div id="global-nav"></div>
+
+        <div id="modalFlags" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 style="margin:0; font-size:1.2rem; color:var(--secondary);"><i class="fas fa-tags"></i> Gerenciar Flags</h3>
+                    <button onclick="closeModalFlags()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="display:flex; gap:10px; margin-bottom: 20px;">
+                        <input type="text" id="new-flag-nome" class="form-control" placeholder="Nome da Flag (Ex: ECO)" style="margin-bottom:0; flex: 1;">
+                        <input type="color" id="new-flag-cor" class="form-control" value="#059669" style="width: 50px; padding: 2px; cursor: pointer; height: 38px; margin-bottom:0;">
+                        <button class="btn btn-primary" onclick="addNewFlag()"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="flags-list" style="border: 1px solid #e2e8f0; border-radius: 8px; max-height: 250px; overflow-y: auto; background: #f8fafc;">
+                        </div>
+                </div>
+            </div>
+        </div>
 
         <div class="print-only">
             <img src="https://i.imgur.com/nWWyEBG.png" alt="Logo ECO ONCOLOGIA" style="height: 55px; object-fit: contain;">
@@ -179,13 +199,22 @@
 
         <div class="filter-bar no-print">
             <div class="col">
-                <label class="card-label">Mês de Referência (Filtro Global)</label>
+                <label class="card-label">Mês de Referência (Global)</label>
                 <input type="month" id="filter-mes" class="form-control" onchange="refreshAllData()" style="font-weight: bold; font-size: 16px;">
             </div>
             <div class="col">
-                <label class="card-label" for="filter-paciente">Buscar Paciente (Apenas Tasy)</label>
+                <label class="card-label" for="filter-paciente">Buscar Paciente</label>
                 <input type="text" id="filter-paciente" class="form-control" placeholder="Digite o nome..." onkeyup="filterTableTasy()">
             </div>
+            <div class="col">
+                <label class="card-label">Filtrar Flag</label>
+                <div style="display: flex; gap: 5px;">
+                    <select id="filter-flag" class="form-control" onchange="filterTableTasy()">
+                        </select>
+                    <button type="button" class="btn btn-secondary" onclick="openModalFlags()" title="Configurar Flags" style="padding: 0 12px;"><i class="fas fa-cog"></i></button>
+                </div>
+            </div>
+
             <div style="flex: 1;"></div>
             <button type="button" class="btn btn-primary" onclick="preparePrint()">
                 <i class="fas fa-print"></i> Imprimir Relatório
@@ -223,7 +252,7 @@
                             <tfoot>
                                 <tr>
                                     <td class="no-print"></td>
-                                    <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL TASY:</td>
+                                    <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL FILTRADO:</td>
                                     <td></td> <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-tasy">R$ 0,00</td>
                                 </tr>
                             </tfoot>
@@ -411,6 +440,7 @@
                                 <tr>
                                     <th class="no-print" style="width: 40px;"></th>
                                     <th>Paciente</th>
+                                    <th style="text-align: center; width: 120px;">Flag</th>
                                     <th style="text-align: center; width: 150px;">Qtd. Contas</th>
                                     <th style="text-align: right; width: 200px;">Valor Total Faturado</th>
                                 </tr>
@@ -419,7 +449,7 @@
                             <tfoot>
                                 <tr>
                                     <td class="no-print"></td>
-                                    <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL FATURADO NO PERÍODO:</td>
+                                    <td colspan="3" style="text-align: right; font-weight: bold;">TOTAL FATURADO NO PERÍODO:</td>
                                     <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-faturamento">R$ 0,00</td>
                                 </tr>
                             </tfoot>
@@ -436,7 +466,9 @@
         let dataTransporte = [];
         let dataDiversos = [];
         let dataContas = [];
-        let flagsFaturamento = {}; // 🆕 ARMAZENA AS FLAGS (ECO/VITA)
+        
+        let flagsFaturamento = {}; 
+        let customFlags = []; // 🆕 ARMAZENA AS FLAGS DINÂMICAS
 
         // Variáveis globais de controle e totais
         let valTasyGlobal = 0;
@@ -455,9 +487,10 @@
                 document.getElementById('filter-mes').value = now.toISOString().substring(0, 7);
                 
                 await Promise.all([
+                    loadCustomFlags(),
                     loadTransporteLocal(),
                     loadDiversosLocal(),
-                    loadFlagsFaturamento() // 🆕 CARREGA AS FLAGS
+                    loadFlagsFaturamento()
                 ]);
                 refreshAllData();
             } else {
@@ -467,6 +500,146 @@
 
         document.addEventListener('DOMContentLoaded', initPage);
 
+        // ==========================================
+        // 🆕 LÓGICA: GERENCIADOR DE FLAGS DINÂMICAS
+        // ==========================================
+        async function loadCustomFlags() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    if(data.faturamento_flags && data.faturamento_flags.flags) {
+                        customFlags = data.faturamento_flags.flags;
+                    } else {
+                        customFlags = [
+                            {nome: 'ECO', cor: '#059669'},
+                            {nome: 'VITA', cor: '#0284c7'}
+                        ];
+                    }
+                    populateFlagFilter();
+                }
+            } catch(e) { console.error("Erro ao carregar custom flags", e); }
+        }
+
+        function populateFlagFilter() {
+            const sel = document.getElementById('filter-flag');
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">Todas as Flags</option><option value="PENDENTE">Pendente</option>';
+            customFlags.forEach(f => {
+                sel.innerHTML += `<option value="${f.nome}">${f.nome}</option>`;
+            });
+            sel.value = currentVal;
+        }
+
+        function openModalFlags() {
+            renderFlagsList();
+            document.getElementById('modalFlags').style.display = 'flex';
+        }
+
+        function closeModalFlags() {
+            document.getElementById('modalFlags').style.display = 'none';
+        }
+
+        function renderFlagsList() {
+            const list = document.getElementById('flags-list');
+            list.innerHTML = '';
+            if(customFlags.length === 0) list.innerHTML = '<div style="padding:15px; text-align:center; color:#64748b; font-size:13px;">Nenhuma flag criada.</div>';
+            customFlags.forEach((f, index) => {
+                list.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; border-bottom:1px solid #eee;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:20px; height:20px; border-radius:4px; background:${f.cor};"></div>
+                        <strong style="color:#1e293b;">${f.nome}</strong>
+                    </div>
+                    <button class="btn-icon danger" onclick="removeFlag(${index})"><i class="fas fa-trash"></i></button>
+                </div>`;
+            });
+        }
+
+        function addNewFlag() {
+            const nome = document.getElementById('new-flag-nome').value.trim().toUpperCase();
+            const cor = document.getElementById('new-flag-cor').value;
+            if(!nome) return alert("Digite o nome da Flag.");
+            if(customFlags.some(f => f.nome === nome)) return alert("Já existe uma flag com este nome.");
+            
+            customFlags.push({nome, cor});
+            saveCustomFlags();
+            document.getElementById('new-flag-nome').value = '';
+        }
+
+        function removeFlag(index) {
+            if(!confirm("Tem certeza que deseja excluir esta flag?")) return;
+            customFlags.splice(index, 1);
+            saveCustomFlags();
+        }
+
+        async function saveCustomFlags() {
+            renderFlagsList();
+            populateFlagFilter();
+            filterTableTasy(); // Atualiza a tela se houver filtro ativo
+            try {
+                await fetch(`${API_BASE_URL}/system_configs`, {
+                    method: 'POST',
+                    headers: API_HEADERS,
+                    body: JSON.stringify({id_firebase: 'faturamento_flags', flags: customFlags})
+                });
+            } catch(e) { console.error("Erro ao salvar flag", e); }
+        }
+
+        // ==========================================
+        // LÓGICA: VINCULAR PACIENTES E FLAGS
+        // ==========================================
+        async function loadFlagsFaturamento() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes_faturamento`, { headers: API_HEADERS });
+                if (res.ok) {
+                    flagsFaturamento = await res.json();
+                }
+            } catch (e) {
+                console.error("Erro ao carregar flags de faturamento:", e);
+            }
+        }
+
+        async function updatePacienteFlag(paciente, valor, selectElement) {
+            const idFirebase = paciente.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            if (!flagsFaturamento[idFirebase]) flagsFaturamento[idFirebase] = {};
+            flagsFaturamento[idFirebase].flag = valor;
+            flagsFaturamento[idFirebase].paciente = paciente;
+
+            const foundFlag = customFlags.find(f => f.nome === valor);
+            if(foundFlag) {
+                selectElement.style.backgroundColor = foundFlag.cor;
+                selectElement.style.color = '#fff';
+            } else {
+                selectElement.style.backgroundColor = '#f1f5f9';
+                selectElement.style.color = '#475569';
+            }
+            
+            // Atualiza o elemento de print associado na mesma celula
+            const printSelo = selectElement.nextElementSibling;
+            if(printSelo) {
+                printSelo.innerText = valor || 'PENDENTE';
+                printSelo.style.backgroundColor = foundFlag ? foundFlag.cor : 'transparent';
+                printSelo.style.color = foundFlag ? '#fff' : '#475569';
+            }
+
+            const payload = {
+                id_firebase: idFirebase,
+                paciente: paciente,
+                flag: valor
+            };
+
+            try {
+                await fetch(`${API_BASE_URL}/pacientes_faturamento/${idFirebase}`, {
+                    method: 'PUT',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) {}
+        }
+
+
         function openTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -475,7 +648,6 @@
         }
 
         async function refreshAllData() {
-            valTasyGlobal = 0;
             valPlantoesGlobal = 0;
             
             await Promise.all([
@@ -486,26 +658,22 @@
             
             renderTransporte();
             renderDiversos();
-            updateGrandTotal();
         }
 
         function updateGrandTotal() {
             const totalOperacao = valTasyGlobal + valPlantoesGlobal + valTransporteGlobal + valDiversosGlobal;
             const metade = totalOperacao / 2;
             
-            // Atualiza rodapés das tabelas
             document.getElementById('footer-val-tasy').innerText = 'R$ ' + formatCurrency(valTasyGlobal);
             document.getElementById('footer-val-plantoes').innerText = 'R$ ' + formatCurrency(valPlantoesGlobal);
             document.getElementById('footer-val-transporte').innerText = 'R$ ' + formatCurrency(valTransporteGlobal);
             document.getElementById('footer-val-diversos').innerText = 'R$ ' + formatCurrency(valDiversosGlobal);
             
-            // Atualiza quadro resumo de composição
             document.getElementById('resumo-tasy').innerText = 'R$ ' + formatCurrency(valTasyGlobal);
             document.getElementById('resumo-plantoes').innerText = 'R$ ' + formatCurrency(valPlantoesGlobal);
             document.getElementById('resumo-transporte').innerText = 'R$ ' + formatCurrency(valTransporteGlobal);
             document.getElementById('resumo-diversos').innerText = 'R$ ' + formatCurrency(valDiversosGlobal);
 
-            // Atualiza divisão 50/50
             document.getElementById('grand-total-val').innerText = 'R$ ' + formatCurrency(totalOperacao);
             document.getElementById('half-eco-val').innerText = 'R$ ' + formatCurrency(metade);
             document.getElementById('half-vita-val').innerText = 'R$ ' + formatCurrency(metade);
@@ -572,52 +740,6 @@
         }
 
         // ==========================================
-        // 🆕 LÓGICA: FLAGS DE FATURAMENTO TASY
-        // ==========================================
-        async function loadFlagsFaturamento() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/pacientes_faturamento`, { headers: API_HEADERS });
-                if (res.ok) {
-                    flagsFaturamento = await res.json();
-                }
-            } catch (e) {
-                console.error("Erro ao carregar flags de faturamento:", e);
-            }
-        }
-
-        async function updatePacienteFlag(paciente, valor, selectElement) {
-            // Normaliza o nome para gerar um ID seguro no banco de dados
-            const idFirebase = paciente.replace(/[^a-zA-Z0-9]/g, '_');
-            
-            // Atualiza no cache local
-            if (!flagsFaturamento[idFirebase]) flagsFaturamento[idFirebase] = {};
-            flagsFaturamento[idFirebase].flag = valor;
-            flagsFaturamento[idFirebase].paciente = paciente;
-
-            // Atualiza cor do select imediatamente
-            if (valor === 'ECO') selectElement.style.color = '#059669';
-            else if (valor === 'VITA') selectElement.style.color = '#0284c7';
-            else selectElement.style.color = '#475569';
-
-            // Salva na API
-            const payload = {
-                id_firebase: idFirebase,
-                paciente: paciente,
-                flag: valor
-            };
-
-            try {
-                await fetch(`${API_BASE_URL}/pacientes_faturamento/${idFirebase}`, {
-                    method: 'PUT',
-                    headers: API_HEADERS,
-                    body: JSON.stringify(payload)
-                });
-            } catch (e) {
-                console.error("Erro ao salvar flag:", e);
-            }
-        }
-
-        // ==========================================
         // LÓGICA: BLOCO 1 (CUSTO VITA - TASY)
         // ==========================================
         async function loadCustoVita() {
@@ -636,15 +758,45 @@
                         }
                         return dt.startsWith(mes);
                     });
-                    renderTableVita(dataCustoVita);
+                    filterTableTasy(); // Chama o filtro que agora processa os dados finais
                 } else { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Erro na requisição.</td></tr>'; }
             } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro de conexão Tasy.</td></tr>'; }
+        }
+
+        function filterTableTasy() {
+            const termName = document.getElementById('filter-paciente').value.toUpperCase();
+            const termFlag = document.getElementById('filter-flag').value;
+            
+            const filtered = dataCustoVita.filter(i => {
+                const paciente = (i.nm_pessoa_fisica || i.NM_PESSOA_FISICA || '').toUpperCase();
+                const idFirebase = paciente.replace(/[^a-zA-Z0-9]/g, '_');
+                const currentFlag = flagsFaturamento[idFirebase]?.flag || '';
+                
+                // Filtro de Nome
+                let matchName = paciente.includes(termName);
+                
+                // Filtro de Flag Combinado
+                let matchFlag = true;
+                if(termFlag === 'PENDENTE') {
+                    matchFlag = (currentFlag === '');
+                } else if(termFlag !== '') {
+                    matchFlag = (currentFlag === termFlag);
+                }
+
+                return matchName && matchFlag;
+            });
+            
+            valTasyGlobal = 0;
+            filtered.forEach(item => { valTasyGlobal += parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO); });
+            
+            renderTableVita(filtered);
+            updateGrandTotal();
         }
 
         function renderTableVita(list) {
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '';
-            if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum custo registrado.</td></tr>'; return; }
+            if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum custo registrado / encontrado no filtro.</td></tr>'; return; }
 
             const grupos = {};
             list.forEach(item => {
@@ -652,7 +804,6 @@
                 if(!grupos[p]) grupos[p] = { paciente: p, totalCusto: 0, itens: [] };
                 const custo = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
                 grupos[p].totalCusto += custo;
-                valTasyGlobal += custo; 
                 grupos[p].itens.push(item);
             });
 
@@ -660,22 +811,25 @@
             Object.values(grupos).sort((a,b) => a.paciente.localeCompare(b.paciente)).forEach(g => {
                 const id = `paciente_${index++}`;
                 
-                // 🆕 IDENTIFICA A FLAG SALVA NO BANCO
                 const idFirebase = g.paciente.replace(/[^a-zA-Z0-9]/g, '_');
                 const currentFlag = flagsFaturamento[idFirebase]?.flag || '';
                 
-                let color = '#475569';
-                if(currentFlag === 'ECO') color = '#059669';
-                if(currentFlag === 'VITA') color = '#0284c7';
+                const foundFlag = customFlags.find(f => f.nome === currentFlag);
+                const bgColors = foundFlag ? foundFlag.cor : '#f1f5f9';
+                const textColors = foundFlag ? '#fff' : '#475569';
 
-                // 🆕 HTML DA FLAG
+                // Dropdown Dinâmico com fundo colorido
+                let optionsHtml = `<option value="" style="background:#fff; color:#475569">Pendente</option>`;
+                customFlags.forEach(f => {
+                    const sel = currentFlag === f.nome ? 'selected' : '';
+                    optionsHtml += `<option value="${f.nome}" style="background:${f.cor}; color:#fff;" ${sel}>${f.nome}</option>`;
+                });
+
                 const selectHtml = `
-                    <select class="form-control no-print" style="width: 100px; padding: 4px; font-size: 11px; margin: 0 auto; height: 26px; font-weight: bold; color: ${color};" onchange="updatePacienteFlag('${g.paciente}', this.value, this)" onclick="event.stopPropagation()">
-                        <option value="" style="color: #475569">Pendente</option>
-                        <option value="ECO" style="color: #059669" ${currentFlag === 'ECO' ? 'selected' : ''}>ECO</option>
-                        <option value="VITA" style="color: #0284c7" ${currentFlag === 'VITA' ? 'selected' : ''}>VITA</option>
+                    <select class="flag-select no-print" style="width: 110px; background-color: ${bgColors}; color: ${textColors}; font-weight: bold; border: none; text-align: center; font-size: 11px; height: 26px;" onchange="updatePacienteFlag('${g.paciente}', this.value, this)" onclick="event.stopPropagation()">
+                        ${optionsHtml}
                     </select>
-                    <span class="print-flag" style="color: ${color}; border-color: ${color};">${currentFlag || 'PENDENTE'}</span>
+                    <span class="print-flag" style="background-color: ${bgColors} !important; color: ${textColors} !important; border:none;">${currentFlag || 'PENDENTE'}</span>
                 `;
 
                 const parent = document.createElement('tr');
@@ -710,16 +864,6 @@
                                    <tbody>${sub}</tbody></table></div></td>`;
                 tbody.appendChild(child);
             });
-        }
-
-        function filterTableTasy() {
-            const term = document.getElementById('filter-paciente').value.toUpperCase();
-            const filtered = dataCustoVita.filter(i => (i.nm_pessoa_fisica || i.NM_PESSOA_FISICA || '').toUpperCase().includes(term));
-            
-            valTasyGlobal = 0;
-            filtered.forEach(item => { valTasyGlobal += parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO); });
-            renderTableVita(filtered);
-            updateGrandTotal();
         }
 
         // ==========================================
@@ -961,14 +1105,14 @@
             const pad = n => String(n).padStart(2, '0');
             const labelMes = `${pad(month)}/${year}`;
 
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Filtrando Contas de ${labelMes}...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Filtrando Contas de ${labelMes}...</td></tr>`;
 
             try {
                 const endpoint = `${API_BASE_URL}/conta_paciente_eco`;
                 const res = await fetch(endpoint, { headers: API_HEADERS });
                 
                 if(!res.ok) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;"><b>Erro de API:</b> Falha ao carregar dados do backend.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;"><b>Erro de API:</b> Falha ao carregar dados do backend.</td></tr>`;
                     return;
                 }
                 
@@ -994,7 +1138,7 @@
                 tbody.innerHTML = '';
 
                 if (list.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma conta faturada encontrada para ${labelMes}.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhuma conta faturada encontrada para ${labelMes}.</td></tr>`;
                     document.getElementById('footer-val-faturamento').innerText = 'R$ 0,00';
                     return;
                 }
@@ -1015,12 +1159,21 @@
                 Object.values(gruposContas).sort((a,b) => a.paciente.localeCompare(b.paciente)).forEach(g => {
                     const id = `conta_pac_${indexConta++}`;
                     
+                    // SINCRONIA DA FLAG
+                    const idFirebase = g.paciente.replace(/[^a-zA-Z0-9]/g, '_');
+                    const currentFlag = flagsFaturamento[idFirebase]?.flag || '';
+                    const foundFlag = customFlags.find(f => f.nome === currentFlag);
+                    const bgColors = foundFlag ? foundFlag.cor : '#f1f5f9';
+                    const textColors = foundFlag ? '#fff' : '#475569';
+                    const badgeHtml = `<span style="background-color:${bgColors}; color:${textColors}; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:none; text-transform:uppercase;">${currentFlag || 'PENDENTE'}</span>`;
+
                     const parent = document.createElement('tr');
                     parent.className = 'parent-row';
                     parent.onclick = () => toggleGroup(id);
                     parent.innerHTML = `
                         <td class="no-print" style="text-align:center;"><i class="fas fa-chevron-right icon-expand" id="icon-${id}"></i></td>
                         <td style="font-weight:bold; color:var(--primary);">${g.paciente}</td>
+                        <td style="text-align:center;">${badgeHtml}</td>
                         <td style="text-align:center;"><span class="badge-count">${g.itens.length}</span></td>
                         <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(g.totalValor)}</td>
                     `;
@@ -1036,7 +1189,7 @@
                         const val = parseOracleNumber(i.valor_conta || i.VALOR_CONTA);
                         
                         sub += `<tr>
-                            <td>${formatDate(dtEntrada)}</td>
+                            <td colspan="2">${formatDate(dtEntrada)}</td>
                             <td style="text-align:center;">${atendimento}</td>
                             <td style="text-align:center;"><span class="badge-faturamento fat-vita" style="background:#e0f2fe; color:#0369a1;"># ${conta}</span></td>
                             <td style="text-align:right; font-weight:bold; color:#475569;">R$ ${formatCurrency(val)}</td>
@@ -1048,12 +1201,12 @@
                     child.className = 'child-row'; 
                     child.style.display = 'none';
                     child.innerHTML = `
-                        <td colspan="4" style="padding:0;">
+                        <td colspan="5" style="padding:0;">
                             <div class="sub-table-container">
                                 <table class="sub-table">
                                     <thead>
                                         <tr>
-                                            <th style="width: 150px;">Data Entrada</th>
+                                            <th colspan="2" style="width: 150px;">Data Entrada</th>
                                             <th style="text-align:center; width: 150px;">Nº Atendimento</th>
                                             <th style="text-align:center; width: 150px;">Nº Conta Tasy</th>
                                             <th style="text-align:right;">Valor da Conta (R$)</th>
@@ -1071,7 +1224,7 @@
 
             } catch (e) { 
                 console.error(e);
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Erro na conexão com o banco.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Erro na conexão com o banco.</td></tr>`;
             }
         }
     </script>
