@@ -575,10 +575,11 @@
 
                 console.log(`[Frontend] Requisitando dados da competência: ${competenciaAlvo}`);
 
+                // Adicionado cache-buster (?t=Date.now()) para evitar listar vendas ou repasses já excluídos
                 const [resUnimed, resVendas, resOracle] = await Promise.all([
-                    fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
+                    fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}&t=${Date.now()}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
                 ]);
 
                 const unimedData = resUnimed.ok ? normalizeData(await resUnimed.json()) : {};
@@ -592,11 +593,27 @@
                 }
                 console.log(`=========================================`);
 
-                let arrayBot = Object.values(unimedData);
-                let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
+                // Filtragem do Repasse Unimed (Ignorando Soft Deletes)
+                let arrayBot = Object.values(unimedData).filter(row => {
+                    let statusUnimed = String(row.status || '').toLowerCase();
+                    // Evita trazer repasses fantasma que já foram apagados ou inativados no painel
+                    if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') {
+                        return false;
+                    }
+                    return row.competencia === competenciaAlvo;
+                });
 
-                // Mescla Vendas Particulares
+                let dadosFiltrados = arrayBot;
+
+                // Mescla Vendas Particulares (Ignorando Soft Deletes)
                 Object.entries(vendasData).forEach(([vId, v]) => {
+                    
+                    // 💡 VALIDAÇÃO DE SOFT-DELETE INCLUÍDA AQUI 💡
+                    let statusVenda = String(v.status || '').toLowerCase();
+                    if (statusVenda === 'excluido' || statusVenda === 'excluído' || statusVenda === 'cancelado' || statusVenda === 'inativo') {
+                        return; // Pula este registro se ele estiver cancelado/excluído no BD
+                    }
+
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     
@@ -814,7 +831,7 @@
                     let endpoint = isVirtualPart ? '/vendas' : '/repasse_unimed';
                     let realId = isVirtualPart ? singleId.replace('virt_part_', '') : singleId;
 
-                    const resGet = await fetch(`${API_BASE_URL}${endpoint}/${realId}`, { headers: API_HEADERS });
+                    const resGet = await fetch(`${API_BASE_URL}${endpoint}/${realId}?t=${Date.now()}`, { headers: API_HEADERS });
                     
                     if (resGet.ok) {
                         let dbItem = await resGet.json();
@@ -834,7 +851,7 @@
                             });
                         }
                     } else {
-                        const resGetAll = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS });
+                        const resGetAll = await fetch(`${API_BASE_URL}${endpoint}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (resGetAll.ok) {
                             const dbData = normalizeData(await resGetAll.json());
                             let dbItem = Object.values(dbData).find(d => String(d.id) === String(realId) || String(d.id_firebase) === String(realId));
