@@ -1131,7 +1131,6 @@
                         let displayVal = parseCurrency(ciclo.valor).toFixed(2);
                         
                         let badge = ''; let actions = '';
-                        // Destravando o input para agendados para edição fluida:
                         let inputState = (ciclo.status === 'presente' || ciclo.status === 'faltou') ? 'disabled' : ''; 
 
                         if (ciclo.status === 'presente') {
@@ -1546,12 +1545,53 @@
             alert("Planejamento salvo!");
         }
 
+        // ==========================================
+        // LÓGICA DE EXCLUSÃO CORRIGIDA
+        // ==========================================
         async function deleteSale(id) {
             if(!confirm("Excluir este registro?")) return;
+
+            const s = sales[id];
+
+            // 1. Remove a Venda original
             await fetch(`${API_BASE_URL}/vendas/${id}`, { 
                 method: 'DELETE',
                 headers: API_HEADERS
             });
+
+            // 2. Tenta deletar o registro-filho auto-gerado no repasse_unimed, caso seja um Particular
+            if (s && s.tipo_registro === 'particular') {
+                try {
+                    const repRes = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
+                    if (repRes.ok) {
+                        const repData = normalizeData(await repRes.json());
+                        const pacUpper = (s.paciente || '').toUpperCase();
+
+                        const repToDelete = Object.entries(repData).find(([key, rep]) => {
+                            let extras = {};
+                            if (rep.dados_extras) {
+                                try { 
+                                    extras = typeof rep.dados_extras === 'string' ? JSON.parse(rep.dados_extras) : rep.dados_extras; 
+                                } catch(e){}
+                            }
+                            return extras.origem === 'venda_particular' &&
+                                   rep.paciente === pacUpper &&
+                                   rep.data_atendimento === s.data;
+                        });
+
+                        // Se encontrou a sombra que o sistema gerou automaticamente, exclui também
+                        if (repToDelete) {
+                            await fetch(`${API_BASE_URL}/repasse_unimed/${repToDelete[0]}`, {
+                                method: 'DELETE',
+                                headers: API_HEADERS
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error("Erro ao deletar repasse automático vinculado:", err);
+                }
+            }
+
             loadData();
         }
 
@@ -1640,7 +1680,6 @@
                 }
             });
 
-            // Ordena da data mais recente para a mais antiga (baseado no ciclo)
             items.sort((a, b) => new Date(b.cycleDate + 'T12:00:00') - new Date(a.cycleDate + 'T12:00:00'));
             return items;
         }
