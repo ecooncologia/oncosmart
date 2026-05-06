@@ -50,6 +50,7 @@
 
         .origem-unimed { background: #d1fae5; color: #059669; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
         .origem-part { background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
+        .origem-liminar { background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
 
         /* NOVAS TAGS DE MESES */
         .month-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
@@ -97,7 +98,7 @@
             <button class="tab-btn" onclick="switchPatientTab('retornos', this)"><i class="fas fa-history"></i> Retornos</button>
             <button class="tab-btn" onclick="switchPatientTab('vinculados', this)">Vinculados</button>
             <button class="tab-btn" onclick="switchPatientTab('unimed', this)"><i class="fas fa-notes-medical"></i> Base Unimed</button>
-            <button class="tab-btn" onclick="switchPatientTab('particular', this)"><i class="fas fa-star"></i> Base Particular</button>
+            <button class="tab-btn" onclick="switchPatientTab('particular', this)"><i class="fas fa-star"></i> Base Particular/Liminar</button>
             <button class="tab-btn" onclick="switchPatientTab('inativos', this)"><i class="fas fa-ban"></i> Inativos</button>
         </div>
 
@@ -301,7 +302,7 @@
     <script>
         let patients = {};
         let doctors = {};
-        let docGroups = {}; // Variável para armazenar os grupos de médicos
+        let docGroups = {}; 
         let bulkLinkIds = []; 
         let currentTab = 'todos';
         
@@ -344,7 +345,7 @@
                 }
 
                 await loadDoctors();
-                await loadGroups(); // Carrega os grupos antes da tabela
+                await loadGroups(); 
                 await loadPatients();
                 await loadActivityData(); 
             } else {
@@ -410,8 +411,8 @@
 
             try {
                 const [resUnimed, resVendas] = await Promise.all([
-                    fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS })
+                    fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
 
                 const unimedData = resUnimed.ok ? normalizeData(await resUnimed.json()) : {};
@@ -423,6 +424,9 @@
 
                 // 1. Processa Unimed
                 unimedArray.forEach(row => {
+                    let statusUnimed = String(row.status || '').toLowerCase();
+                    if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') return;
+                    
                     if (row.paciente && row.competencia) {
                         const patName = String(row.paciente).toUpperCase().trim();
                         const patId = generatePatientId(patName);
@@ -432,12 +436,53 @@
                     }
                 });
 
-                // 2. Processa Particulares (Aplicações com Medicamento)
+                // 2. Processa Particulares e Liminares (Aplicações e Ciclos)
                 Object.values(vendasData).forEach(v => {
+                    let statusVenda = String(v.status || '').toLowerCase();
+                    if (statusVenda === 'excluido' || statusVenda === 'excluído' || statusVenda === 'cancelado' || statusVenda === 'inativo') return; 
+
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     
-                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICACAO COM')) {
+                    const isLiminar = (tipoReg === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
+
+                    if (isLiminar) {
+                        let historico = v.historico_parcelas || {};
+                        Object.entries(historico).forEach(([cicloKey, ciclo]) => {
+                            if (String(ciclo.status).toLowerCase() === 'presente') {
+                                let dStr = ciclo.data || '';
+                                if (!dStr) return;
+                                
+                                let vComp = '';
+                                if(dStr.includes('-')){
+                                    let p = dStr.split('-');
+                                    vComp = p[0].length === 4 ? `${p[1]}/${p[0]}` : `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                                } else if(dStr.includes('/')){
+                                    let p = dStr.split('/');
+                                    vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                                }
+
+                                if (vComp && v.paciente) {
+                                    const patName = String(v.paciente).toUpperCase().trim();
+                                    const patId = generatePatientId(patName);
+                                    if (!window.patientActivityMap[patId]) window.patientActivityMap[patId] = new Set();
+                                    
+                                    window.patientActivityMap[patId].add(vComp);
+                                    
+                                    // Mês seguinte (Repasse)
+                                    let pParts = vComp.split('/');
+                                    let m = parseInt(pParts[0]); let y = parseInt(pParts[1]);
+                                    let nm = m + 1; let ny = y;
+                                    if(nm > 12) { nm -= 12; ny++; }
+                                    let vCompSeguinte = `${String(nm).padStart(2,'0')}/${ny}`;
+                                    window.patientActivityMap[patId].add(vCompSeguinte);
+
+                                    pacsParaVerificar.push({ id: patId, nome: patName, carteirinha: '', origem: 'liminar' });
+                                }
+                            }
+                        });
+                    }
+                    else if (tipoReg.includes('particular') && procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         let dStr = v.data || '';
                         let vComp = '';
                         
@@ -453,7 +498,17 @@
                             const patName = String(v.paciente).toUpperCase().trim();
                             const patId = generatePatientId(patName);
                             if (!window.patientActivityMap[patId]) window.patientActivityMap[patId] = new Set();
+                            
                             window.patientActivityMap[patId].add(vComp);
+                            
+                            // Mês seguinte (Repasse)
+                            let pParts = vComp.split('/');
+                            let m = parseInt(pParts[0]); let y = parseInt(pParts[1]);
+                            let nm = m + 1; let ny = y;
+                            if(nm > 12) { nm -= 12; ny++; }
+                            let vCompSeguinte = `${String(nm).padStart(2,'0')}/${ny}`;
+                            window.patientActivityMap[patId].add(vCompSeguinte);
+
                             pacsParaVerificar.push({ id: patId, nome: patName, carteirinha: '', origem: 'auto_particular' });
                         }
                     }
@@ -471,7 +526,7 @@
                     }
                 }
 
-                // 4. Cria pacientes novos na base
+                // 4. Cria pacientes novos na base e ajusta as tags
                 let dadosAtualizados = false;
                 for (const row of pacsParaVerificar) {
                     const patId = row.id;
@@ -488,10 +543,13 @@
                         let updated = false;
                         if (!patients[patId].carteirinha && row.carteirinha) { patients[patId].carteirinha = row.carteirinha; updated = true; }
                         
-                        if (row.origem === 'unimed' && patients[patId].origem !== 'unimed' && patients[patId].origem !== 'auto_particular') { 
-                            patients[patId].origem = 'unimed'; updated = true; 
-                        } else if (row.origem === 'auto_particular' && !patients[patId].origem) {
+                        // Respeitando hierarquia de tags (Liminar > Particular > Unimed na hora de salvar, para não sobrescrever errado)
+                        if (row.origem === 'liminar' && (!patients[patId].origem || patients[patId].origem === 'unimed' || patients[patId].origem === 'auto_particular')) {
+                            patients[patId].origem = 'liminar'; updated = true;
+                        } else if (row.origem === 'auto_particular' && (!patients[patId].origem || patients[patId].origem === 'unimed')) {
                             patients[patId].origem = 'auto_particular'; updated = true;
+                        } else if (row.origem === 'unimed' && !patients[patId].origem) { 
+                            patients[patId].origem = 'unimed'; updated = true; 
                         }
 
                         if (updated) {
@@ -525,7 +583,6 @@
 
             const patArray = Object.values(patients).sort((a,b) => a.nome.localeCompare(b.nome));
 
-            // Mapa para associar Médico -> Grupo rapidamente
             const docToGroupMap = {};
             Object.entries(docGroups).forEach(([gId, g]) => {
                 (g.medicos || []).forEach(docId => {
@@ -533,7 +590,6 @@
                 });
             });
 
-            // Estrutura de Categorização
             const CATEGORIA_SEM_GRUPO = 'zzz_sem_grupo';
             const groupedPatients = {};
             
@@ -547,7 +603,6 @@
                 groupedPatients[gId] = { nome: g.nome, cor: g.cor || '#00995D', pacientes: [] };
             });
 
-            // Roda os filtros e injeta nas categorias
             patArray.forEach(p => {
                 const teveAtividadeNoMesSelecionado = window.patientActivityMap[p.id_firebase] && window.patientActivityMap[p.id_firebase].has(compSelecionada);
                 const teveAtividadeMesAnterior = window.patientActivityMap[p.id_firebase] && window.patientActivityMap[p.id_firebase].has(compAnt);
@@ -557,7 +612,9 @@
                 const isInactive = p.status === 'inativo';
                 const hasDoctor = p.prescritor_id || p.encaminhador_id || p.doctor_id;
                 const cartStr = p.carteirinha || '';
-                const isParticular = p.origem === 'auto_particular';
+                
+                const isLiminar = p.origem === 'liminar';
+                const isParticular = p.origem === 'auto_particular' || isLiminar;
 
                 const isRetorno = teveAtividadeNoMesSelecionado && !teveAtividadeMesAnterior && hasDoctor;
 
@@ -579,12 +636,17 @@
                     }
                 }
 
-                // Cria o HTML da Linha do Paciente
                 let statusBadge = '';
                 let doctorNameHtml = '';
                 
-                let origemBadge = isParticular ? `<span class="origem-part">Particular</span>` : `<span class="origem-unimed">Unimed</span>`;
-                if (!p.origem && !isParticular) origemBadge = `<span class="origem-unimed">Unimed</span>`;
+                let origemBadge = '';
+                if (isLiminar) {
+                    origemBadge = `<span class="origem-liminar">Liminar</span>`;
+                } else if (isParticular) {
+                    origemBadge = `<span class="origem-part">Particular</span>`;
+                } else {
+                    origemBadge = `<span class="origem-unimed">Unimed</span>`;
+                }
 
                 if (isRetorno && !isInactive) {
                     origemBadge += ` <span class="badge" style="background:#fef08a; color:#854d0e; margin-left:5px;" title="Não teve faturamento no mês anterior"><i class="fas fa-exclamation-triangle"></i> Retornou em ${compSelecionada}</span>`;
@@ -657,7 +719,6 @@
                     <td><div class="actions-cell">${actionButtons}</div></td>
                 </tr>`;
 
-                // Descobre o grupo deste paciente (foca no prescritor primeiro, senao encaminhador, senao Sem Grupo)
                 let mainDocId = p.prescritor_id || p.encaminhador_id || p.doctor_id;
                 let groupTarget = CATEGORIA_SEM_GRUPO;
 
@@ -668,7 +729,6 @@
                 groupedPatients[groupTarget].pacientes.push(patientHtml);
             });
 
-            // Monta o HTML Final baseado nos grupos
             let html = '';
             
             Object.keys(groupedPatients).sort((a,b) => {
@@ -678,7 +738,6 @@
             }).forEach(gKey => {
                 const grp = groupedPatients[gKey];
                 if (grp.pacientes.length > 0) {
-                    // Cabeçalho do Grupo
                     html += `<tr class="group-header-row">
                         <td colspan="6" style="border-left: 5px solid ${grp.cor};">
                             <i class="fas fa-layer-group" style="color: ${grp.cor}; margin-right: 8px;"></i> 
@@ -687,7 +746,6 @@
                         </td>
                     </tr>`;
                     
-                    // Pacientes daquele grupo
                     html += grp.pacientes.join('');
                 }
             });
