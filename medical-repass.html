@@ -470,7 +470,6 @@
                     await loadDoctors();
                     await loadPacientesDb();
                     
-                    // A aba de plantões puxa direto. A aba da Unimed aguarda o clique no Buscar
                     renderRepasseTable(); 
                 } else {
                     setTimeout(startApp, 100);
@@ -569,38 +568,118 @@
             if(tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 30px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: #00995D;"></i><br><br>Buscando dados da Unimed e Tasy... Isso pode levar alguns segundos.</td></tr>';
             
             try {
-                const mesSelecionado = String(parseInt(document.getElementById('selMonthUnimed').value) + 1).padStart(2, '0');
-                const anoSelecionado = document.getElementById('selYearUnimed').value;
-                const competenciaAlvo = `${mesSelecionado}/${anoSelecionado}`;
+                const mesSel = parseInt(document.getElementById('selMonthUnimed').value);
+                const anoSel = parseInt(document.getElementById('selYearUnimed').value);
+                
+                let moPlantao = mesSel + 1; 
+                let yrPlantao = anoSel; 
+                if(moPlantao > 11) { moPlantao -= 12; yrPlantao++; }
+                
+                const mesSelecionado = String(mesSel + 1).padStart(2, '0');
+                const competenciaAlvo = `${mesSelecionado}/${anoSel}`;
+                
+                // Mês Seguinte = Competência Particular e Plantões
+                const compPlantao = `${String(moPlantao+1).padStart(2,'0')}/${yrPlantao}`;
 
-                console.log(`[Frontend] Requisitando dados da competência: ${competenciaAlvo}`);
+                console.log(`[Frontend] Requisitando dados da competência Unimed: ${competenciaAlvo}, Particular/Liminar: ${compPlantao}`);
 
                 const [resUnimed, resVendas, resOracle] = await Promise.all([
-                    fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
+                    fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}&t=${Date.now()}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
                 ]);
 
                 const unimedData = resUnimed.ok ? normalizeData(await resUnimed.json()) : {};
                 const vendasData = resVendas.ok ? normalizeData(await resVendas.json()) : {};
                 
                 oracleDataCache = resOracle.ok ? await resOracle.json() : [];
-                console.log(`=========================================`);
-                console.log(`[De-Para] Oracle retornou ${oracleDataCache.length} itens do Tasy para a memória.`);
-                if (oracleDataCache.length > 0) {
-                    console.log(`[De-Para] Exemplo de linha do Oracle:`, oracleDataCache[0]);
-                }
-                console.log(`=========================================`);
 
-                let arrayBot = Object.values(unimedData);
-                let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
+                // Filtragem do Repasse Unimed (Ignorando Soft Deletes)
+                let arrayBot = Object.values(unimedData).filter(row => {
+                    let statusUnimed = String(row.status || '').toLowerCase();
+                    if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') {
+                        return false;
+                    }
+                    return row.competencia === competenciaAlvo;
+                });
 
-                // Mescla Vendas Particulares
+                let dadosFiltrados = arrayBot;
+
+                // Mescla Vendas Particulares e Liminares
                 Object.entries(vendasData).forEach(([vId, v]) => {
+                    let statusVenda = String(v.status || '').toLowerCase();
+                    if (statusVenda === 'excluido' || statusVenda === 'excluído' || statusVenda === 'cancelado' || statusVenda === 'inativo') {
+                        return; 
+                    }
+
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     
-                    if (tipoReg.includes('particular') && procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
+                    const isLiminar = (tipoReg === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
+
+                    if (isLiminar) {
+                        let historico = v.historico_parcelas || {};
+                        Object.entries(historico).forEach(([cicloKey, ciclo]) => {
+                            if (String(ciclo.status).toLowerCase() === 'presente') {
+                                let dStr = ciclo.data || '';
+                                if (!dStr) return;
+                                
+                                let vComp = '';
+                                if(dStr.includes('-')){
+                                    let p = dStr.split('-');
+                                    vComp = p[0].length === 4 ? `${p[1]}/${p[0]}` : `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                                } else if(dStr.includes('/')){
+                                    let p = dStr.split('/');
+                                    vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
+                                }
+
+                                if (vComp === compPlantao) { // Liminar cai na regra do Mês Seguinte
+                                    const alreadyExists = dadosFiltrados.some(d => {
+                                        try {
+                                            let isLimExt = false;
+                                            if (d.dados_extras) {
+                                                let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
+                                                isLimExt = ext.origem === 'liminar' && String(ext.ciclo) === String(cicloKey);
+                                            }
+                                            return isLimExt && d.data_atendimento === dStr && String(d.paciente).toUpperCase().trim() === String(v.paciente).toUpperCase().trim();
+                                        } catch(e) { return false; }
+                                    });
+                                    
+                                    if (!alreadyExists) {
+                                        let valorBaseParaComissao = 0;
+                                        let procIdVinculado = v.procedimento_id;
+                                        
+                                        if (procIdVinculado && dbProcedimentos[procIdVinculado]) {
+                                            valorBaseParaComissao = parseFloat(dbProcedimentos[procIdVinculado].custo_medicamento || 0);
+                                        } else {
+                                            let dbProcNameMatch = Object.values(dbProcedimentos).find(p => String(p.nome).trim().toUpperCase() === String(v.procedimento).trim().toUpperCase());
+                                            if (dbProcNameMatch) {
+                                                valorBaseParaComissao = parseFloat(dbProcNameMatch.custo_medicamento || 0);
+                                            } else {
+                                                valorBaseParaComissao = parseFloat(ciclo.valor || 0);
+                                            }
+                                        }
+
+                                        dadosFiltrados.push({
+                                            id_firebase: 'virt_lim_' + vId + '_' + cicloKey, 
+                                            paciente: String(v.paciente).toUpperCase().trim(),
+                                            data_atendimento: dStr,
+                                            competencia: vComp,
+                                            carteirinha: '',
+                                            descricao: `Liminar - ${v.procedimento} (Ciclo ${cicloKey})`,
+                                            valor_pago: valorBaseParaComissao,
+                                            quantidade: 1,
+                                            tipo: 'PARTICULAR',
+                                            custo_correto: v.custo_correto || 0,
+                                            custo_errado: v.custo_errado || 0,
+                                            dados_extras: { origem: 'liminar', ciclo: cicloKey, medico_atendimento: v.medico }
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    else if (tipoReg.includes('particular') && procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         let dStr = v.data || '';
                         let vComp = '';
                         
@@ -612,7 +691,7 @@
                             vComp = `${p[1]}/${p[2].length===2?'20'+p[2]:p[2]}`;
                         }
 
-                        if (vComp === competenciaAlvo) {
+                        if (vComp === compPlantao) {
                             const alreadyExists = dadosFiltrados.some(d => {
                                 try {
                                     let isPartExt = false;
@@ -653,7 +732,7 @@
                                     tipo: 'PARTICULAR',
                                     custo_correto: parseFloat(v.custo_correto || 0),
                                     custo_errado: parseFloat(v.custo_errado || 0),
-                                    dados_extras: { codigo_tuss: v.codigo_tuss || null }
+                                    dados_extras: { origem: 'venda_particular', medico_atendimento: v.medico }
                                 });
                             }
                         }
@@ -682,7 +761,6 @@
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // 💡 LÓGICA DE CRUZAMENTO TUSS (NORMALIZADO) COM O ORACLE (NORMALIZADO) + CARTEIRINHA
                     let codigoTuss = extras.codigo_tuss || extras.tuss || null;
                     let cleanUnimedTuss = codigoTuss ? String(codigoTuss).replace(/\D/g, '') : null;
                     let cleanUnimedCart = String(row.carteirinha || '').replace(/\D/g, '');
@@ -691,7 +769,6 @@
 
                     if (cleanUnimedTuss && oracleDataCache.length > 0) {
                         
-                        // Pegar todos que batem o TUSS primeiro
                         let candidates = oracleDataCache.filter(o => {
                             let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
                             return tasyTuss === cleanUnimedTuss;
@@ -699,11 +776,10 @@
 
                         if (candidates.length > 0) {
                             let oracleItem = candidates.find(o => {
-                                // Bate Carteirinha flexível (inclui validação da original, cortada e includes)
                                 let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                                 let tasyCartSliced = tasyCartRaw.length > 0 ? tasyCartRaw.slice(0, -1) : '';
 
-                                if (!cleanUnimedCart) return true; // Se a Unimed não mandou cart, aceita o primeiro que bater o TUSS
+                                if (!cleanUnimedCart) return true; 
 
                                 return tasyCartRaw === cleanUnimedCart || 
                                        tasyCartRaw.includes(cleanUnimedCart) || 
@@ -718,11 +794,6 @@
                                     custoCorreto = custoAchado;
                                     isFromOracle = true;
                                 }
-                            } else {
-                                // Raio-X do Erro!
-                                let o = candidates[0]; // Pega o primeiro que bateu o TUSS para mostrar o motivo de recusar
-                                let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
-                                console.log(`❌ DE-PARA FALHOU [${row.paciente}]: TUSS [${cleanUnimedTuss}] bateu, mas Carteirinha divergiu. \nUnimed mandou: '${cleanUnimedCart}' \nTasy devolveu: '${tasyCartRaw}'`);
                             }
                         }
                     }
@@ -810,11 +881,14 @@
                 for (let singleId of ids) {
                     if (!singleId || singleId === 'undefined') continue;
 
-                    let isVirtualPart = singleId.startsWith('virt_part_');
+                    let isVirtualPart = singleId.startsWith('virt_part_') || singleId.startsWith('virt_lim_');
                     let endpoint = isVirtualPart ? '/vendas' : '/repasse_unimed';
-                    let realId = isVirtualPart ? singleId.replace('virt_part_', '') : singleId;
+                    
+                    let realId = singleId;
+                    if (singleId.startsWith('virt_part_')) realId = singleId.replace('virt_part_', '');
+                    else if (singleId.startsWith('virt_lim_')) realId = singleId.split('_')[2]; // Pega o ID da venda
 
-                    const resGet = await fetch(`${API_BASE_URL}${endpoint}/${realId}`, { headers: API_HEADERS });
+                    const resGet = await fetch(`${API_BASE_URL}${endpoint}/${realId}?t=${Date.now()}`, { headers: API_HEADERS });
                     
                     if (resGet.ok) {
                         let dbItem = await resGet.json();
@@ -834,7 +908,7 @@
                             });
                         }
                     } else {
-                        const resGetAll = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS });
+                        const resGetAll = await fetch(`${API_BASE_URL}${endpoint}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (resGetAll.ok) {
                             const dbData = normalizeData(await resGetAll.json());
                             let dbItem = Object.values(dbData).find(d => String(d.id) === String(realId) || String(d.id_firebase) === String(realId));
@@ -1459,14 +1533,13 @@
                     
                     let money = 0; 
                     
-                    // 💡 LÓGICA DO SOBREAVISO (VALOR SÓ É PAGO SE FOR NA ABA CIRURGIÕES)
                     if(val && val === 'S') {
                         if (currentShiftTab === 'cirurgioes') {
                             money = 500;
                             countShifts += 1;
                         } else {
-                            money = 0; // Outras abas (como vita_sobreaviso) continuam 0
-                            countShifts += 1; // Soma na Qtd de plantões, mas não no valor
+                            money = 0; 
+                            countShifts += 1; 
                         }
                     }
                     else if(val && val !== 'S') { 
@@ -1538,7 +1611,6 @@
                     
                     let money = 0; 
                     
-                    // 💡 LÓGICA DO SOBREAVISO NO PDF TAMBÉM
                     if(val && val === 'S') {
                         hasValue = true;
                         if (currentShiftTab === 'cirurgioes') {
