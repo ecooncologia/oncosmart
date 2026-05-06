@@ -576,9 +576,9 @@
                 console.log(`[Frontend] Requisitando dados da competência: ${competenciaAlvo}`);
 
                 const [resUnimed, resVendas, resOracle] = await Promise.all([
-                    fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/vendas`, { headers: API_HEADERS }),
-                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
+                    fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/custos_oracle?mesAno=${competenciaAlvo}&t=${Date.now()}`, { headers: API_HEADERS }).catch(() => ({ok: false}))
                 ]);
 
                 const unimedData = resUnimed.ok ? normalizeData(await resUnimed.json()) : {};
@@ -592,11 +592,22 @@
                 }
                 console.log(`=========================================`);
 
-                let arrayBot = Object.values(unimedData);
-                let dadosFiltrados = arrayBot.filter(row => row.competencia === competenciaAlvo);
+                let arrayBot = Object.values(unimedData).filter(row => {
+                    let statusUnimed = String(row.status || '').toLowerCase();
+                    if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') {
+                        return false;
+                    }
+                    return row.competencia === competenciaAlvo;
+                });
 
-                // Mescla Vendas Particulares
+                let dadosFiltrados = arrayBot;
+
                 Object.entries(vendasData).forEach(([vId, v]) => {
+                    let statusVenda = String(v.status || '').toLowerCase();
+                    if (statusVenda === 'excluido' || statusVenda === 'excluído' || statusVenda === 'cancelado' || statusVenda === 'inativo') {
+                        return; 
+                    }
+
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     
@@ -682,7 +693,6 @@
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
 
-                    // 💡 LÓGICA DE CRUZAMENTO TUSS (NORMALIZADO) COM O ORACLE (NORMALIZADO) + CARTEIRINHA
                     let codigoTuss = extras.codigo_tuss || extras.tuss || null;
                     let cleanUnimedTuss = codigoTuss ? String(codigoTuss).replace(/\D/g, '') : null;
                     let cleanUnimedCart = String(row.carteirinha || '').replace(/\D/g, '');
@@ -690,8 +700,6 @@
                     let isFromOracle = false;
 
                     if (cleanUnimedTuss && oracleDataCache.length > 0) {
-                        
-                        // Pegar todos que batem o TUSS primeiro
                         let candidates = oracleDataCache.filter(o => {
                             let tasyTuss = String(o.CD_TUSS || o.CODIGO_TUSS || o.TUSS || o.EVENTO_CODIGO || o.CD_PRODUTO || o.CD_MAT_MED || '').replace(/\D/g, '');
                             return tasyTuss === cleanUnimedTuss;
@@ -699,11 +707,10 @@
 
                         if (candidates.length > 0) {
                             let oracleItem = candidates.find(o => {
-                                // Bate Carteirinha flexível (inclui validação da original, cortada e includes)
                                 let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                                 let tasyCartSliced = tasyCartRaw.length > 0 ? tasyCartRaw.slice(0, -1) : '';
 
-                                if (!cleanUnimedCart) return true; // Se a Unimed não mandou cart, aceita o primeiro que bater o TUSS
+                                if (!cleanUnimedCart) return true; 
 
                                 return tasyCartRaw === cleanUnimedCart || 
                                        tasyCartRaw.includes(cleanUnimedCart) || 
@@ -719,8 +726,7 @@
                                     isFromOracle = true;
                                 }
                             } else {
-                                // Raio-X do Erro!
-                                let o = candidates[0]; // Pega o primeiro que bateu o TUSS para mostrar o motivo de recusar
+                                let o = candidates[0]; 
                                 let tasyCartRaw = String(o.CD_USUARIO_CONVENIO || o.CD_CARTEIRINHA || o.CARTEIRINHA || o.NR_CARTEIRINHA || o.CD_USUARIO_PLANO || o.DS_CARTEIRINHA || '').replace(/\D/g, '');
                                 console.log(`❌ DE-PARA FALHOU [${row.paciente}]: TUSS [${cleanUnimedTuss}] bateu, mas Carteirinha divergiu. \nUnimed mandou: '${cleanUnimedCart}' \nTasy devolveu: '${tasyCartRaw}'`);
                             }
@@ -814,7 +820,7 @@
                     let endpoint = isVirtualPart ? '/vendas' : '/repasse_unimed';
                     let realId = isVirtualPart ? singleId.replace('virt_part_', '') : singleId;
 
-                    const resGet = await fetch(`${API_BASE_URL}${endpoint}/${realId}`, { headers: API_HEADERS });
+                    const resGet = await fetch(`${API_BASE_URL}${endpoint}/${realId}?t=${Date.now()}`, { headers: API_HEADERS });
                     
                     if (resGet.ok) {
                         let dbItem = await resGet.json();
@@ -834,7 +840,7 @@
                             });
                         }
                     } else {
-                        const resGetAll = await fetch(`${API_BASE_URL}${endpoint}`, { headers: API_HEADERS });
+                        const resGetAll = await fetch(`${API_BASE_URL}${endpoint}?t=${Date.now()}`, { headers: API_HEADERS });
                         if (resGetAll.ok) {
                             const dbData = normalizeData(await resGetAll.json());
                             let dbItem = Object.values(dbData).find(d => String(d.id) === String(realId) || String(d.id_firebase) === String(realId));
@@ -862,7 +868,6 @@
             
             const tbody = document.querySelector('#dataTable tbody');
 
-            // Se os dados estiverem vazios (tela recém aberta) e o usuário tentar buscar:
             if (excelData.length === 0) {
                 document.getElementById('dashUnimedTotal').innerText = "R$ 0,00";
                 document.getElementById('dashImpostoTotal').innerText = "R$ 0,00";
@@ -1071,6 +1076,10 @@
                 return; 
             }
 
+            // EXPLICITAMENTE ATRIBUINDO OS VALORES NO DASHBOARD
+            // Variável com 'E' = Errado = Atual (Custo inflado pelo frasco)
+            // Variável com 'C' = Correto = Futuro (Custo Tasy/Oracle exato por mg)
+
             document.getElementById('dashUnimedTotal').innerText = sumUnimedGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashImpostoTotal').innerText = sumImpostoGlobal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             
@@ -1086,8 +1095,11 @@
             document.getElementById('dashLucroDiff').innerText = (diffLucro > 0 ? '+' : '') + diffLucro.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashLucroDiff').style.color = diffLucro === 0 ? '#6b7280' : (diffLucro > 0 ? '#10b981' : '#ef4444'); 
 
+            // ================= CORREÇÃO DO REPASSE AQUI ================= //
             document.getElementById('dashRepasseTotalAtual').innerText = sumRepasseGlobalE.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashRepasseTotalFuturo').innerText = sumRepasseGlobalC.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            // ============================================================= //
+
             let diffRepasse = sumRepasseGlobalC - sumRepasseGlobalE;
             document.getElementById('dashRepasseDiff').innerText = (diffRepasse > 0 ? '+' : '') + diffRepasse.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
             document.getElementById('dashRepasseDiff').style.color = diffRepasse === 0 ? '#6b7280' : (diffRepasse > 0 ? '#10b981' : '#ef4444'); 
@@ -1459,14 +1471,13 @@
                     
                     let money = 0; 
                     
-                    // 💡 LÓGICA DO SOBREAVISO (VALOR SÓ É PAGO SE FOR NA ABA CIRURGIÕES)
                     if(val && val === 'S') {
                         if (currentShiftTab === 'cirurgioes') {
                             money = 500;
                             countShifts += 1;
                         } else {
-                            money = 0; // Outras abas (como vita_sobreaviso) continuam 0
-                            countShifts += 1; // Soma na Qtd de plantões, mas não no valor
+                            money = 0; 
+                            countShifts += 1; 
                         }
                     }
                     else if(val && val !== 'S') { 
@@ -1538,7 +1549,6 @@
                     
                     let money = 0; 
                     
-                    // 💡 LÓGICA DO SOBREAVISO NO PDF TAMBÉM
                     if(val && val === 'S') {
                         hasValue = true;
                         if (currentShiftTab === 'cirurgioes') {
