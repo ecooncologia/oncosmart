@@ -253,7 +253,8 @@
                                 <tr>
                                     <td class="no-print"></td>
                                     <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL FILTRADO:</td>
-                                    <td></td> <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-tasy">R$ 0,00</td>
+                                    <td></td>
+                                    <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-tasy">R$ 0,00</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -488,8 +489,6 @@
                 
                 await Promise.all([
                     loadCustomFlags(),
-                    loadTransporteLocal(),
-                    loadDiversosLocal(),
                     loadFlagsFaturamento()
                 ]);
                 refreshAllData();
@@ -595,9 +594,7 @@
                 if (res.ok) {
                     flagsFaturamento = await res.json();
                 }
-            } catch (e) {
-                console.error("Erro ao carregar flags de faturamento:", e);
-            }
+            } catch (e) {}
         }
 
         async function updatePacienteFlag(paciente, valor, selectElement) {
@@ -620,7 +617,7 @@
                     body: JSON.stringify(payload)
                 });
                 
-                // Recalcula o filtro instantaneamente para atualizar os totais e remover da tela se necessário
+                // Recalcula o filtro instantaneamente para atualizar a tabela
                 filterTableTasy();
             } catch (e) {}
         }
@@ -633,17 +630,21 @@
             document.getElementById('btn-' + tabId).classList.add('active');
         }
 
+        // 🔄 NOVO: AGORA O REFRESH GLOBAL FORÇA A BUSCA DE TRANSPORTE E DIVERSOS DO BANCO
         async function refreshAllData() {
             valPlantoesGlobal = 0;
             
             await Promise.all([
                 loadCustoVita(),
                 loadPlantoes(),
-                loadContasFaturadas()
+                loadContasFaturadas(),
+                loadTransporteLocal(), // Força recarregar Transporte
+                loadDiversosLocal()    // Força recarregar Diversos
             ]);
             
             renderTransporte();
             renderDiversos();
+            updateGrandTotal(); // Atualiza painel final no final da carga
         }
 
         function updateGrandTotal() {
@@ -744,7 +745,6 @@
                         }
                         return dt.startsWith(mes);
                     });
-                    // O Filter já faz o Render e a Soma Global no final
                     filterTableTasy();
                 } else { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Erro na requisição.</td></tr>'; }
             } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro de conexão Tasy.</td></tr>'; }
@@ -771,7 +771,6 @@
                 return matchName && matchFlag;
             });
             
-            // O valor total de Tasy será somado DENTRO da renderização para evitar soma duplicada
             renderTableVita(filtered);
             updateGrandTotal();
         }
@@ -779,9 +778,7 @@
         function renderTableVita(list) {
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '';
-            
-            // 🆕 ZERANDO A VARIÁVEL AQUI PARA EVITAR DUPLICIDADE
-            valTasyGlobal = 0; 
+            valTasyGlobal = 0; // 🔄 NOVO: Zera exatamente antes de calcular para a tela
             
             if(list.length === 0) { 
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum custo registrado / encontrado no filtro.</td></tr>'; 
@@ -793,10 +790,9 @@
                 const p = (item.nm_pessoa_fisica || item.NM_PESSOA_FISICA || '-').toUpperCase();
                 if(!grupos[p]) grupos[p] = { paciente: p, totalCusto: 0, itens: [] };
                 const custo = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
-                grupos[p].totalCusto += custo;
                 
-                // Soma exata dos itens agrupados visíveis na tela
-                valTasyGlobal += custo; 
+                grupos[p].totalCusto += custo;
+                valTasyGlobal += custo; // Soma os itens processados na tela
                 
                 grupos[p].itens.push(item);
             });
@@ -916,6 +912,13 @@
         // ==========================================
         // LÓGICA: BLOCO 3 (TRANSPORTE) COM EDIÇÃO
         // ==========================================
+        async function loadTransporteLocal() { 
+            try { 
+                const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS }); 
+                if(res.ok) dataTransporte = Object.values(await res.json()); 
+            } catch(e){} 
+        }
+
         function addTransporte() {
             const d = document.getElementById('transp-data').value;
             const desc = document.getElementById('transp-desc').value.trim();
@@ -924,7 +927,8 @@
             if(!d || !desc || isNaN(v)) return alert("Por favor, preencha a data, descrição e o valor.");
             
             if (editIdTransporte) {
-                const index = dataTransporte.findIndex(t => t.id === editIdTransporte);
+                // 🔄 Busca pelo id ou id_firebase para não perder a referência na edição
+                const index = dataTransporte.findIndex(t => (t.id_firebase || t.id) === editIdTransporte);
                 if (index > -1) {
                     dataTransporte[index].data = d;
                     dataTransporte[index].desc = desc;
@@ -933,9 +937,11 @@
                 }
                 cancelEditTransporte();
             } else {
-                const n = { id: Date.now(), data: d, desc: desc, valor: v };
+                const uid = 'transp_' + Date.now(); // 🔄 NOVO: Trava o ID gerado para ser igual no front e no back
+                const n = { id_firebase: uid, id: uid, data: d, desc: desc, valor: v };
                 dataTransporte.push(n); 
                 saveTransporte(n); 
+                
                 document.getElementById('transp-desc').value = '';
                 document.getElementById('transp-valor').value = '';
             }
@@ -945,7 +951,7 @@
         }
 
         function editTransporte(id) {
-            const item = dataTransporte.find(t => t.id === id);
+            const item = dataTransporte.find(t => (t.id_firebase || t.id) === id);
             if (!item) return;
             
             document.getElementById('transp-data').value = item.data || item.DATA || '';
@@ -975,40 +981,64 @@
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-transporte'); tbody.innerHTML = '';
             valTransporteGlobal = 0;
+            
+            if (!Array.isArray(dataTransporte)) dataTransporte = Object.values(dataTransporte);
+
             const list = dataTransporte.filter(t => String(t.data||t.DATA).startsWith(mes));
             if(!list.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sem registros.</td></tr>'; return; }
+            
             list.sort((a,b) => new Date(b.data||b.DATA) - new Date(a.data||a.DATA)).forEach(t => {
                 const val = t.valor !== undefined ? t.valor : t.VALOR;
                 valTransporteGlobal += val;
+                
+                const uid = t.id_firebase || t.id;
+
                 tbody.innerHTML += `<tr>
                     <td>${formatDate(t.data||t.DATA)}</td>
                     <td>${t.desc || t.DESC || '-'}</td>
                     <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
                     <td class="no-print" style="text-align:center;">
-                        <button class="btn-icon warning" onclick="editTransporte(${t.id})" title="Editar"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="btn-icon danger" onclick="deleteTransporte(${t.id})" title="Excluir"><i class="fas fa-trash"></i></button>
+                        <button class="btn-icon warning" onclick="editTransporte('${uid}')" title="Editar"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="btn-icon danger" onclick="deleteTransporte('${uid}')" title="Excluir"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
             });
         }
         
         async function saveTransporte(i) { try { await fetch(`${API_BASE_URL}/custo_vita_transporte`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
-        async function updateTransporteAPI(i) { try { await fetch(`${API_BASE_URL}/custo_vita_transporte/${i.id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
-        async function deleteTransporte(id) { if(!confirm("Excluir transporte?")) return; try { await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS }); dataTransporte = dataTransporte.filter(t => t.id !== id); renderTransporte(); updateGrandTotal(); } catch(e){} }
-        async function loadTransporteLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_transporte`, { headers: API_HEADERS }); if(res.ok) dataTransporte = Object.values(await res.json()); } catch(e){} }
+        async function updateTransporteAPI(i) { 
+            const uid = i.id_firebase || i.id;
+            try { await fetch(`${API_BASE_URL}/custo_vita_transporte/${uid}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} 
+        }
+        async function deleteTransporte(id) { 
+            if(!confirm("Excluir transporte?")) return; 
+            try { 
+                await fetch(`${API_BASE_URL}/custo_vita_transporte/${id}`, { method: 'DELETE', headers: API_HEADERS }); 
+                dataTransporte = dataTransporte.filter(t => (t.id_firebase || t.id) !== id); 
+                renderTransporte(); 
+                updateGrandTotal(); 
+            } catch(e){} 
+        }
 
         // ==========================================
         // LÓGICA: BLOCO 4 (CUSTOS DIVERSOS) COM EDIÇÃO
         // ==========================================
+        async function loadDiversosLocal() { 
+            try { 
+                const res = await fetch(`${API_BASE_URL}/custo_vita_diversos`, { headers: API_HEADERS }); 
+                if(res.ok) dataDiversos = Object.values(await res.json()); 
+            } catch(e){} 
+        }
+
         function addDiversos() {
-            const n = document.getElementById('div-nome').value;
+            const n = document.getElementById('div-nome').value.trim();
             const v = parseFloat(document.getElementById('div-valor').value);
             const mes = document.getElementById('filter-mes').value;
             
             if(!n || isNaN(v) || !mes) return alert('Preencha nome e valor.');
             
             if (editIdDiversos) {
-                const index = dataDiversos.findIndex(d => d.id === editIdDiversos);
+                const index = dataDiversos.findIndex(d => (d.id_firebase || d.id) === editIdDiversos);
                 if (index > -1) {
                     dataDiversos[index].nome = n;
                     dataDiversos[index].valor = v;
@@ -1016,9 +1046,11 @@
                 }
                 cancelEditDiversos();
             } else {
-                const novo = { id: Date.now(), mes_ref: mes, nome: n, valor: v };
+                const uid = 'div_' + Date.now(); // 🔄 NOVO: Trava o ID gerado para ser igual no front e no back
+                const novo = { id_firebase: uid, id: uid, mes_ref: mes, nome: n, valor: v };
                 dataDiversos.push(novo); 
                 saveDiversos(novo); 
+                
                 document.getElementById('div-nome').value = ''; 
                 document.getElementById('div-valor').value = '';
             }
@@ -1028,7 +1060,7 @@
         }
 
         function editDiversos(id) {
-            const item = dataDiversos.find(d => d.id === id);
+            const item = dataDiversos.find(d => (d.id_firebase || d.id) === id);
             if (!item) return;
             
             document.getElementById('div-nome').value = item.nome || item.NOME || '';
@@ -1057,26 +1089,43 @@
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-diversos'); tbody.innerHTML = '';
             valDiversosGlobal = 0;
+
+            if (!Array.isArray(dataDiversos)) dataDiversos = Object.values(dataDiversos);
+
             const list = dataDiversos.filter(d => String(d.mes_ref || d.MES_REF) === mes);
             if(!list.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sem custos diversos.</td></tr>'; return; }
+            
             list.forEach(d => {
                 const val = d.valor !== undefined ? d.valor : d.VALOR;
                 valDiversosGlobal += val;
+                
+                const uid = d.id_firebase || d.id;
+
                 tbody.innerHTML += `<tr>
                     <td>${d.nome || d.NOME}</td>
                     <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(val)}</td>
                     <td class="no-print" style="text-align:center;">
-                        <button class="btn-icon warning" onclick="editDiversos(${d.id})" title="Editar"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="btn-icon danger" onclick="deleteDiversos(${d.id})" title="Excluir"><i class="fas fa-trash"></i></button>
+                        <button class="btn-icon warning" onclick="editDiversos('${uid}')" title="Editar"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="btn-icon danger" onclick="deleteDiversos('${uid}')" title="Excluir"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
             });
         }
         
         async function saveDiversos(i) { try { await fetch(`${API_BASE_URL}/custo_vita_diversos`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
-        async function updateDiversosAPI(i) { try { await fetch(`${API_BASE_URL}/custo_vita_diversos/${i.id}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} }
-        async function deleteDiversos(id) { if(!confirm("Excluir custo diverso?")) return; try { await fetch(`${API_BASE_URL}/custo_vita_diversos/${id}`, { method: 'DELETE', headers: API_HEADERS }); dataDiversos = dataDiversos.filter(t => t.id !== id); renderDiversos(); updateGrandTotal(); } catch(e){} }
-        async function loadDiversosLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_diversos`, { headers: API_HEADERS }); if(res.ok) dataDiversos = Object.values(await res.json()); } catch(e){} }
+        async function updateDiversosAPI(i) { 
+            const uid = i.id_firebase || i.id;
+            try { await fetch(`${API_BASE_URL}/custo_vita_diversos/${uid}`, { method: 'PUT', headers: API_HEADERS, body: JSON.stringify(i) }); } catch(e){} 
+        }
+        async function deleteDiversos(id) { 
+            if(!confirm("Excluir custo diverso?")) return; 
+            try { 
+                await fetch(`${API_BASE_URL}/custo_vita_diversos/${id}`, { method: 'DELETE', headers: API_HEADERS }); 
+                dataDiversos = dataDiversos.filter(t => (t.id_firebase || t.id) !== id); 
+                renderDiversos(); 
+                updateGrandTotal(); 
+            } catch(e){} 
+        }
 
         // ==========================================
         // LÓGICA: CONTAS FATURADAS TASY (AGRUPADO POR MÊS CHEIO)
