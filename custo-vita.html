@@ -81,6 +81,9 @@
         tfoot tr { border-top: 2px solid #cbd5e1; background-color: #f8fafc; }
         tfoot td { font-size: 14px !important; color: #0f172a !important; padding: 12px 10px; }
 
+        /* Estilos da Flag de Faturamento */
+        .print-flag { display: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; text-transform: uppercase; }
+
         /* Oculta o cabeçalho executivo na tela */
         .print-only { display: none; }
 
@@ -133,6 +136,9 @@
 
             .child-row { display: none !important; }
             .badge-count, .badge-faturamento { background: transparent !important; color: #1e293b !important; border: 1px solid #cbd5e1; }
+
+            /* Mostra a Flag limpa na impressão */
+            .print-flag { display: inline-block !important; }
 
             /* RESUMO FIX: Tabelas empilhadas (uma em cima da outra) ocupando a largura total na impressão */
             .summary-wrapper {
@@ -209,6 +215,7 @@
                                     <th class="no-print" style="width: 40px;"></th>
                                     <th>Paciente</th>
                                     <th style="text-align: center; width: 150px;">Itens Totais (Mês)</th>
+                                    <th style="text-align: center; width: 150px;">Faturamento</th>
                                     <th style="text-align: right; width: 200px;">Custo Total Paciente</th>
                                 </tr>
                             </thead>
@@ -217,7 +224,7 @@
                                 <tr>
                                     <td class="no-print"></td>
                                     <td colspan="2" style="text-align: right; font-weight: bold;">TOTAL TASY:</td>
-                                    <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-tasy">R$ 0,00</td>
+                                    <td></td> <td style="text-align: right; font-weight: bold; color: #00855B;" id="footer-val-tasy">R$ 0,00</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -429,6 +436,7 @@
         let dataTransporte = [];
         let dataDiversos = [];
         let dataContas = [];
+        let flagsFaturamento = {}; // 🆕 ARMAZENA AS FLAGS (ECO/VITA)
 
         // Variáveis globais de controle e totais
         let valTasyGlobal = 0;
@@ -448,7 +456,8 @@
                 
                 await Promise.all([
                     loadTransporteLocal(),
-                    loadDiversosLocal()
+                    loadDiversosLocal(),
+                    loadFlagsFaturamento() // 🆕 CARREGA AS FLAGS
                 ]);
                 refreshAllData();
             } else {
@@ -563,12 +572,58 @@
         }
 
         // ==========================================
+        // 🆕 LÓGICA: FLAGS DE FATURAMENTO TASY
+        // ==========================================
+        async function loadFlagsFaturamento() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pacientes_faturamento`, { headers: API_HEADERS });
+                if (res.ok) {
+                    flagsFaturamento = await res.json();
+                }
+            } catch (e) {
+                console.error("Erro ao carregar flags de faturamento:", e);
+            }
+        }
+
+        async function updatePacienteFlag(paciente, valor, selectElement) {
+            // Normaliza o nome para gerar um ID seguro no banco de dados
+            const idFirebase = paciente.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            // Atualiza no cache local
+            if (!flagsFaturamento[idFirebase]) flagsFaturamento[idFirebase] = {};
+            flagsFaturamento[idFirebase].flag = valor;
+            flagsFaturamento[idFirebase].paciente = paciente;
+
+            // Atualiza cor do select imediatamente
+            if (valor === 'ECO') selectElement.style.color = '#059669';
+            else if (valor === 'VITA') selectElement.style.color = '#0284c7';
+            else selectElement.style.color = '#475569';
+
+            // Salva na API
+            const payload = {
+                id_firebase: idFirebase,
+                paciente: paciente,
+                flag: valor
+            };
+
+            try {
+                await fetch(`${API_BASE_URL}/pacientes_faturamento/${idFirebase}`, {
+                    method: 'PUT',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) {
+                console.error("Erro ao salvar flag:", e);
+            }
+        }
+
+        // ==========================================
         // LÓGICA: BLOCO 1 (CUSTO VITA - TASY)
         // ==========================================
         async function loadCustoVita() {
             const mes = document.getElementById('filter-mes').value;
             const tbody = document.getElementById('tbody-custo-vita');
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando Tasy...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Acessando Tasy...</td></tr>';
             try {
                 const res = await fetch(`${API_BASE_URL}/view_vita?mes=${mes}`, { headers: API_HEADERS });
                 if(res.ok) {
@@ -582,14 +637,14 @@
                         return dt.startsWith(mes);
                     });
                     renderTableVita(dataCustoVita);
-                } else { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Erro na requisição.</td></tr>'; }
-            } catch (e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Erro de conexão Tasy.</td></tr>'; }
+                } else { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Erro na requisição.</td></tr>'; }
+            } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro de conexão Tasy.</td></tr>'; }
         }
 
         function renderTableVita(list) {
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '';
-            if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum custo registrado.</td></tr>'; return; }
+            if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum custo registrado.</td></tr>'; return; }
 
             const grupos = {};
             list.forEach(item => {
@@ -604,13 +659,35 @@
             let index = 0;
             Object.values(grupos).sort((a,b) => a.paciente.localeCompare(b.paciente)).forEach(g => {
                 const id = `paciente_${index++}`;
+                
+                // 🆕 IDENTIFICA A FLAG SALVA NO BANCO
+                const idFirebase = g.paciente.replace(/[^a-zA-Z0-9]/g, '_');
+                const currentFlag = flagsFaturamento[idFirebase]?.flag || '';
+                
+                let color = '#475569';
+                if(currentFlag === 'ECO') color = '#059669';
+                if(currentFlag === 'VITA') color = '#0284c7';
+
+                // 🆕 HTML DA FLAG
+                const selectHtml = `
+                    <select class="form-control no-print" style="width: 100px; padding: 4px; font-size: 11px; margin: 0 auto; height: 26px; font-weight: bold; color: ${color};" onchange="updatePacienteFlag('${g.paciente}', this.value, this)" onclick="event.stopPropagation()">
+                        <option value="" style="color: #475569">Pendente</option>
+                        <option value="ECO" style="color: #059669" ${currentFlag === 'ECO' ? 'selected' : ''}>ECO</option>
+                        <option value="VITA" style="color: #0284c7" ${currentFlag === 'VITA' ? 'selected' : ''}>VITA</option>
+                    </select>
+                    <span class="print-flag" style="color: ${color}; border-color: ${color};">${currentFlag || 'PENDENTE'}</span>
+                `;
+
                 const parent = document.createElement('tr');
                 parent.className = 'parent-row';
                 parent.onclick = () => toggleGroup(id);
-                parent.innerHTML = `<td class="no-print" style="text-align:center;"><i class="fas fa-chevron-right icon-expand" id="icon-${id}"></i></td>
-                                    <td style="font-weight:bold; color:var(--primary);">${g.paciente}</td>
-                                    <td style="text-align:center;"><span class="badge-count">${g.itens.length}</span></td>
-                                    <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(g.totalCusto)}</td>`;
+                parent.innerHTML = `
+                    <td class="no-print" style="text-align:center;"><i class="fas fa-chevron-right icon-expand" id="icon-${id}"></i></td>
+                    <td style="font-weight:bold; color:var(--primary);">${g.paciente}</td>
+                    <td style="text-align:center;"><span class="badge-count">${g.itens.length}</span></td>
+                    <td style="text-align:center;" onclick="event.stopPropagation()">${selectHtml}</td>
+                    <td style="text-align:right; font-weight:bold;">R$ ${formatCurrency(g.totalCusto)}</td>
+                `;
                 tbody.appendChild(parent);
 
                 g.itens.sort((a,b) => new Date(a.dt_atendimento || a.DT_ATENDIMENTO || 0) - new Date(b.dt_atendimento || b.DT_ATENDIMENTO || 0));
@@ -628,7 +705,7 @@
 
                 const child = document.createElement('tr');
                 child.id = `child-${id}`; child.className = 'child-row'; child.style.display = 'none';
-                child.innerHTML = `<td colspan="4" style="padding:0;"><div class="sub-table-container"><table class="sub-table">
+                child.innerHTML = `<td colspan="5" style="padding:0;"><div class="sub-table-container"><table class="sub-table">
                                    <thead><tr><th>Data</th><th>Prescrição</th><th>Mat. Conta</th><th>Medicação</th><th>Dose</th><th>Custo Ant.</th><th>Unit.</th><th>Total</th></tr></thead>
                                    <tbody>${sub}</tbody></table></div></td>`;
                 tbody.appendChild(child);
@@ -865,7 +942,7 @@
         async function loadDiversosLocal() { try { const res = await fetch(`${API_BASE_URL}/custo_vita_diversos`, { headers: API_HEADERS }); if(res.ok) dataDiversos = Object.values(await res.json()); } catch(e){} }
 
         // ==========================================
-        // LÓGICA: CONTAS FATURADAS TASY (AGRUPADO)
+        // LÓGICA: CONTAS FATURADAS TASY (AGRUPADO POR MÊS CHEIO)
         // ==========================================
         async function loadContasFaturadas() {
             const mesInput = document.getElementById('filter-mes').value;
@@ -875,30 +952,23 @@
             if (!mesInput) return;
             
             const [y, m] = mesInput.split('-');
-            let year = parseInt(y);
-            let month = parseInt(m);
+            const year = parseInt(y);
+            const month = parseInt(m);
             
-            let prevMonth = month - 1;
-            let prevYear = year;
-            if (prevMonth === 0) { 
-                prevMonth = 12; 
-                prevYear--; 
-            }
-            
-            const pad = n => String(n).padStart(2, '0');
-            
-            // Período: Do dia 15 do mês anterior até o dia 15 do mês atual
-            const startDate = new Date(prevYear, prevMonth - 1, 15, 0, 0, 0);
-            const endDate = new Date(year, month - 1, 15, 23, 59, 59);
+            const startDate = new Date(year, month - 1, 1, 0, 0, 0);
+            const endDate = new Date(year, month, 0, 23, 59, 59);
 
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Buscando Contas (15/${pad(prevMonth)} a 15/${pad(month)})...</td></tr>`;
+            const pad = n => String(n).padStart(2, '0');
+            const labelMes = `${pad(month)}/${year}`;
+
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Filtrando Contas de ${labelMes}...</td></tr>`;
 
             try {
                 const endpoint = `${API_BASE_URL}/conta_paciente_eco`;
                 const res = await fetch(endpoint, { headers: API_HEADERS });
                 
                 if(!res.ok) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;"><b>Erro de API:</b> A rota retornou falha.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;"><b>Erro de API:</b> Falha ao carregar dados do backend.</td></tr>`;
                     return;
                 }
                 
@@ -915,7 +985,6 @@
                     return new Date(ano, mes - 1, dia);
                 };
 
-                // Filtro local estrito (dia 15 ao dia 15)
                 const list = Object.values(data).filter(c => {
                     const dt = c.dt_entrada || c.DT_ENTRADA;
                     const d = parseDataTasy(dt);
@@ -925,12 +994,11 @@
                 tbody.innerHTML = '';
 
                 if (list.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma conta faturada no período (15/${pad(prevMonth)} a 15/${pad(month)}).</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma conta faturada encontrada para ${labelMes}.</td></tr>`;
                     document.getElementById('footer-val-faturamento').innerText = 'R$ 0,00';
                     return;
                 }
 
-                // Agrupando por Paciente
                 const gruposContas = {};
                 list.forEach(c => {
                     const paciente = (c.nm_pessoa_fisica || c.NM_PESSOA_FISICA || '-').toUpperCase();
@@ -943,12 +1011,10 @@
                     gruposContas[paciente].itens.push(c);
                 });
 
-                // Renderizando Tabela em Cascata
                 let indexConta = 0;
                 Object.values(gruposContas).sort((a,b) => a.paciente.localeCompare(b.paciente)).forEach(g => {
                     const id = `conta_pac_${indexConta++}`;
                     
-                    // LINHA PAI
                     const parent = document.createElement('tr');
                     parent.className = 'parent-row';
                     parent.onclick = () => toggleGroup(id);
@@ -960,7 +1026,6 @@
                     `;
                     tbody.appendChild(parent);
 
-                    // Ordena contas do paciente pela data de entrada
                     g.itens.sort((a, b) => parseDataTasy(a.dt_entrada || a.DT_ENTRADA) - parseDataTasy(b.dt_entrada || b.DT_ENTRADA));
                     
                     let sub = '';
@@ -978,7 +1043,6 @@
                         </tr>`;
                     });
 
-                    // LINHA FILHA (Tabela Secundária)
                     const child = document.createElement('tr');
                     child.id = `child-${id}`; 
                     child.className = 'child-row'; 
@@ -1003,12 +1067,11 @@
                     tbody.appendChild(child);
                 });
                 
-                // Atualiza rodapé Faturado Total
                 document.getElementById('footer-val-faturamento').innerText = 'R$ ' + formatCurrency(valContasGlobal);
 
             } catch (e) { 
                 console.error(e);
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Erro de requisição (CORS ou Rota não encontrada).</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Erro na conexão com o banco.</td></tr>`;
             }
         }
     </script>
