@@ -646,6 +646,7 @@
             document.getElementById('lblPeriod').innerText = strUnimed;
             
             try {
+                // 1. SALA MÉDICA (Plantões)
                 let turnosPlantao = 0; let valorPlantao = 0;
                 if (!isGroupView) {
                     const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
@@ -697,7 +698,8 @@
                     document.getElementById('kpiTotalPlantao').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 }
 
-                // BUSCA DINÂMICA
+
+                // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
@@ -732,7 +734,9 @@
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            if (vComp === compPlantao) {
+                            
+                            // 💡 CORREÇÃO 1: Utiliza a mesma competência da Unimed (Mês Atual) para Particulares (Tratamentos)
+                            if (vComp === compUnimed) {
                                 const alreadyExists = dadosFiltrados.some(d => {
                                     try {
                                         let isPartExt = false;
@@ -882,9 +886,8 @@
                         let fatItem = Number(item.valor.toFixed(2));
                         let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                         
-                        // 💡 CÁLCULO ESTABELECIDO: USAR O CENÁRIO ATUAL/ERRADO PARA ALIMENTAR O DASHBOARD
-                        let custoUnitarioParaCalculo = item.custo_errado > 0 ? item.custo_errado : item.custo_informado_antigo;
-                        let custoTotalItemAtual = Number((custoUnitarioParaCalculo * item.mg).toFixed(2));
+                        // 💡 CÁLCULO ESTABELECIDO: USAR O CENÁRIO ATUAL/ERRADO PARA ALIMENTAR O DASHBOARD IGUAL O MEDICAL-REPASS
+                        let custoTotalItemAtual = Number((item.custo_errado * item.mg).toFixed(2));
                         let lucroItemAtual = Number((fatItem - impItem - custoTotalItemAtual).toFixed(2));
 
                         let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
@@ -893,11 +896,13 @@
 
                         if (isTaxa && !hasGrazielly) { canP = false; canE = false; }
 
-                        let lucroRepasseAtual = lucroItemAtual > 0 ? lucroItemAtual : 0;
+                        let repP_Atual = 0; let repE_Atual = 0;
                         
-                        // 💡 REPASSE É P + E
-                        let repP_Atual = canP ? Number((lucroRepasseAtual * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
-                        let repE_Atual = canE ? Number((lucroRepasseAtual * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
+                        // SÓ PERMITE REPASSE SE O LUCRO FOR MAIOR QUE ZERO
+                        if (lucroItemAtual > 0) {
+                            repP_Atual = canP ? Number((lucroItemAtual * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
+                            repE_Atual = canE ? Number((lucroItemAtual * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
+                        }
 
                         let isVisibleForFilter = (targetDocs.includes(String(pat.pId)) && canP) || (targetDocs.includes(String(pat.eId)) && canE);
 
