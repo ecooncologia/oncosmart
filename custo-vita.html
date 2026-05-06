@@ -468,7 +468,7 @@
         let dataContas = [];
         
         let flagsFaturamento = {}; 
-        let customFlags = []; // 🆕 ARMAZENA AS FLAGS DINÂMICAS
+        let customFlags = []; 
 
         // Variáveis globais de controle e totais
         let valTasyGlobal = 0;
@@ -501,7 +501,7 @@
         document.addEventListener('DOMContentLoaded', initPage);
 
         // ==========================================
-        // 🆕 LÓGICA: GERENCIADOR DE FLAGS DINÂMICAS
+        // LÓGICA: GERENCIADOR DE FLAGS DINÂMICAS
         // ==========================================
         async function loadCustomFlags() {
             try {
@@ -576,7 +576,7 @@
         async function saveCustomFlags() {
             renderFlagsList();
             populateFlagFilter();
-            filterTableTasy(); // Atualiza a tela se houver filtro ativo
+            filterTableTasy(); 
             try {
                 await fetch(`${API_BASE_URL}/system_configs`, {
                     method: 'POST',
@@ -607,23 +607,6 @@
             flagsFaturamento[idFirebase].flag = valor;
             flagsFaturamento[idFirebase].paciente = paciente;
 
-            const foundFlag = customFlags.find(f => f.nome === valor);
-            if(foundFlag) {
-                selectElement.style.backgroundColor = foundFlag.cor;
-                selectElement.style.color = '#fff';
-            } else {
-                selectElement.style.backgroundColor = '#f1f5f9';
-                selectElement.style.color = '#475569';
-            }
-            
-            // Atualiza o elemento de print associado na mesma celula
-            const printSelo = selectElement.nextElementSibling;
-            if(printSelo) {
-                printSelo.innerText = valor || 'PENDENTE';
-                printSelo.style.backgroundColor = foundFlag ? foundFlag.cor : 'transparent';
-                printSelo.style.color = foundFlag ? '#fff' : '#475569';
-            }
-
             const payload = {
                 id_firebase: idFirebase,
                 paciente: paciente,
@@ -636,6 +619,9 @@
                     headers: API_HEADERS,
                     body: JSON.stringify(payload)
                 });
+                
+                // Recalcula o filtro instantaneamente para atualizar os totais e remover da tela se necessário
+                filterTableTasy();
             } catch (e) {}
         }
 
@@ -758,7 +744,8 @@
                         }
                         return dt.startsWith(mes);
                     });
-                    filterTableTasy(); // Chama o filtro que agora processa os dados finais
+                    // O Filter já faz o Render e a Soma Global no final
+                    filterTableTasy();
                 } else { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Erro na requisição.</td></tr>'; }
             } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Erro de conexão Tasy.</td></tr>'; }
         }
@@ -772,10 +759,8 @@
                 const idFirebase = paciente.replace(/[^a-zA-Z0-9]/g, '_');
                 const currentFlag = flagsFaturamento[idFirebase]?.flag || '';
                 
-                // Filtro de Nome
                 let matchName = paciente.includes(termName);
                 
-                // Filtro de Flag Combinado
                 let matchFlag = true;
                 if(termFlag === 'PENDENTE') {
                     matchFlag = (currentFlag === '');
@@ -786,9 +771,7 @@
                 return matchName && matchFlag;
             });
             
-            valTasyGlobal = 0;
-            filtered.forEach(item => { valTasyGlobal += parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO); });
-            
+            // O valor total de Tasy será somado DENTRO da renderização para evitar soma duplicada
             renderTableVita(filtered);
             updateGrandTotal();
         }
@@ -796,7 +779,14 @@
         function renderTableVita(list) {
             const tbody = document.getElementById('tbody-custo-vita');
             tbody.innerHTML = '';
-            if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum custo registrado / encontrado no filtro.</td></tr>'; return; }
+            
+            // 🆕 ZERANDO A VARIÁVEL AQUI PARA EVITAR DUPLICIDADE
+            valTasyGlobal = 0; 
+            
+            if(list.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum custo registrado / encontrado no filtro.</td></tr>'; 
+                return; 
+            }
 
             const grupos = {};
             list.forEach(item => {
@@ -804,6 +794,10 @@
                 if(!grupos[p]) grupos[p] = { paciente: p, totalCusto: 0, itens: [] };
                 const custo = parseOracleNumber(item.custo_total_antigo || item.CUSTO_TOTAL_ANTIGO);
                 grupos[p].totalCusto += custo;
+                
+                // Soma exata dos itens agrupados visíveis na tela
+                valTasyGlobal += custo; 
+                
                 grupos[p].itens.push(item);
             });
 
@@ -818,7 +812,6 @@
                 const bgColors = foundFlag ? foundFlag.cor : '#f1f5f9';
                 const textColors = foundFlag ? '#fff' : '#475569';
 
-                // Dropdown Dinâmico com fundo colorido
                 let optionsHtml = `<option value="" style="background:#fff; color:#475569">Pendente</option>`;
                 customFlags.forEach(f => {
                     const sel = currentFlag === f.nome ? 'selected' : '';
@@ -1159,7 +1152,6 @@
                 Object.values(gruposContas).sort((a,b) => a.paciente.localeCompare(b.paciente)).forEach(g => {
                     const id = `conta_pac_${indexConta++}`;
                     
-                    // SINCRONIA DA FLAG
                     const idFirebase = g.paciente.replace(/[^a-zA-Z0-9]/g, '_');
                     const currentFlag = flagsFaturamento[idFirebase]?.flag || '';
                     const foundFlag = customFlags.find(f => f.nome === currentFlag);
