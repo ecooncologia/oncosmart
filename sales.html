@@ -7,12 +7,12 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Particulares - ECO Sistema</title>
-    
+
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
     <link rel="apple-touch-icon" href="https://i.imgur.com/kpCeqqJ.png">
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,13 +24,13 @@
 
     <style>
         body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; }
-        
+
         .sales-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 25px; align-items: start; padding-bottom: 50px; }
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; } 
         .form-group { flex: 1; }
         .form-control { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
         .form-control:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1); }
-        
+
         /* TOGGLE DE TIPO */
         .type-toggle { display: flex; background: #e2e8f0; border-radius: 8px; padding: 4px; margin-bottom: 20px; }
         .type-btn { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 6px; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.3s; }
@@ -65,7 +65,7 @@
             .filter-actions { flex-wrap: wrap; justify-content: stretch; }
             .filter-actions button { flex: 1; }
         }
-        
+
         /* BADGES E BOTÕES DA TABELA */
         .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; min-width: 60px; text-align: center; display: inline-block; }
         .st-pago { background: #dcfce7; color: #166534; }
@@ -76,12 +76,12 @@
 
         .btn-pay-parcel { background: #10b981; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; height: 30px; }
         .btn-pay-parcel:hover { background: #059669; }
-        
+
         .btn-remarcar { background: #f59e0b; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; height: 30px; margin-left:5px; }
         .btn-remarcar:hover { background: #d97706; }
 
         .btn-stop-treatment { background: #ef4444; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; height: 30px; margin-left: 5px; }
-        
+
         .inp-parcela { width: 90px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; text-align: right; }
         .inp-date { width: 110px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
         .inp-method { width: 130px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
@@ -96,26 +96,26 @@
 
         .btn-icon { width: 30px; height: 30px; border-radius: 6px; border:none; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; }
         .btn-icon:hover { opacity: 0.9; transform: translateY(-1px); }
-        
+
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
         .modal-header h3 { margin: 0; font-size: 16px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
-        
+
         .doc-card { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; margin-top: 15px; }
         .doc-card-left { display: flex; align-items: center; gap: 12px; }
         .doc-icon-box { width: 40px; height: 40px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 18px; }
         .doc-info h4 { margin: 0; font-size: 13px; color: #1e293b; }
         .doc-info span { font-size: 11px; color: #64748b; }
         .doc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        
+
         .btn-doc { padding: 6px 10px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; color: #475569; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
         .btn-doc:hover { background: #f1f5f9; }
         .btn-doc.primary { background: #0ea5e9; color: white; border-color: #0ea5e9; }
         .btn-doc.primary:hover { background: #0284c7; }
         .btn-doc.danger { color: #ef4444; border-color: #fca5a5; }
         .btn-doc.danger:hover { background: #fef2f2; }
-        
+
         .actual-preview-area { margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 15px; display: none; text-align: center; }
     </style>
 </head>
@@ -125,7 +125,7 @@
         <div id="global-nav"></div>
 
         <div class="sales-grid">
-            
+
             <div class="form-area">
                 <div class="card">
                     <div class="card-header">
@@ -133,7 +133,7 @@
                     </div>
                     <form id="saleForm" style="padding: 20px;">
                         <input type="hidden" id="editingId">
-                        
+
                         <div class="type-toggle">
                             <button type="button" id="btnTypeParticular" class="type-btn active-particular" onclick="setSaleType('particular')">Particular</button>
                             <button type="button" id="btnTypeLiminar" class="type-btn" onclick="setSaleType('liminar')">Liminar Judicial</button>
@@ -145,7 +145,7 @@
                                 <input type="text" id="salePatientName" class="form-control" required>
                             </div>
                         </div>
-                        
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Médico Responsável</label>
@@ -189,7 +189,7 @@
                                         <label for="chkMultiPay" style="cursor:pointer; font-weight:600;">2 formas de pagamento?</label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="form-group hidden-field" id="divPaymentMethod2">
                                     <label>Forma Pgto 2</label>
                                     <select id="salePaymentType2" class="form-control">
@@ -210,7 +210,7 @@
                                     </select>
                                 </div>
                             </div>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Pagamento Para (Recebedor)</label>
@@ -230,7 +230,7 @@
                                     <label id="lblAmountPaid1">Valor Entrada (R$)</label>
                                     <input type="number" id="saleAmountPaid" class="form-control" step="0.01" placeholder="0.00">
                                 </div>
-                                
+
                                 <div class="form-group hidden-field" id="divAmountPaid2">
                                     <label>Valor Pgto 2 (R$)</label>
                                     <input type="number" id="saleAmountPaid2" class="form-control" step="0.01" value="0" placeholder="0.00">
@@ -294,7 +294,7 @@
             <div class="list-area">
                 <div class="card">
                     <div class="card-header"><i class="fas fa-list"></i> Histórico de Vendas e Liminares</div>
-                    
+
                     <div class="filters-toolbar">
                         <div class="filter-item">
                             <label><i class="fas fa-calendar-alt"></i> Período Rápido</label>
@@ -304,7 +304,7 @@
                                 <button type="button" class="btn-sm-filter" onclick="setDateFilter('month')">Mês</button>
                             </div>
                         </div>
-                        
+
                         <div class="filter-item">
                             <label>Tipo</label>
                             <select id="fTipoRegistro" class="form-control" onchange="render()">
@@ -313,7 +313,7 @@
                                 <option value="liminar">Liminar</option>
                             </select>
                         </div>
-                        
+
                         <div class="filter-item filter-item-wide">
                             <label>Paciente</label>
                             <input type="text" id="fPatient" class="form-control" placeholder="Buscar por nome..." onkeyup="render()">
@@ -347,7 +347,7 @@
                                 <option value="Medico">Médico</option>
                             </select>
                         </div>
-                        
+
                         <div class="filter-actions">
                             <button class="btn btn-secondary" style="background:#64748b; border:none;" onclick="clearFilters()" title="Limpar Filtros"><i class="fas fa-eraser"></i> Limpar</button>
                             <button class="btn btn-info" style="background:#0284c7; border:none;" onclick="exportExcel()" title="Exportar Excel"><i class="fas fa-file-excel"></i> Excel</button>
@@ -388,7 +388,7 @@
                 <button class="btn-icon" style="background:#ef4444;" onclick="closeReceiptModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                
+
                 <div id="uploadBox" style="text-align:center; padding: 25px; border: 2px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; transition: 0.3s;">
                     <i class="fas fa-cloud-upload-alt fa-3x" style="color:#94a3b8; margin-bottom:15px;"></i>
                     <p style="font-size:13px; color:#475569; margin:0 0 15px 0;">Nenhum comprovante localizado para este registro.</p>
@@ -415,7 +415,7 @@
 
                 <div id="actualPreviewArea" class="actual-preview-area"></div>
             </div>
-            
+
             <div class="modal-footer" id="modalFooterSave" style="margin-top:20px; display:none;">
                 <button class="btn btn-success" onclick="saveReceipt()" style="width:100%; font-size: 14px; padding: 10px;"><i class="fas fa-save"></i> Salvar Alterações no Banco</button>
             </div>
@@ -448,7 +448,7 @@
                         } catch(err) {}
                     }
                 }
-                
+
                 const keysText = ['userName', 'user_name', 'nome_usuario', 'usuario_nome'];
                 for (let k of keysText) {
                     let item = localStorage.getItem(k);
@@ -477,13 +477,13 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             initGlobal('sales', 'Particulares e Liminares');
-            
+
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             document.getElementById('saleDate').value = `${year}-${month}-${day}`;
-            
+
             loadData();
             document.getElementById('saleForm').addEventListener('submit', saveSale);
         });
@@ -491,7 +491,7 @@
         function parseCurrency(val) {
             if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return parseFloat(val.toFixed(2));
-            
+
             let s = String(val).replace(/[^\d.,-]/g, '');
             if (s.includes(',') && s.includes('.')) {
                 let lastDot = s.lastIndexOf('.');
@@ -504,7 +504,7 @@
                 let parts = s.split('.');
                 if (parts[parts.length - 1].length === 3) s = s.replace(/\./g, '');
             }
-            
+
             const num = parseFloat(s);
             return isNaN(num) ? 0 : parseFloat(num.toFixed(2));
         }
@@ -512,7 +512,7 @@
         function filterSelectsByType() {
             const docSel = document.getElementById('saleDoctorName');
             const procSel = document.getElementById('saleProcedureName');
-            
+
             docSel.innerHTML = '<option value="">Selecione...</option>';
             procSel.innerHTML = '<option value="">Selecione...</option>';
 
@@ -525,13 +525,13 @@
                 if(p.tipo === 'Orcamento') return;
                 if (saleType === 'particular' && p.tipo === 'Liminar') return;
                 if (saleType === 'liminar' && p.tipo === 'Particular') return;
-                
+
                 const cMat = parseCurrency(p.custo_material);
                 const cMed = parseCurrency(p.custo_medicamento);
                 const cProc = parseCurrency(p.custo_procedimento);
                 const cDesc = parseCurrency(p.desconto);
                 const cost = (cMat + cMed + cProc) - cDesc;
-                
+
                 procSel.innerHTML += `<option value="${p.nome}" data-cost="${cost}">${p.nome}</option>`;
             });
         }
@@ -540,7 +540,7 @@
             saleType = type;
             document.getElementById('btnTypeParticular').className = 'type-btn';
             document.getElementById('btnTypeLiminar').className = 'type-btn';
-            
+
             if (type === 'particular') {
                 document.getElementById('btnTypeParticular').classList.add('active-particular');
                 document.getElementById('blockParticular').classList.remove('hidden-field');
@@ -550,7 +550,7 @@
                 document.getElementById('blockLiminar').classList.remove('hidden-field');
                 document.getElementById('blockParticular').classList.add('hidden-field');
             }
-            
+
             filterSelectsByType(); 
             updateCostFromSelect(); 
             calc();
@@ -562,11 +562,11 @@
             const startStr = document.getElementById('saleDate').value;
             const cycles = parseInt(document.getElementById('liminarCycles').value) || 1;
             const interval = parseInt(document.getElementById('liminarInterval').value) || 0;
-            
+
             if(!startStr) return;
             const d = new Date(startStr + 'T12:00:00'); 
             d.setDate(d.getDate() + ((cycles - 1) * interval));
-            
+
             document.getElementById('liminarEndDate').value = d.toISOString().split('T')[0];
             updateCostFromSelect(); 
         }
@@ -599,7 +599,7 @@
                 doctors = normalizeData(await dRes.json());
                 sales = normalizeData(await sRes.json());
                 procedures = normalizeData(await pRes.json());
-                
+
                 populateFilterSelects();
                 filterSelectsByType();
                 render();
@@ -624,7 +624,7 @@
         function updateCostFromSelect() {
             const select = document.getElementById('saleProcedureName');
             const selectedOption = select.options[select.selectedIndex];
-            
+
             if(!selectedOption || !selectedOption.value) {
                 document.getElementById('saleProcedureCost').value = "0.00";
                 calc();
@@ -632,14 +632,14 @@
             }
 
             const unitCost = parseFloat(selectedOption.getAttribute('data-cost')) || 0;
-            
+
             let apps = 1;
             if(saleType === 'particular') apps = parseInt(document.getElementById('saleAppsDone').value) || 1;
             else if(saleType === 'liminar') apps = parseInt(document.getElementById('liminarCycles').value) || 1;
-            
+
             const total = unitCost * apps;
             document.getElementById('saleProcedureCost').value = total.toFixed(2);
-            
+
             calc();
             recalcInitial();
         }
@@ -649,7 +649,7 @@
             const total = parseFloat(document.getElementById('saleProcedureCost').value) || 0;
             const installmentStr = document.getElementById('saleInstallments').value;
             const numParcelas = parseInt(installmentStr.replace('x','')) || 1;
-            
+
             if (installmentStr === '1x') {
                 document.getElementById('saleAmountPaid').value = total.toFixed(2);
             } else {
@@ -673,14 +673,14 @@
         function calc() {
             const cost = parseFloat(document.getElementById('saleProcedureCost').value) || 0;
             let discountAmount = 0;
-            
+
             if (saleType === 'particular') {
                 discountAmount = cost * (disc / 100);
             }
 
             const total = cost - discountAmount;
             document.getElementById('previewTotal').textContent = total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-            
+
             if(disc > 0 && saleType === 'particular') {
                 document.getElementById('previewDiscount').textContent = `Imposto: ${disc}% (-R$ ${discountAmount.toFixed(2)})`;
             } else {
@@ -692,7 +692,7 @@
             e.preventDefault();
             const id = document.getElementById('editingId').value;
             const total = parseFloat(document.getElementById('saleProcedureCost').value) || 0;
-            
+
             let obj = {
                 paciente: document.getElementById('salePatientName').value.trim(),
                 medico: document.getElementById('saleDoctorName').value,
@@ -722,19 +722,19 @@
                 obj.parcelas = document.getElementById('saleInstallments').value;
                 obj.aplicacoes_realizadas = document.getElementById('saleAppsDone').value || 1;
                 obj.recebedor = document.getElementById('salePayee').value;
-                
+
                 const netTotal = total - (total * (disc / 100));
-                
+
                 if (!isMulti && obj.forma_pagamento === 'Cartao') {
                     obj.valor_pago = total; 
                     obj.valor_final = netTotal; 
-                    
+
                     if (!id) {
                         let numP = parseInt(obj.parcelas.replace('x','')) || 1;
                         let hist = {};
                         let valParc = total / numP; 
                         let dTemp = new Date(obj.data + 'T12:00:00');
-                        
+
                         for(let i=1; i<=numP; i++) {
                             hist[i] = {
                                 valor: valParc,
@@ -759,7 +759,7 @@
             } else {
                 const ciclos = parseInt(document.getElementById('liminarCycles').value) || 1;
                 const intervalo = parseInt(document.getElementById('liminarInterval').value) || 21;
-                
+
                 obj.ciclos_total = ciclos;
                 obj.intervalo_dias = intervalo;
                 obj.data_fim_prevista = document.getElementById('liminarEndDate').value;
@@ -767,12 +767,12 @@
                 obj.valor_final = total;
                 obj.total_procedimento = total;
                 obj.recebedor = 'Clinica'; 
-                
+
                 if (!id) {
                     const startD = new Date(obj.data + 'T12:00:00');
                     const valCiclo = total / ciclos;
                     let hist = {};
-                    
+
                     for(let i=1; i<=ciclos; i++) {
                         hist[i] = {
                             valor: valCiclo,
@@ -785,7 +785,7 @@
                     obj.valor_pago = 0; 
                 }
             }
-            
+
             const method = id ? 'PUT' : 'POST';
             const url = id ? `${API_BASE_URL}/vendas/${id}` : `${API_BASE_URL}/vendas`;
             try {
@@ -798,15 +798,18 @@
                     body: JSON.stringify(obj) 
                 });
 
-                // AUTO-INSERÇÕES ABAS PACIENTE E REPASSE 
+                // =========================================================================
+                // INÍCIO DA MÁGICA: Integração de Particulares no Repasse e Aba Pacientes
+                // =========================================================================
                 const procStr = document.getElementById('saleProcedureName').value.toUpperCase();
                 if (saleType === 'particular' && (procStr.includes('APLICAÇÃO') || procStr.includes('APLICACAO'))) {
-                    
+
                     const pacNomeBase = obj.paciente;
                     const docNomeBase = obj.medico;
                     const pacIdCriado = 'pac_' + pacNomeBase.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                    
+
                     try {
+                        // 1. Cadastra na aba de Pacientes
                         const resPac = await fetch(`${API_BASE_URL}/pacientes/${pacIdCriado}`, { headers: API_HEADERS });
                         if (!resPac.ok || resPac.status === 404) {
                             let docIdParaVincular = Object.keys(doctors).find(k => doctors[k].nome === docNomeBase);
@@ -814,7 +817,7 @@
                                 id_firebase: pacIdCriado,
                                 nome: pacNomeBase.toUpperCase(),
                                 doctor_id: docIdParaVincular || '',
-                                status: 'Em Tratamento', 
+                                status: 'Em Tratamento', // <- Garantindo o status para não ficar oculto no pacientes.html
                                 prescritor_id: '',
                                 encaminhador_id: '',
                                 telefone: '',
@@ -829,18 +832,19 @@
                             });
                         }
 
+                        // 2. Injeta no Repasse Inteligente (/repasse_unimed) APENAS SE FOR NOVA VENDA
                         if (!id) {
                             const dateParts = obj.data.split('-');
-                            const compRepasse = `${dateParts[1]}/${dateParts[0]}`; 
-                            
+                            const compRepasse = `${dateParts[1]}/${dateParts[0]}`; // Transforma 2026-03-24 para 03/2026
+
                             const repasseAuto = {
                                 id_firebase: 'rep_part_' + Date.now(),
                                 paciente: pacNomeBase.toUpperCase(),
                                 data_atendimento: obj.data,
                                 competencia: compRepasse,
-                                valor_pago: obj.valor_final, 
+                                valor_pago: obj.valor_final, // Valor limpo (já sem a taxa da maquininha)
                                 descricao: `Aplicação Particular - ${obj.procedimento}`,
-                                tipo: 'Particular', 
+                                tipo: 'Particular', // Tag mágica para o Nicolas
                                 custo_informado: 0,
                                 impostos_retidos: 0,
                                 dados_extras: JSON.stringify({ 
@@ -859,6 +863,9 @@
                         }
                     } catch(err) { console.error("Erro ao auto-cadastrar no repasse inteligente:", err); }
                 }
+                // =========================================================================
+                // FIM DA MÁGICA
+                // =========================================================================
 
                 alert(id ? "Atualizado com sucesso!" : "Registrado com sucesso!");
                 resetForm();
@@ -870,7 +877,7 @@
             const s = sales[id];
             if(!s) return;
             document.getElementById('editingId').value = id;
-            
+
             const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
             setSaleType(isLiminar ? 'liminar' : 'particular');
 
@@ -878,16 +885,16 @@
                 document.getElementById('salePatientName').value = s.paciente;
                 document.getElementById('saleDoctorName').value = s.medico;
                 document.getElementById('saleProcedureName').value = s.procedimento;
-                
+
                 const custoTotalEdicao = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
                 document.getElementById('saleProcedureCost').value = custoTotalEdicao.toFixed(2);
                 document.getElementById('saleDate').value = s.data;
                 document.getElementById('saleInvoice').value = s.nota_fiscal || '';
-                
+
                 if (!isLiminar) {
                     document.getElementById('salePayee').value = s.recebedor || 'Clinica';
                     document.getElementById('salePaymentType').value = s.forma_pagamento || 'Dinheiro';
-                    
+
                     const isMulti = s.usa_dois_pagamentos === true;
                     document.getElementById('chkMultiPay').checked = isMulti;
                     toggleMultiPay(); 
@@ -895,7 +902,7 @@
                     const vTotalPago = parseCurrency(s.valor_pago);
                     const vPago2 = parseCurrency(s.valor_pago_secundario);
                     const entrada = s.usa_dois_pagamentos ? (vTotalPago - vPago2) : vTotalPago;
-                    
+
                     document.getElementById('saleAmountPaid').value = entrada.toFixed(2);
 
                     if (isMulti) {
@@ -905,14 +912,14 @@
 
                     document.getElementById('saleInstallments').value = s.parcelas || '1x';
                     document.getElementById('saleAppsDone').value = s.aplicacoes_realizadas || 1;
-                    
+
                     setDisc(s.desconto_percentual || 0);
                 } else {
                     document.getElementById('liminarCycles').value = s.ciclos_total || 1;
                     document.getElementById('liminarInterval').value = s.intervalo_dias || 21;
                     document.getElementById('liminarEndDate').value = s.data_fim_prevista || s.data;
                 }
-                
+
                 document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Registro';
                 document.getElementById('btnSave').innerHTML = '<i class="fas fa-sync"></i> Atualizar';
                 document.getElementById('btnCancel').style.display = 'block';
@@ -927,11 +934,11 @@
             document.getElementById('btnSave').innerHTML = '<i class="fas fa-check"></i> Registrar';
             document.getElementById('btnCancel').style.display = 'none';
             document.getElementById('chkMultiPay').checked = false;
-            
+
             const now = new Date();
             const y = now.getFullYear(); const m = String(now.getMonth() + 1).padStart(2, '0'); const d = String(now.getDate()).padStart(2, '0');
             document.getElementById('saleDate').value = `${y}-${m}-${d}`;
-            
+
             toggleMultiPay();
             setDisc(0);
             setSaleType('particular');
@@ -954,11 +961,11 @@
                     if(doctor && s.medico !== doctor) return false;
                     if(procedure && s.procedimento !== procedure) return false;
                     if(patient && !(s.paciente || "").toLowerCase().includes(patient)) return false; 
-                    
+
                     const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
                     if (tipoReg === 'particular' && isLiminar) return false;
                     if (tipoReg === 'liminar' && !isLiminar) return false;
-                    
+
                     const recStr = s.recebedor || 'Clinica';
                     if (recebedor && recStr !== recebedor) return false;
 
@@ -1025,7 +1032,7 @@
         function render() {
             const tbody = document.getElementById('salesList');
             tbody.innerHTML = '';
-            
+
             const rows = getFilteredData();
 
             if(rows.length === 0) {
@@ -1035,17 +1042,17 @@
 
             rows.forEach(([id, s]) => {
                 const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
-                
+
                 const bruto = parseCurrency(s.total_procedimento) || parseCurrency(s.valor_final);
                 const liquido = parseCurrency(s.valor_final);
-                
+
                 let pago = parseCurrency(s.valor_pago);
                 if (pago > 0 && Math.abs(pago - liquido) < 0.05 && parseCurrency(s.desconto) > 0 && !isLiminar) {
                     pago = bruto; 
                 }
-                
+
                 const saldo = bruto - pago;
-                
+
                 let statusBadge = '';
                 let financeiroHtml = '';
                 let tipoModeloHtml = '';
@@ -1062,15 +1069,15 @@
                 if (isLiminar) {
                     const historico = s.historico_parcelas || {};
                     const totCiclos = s.ciclos_total || Object.keys(historico).length || 1;
-                    
+
                     let presentes = 0;
                     Object.values(historico).forEach(c => { if(c.status === 'presente') presentes++; });
-                    
+
                     if(presentes === totCiclos) statusBadge = '<span class="status-badge st-pago">Concluído</span>';
                     else statusBadge = '<span class="status-badge st-liminar">Liminar</span>';
 
                     tipoModeloHtml = `Liminar<br><span style="font-size:10px; color:#666">${totCiclos} Ciclos</span>`;
-                    
+
                     financeiroHtml = `
                         <div style="font-size:11px; color:#666">Valor Total: ${liquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
                         <div style="font-weight:bold; color:#3730a3; font-size:13px;">Consumido: ${presentes}/${totCiclos}</div>
@@ -1084,9 +1091,9 @@
                     let displayPgto = s.forma_pagamento || '-';
                     if (s.usa_dois_pagamentos && s.forma_pagamento_2) displayPgto += ` + ${s.forma_pagamento_2}`;
                     const parcelasStr = s.parcelas || '1x';
-                    
+
                     tipoModeloHtml = `Particular<br><span style="font-size:10px; color:#666">${displayPgto} (${parcelasStr})</span>`;
-                    
+
                     financeiroHtml = `
                         <div style="font-size:10px; color:#666; margin-bottom:2px;">Bruto: ${bruto.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} | Líq: ${liquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
                         <div style="font-weight:bold; color:${saldo > 0.05 ? '#c53030' : '#166534'}; font-size:13px;">Pago: ${pago.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
@@ -1119,7 +1126,7 @@
                 const trDetails = document.createElement('tr');
                 trDetails.id = `details-${id}`;
                 trDetails.className = 'details-row';
-                
+
                 if (isLiminar) {
                     const history = s.historico_parcelas || {};
                     const totCiclos = s.ciclos_total || Object.keys(history).length || 1;
@@ -1129,22 +1136,25 @@
                         let ciclo = history[i] || { valor: liquido/totCiclos, data: s.data, status: 'agendado' };
                         let displayDate = ciclo.data || '';
                         let displayVal = parseCurrency(ciclo.valor).toFixed(2);
-                        
+
                         let badge = ''; let actions = '';
-                        let inputState = (ciclo.status === 'presente' || ciclo.status === 'faltou') ? 'disabled' : ''; 
+                        let inputState = 'disabled'; 
+
 
                         if (ciclo.status === 'presente') {
                             badge = '<span class="status-badge st-pago">Presente</span>';
-                        } else if (ciclo.status === 'faltou') {
-                            badge = '<span class="status-badge st-pendente">Faltou</span>';
-                            actions = `
-                                <button class="btn-remarcar" onclick="enableReschedule('${id}', ${i}, this)"><i class="fas fa-calendar-times"></i> Remarcar Falta</button>
-                            `;
+
+
+
+
+
                         } else {
-                            badge = '<span class="status-badge" style="background:#e2e8f0; color:#475569;">Agendado</span>';
+                            if (ciclo.status === 'faltou') badge = '<span class="status-badge st-pendente">Faltou</span>';
+                            else badge = '<span class="status-badge" style="background:#e2e8f0; color:#475569;">Agendado</span>';
+                            
                             actions = `
                                 <button class="btn-pay-parcel" onclick="markPresent('${id}', ${i})"><i class="fas fa-check"></i> Presente</button>
-                                <button class="btn-remarcar" style="background:#ef4444;" onclick="markFaltou('${id}', ${i})"><i class="fas fa-times"></i> Faltou</button>
+                                <button class="btn-remarcar" onclick="enableReschedule('${id}', ${i}, this)"><i class="fas fa-calendar-times"></i> Remarcar Falta</button>
                             `;
                         }
 
@@ -1152,7 +1162,7 @@
                             <div class="parcela-item">
                                 <div style="display:flex; align-items:center; gap:10px;">
                                     <strong style="width:50px; color:#3730a3;">Ciclo ${i}</strong>
-                                    <input type="date" id="lim-dat-${id}-${i}" class="inp-date" value="${displayDate}" ${inputState} onchange="cascadeLiminarDates('${id}', ${i}, ${totCiclos})" title="Data do Ciclo">
+                                    <input type="date" id="lim-dat-${id}-${i}" class="inp-date" value="${displayDate}" ${inputState} title="Data do Ciclo">
                                     <input type="number" id="lim-val-${id}-${i}" class="inp-parcela" value="${displayVal}" disabled title="Valor Rateado">
                                 </div>
                                 <div style="display:flex; align-items:center; gap:10px;">
@@ -1168,12 +1178,12 @@
                             <div class="cascade-container" style="border-left-color: #3730a3;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                     <h5 style="margin:0; color:#3730a3;">Controle de Ciclos da Liminar</h5>
-                                    <div style="display:flex; align-items:center; gap:15px;">
-                                        <span style="font-size:11px; color:#666;">Data final projetada: ${safeDateDisplay(s.data_fim_prevista)}</span>
-                                        <button class="btn" style="background:#3730a3; color:white; padding:4px 10px; font-size:11px; border-radius:4px;" onclick="saveLiminarDates('${id}', ${totCiclos})">
-                                            <i class="fas fa-save"></i> Salvar Datas
-                                        </button>
-                                    </div>
+                                    <span style="font-size:11px; color:#666;">Data final projetada: ${safeDateDisplay(s.data_fim_prevista)}</span>
+
+
+
+
+
                                 </div>
                                 ${htmlCiclos}
                             </div>
@@ -1210,7 +1220,7 @@
                         let status = ''; let badgeClass = ''; let actionBtn = ''; let inputDisabled = '';
                         let displayVal = valParcela.toFixed(2);
                         let displayDate = new Date().toISOString().split('T')[0];
-                        
+
                         let displayMethod = s.forma_pagamento || 'Dinheiro';
 
                         if (history[i] && history[i].pago) {
@@ -1278,653 +1288,3 @@
                 tbody.appendChild(trDetails);
             });
         }
-
-        // ==========================================
-        // CASCATA E EDIÇÃO DE CICLOS DA LIMINAR
-        // ==========================================
-        window.cascadeLiminarDates = function(id, changedIndex, totCiclos) {
-            const sale = sales[id];
-            const interval = sale.intervalo_dias || 21;
-            const changedInput = document.getElementById(`lim-dat-${id}-${changedIndex}`);
-            if(!changedInput || !changedInput.value) return;
-            
-            let currentDate = new Date(changedInput.value + 'T12:00:00');
-
-            for(let j = changedIndex + 1; j <= totCiclos; j++) {
-                const nextInput = document.getElementById(`lim-dat-${id}-${j}`);
-                if(nextInput) {
-                    currentDate.setDate(currentDate.getDate() + interval);
-                    if (!nextInput.disabled) {
-                        nextInput.value = currentDate.toISOString().split('T')[0];
-                    }
-                }
-            }
-        }
-
-        window.saveLiminarDates = async function(id, totCiclos) {
-            const sale = sales[id];
-            const history = sale.historico_parcelas || {};
-            let lastDate = sale.data_fim_prevista;
-
-            for(let i=1; i<=totCiclos; i++) {
-                const el = document.getElementById(`lim-dat-${id}-${i}`);
-                if(el && el.value) {
-                    if(!history[i]) {
-                        history[i] = { status: 'agendado', valor: (parseCurrency(sale.valor_final)/totCiclos) };
-                    }
-                    history[i].data = el.value;
-                    lastDate = el.value;
-                }
-            }
-            sale.historico_parcelas = history;
-            sale.data_fim_prevista = lastDate;
-            
-            await updateSaleInDB(id, sale);
-            alert("Datas dos ciclos atualizadas com sucesso!");
-        }
-
-        window.markFaltou = async function(id, index) {
-            if(!confirm("Confirmar que a paciente faltou neste ciclo?")) return;
-            const sale = sales[id];
-            sale.historico_parcelas[index].status = 'faltou';
-            await updateSaleInDB(id, sale);
-        }
-
-        function toggleDetails(id) {
-            const row = document.getElementById(`details-${id}`);
-            if(row) row.classList.toggle('active');
-        }
-
-        function manageReceipt(id) {
-            currentReceiptId = id;
-            const s = sales[id];
-            currentReceiptBase64 = s.comprovante || null;
-            hasUnsavedReceiptChanges = false;
-            
-            document.getElementById('receiptFile').value = '';
-            renderReceiptUI();
-            document.getElementById('receiptModal').classList.remove('hidden-field');
-        }
-
-        function closeReceiptModal() {
-            document.getElementById('receiptModal').classList.add('hidden-field');
-            currentReceiptId = null;
-            currentReceiptBase64 = null;
-        }
-
-        function renderReceiptUI() {
-            const uploadBox = document.getElementById('uploadBox');
-            const cardArea = document.getElementById('receiptCardArea');
-            const previewArea = document.getElementById('actualPreviewArea');
-            const btnSave = document.getElementById('modalFooterSave');
-            
-            previewArea.style.display = 'none';
-            previewArea.innerHTML = '';
-
-            if(!currentReceiptBase64) {
-                uploadBox.style.display = 'block';
-                cardArea.style.display = 'none';
-            } else {
-                uploadBox.style.display = 'none';
-                cardArea.style.display = 'flex';
-                const isPdf = currentReceiptBase64.startsWith('data:application/pdf');
-                document.getElementById('docCardIcon').className = isPdf ? 'fas fa-file-pdf' : 'fas fa-file-image';
-                document.getElementById('docCardIconBox').style.background = isPdf ? '#fee2e2' : '#e0f2fe';
-                document.getElementById('docCardIconBox').style.color = isPdf ? '#dc2626' : '#0284c7';
-                document.getElementById('docCardType').innerText = isPdf ? 'Documento PDF' : 'Imagem (Foto/Print)';
-            }
-            btnSave.style.display = hasUnsavedReceiptChanges ? 'block' : 'none';
-        }
-
-        function previewReceipt(event) {
-            const file = event.target.files[0];
-            if(!file) return;
-            if(file.size > 5 * 1024 * 1024) {
-                alert("O arquivo é muito grande. Por favor, insira um comprovante de até 5MB.");
-                event.target.value = '';
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentReceiptBase64 = e.target.result;
-                hasUnsavedReceiptChanges = true;
-                renderReceiptUI();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function toggleReceiptView() {
-            const area = document.getElementById('actualPreviewArea');
-            if(area.style.display === 'block') {
-                area.style.display = 'none';
-                area.innerHTML = '';
-            } else {
-                area.style.display = 'block';
-                if(currentReceiptBase64.startsWith('data:application/pdf')) {
-                    area.innerHTML = `<embed src="${currentReceiptBase64}" width="100%" height="400px" type="application/pdf">`;
-                } else {
-                    area.innerHTML = `<img src="${currentReceiptBase64}" style="max-width:100%; max-height:400px; border-radius:4px; margin: 0 auto; display: block;">`;
-                }
-            }
-        }
-
-        function downloadReceipt() {
-            if(!currentReceiptBase64) return;
-            const a = document.createElement('a');
-            a.href = currentReceiptBase64;
-            let ext = 'png';
-            if(currentReceiptBase64.startsWith('data:application/pdf')) ext = 'pdf';
-            else if(currentReceiptBase64.includes('image/jpeg')) ext = 'jpg';
-            a.download = `Comprovante_Registro_${currentReceiptId}.${ext}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function removeReceipt() {
-            if(!confirm("Remover este comprovante da memória?\n(A exclusão definitiva só ocorrerá após clicar em 'Salvar Alterações')")) return;
-            currentReceiptBase64 = null;
-            hasUnsavedReceiptChanges = true;
-            document.getElementById('receiptFile').value = '';
-            renderReceiptUI();
-        }
-
-        async function saveReceipt() {
-            if(!currentReceiptId) return;
-            const s = sales[currentReceiptId];
-            s.comprovante = currentReceiptBase64;
-            await updateSaleInDB(currentReceiptId, s);
-            closeReceiptModal();
-            alert('Documentos do registro atualizados com sucesso!');
-        }
-
-        async function markPresent(id, index) {
-            if(!confirm("Confirmar que a paciente esteve presente neste ciclo?")) return;
-            const sale = sales[id];
-            
-            sale.historico_parcelas[index].status = 'presente';
-            sale.historico_parcelas[index].data = document.getElementById(`lim-dat-${id}-${index}`).value;
-            
-            const valorCiclo = parseCurrency(sale.historico_parcelas[index].valor);
-            sale.valor_pago = parseCurrency(sale.valor_pago) + valorCiclo;
-            
-            await updateSaleInDB(id, sale);
-        }
-
-        window.enableReschedule = function(id, index, btn) {
-            const dateInput = document.getElementById(`lim-dat-${id}-${index}`);
-            dateInput.disabled = false;
-            dateInput.focus();
-            
-            btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Data';
-            btn.style.background = '#10b981';
-            
-            btn.onclick = function() { confirmRescheduleCycle(id, index); };
-        };
-
-        async function confirmRescheduleCycle(id, index) {
-            const sale = sales[id];
-            const history = sale.historico_parcelas;
-            
-            const inputDate = document.getElementById(`lim-dat-${id}-${index}`);
-            const newDateStr = inputDate.value;
-            const oldDateStr = history[index].data;
-            
-            if(!newDateStr) return alert("Por favor, informe uma data válida no campo do ciclo.");
-            if(newDateStr === oldDateStr) return alert("A data não foi alterada.");
-
-            if(!confirm(`Confirma a remarcação? As datas seguintes se adequarão caso você tenha alterado e salvo via cronograma.`)) return;
-
-            let lastDate = sale.data_fim_prevista;
-            for(let i=1; i<=sale.ciclos_total; i++) {
-                const el = document.getElementById(`lim-dat-${id}-${i}`);
-                if(el && el.value) {
-                    history[i].data = el.value;
-                    lastDate = el.value;
-                }
-            }
-            
-            history[index].status = 'agendado';
-            
-            sale.historico_parcelas = history;
-            sale.data_fim_prevista = lastDate;
-
-            await updateSaleInDB(id, sale);
-        }
-
-        async function payParcelFromInput(id, index, isRestante, restanteVal) {
-            const valInput = document.getElementById(`inp-val-${id}-${index}`);
-            const dateInput = document.getElementById(`inp-dat-${id}-${index}`);
-            const methodInput = document.getElementById(`inp-met-${id}-${index}`);
-
-            let payAmount = isRestante ? restanteVal : (parseFloat(valInput.value) || 0);
-            const payDate = dateInput.value;
-            const payMethod = methodInput.value; 
-
-            if(payAmount <= 0) return alert("Valor inválido");
-            if(!confirm(`Confirmar pagamento de R$ ${payAmount.toFixed(2)} via ${payMethod}?`)) return;
-
-            let taxRate = 0;
-            if (payMethod === 'Cartao') taxRate = 0.033; 
-            const impostoParcela = payAmount * taxRate;
-
-            const sale = sales[id];
-            const currentPaid = parseCurrency(sale.valor_pago);
-            const currentDesc = parseCurrency(sale.desconto);
-            
-            const totalBruto = parseCurrency(sale.total_procedimento) || parseCurrency(sale.valor_final);
-            const newPaid = currentPaid + payAmount;
-            const newDesc = currentDesc + impostoParcela;
-            const newFinal = totalBruto - newDesc; 
-
-            let currentHistory = sale.historico_parcelas || {};
-            currentHistory[index] = { valor: payAmount, data: payDate, metodo: payMethod, pago: true };
-
-            const updatedSale = { ...sale, valor_pago: newPaid, desconto: newDesc, valor_final: newFinal, historico_parcelas: currentHistory };
-            await updateSaleInDB(id, updatedSale);
-        }
-
-        async function stopTreatment(id) {
-            if(!confirm("Encerrar tratamento e considerar pago?")) return;
-            const sale = sales[id];
-            const paid = parseCurrency(sale.valor_pago);
-            
-            const updatedSale = { ...sale, valor_final: paid - parseCurrency(sale.desconto), total_procedimento: paid, parcelas: 'Encerrado' };
-            await updateSaleInDB(id, updatedSale);
-        }
-
-        async function saveInstallmentPlan(id, numParcelas) {
-            let customPlan = {};
-            for(let i=1; i<=numParcelas; i++) {
-                const el = document.getElementById(`inp-val-${id}-${i}`);
-                if(el && !el.disabled) { customPlan[i] = parseFloat(el.value) || 0; }
-            }
-            const sale = sales[id];
-            const updatedSale = { ...sale, parcelas_customizadas: customPlan };
-            await updateSaleInDB(id, updatedSale);
-            alert("Planejamento salvo!");
-        }
-
-        // ==========================================
-        // LÓGICA DE EXCLUSÃO CORRIGIDA
-        // ==========================================
-        async function deleteSale(id) {
-            if(!confirm("Excluir este registro?")) return;
-
-            const s = sales[id];
-
-            // 1. Remove a Venda original
-            await fetch(`${API_BASE_URL}/vendas/${id}`, { 
-                method: 'DELETE',
-                headers: API_HEADERS
-            });
-
-            // 2. Tenta deletar o registro-filho auto-gerado no repasse_unimed, caso seja um Particular
-            if (s && s.tipo_registro === 'particular') {
-                try {
-                    const repRes = await fetch(`${API_BASE_URL}/repasse_unimed`, { headers: API_HEADERS });
-                    if (repRes.ok) {
-                        const repData = normalizeData(await repRes.json());
-                        const pacUpper = (s.paciente || '').toUpperCase();
-
-                        const repToDelete = Object.entries(repData).find(([key, rep]) => {
-                            let extras = {};
-                            if (rep.dados_extras) {
-                                try { 
-                                    extras = typeof rep.dados_extras === 'string' ? JSON.parse(rep.dados_extras) : rep.dados_extras; 
-                                } catch(e){}
-                            }
-                            return extras.origem === 'venda_particular' &&
-                                   rep.paciente === pacUpper &&
-                                   rep.data_atendimento === s.data;
-                        });
-
-                        // Se encontrou a sombra que o sistema gerou automaticamente, exclui também
-                        if (repToDelete) {
-                            await fetch(`${API_BASE_URL}/repasse_unimed/${repToDelete[0]}`, {
-                                method: 'DELETE',
-                                headers: API_HEADERS
-                            });
-                        }
-                    }
-                } catch (err) {
-                    console.error("Erro ao deletar repasse automático vinculado:", err);
-                }
-            }
-
-            loadData();
-        }
-
-        async function getBase64ImageFromURL(url) {
-            return new Promise((resolve, reject) => {
-                const img = new Image(); img.setAttribute("crossOrigin", "anonymous");
-                img.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    canvas.width = img.width; canvas.height = img.height;
-                    const ctx = canvas.getContext("2d"); ctx.drawImage(img, 0, 0);
-                    resolve(canvas.toDataURL("image/png"));
-                };
-                img.onerror = error => reject(error); img.src = url;
-            });
-        }
-
-        // ==========================================
-        // LÓGICA DE EXPLOSÃO DE RELATÓRIO P/ EXCEL E PDF
-        // ==========================================
-        function getReportItems() {
-            const start = document.getElementById('fStart').value;
-            const end = document.getElementById('fEnd').value;
-            const doctor = document.getElementById('fDoctor').value;
-            const procedure = document.getElementById('fProcedure').value;
-            const patient = document.getElementById('fPatient').value.toLowerCase();
-            const tipoReg = document.getElementById('fTipoRegistro').value;
-            const recebedor = document.getElementById('fRecebedor').value;
-
-            let items = [];
-
-            Object.entries(sales).forEach(([id, s]) => {
-                if (s.origem && s.origem !== 'manual' && s.origem !== 'importacao_excel') return;
-                if (doctor && s.medico !== doctor) return;
-                if (procedure && s.procedimento !== procedure) return;
-                if (patient && !(s.paciente || "").toLowerCase().includes(patient)) return;
-
-                const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
-                if (tipoReg === 'particular' && isLiminar) return;
-                if (tipoReg === 'liminar' && !isLiminar) return;
-
-                const recStr = s.recebedor || 'Clinica';
-                if (recebedor && recStr !== recebedor) return;
-
-                const history = s.historico_parcelas || {};
-                const totCiclos = isLiminar ? (s.ciclos_total || Object.keys(history).length || 1) : (parseInt((s.parcelas||'1x').replace('x','')) || 1);
-                const hasHistory = Object.keys(history).length > 0;
-
-                const totalLiquido = parseCurrency(s.valor_final);
-                const totalTaxa = parseCurrency(s.desconto);
-
-                if (hasHistory) {
-                    Object.entries(history).forEach(([cycleIndex, cycle]) => {
-                        const cycleDate = cycle.data;
-                        if (start && cycleDate < start) return;
-                        if (end && cycleDate > end) return;
-
-                        const baseAmount = parseCurrency(s.total_procedimento) || totalLiquido || 1;
-                        const proration = parseCurrency(cycle.valor) / baseAmount;
-                        const proratedLiquido = totalLiquido * proration;
-                        const proratedTaxa = totalTaxa * proration;
-
-                        items.push({
-                            parentSale: s,
-                            cycleIndex: cycleIndex,
-                            totCiclos: totCiclos,
-                            cycleDate: cycleDate,
-                            cycleValueLiquido: isLiminar ? parseCurrency(cycle.valor) : proratedLiquido,
-                            cycleTaxa: proratedTaxa,
-                            cycleStatus: cycle.status || (cycle.pago ? 'Pago' : 'Pendente'),
-                            cycleMethod: cycle.metodo || (isLiminar ? 'Liminar' : s.forma_pagamento)
-                        });
-                    });
-                } else {
-                    if (start && s.data < start) return;
-                    if (end && s.data > end) return;
-                    items.push({
-                        parentSale: s,
-                        cycleIndex: 1,
-                        totCiclos: totCiclos,
-                        cycleDate: s.data,
-                        cycleValueLiquido: totalLiquido,
-                        cycleTaxa: totalTaxa,
-                        cycleStatus: parseCurrency(s.valor_pago) >= totalLiquido ? 'Pago' : 'Pendente',
-                        cycleMethod: s.forma_pagamento
-                    });
-                }
-            });
-
-            items.sort((a, b) => new Date(b.cycleDate + 'T12:00:00') - new Date(a.cycleDate + 'T12:00:00'));
-            return items;
-        }
-
-        async function exportExcel() {
-            const items = getReportItems();
-            if (items.length === 0) { 
-                alert("Sem dados no filtro atual para exportar."); 
-                return; 
-            }
-
-            const excelData = [];
-            excelData.push(["Data", "Paciente", "Médico", "Procedimento", "Recebedor", "Parc/Ciclo", "Status", "Taxa Maq.", "Valor (R$)", "NF", "Usuário"]);
-
-            items.forEach(item => {
-                const s = item.parentSale;
-                const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
-                const recStr = s.recebedor || 'Clinica';
-                const userName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
-
-                let cicloLabel = isLiminar ? `Liminar (${item.cycleIndex}/${item.totCiclos})`
-                                           : `${item.cycleMethod} (${item.cycleIndex}/${item.totCiclos})`;
-
-                let statusLabel = item.cycleStatus;
-                if(statusLabel === 'presente') statusLabel = 'Presente';
-                else if(statusLabel === 'faltou') statusLabel = 'Faltou';
-                else if(statusLabel === 'agendado') statusLabel = 'Agendado';
-
-                let taxaStr = '-';
-                if (!isLiminar && s.desconto_percentual > 0) {
-                    taxaStr = `${s.desconto_percentual}%`;
-                }
-
-                excelData.push([
-                    safeDateDisplay(item.cycleDate), 
-                    s.paciente || '', 
-                    s.medico || '', 
-                    s.procedimento || '-', 
-                    recStr === 'Clinica' ? 'Clínica' : 'Médico',
-                    cicloLabel,
-                    statusLabel,
-                    taxaStr,
-                    item.cycleValueLiquido,
-                    s.nota_fiscal || '-',
-                    userName
-                ]);
-            });
-
-            const ws = XLSX.utils.aoa_to_sheet(excelData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Financeiro_Detalhado");
-
-            const dataAtual = new Date().toISOString().slice(0,10);
-            XLSX.writeFile(wb, `Relatorio_Financeiro_${dataAtual}.xlsx`);
-        }
-
-        async function exportPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'mm', 'a4'); 
-            const items = getReportItems();
-            
-            if (items.length === 0) { alert("Sem dados no filtro atual para exportar."); return; }
-
-            const tableColumn = ["Data", "Paciente", "Médico", "Procedimento", "Receb.", "Parc/Ciclo", "Status", "Valor (R$)", "NF", "Usuário"];
-            const tableRows = [];
-            
-            let sumTotalLiquido = 0; 
-            let sumEcoCenter = 0;
-            let sumRepasse = 0;
-            let sumTaxas = 0;
-
-            items.forEach(item => {
-                const s = item.parentSale;
-                const isLiminar = (s.tipo_registro === 'liminar' || s.forma_pagamento === 'Liminar');
-                const recStr = s.recebedor || 'Clinica';
-                
-                sumTotalLiquido += item.cycleValueLiquido; 
-
-                if (!isLiminar) {
-                    const procName = (s.procedimento || '').toLowerCase();
-                    if (procName.includes('consulta')) sumRepasse += item.cycleValueLiquido;
-                    else sumEcoCenter += item.cycleValueLiquido;
-                    if (recStr === 'Clinica') sumTaxas += item.cycleTaxa;
-                }
-
-                let cicloLabel = isLiminar ? `Liminar (${item.cycleIndex}/${item.totCiclos})`
-                                           : `${item.cycleMethod} (${item.cycleIndex}/${item.totCiclos})`;
-
-                let statusLabel = item.cycleStatus;
-                if(statusLabel === 'presente') statusLabel = 'Presente';
-                else if(statusLabel === 'faltou') statusLabel = 'Faltou';
-                else if(statusLabel === 'agendado') statusLabel = 'Agendado';
-
-                const userName = s.criado_por ? s.criado_por.split(' ')[0] : 'Sistema';
-
-                tableRows.push([
-                    safeDateDisplay(item.cycleDate), 
-                    (s.paciente || '').substring(0, 20), 
-                    (s.medico || '').substring(0, 15), 
-                    (s.procedimento || '-').substring(0, 15), 
-                    recStr === 'Clinica' ? 'Clínica' : 'Médico',
-                    cicloLabel,
-                    statusLabel,
-                    item.cycleValueLiquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}),
-                    s.nota_fiscal || '-',
-                    userName
-                ]);
-            });
-
-            doc.setFillColor(0, 133, 91); 
-            doc.rect(0, 0, 297, 35, 'F');
-            doc.setFillColor(16, 185, 129); 
-            doc.rect(0, 35, 297, 2, 'F');
-
-            try { 
-                const logoData = await getBase64ImageFromURL(LOGO_URL); 
-                doc.addImage(logoData, 'PNG', 10, 6, 23, 23); 
-            } catch (err) { console.log("Logo ignorada"); }
-
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(20);
-            doc.text("RELATÓRIO FINANCEIRO DETALHADO", 40, 18); 
-            
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(209, 250, 229);
-            doc.text("Análise Rateada por Parcela / Ciclo (Filtrado por competência)", 40, 24);
-
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(9);
-            doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 287, 18, { align: "right" });
-            const startF = document.getElementById('fStart').value ? safeDateDisplay(document.getElementById('fStart').value) : '--';
-            const endF = document.getElementById('fEnd').value ? safeDateDisplay(document.getElementById('fEnd').value) : '--';
-            doc.text(`Período Filtrado: ${startF} até ${endF}`, 287, 24, { align: "right" });
-
-            doc.autoTable({ 
-                head: [tableColumn], 
-                body: tableRows, 
-                foot: [[
-                    { content: 'VALOR TOTAL EXIBIDO', colSpan: 7, styles: { halign: 'left', paddingLeft: 3 } },
-                    { content: sumTotalLiquido.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), styles: { halign: 'center' } },
-                    "",
-                    ""
-                ]],
-                startY: 45, 
-                theme: 'grid', 
-                margin: { left: 10, right: 10, bottom: 20 }, 
-                rowPageBreak: 'avoid', 
-                headStyles: { 
-                    fillColor: [0, 133, 91], 
-                    textColor: 255, 
-                    fontStyle: 'bold',
-                    fontSize: 7.5,
-                    halign: 'center',
-                    valign: 'middle',
-                    lineColor: [0, 100, 70],
-                    lineWidth: 0.1
-                }, 
-                bodyStyles: {
-                    fontSize: 7.5, 
-                    textColor: [51, 65, 85],
-                    halign: 'center',
-                    valign: 'middle',
-                    cellPadding: 1.5, 
-                    lineColor: [200, 200, 200], 
-                    lineWidth: 0.1
-                },
-                alternateRowStyles: { fillColor: [248, 250, 252] },
-                footStyles: {
-                    fillColor: [241, 245, 249],
-                    textColor: [15, 23, 42],
-                    fontStyle: 'bold',
-                    fontSize: 8,
-                    lineColor: [0, 133, 91],
-                    lineWidth: 0.3,
-                    halign: 'center'
-                },
-                showFoot: 'lastPage',
-                columnStyles: {
-                    0: { cellWidth: 16 }, 
-                    1: { cellWidth: 38 }, 
-                    2: { cellWidth: 26 },
-                    3: { cellWidth: 34 }, 
-                    4: { cellWidth: 16 }, 
-                    5: { cellWidth: 28 }, 
-                    6: { cellWidth: 20 }, 
-                    7: { cellWidth: 28, fontStyle: 'bold', textColor: [0, 133, 91] }, 
-                    8: { cellWidth: 16 },
-                    9: { cellWidth: 20 } 
-                } 
-            });
-
-            const finalY = doc.lastAutoTable.finalY + 8;
-            
-            if (finalY > 165) doc.addPage();
-            const startCardY = finalY > 165 ? 15 : finalY;
-
-            doc.setFillColor(255, 255, 255);
-            doc.setDrawColor(203, 213, 225);
-            doc.setLineWidth(0.3);
-            doc.roundedRect(10, startCardY, 120, 32, 3, 3, 'FD'); 
-
-            doc.setFillColor(240, 253, 244); 
-            doc.roundedRect(10.15, startCardY + 0.15, 119.7, 8, 3, 3, 'F');
-            
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 133, 91);
-            doc.text("RESUMO CONTÁBIL (DA PÁGINA ATUAL)", 15, startCardY + 5.5);
-
-            doc.setFontSize(8);
-            doc.setTextColor(71, 85, 105);
-            
-            doc.setFont("helvetica", "bold");
-            doc.text("ECO Center (Infusões/Particular):", 15, startCardY + 14);
-            doc.setFont("helvetica", "normal");
-            doc.text(sumEcoCenter.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 14, { align: "right" });
-
-            doc.setFont("helvetica", "bold");
-            doc.text("Repasse Médico (Consultas):", 15, startCardY + 21);
-            doc.setFont("helvetica", "normal");
-            doc.text(sumRepasse.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 21, { align: "right" });
-
-            doc.setFont("helvetica", "bold");
-            doc.text("Taxas de Maq. Projetada (Clínica):", 15, startCardY + 28);
-            doc.setFont("helvetica", "normal");
-            doc.text(sumTaxas.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}), 125, startCardY + 28, { align: "right" });
-
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setDrawColor(226, 232, 240);
-                doc.setLineWidth(0.5);
-                doc.line(10, 195, 287, 195); 
-
-                doc.setFontSize(7);
-                doc.setTextColor(148, 163, 184);
-                doc.setFont("helvetica", "normal");
-                doc.text(`ECO Sistema - Gestão Inteligente`, 10, 202);
-                doc.text(`Página ${i} de ${pageCount}`, 287, 202, { align: "right" });
-            }
-
-            doc.save(`Relatorio_Financeiro_${new Date().toISOString().slice(0,10)}.pdf`);
-        }
-</script>
-</body>
-</html>
