@@ -646,6 +646,7 @@
             document.getElementById('lblPeriod').innerText = strUnimed;
             
             try {
+                // 1. SALA MÉDICA (Plantões)
                 let turnosPlantao = 0; let valorPlantao = 0;
                 if (!isGroupView) {
                     const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
@@ -654,24 +655,23 @@
 
                     for (let ep of endpoints) {
                         try {
-                            let tabName = ep.replace('/escala_mensal', '').replace('_', '') || 'eco';
-                            let searchId = tabName === 'eco' ? `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}` : `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}-${tabName}`;
-                            
                             const r = await fetch(`${API_BASE_URL}${ep}?t=${Date.now()}`, { headers: API_HEADERS });
                             if (r.ok) {
                                 const dataObj = normalizeData(await r.json());
                                 let foundId = Object.keys(dataObj).find(k => {
                                     let item = dataObj[k];
                                     if(typeof item === 'string') { try { item = JSON.parse(item); } catch(e){} }
+                                    let searchId = ep === '/escala_mensal' ? `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}` : `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}-${ep.split('_').slice(2).join('_')}`;
                                     return item && (item.id_firebase === searchId || item.id === searchId || k === searchId);
                                 });
                                 let dbShifts = {};
                                 if (foundId) dbShifts = typeof dataObj[foundId] === 'string' ? JSON.parse(dataObj[foundId]) : dataObj[foundId];
 
-                                targetDocs.forEach(dId => {
-                                    if (dbShifts[dId]) {
+                                // Robustez no match de IDs
+                                Object.keys(dbShifts).forEach(sId => {
+                                    if (targetDocs.includes(String(sId))) {
                                         for (let i = 1; i <= daysInMonthPlantao; i++) {
-                                            const val = dbShifts[dId][i];
+                                            const val = dbShifts[sId][i];
                                             const d = new Date(yrPlantao, moPlantao, i, 12, 0, 0);
                                             const isoDateStr = `${yrPlantao}-${String(moPlantao+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                                             const isHol = !!holidaysPlantao[isoDateStr];
@@ -697,18 +697,18 @@
                     document.getElementById('kpiTotalPlantao').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 }
 
+
+                // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
                 let unimedData = resU.ok ? normalizeData(await resU.json()) : {};
                 let vendasData = resSales.ok ? normalizeData(await resSales.json()) : {};
                 
-                // 💡 CORREÇÃO DA BUSCA: Unimed é pelo Mês Atual. Particular é pelo Mês Seguinte (Plantões)
+                // 💡 BUSCA CORRETA: Unimed (Mês Atual), Particular (Mês Seguinte)
                 let arrayBot = Object.values(unimedData).filter(row => {
                     let statusUnimed = String(row.status || '').toLowerCase();
-                    if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') {
-                        return false;
-                    }
+                    if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') return false;
                     
                     let isPartExt = false;
                     if (row.dados_extras) {
@@ -718,23 +718,15 @@
                         } catch(e){}
                     }
                     let isParticularDb = isPartExt || String(row.tipo || '').toUpperCase() === 'PARTICULAR';
-
-                    if (isParticularDb) {
-                        return row.competencia === compPlantao;
-                    } else {
-                        return row.competencia === compUnimed;
-                    }
+                    return isParticularDb ? row.competencia === compPlantao : row.competencia === compUnimed;
                 });
 
                 let dadosFiltrados = arrayBot;
-
                 let valorConsultaParticular = 0; let atendimentosConsultaPart = 0;
 
                 Object.entries(vendasData).forEach(([vId, v]) => {
                     let statusVenda = String(v.status || '').toLowerCase();
-                    if (statusVenda === 'excluido' || statusVenda === 'excluído' || statusVenda === 'cancelado' || statusVenda === 'inativo') {
-                        return; 
-                    }
+                    if (statusVenda === 'excluido' || statusVenda === 'excluído' || statusVenda === 'cancelado' || statusVenda === 'inativo') return; 
 
                     const isLiminar = (String(v.tipo_registro).toLowerCase() === 'liminar' || String(v.forma_pagamento).toLowerCase() === 'liminar');
                     if (isLiminar) return; 
@@ -742,12 +734,11 @@
                     let tipoReg = String(v.tipo_registro || '').toLowerCase();
                     let procNormalizado = String(v.procedimento || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
+                    // TRATAMENTOS PARTICULARES
                     if (tipoReg.includes('particular') && procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
-                            
-                            // 💡 CORREÇÃO: Particulares (Tratamentos) passam a usar a competência de Plantão/Particular (Mês Seguinte)
                             if (vComp === compPlantao) {
                                 const alreadyExists = dadosFiltrados.some(d => {
                                     try {
@@ -763,16 +754,10 @@
                                 if (!alreadyExists) {
                                     let valorBaseParaComissao = 0;
                                     let procIdVinculado = v.procedimento_id;
-                                    
-                                    if (procIdVinculado && dbProcedimentos[procIdVinculado]) {
-                                        valorBaseParaComissao = parseFloat(dbProcedimentos[procIdVinculado].custo_medicamento || 0);
-                                    } else {
+                                    if (procIdVinculado && dbProcedimentos[procIdVinculado]) valorBaseParaComissao = parseFloat(dbProcedimentos[procIdVinculado].custo_medicamento || 0);
+                                    else {
                                         let dbProcNameMatch = Object.values(dbProcedimentos).find(p => String(p.nome).trim().toUpperCase() === String(v.procedimento).trim().toUpperCase());
-                                        if (dbProcNameMatch) {
-                                            valorBaseParaComissao = parseFloat(dbProcNameMatch.custo_medicamento || 0);
-                                        } else {
-                                            valorBaseParaComissao = parseFloat(v.valor_final || v.valor || 0);
-                                        }
+                                        valorBaseParaComissao = dbProcNameMatch ? parseFloat(dbProcNameMatch.custo_medicamento || 0) : parseFloat(v.valor_final || v.valor || 0);
                                     }
 
                                     dadosFiltrados.push({
@@ -784,7 +769,8 @@
                             }
                         }
                     } 
-                    else if (tipoReg.includes('particular') && !procNormalizado.includes('APLICA') && !procNormalizado.includes('TAXA')) {
+                    // 💡 CONSULTAS PARTICULARES (FILTRO: "CONSULTA" SOMENTE)
+                    else if (tipoReg.includes('particular') && procNormalizado.includes('CONSULTA')) {
                         const dateParts = (v.data || '').split('-');
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
@@ -804,18 +790,11 @@
                 let rawExcelData = dadosFiltrados.map(row => {
                     let extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     let custo_informado_antigo = row.custo_informado || extras.custo_informado || 0;
-                    
-                    let custo_correto = row.custo_correto !== undefined ? parseFloat(row.custo_correto) : (extras.custo_correto !== undefined ? parseFloat(extras.custo_correto) : 0);
                     let custo_errado = row.custo_errado !== undefined ? parseFloat(row.custo_errado) : (extras.custo_errado !== undefined ? parseFloat(extras.custo_errado) : 0);
-                    
+                    let custoAtual = custo_errado > 0 ? custo_errado : custo_informado_antigo;
+
                     let dataNormalized = row.data_atendimento || "-";
                     if (dataNormalized.includes('T')) dataNormalized = dataNormalized.split('T')[0];
-
-                    let isPart = false;
-                    let tipoStr = String(row.tipo || "MED").toUpperCase().trim();
-                    if (tipoStr === 'PARTICULAR' || tipoStr.includes('PARTICULAR')) isPart = true;
-                    if (extras.origem && String(extras.origem).toLowerCase().includes('particular')) isPart = true;
-                    if (String(row.id_firebase).includes('virt_part_')) isPart = true;
 
                     return {
                         id_firebase: row.id_firebase,
@@ -824,22 +803,18 @@
                         valor: parseFloat(row.valor_pago || 0), 
                         mg: parseFloat(row.quantidade || 1), 
                         data: dataNormalized, 
-                        tipo: tipoStr, 
-                        isParticular: isPart, 
-                        custo_correto: parseFloat(custo_correto),
-                        custo_errado: parseFloat(custo_errado),
-                        custo_informado_antigo: parseFloat(custo_informado_antigo)
+                        tipo: String(row.tipo || "MED").toUpperCase().trim(), 
+                        isParticular: String(row.tipo || "").toUpperCase() === 'PARTICULAR' || (extras.origem && String(extras.origem).includes('particular')) || String(row.id_firebase).includes('virt_part_'), 
+                        custo_informado: parseFloat(custoAtual)
                     };
                 }).filter(item => {
                     const medNormalized = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     if (medNormalized.includes("SOLUCAO DE CLORETO DE SODIO 0,9") && medNormalized.includes("ECOFLAC") && medNormalized.includes("1000 ML")) return false;
-                    if (medNormalized.includes("CLORETO DE SODIO 0,9% 10 ECOFLAC PLUS X 1000 ML")) return false;
                     return true;
                 });
 
                 let excelData = [];
                 let opdivoMap = {};
-
                 rawExcelData.forEach(item => {
                     let medNorm = item.medicamento.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                     if (medNorm.includes("OPDIVO")) {
@@ -850,21 +825,15 @@
                         } else {
                             opdivoMap[key].valor += item.valor;
                             opdivoMap[key].mg += item.mg;
-                            opdivoMap[key].custo_correto = Math.max(opdivoMap[key].custo_correto, item.custo_correto);
-                            opdivoMap[key].custo_errado = Math.max(opdivoMap[key].custo_errado, item.custo_errado);
-                            opdivoMap[key].custo_informado_antigo = Math.max(opdivoMap[key].custo_informado_antigo, item.custo_informado_antigo);
+                            opdivoMap[key].custo_informado = Math.max(opdivoMap[key].custo_informado, item.custo_informado);
                         }
-                    } else {
-                        excelData.push(item);
-                    }
+                    } else excelData.push(item);
                 });
 
                 const patientsTableObj = {};
                 excelData.forEach(d => {
                     const p = d.paciente; 
-                    if (!patientsTableObj[p]) {
-                        patientsTableObj[p] = { name: p, items: [], pId: null, pName: '', eId: null, eName: '' };
-                    }
+                    if (!patientsTableObj[p]) patientsTableObj[p] = { name: p, items: [], pId: null, pName: '', eId: null, eName: '' };
                     const patId = generatePatientId(d.paciente);
                     const patDb = pacientesDb[patId];
                     if (patDb && patDb.status !== 'inativo') {
@@ -876,17 +845,13 @@
                     patientsTableObj[p].items.push(d);
                 });
 
-                let valorTratamentoTotalAtual = 0; 
-                let valorTratamentoUnimedAtual = 0; 
-                let valorTratamentoParticularAtual = 0;
-                
+                let valorTratamentoTotalAtual = 0; let valorTratamentoUnimedAtual = 0; let valorTratamentoParticularAtual = 0;
                 let pacientesTratCount = new Set(); let pacientesTratUnimedCount = new Set(); let pacientesTratPartCount = new Set();
                 let totalAtendimentosTrat = 0; let atendimentosTratUnimed = 0; let atendimentosTratPart = 0;
                 let listaRenderPacienteHtmlMap = new Map(); 
 
                 Object.keys(patientsTableObj).forEach(key => {
                     let pat = patientsTableObj[key];
-                    
                     if (!targetDocs.includes(String(pat.pId)) && !targetDocs.includes(String(pat.eId))) return;
 
                     const comissaoInfo = getComissaoInfo(pat.pId, pat.eId);
@@ -896,9 +861,7 @@
                     pat.items.forEach(item => {
                         let fatItem = Number(item.valor.toFixed(2));
                         let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
-                        
-                        let custoUnitarioParaCalculo = item.custo_errado > 0 ? item.custo_errado : item.custo_informado_antigo;
-                        let custoTotalItemAtual = Number((custoUnitarioParaCalculo * item.mg).toFixed(2));
+                        let custoTotalItemAtual = Number((item.custo_informado * item.mg).toFixed(2));
                         let lucroItemAtual = Number((fatItem - impItem - custoTotalItemAtual).toFixed(2));
 
                         let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
@@ -908,30 +871,26 @@
                         if (isTaxa && !hasGrazielly) { canP = false; canE = false; }
 
                         let lucroRepasseAtual = lucroItemAtual > 0 ? lucroItemAtual : 0;
-                        
                         let repP_Atual = canP ? Number((lucroRepasseAtual * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
                         let repE_Atual = canE ? Number((lucroRepasseAtual * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
 
-                        let isVisibleForFilter = (targetDocs.includes(String(pat.pId)) && canP) || (targetDocs.includes(String(pat.eId)) && canE);
+                        if ((targetDocs.includes(String(pat.pId)) && canP) || (targetDocs.includes(String(pat.eId)) && canE)) {
+                            let repAquiAtual = 0;
+                            if (targetDocs.includes(String(pat.pId)) && canP) repAquiAtual += repP_Atual;
+                            if (targetDocs.includes(String(pat.eId)) && canE) repAquiAtual += repE_Atual;
 
-                        if (isVisibleForFilter) {
-                            let repParaOmedicoAquiAtual = 0;
-                            
-                            if (targetDocs.includes(String(pat.pId)) && canP) repParaOmedicoAquiAtual += repP_Atual;
-                            if (targetDocs.includes(String(pat.eId)) && canE) repParaOmedicoAquiAtual += repE_Atual;
-
-                            if (repParaOmedicoAquiAtual > 0) {
+                            if (repAquiAtual > 0) {
                                 hasTratamentoRepasseParaEsteMedico = true;
                                 totalAtendimentosTrat++;
                                 datesOfPac.push(item.data);
                                 if (item.isParticular) {
-                                    valorTratamentoParticularAtual += repParaOmedicoAquiAtual;
-                                    repPartPacAtual += repParaOmedicoAquiAtual;
+                                    valorTratamentoParticularAtual += repAquiAtual;
+                                    repPartPacAtual += repAquiAtual;
                                     atendimentosTratPart++;
                                     pacientesTratPartCount.add(pat.name);
                                 } else {
-                                    valorTratamentoUnimedAtual += repParaOmedicoAquiAtual;
-                                    repUnimedPacAtual += repParaOmedicoAquiAtual;
+                                    valorTratamentoUnimedAtual += repAquiAtual;
+                                    repUnimedPacAtual += repAquiAtual;
                                     atendimentosTratUnimed++;
                                     pacientesTratUnimedCount.add(pat.name);
                                 }
@@ -947,49 +906,41 @@
                         if (repUnimedPacAtual > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#059669; background:#d1fae5; padding:4px 8px; border-radius:12px;">Unimed</span>`);
                         if (repPartPacAtual > 0) badges.push(`<span style="font-size:10px; font-weight:700; color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:12px;">Particular</span>`);
                         
-                        let trHtml = '';
-                        if (isGroupView) {
-                            let valTotalPacAtual = repUnimedPacAtual + repPartPacAtual;
-                            let rolesStr = '';
-                            if (pat.pName) rolesStr += `<div style="font-size:10px; color:#be185d; white-space:nowrap;"><i class="fas fa-stethoscope"></i> P: ${pat.pName}</div>`;
-                            if (pat.eName) rolesStr += `<div style="font-size:10px; color:#c2410c; white-space:nowrap;"><i class="fas fa-share-square"></i> E: ${pat.eName}</div>`;
-                            
-                            trHtml = `<tr>
-                                <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${uniqDates.join(', ') || compUnimed}</td>
-                                <td style="font-weight: 600; text-align:center; color: #111827;">${pat.name}</td>
-                                <td style="text-align:center;">${badges.join(' ')}</td>
-                                <td style="text-align:center;">${rolesStr || '-'}</td>
-                                <td style="text-align:right; font-weight:bold; color:#059669;">R$ ${valTotalPacAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-                            </tr>`;
-                        } else {
-                            trHtml = `<tr>
-                                <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${uniqDates.join(', ') || compUnimed}</td>
-                                <td style="font-weight: 600; text-align:center; color: #111827;">${pat.name}</td>
-                                <td style="text-align:center;">${badges.join(' ')}</td>
-                            </tr>`;
-                        }
+                        let valTotalPacAtual = repUnimedPacAtual + repPartPacAtual;
+                        let rolesStr = '';
+                        if (pat.pName) rolesStr += `<div style="font-size:10px; color:#be185d;"><i class="fas fa-stethoscope"></i> P: ${pat.pName}</div>`;
+                        if (pat.eName) rolesStr += `<div style="font-size:10px; color:#c2410c;"><i class="fas fa-share-square"></i> E: ${pat.eName}</div>`;
+                        
+                        let trHtml = isGroupView ? `<tr>
+                            <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${uniqDates.join(', ') || compUnimed}</td>
+                            <td style="font-weight: 600; text-align:center; color: #111827;">${pat.name}</td>
+                            <td style="text-align:center;">${badges.join(' ')}</td>
+                            <td style="text-align:center;">${rolesStr || '-'}</td>
+                            <td style="text-align:right; font-weight:bold; color:#059669;">R$ ${valTotalPacAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                        </tr>` : `<tr>
+                            <td style="font-family: monospace; color: #6b7280; font-size:11px; text-align:center;">${uniqDates.join(', ') || compUnimed}</td>
+                            <td style="font-weight: 600; text-align:center; color: #111827;">${pat.name}</td>
+                            <td style="text-align:center;">${badges.join(' ')}</td>
+                        </tr>`;
 
-                        listaRenderPacienteHtmlMap.set(pat.name, {
-                            nome: pat.name,
-                            html: trHtml
-                        });
+                        listaRenderPacienteHtmlMap.set(pat.name, { nome: pat.name, html: trHtml });
                     }
                 });
 
                 if (!isGroupView) {
-                    let elKpiPartAtend = document.getElementById('kpiPartAtend'); if(elKpiPartAtend) elKpiPartAtend.innerText = atendimentosConsultaPart;
-                    let elKpiTotalPart = document.getElementById('kpiTotalPart'); if(elKpiTotalPart) elKpiTotalPart.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-                    let elDetPartAtend = document.getElementById('detPartAtend'); if(elDetPartAtend) elDetPartAtend.innerText = atendimentosConsultaPart;
-                    let elDetPartValor = document.getElementById('detPartValor'); if(elDetPartValor) elDetPartValor.innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                    document.getElementById('kpiPartAtend').innerText = atendimentosConsultaPart;
+                    document.getElementById('kpiTotalPart').innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                    document.getElementById('detPartAtend').innerText = atendimentosConsultaPart;
+                    document.getElementById('detPartValor').innerText = `R$ ${valorConsultaParticular.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 }
 
-                let elKpiTratPac = document.getElementById('kpiTratPac'); if(elKpiTratPac) elKpiTratPac.innerText = pacientesTratCount.size;
-                let elDetTratPac = document.getElementById('detTratPac'); if(elDetTratPac) elDetTratPac.innerText = pacientesTratCount.size;
-                let elDetTratPacUnimed = document.getElementById('detTratPacUnimed'); if(elDetTratPacUnimed) elDetTratPacUnimed.innerText = pacientesTratUnimedCount.size;
-                let elDetTratPacPart = document.getElementById('detTratPacPart'); if(elDetTratPacPart) elDetTratPacPart.innerText = pacientesTratPartCount.size;
-                let elDetTratItens = document.getElementById('detTratItens'); if(elDetTratItens) elDetTratItens.innerText = totalAtendimentosTrat;
-                let elDetTratItensUnimed = document.getElementById('detTratItensUnimed'); if(elDetTratItensUnimed) elDetTratItensUnimed.innerText = atendimentosTratUnimed;
-                let elDetTratItensPart = document.getElementById('detTratItensPart'); if(elDetTratItensPart) elDetTratItensPart.innerText = atendimentosTratPart;
+                document.getElementById('kpiTratPac').innerText = pacientesTratCount.size;
+                document.getElementById('detTratPac').innerText = pacientesTratCount.size;
+                document.getElementById('detTratPacUnimed').innerText = pacientesTratUnimedCount.size;
+                document.getElementById('detTratPacPart').innerText = pacientesTratPartCount.size;
+                document.getElementById('detTratItens').innerText = totalAtendimentosTrat;
+                document.getElementById('detTratItensUnimed').innerText = atendimentosTratUnimed;
+                document.getElementById('detTratItensPart').innerText = atendimentosTratPart;
                 
                 document.getElementById('detTratValorUnimed').innerText = `R$ ${valorTratamentoUnimedAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValorPart').innerText = `R$ ${valorTratamentoParticularAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
@@ -997,26 +948,16 @@
                 document.getElementById('kpiTotalTratamento').innerText = `R$ ${valorTratamentoTotalAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 
                 let elTablePacientesTrat = document.getElementById('tablePacientesTrat');
-                if (listaRenderPacienteHtmlMap.size === 0) {
-                    elTablePacientesTrat.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px;"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento com lucro para repasse neste filtro.</div></td></tr>`;
-                } else {
+                if (listaRenderPacienteHtmlMap.size === 0) elTablePacientesTrat.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px;"><div class="empty-state"><i class="fas fa-inbox"></i> Nenhum tratamento para repasse neste filtro.</div></td></tr>`;
+                else {
                     let sorted = Array.from(listaRenderPacienteHtmlMap.values()).sort((a,b) => a.nome.localeCompare(b.nome));
                     elTablePacientesTrat.innerHTML = sorted.map(item => item.html).join('');
                 }
 
-                let totalGeral = 0;
-                if (isGroupView) {
-                    totalGeral = valorTratamentoTotalAtual;
-                } else {
-                    totalGeral = valorPlantao + valorTratamentoTotalAtual + valorConsultaParticular;
-                }
-                
-                let elKpiTotalGeral = document.getElementById('kpiTotalGeral');
-                if(elKpiTotalGeral) elKpiTotalGeral.innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+                let totalGeral = isGroupView ? valorTratamentoTotalAtual : (valorPlantao + valorTratamentoTotalAtual + valorConsultaParticular);
+                document.getElementById('kpiTotalGeral').innerText = `R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
 
-            } catch (err) {
-                console.error("Erro ao montar o painel: ", err);
-            }
+            } catch (err) { console.error("Erro ao montar o painel: ", err); }
         }
     </script>
 </body>
