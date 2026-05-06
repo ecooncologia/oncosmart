@@ -646,7 +646,6 @@
             document.getElementById('lblPeriod').innerText = strUnimed;
             
             try {
-                // 1. SALA MÉDICA (Plantões)
                 let turnosPlantao = 0; let valorPlantao = 0;
                 if (!isGroupView) {
                     const endpoints = ['/escala_mensal', '/escala_mensal_vita_quimio', '/escala_mensal_vita_sobreaviso', '/escala_mensal_cirurgioes'];
@@ -698,20 +697,33 @@
                     document.getElementById('kpiTotalPlantao').innerText = `R$ ${valorPlantao.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 }
 
-
-                // 2. INJEÇÃO DE DADOS (Unimed e Particulares)
                 const resU = await fetch(`${API_BASE_URL}/repasse_unimed?t=${Date.now()}`, {headers: API_HEADERS});
                 const resSales = await fetch(`${API_BASE_URL}/vendas?t=${Date.now()}`, {headers: API_HEADERS});
                 
                 let unimedData = resU.ok ? normalizeData(await resU.json()) : {};
                 let vendasData = resSales.ok ? normalizeData(await resSales.json()) : {};
                 
+                // 💡 CORREÇÃO DA BUSCA: Unimed é pelo Mês Atual. Particular é pelo Mês Seguinte (Plantões)
                 let arrayBot = Object.values(unimedData).filter(row => {
                     let statusUnimed = String(row.status || '').toLowerCase();
                     if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') {
                         return false;
                     }
-                    return row.competencia === compUnimed;
+                    
+                    let isPartExt = false;
+                    if (row.dados_extras) {
+                        try {
+                            let ext = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : row.dados_extras;
+                            if (ext.origem === 'venda_particular' || ext.origem === 'particular') isPartExt = true;
+                        } catch(e){}
+                    }
+                    let isParticularDb = isPartExt || String(row.tipo || '').toUpperCase() === 'PARTICULAR';
+
+                    if (isParticularDb) {
+                        return row.competencia === compPlantao;
+                    } else {
+                        return row.competencia === compUnimed;
+                    }
                 });
 
                 let dadosFiltrados = arrayBot;
@@ -735,8 +747,8 @@
                         if (dateParts.length >= 2) {
                             const vComp = `${dateParts[1]}/${dateParts[0]}`;
                             
-                            // 💡 CORREÇÃO 1: Utiliza a mesma competência da Unimed (Mês Atual) para Particulares (Tratamentos)
-                            if (vComp === compUnimed) {
+                            // 💡 CORREÇÃO: Particulares (Tratamentos) passam a usar a competência de Plantão/Particular (Mês Seguinte)
+                            if (vComp === compPlantao) {
                                 const alreadyExists = dadosFiltrados.some(d => {
                                     try {
                                         let isPartExt = false;
@@ -864,7 +876,6 @@
                     patientsTableObj[p].items.push(d);
                 });
 
-                // VARIÁVEIS DE SOMA DO CENÁRIO ATUAL (ERRADO) QUE ALIMENTARÃO O DASHBOARD
                 let valorTratamentoTotalAtual = 0; 
                 let valorTratamentoUnimedAtual = 0; 
                 let valorTratamentoParticularAtual = 0;
@@ -886,8 +897,8 @@
                         let fatItem = Number(item.valor.toFixed(2));
                         let impItem = Number((fatItem * IMPOSTO_TAXA).toFixed(2));
                         
-                        // 💡 CÁLCULO ESTABELECIDO: USAR O CENÁRIO ATUAL/ERRADO PARA ALIMENTAR O DASHBOARD IGUAL O MEDICAL-REPASS
-                        let custoTotalItemAtual = Number((item.custo_errado * item.mg).toFixed(2));
+                        let custoUnitarioParaCalculo = item.custo_errado > 0 ? item.custo_errado : item.custo_informado_antigo;
+                        let custoTotalItemAtual = Number((custoUnitarioParaCalculo * item.mg).toFixed(2));
                         let lucroItemAtual = Number((fatItem - impItem - custoTotalItemAtual).toFixed(2));
 
                         let isTaxa = item.medicamento.includes('TAXA') || item.tipo === 'HOS';
@@ -896,20 +907,16 @@
 
                         if (isTaxa && !hasGrazielly) { canP = false; canE = false; }
 
-                        let repP_Atual = 0; let repE_Atual = 0;
+                        let lucroRepasseAtual = lucroItemAtual > 0 ? lucroItemAtual : 0;
                         
-                        // SÓ PERMITE REPASSE SE O LUCRO FOR MAIOR QUE ZERO
-                        if (lucroItemAtual > 0) {
-                            repP_Atual = canP ? Number((lucroItemAtual * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
-                            repE_Atual = canE ? Number((lucroItemAtual * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
-                        }
+                        let repP_Atual = canP ? Number((lucroRepasseAtual * (comissaoInfo.percP / 100)).toFixed(2)) : 0;
+                        let repE_Atual = canE ? Number((lucroRepasseAtual * (comissaoInfo.percE / 100)).toFixed(2)) : 0;
 
                         let isVisibleForFilter = (targetDocs.includes(String(pat.pId)) && canP) || (targetDocs.includes(String(pat.eId)) && canE);
 
                         if (isVisibleForFilter) {
                             let repParaOmedicoAquiAtual = 0;
                             
-                            // Se for filtrar por Grupo, pega a soma de todos. Se for médico único, pega só a comissão dele.
                             if (targetDocs.includes(String(pat.pId)) && canP) repParaOmedicoAquiAtual += repP_Atual;
                             if (targetDocs.includes(String(pat.eId)) && canE) repParaOmedicoAquiAtual += repE_Atual;
 
@@ -984,7 +991,6 @@
                 let elDetTratItensUnimed = document.getElementById('detTratItensUnimed'); if(elDetTratItensUnimed) elDetTratItensUnimed.innerText = atendimentosTratUnimed;
                 let elDetTratItensPart = document.getElementById('detTratItensPart'); if(elDetTratItensPart) elDetTratItensPart.innerText = atendimentosTratPart;
                 
-                // 💡 IMPRIMINDO O CENÁRIO ATUAL NA TELA
                 document.getElementById('detTratValorUnimed').innerText = `R$ ${valorTratamentoUnimedAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValorPart').innerText = `R$ ${valorTratamentoParticularAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
                 document.getElementById('detTratValor').innerText = `R$ ${valorTratamentoTotalAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
