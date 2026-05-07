@@ -18,7 +18,7 @@
 
     <style>
         :root {
-            /* Paleta Eco Oncologia */
+            /* Paleta Eco Oncologia Exclusiva para os Cards Internos */
             --primary: #00796b;
             --primary-dark: #004d40;
             --primary-light: #e0f2f1;
@@ -30,40 +30,28 @@
             --green-light: #e8f5e9;
             --danger: #d32f2f;
             --danger-light: #fee2e2;
-            
-            /* Cores de Fundo e Texto */
-            --bg: #e9eef5; /* Ajustado para a cor de fundo nativa do seu sistema */
             --surface: #FFFFFF;
             --text: #0f172a;
             --muted: #64748b;
             --border: #cbd5e1;
             
-            /* Arredondamentos */
             --r-sm: 10px;
             --r-md: 16px;
             --r-lg: 24px;
-            
-            font-family: 'DM Sans', sans-serif;
         }
 
-        /* Envolvemos o conteúdo para não conflitar com a navegação nativa do .container */
-        .oncofood-wrapper {
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        /* Cabeçalho da Página */
-        .dash-header { display: flex; justify-content: space-between; align-items: center; background: var(--primary); padding: 24px 30px; border-radius: var(--r-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); flex-shrink: 0; color: white;}
+        /* * REMOVIDO os estilos de body e .oncofood-container para que a 
+         * classe .container nativa do seu styles.css assuma o controle da largura, 
+         * da barra lateral e da responsividade no tablet/mobile!
+         */
+
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: var(--primary); padding: 24px 30px; border-radius: var(--r-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); color: white; flex-wrap: wrap; gap: 15px;}
         .dash-header-title h1 { margin: 0; font-size: 26px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 12px; }
         .dash-header-title p { margin: 6px 0 0; color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 500; }
         .dash-header-title i { color: var(--accent); }
         
-        .tabs-nav { display: flex; gap: 8px; border-bottom: 3px solid var(--border); padding-bottom: 0; overflow-x: auto;}
-        .tab-btn { padding: 14px 24px; border: none; background: transparent; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--muted); cursor: pointer; border-radius: 12px 12px 0 0; transition: 0.3s; font-size: 14px; display: flex; align-items: center; gap: 8px; border-bottom: 4px solid transparent; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;}
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 3px solid var(--border); padding-bottom: 0; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;}
+        .tab-btn { padding: 14px 24px; border: none; background: transparent; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--muted); cursor: pointer; border-radius: 12px 12px 0 0; transition: 0.3s; font-size: 14px; display: flex; align-items: center; gap: 8px; border-bottom: 4px solid transparent; text-transform: uppercase; letter-spacing: 0.5px; }
         .tab-btn:hover:not(.active) { color: var(--primary); background: rgba(0, 121, 107, 0.05); }
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); margin-bottom: -3px; background: rgba(0, 121, 107, 0.08); }
         
@@ -71,9 +59,9 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .toolbar-actions { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 20px; }
+        .toolbar-actions { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;}
         
-        .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px;}
+        .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px;}
         .label-title { font-size: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
         .input-field { padding: 12px 15px; border: 2px solid var(--border); border-radius: var(--r-sm); font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; color: var(--text); height: 46px; box-sizing: border-box; outline: none; transition: 0.2s; background: #f8fafc; width: 100%;}
         .input-field:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px var(--primary-light); }
@@ -83,12 +71,12 @@
         .btn-add.accent { background: var(--accent); box-shadow: 0 4px 6px rgba(245, 124, 0, 0.2); }
         .btn-add.accent:hover { background: var(--accent-dark); box-shadow: 0 6px 12px rgba(245, 124, 0, 0.3); }
         
-        .btn-action { background: #f1f5f9; color: var(--muted); border: 2px solid var(--border); padding: 0 16px; border-radius: var(--r-sm); cursor: pointer; font-weight: 700; font-size: 13px; display: flex; justify-content: center; gap: 8px; align-items: center; height: 46px; transition: 0.2s; }
+        .btn-action { background: #f1f5f9; color: var(--muted); border: 2px solid var(--border); padding: 0 16px; border-radius: var(--r-sm); cursor: pointer; font-weight: 700; font-size: 13px; display: flex; justify-content: center; gap: 8px; align-items: center; height: 46px; transition: 0.2s; white-space: nowrap;}
         .btn-action:hover { background: #e2e8f0; color: var(--primary); border-color: var(--primary);}
         .btn-cancel { background: var(--danger-light); color: var(--danger); border: 2px solid #fca5a5; padding: 0 16px; border-radius: var(--r-sm); cursor: pointer; font-weight: 700; font-size: 14px; display: none; gap: 8px; align-items: center; height: 46px; transition: 0.2s; }
         .btn-cancel:hover { background: var(--danger); color: white; border-color: var(--danger);}
 
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         
         /* Acordeão do Estoque */
         .category-block { background: white; border-radius: var(--r-md); border: 2px solid var(--border); margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02);}
@@ -98,14 +86,14 @@
         .cat-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); }
         .cat-toggle { font-size: 14px; color: var(--muted); transition: transform 0.3s; }
         .category-block.open .cat-toggle { transform: rotate(180deg); }
-        .items-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; border-top: 2px solid var(--border); background: white;}
+        .items-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px; border-top: 2px solid var(--border); background: white;}
         .category-block.open .items-grid { display: grid; }
 
         /* Cards Modernos */
-        .card-onco { background: var(--surface); border-radius: var(--r-md); padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.04); border: 2px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; position: relative; overflow: hidden;}
-        .card-onco:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); border-color: var(--border); }
+        .card { background: var(--surface); border-radius: var(--r-md); padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.04); border: 2px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; position: relative; overflow: hidden;}
+        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); border-color: var(--border); }
         
-        .card-header-onco { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px dashed #e2e8f0; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px dashed #e2e8f0; }
         .patient-info h3 { margin: 0 0 6px 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; color: var(--text); font-weight: 800; }
         .patient-box { font-size: 12px; font-weight: 800; color: var(--accent); background: var(--accent-light); padding: 6px 10px; border-radius: 8px; display: inline-block; }
         .order-time { font-size: 12px; color: var(--muted); font-weight: 700; text-align: right; display: flex; align-items: center; gap: 4px;}
@@ -131,9 +119,10 @@
         .btn-danger { grid-column: span 2; background: transparent; color: var(--danger); border: 2px dashed #fca5a5; padding: 12px; border-radius: 10px; cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; text-transform: uppercase;}
         .btn-danger:hover { background: var(--danger-light); border-color: var(--danger); border-style: solid;}
 
+        /* Imagem do Estoque */
         .stock-image { width: calc(100% + 40px); height: 140px; object-fit: contain; margin: -20px -20px 15px -20px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 10px; box-sizing: border-box;}
         
-        .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 2px solid #e2e8f0; margin-top: auto;}
+        .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 2px solid #e2e8f0; margin-top: auto; flex-wrap: wrap; gap: 10px;}
         .stock-val { font-size: 22px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--primary); min-width: 40px; text-align: center; transition: color 0.3s;}
         .stock-val.low { color: var(--danger); }
         
@@ -153,7 +142,7 @@
         .empty-state i { font-size: 56px; color: #e2e8f0; }
 
         /* Modais */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s;}
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; padding: 20px;}
         .modal-overlay.active { opacity: 1; visibility: visible; }
         .modal-content { background: white; padding: 0; border-radius: var(--r-lg); width: 100%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95) translateY(20px); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;}
         .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
@@ -201,12 +190,11 @@
         .dash-list-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed var(--border); font-size: 14px; font-weight: 600; color: var(--text); }
         .dash-list-item:last-child { border-bottom: none; padding-bottom: 0;}
 
-        /* Apenas garante que se minimizar no mobile fique visualmente correto */
+        /* Mobile Adjustments for global.js container */
         @media (max-width: 900px) {
-            .oncofood-container { padding: 15px; }
+            .controls { padding: 15px; }
             .dash-header { padding: 18px 20px; flex-direction: column; align-items: flex-start; gap: 10px; }
         }
-
     </style>
 </head>
 <body>
@@ -215,7 +203,7 @@
 
     <audio id="som-alerta" src="alerta.mp3" preload="auto"></audio>
 
-    <div class="container oncofood-container">
+    <div class="container">
         <div class="dash-header">
             <div class="dash-header-title">
                 <h1><i class="fas fa-utensils"></i> Gestão de Copa & Nutrição</h1>
@@ -252,7 +240,7 @@
         </div>
 
         <div id="tab-pedidos_ativos" class="tab-content">
-            <div class="controls" style="margin-bottom: 20px; background: white; padding: 24px; border-radius: var(--r-md); box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 2px solid #e2e8f0;">
+            <div class="controls" style="margin-bottom: 20px;">
                 <div class="controls-group">
                     <div class="input-group" style="flex: 2;">
                         <label class="label-title">Paciente</label>
@@ -347,7 +335,7 @@
                     <input type="text" id="newItemName" class="input-field" placeholder="Ex: Bolacha Maria">
                 </div>
                 
-                <div style="display: flex; gap: 15px;">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                     <div class="input-group" style="flex: 1;">
                         <label class="label-title">Categoria</label>
                         <select id="newItemCategory" class="input-field"></select>
@@ -358,7 +346,7 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 15px;">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                     <div class="input-group" style="flex: 1;">
                         <label class="label-title">Qtd. Inicial/Atual</label>
                         <input type="number" id="newItemStock" class="input-field" value="10" min="0">
@@ -393,8 +381,8 @@
                 <button class="btn-close" type="button" onclick="closeModal('categoryModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="newCatName" class="input-field" placeholder="Nome da nova categoria..." style="flex: 2;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <input type="text" id="newCatName" class="input-field" placeholder="Nova categoria..." style="flex: 2;">
                     <select id="newCatIcon" class="input-field" style="flex: 1; padding: 0 10px;">
                         <option value="fas fa-cookie">🍪 Snacks</option>
                         <option value="fas fa-mug-hot">☕ Quentes</option>
@@ -420,7 +408,7 @@
             <h3 id="ecoDialogTitle" style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 12px;">Título</h3>
             <p id="ecoDialogText" style="font-size: 15px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; font-weight: 500; max-height: 45vh; overflow-y: auto; padding-right: 8px; text-align: left;"></p>
             <input type="text" id="ecoDialogInput" class="input-field" style="display: none; margin-bottom: 24px; text-align: center; font-size: 18px; font-weight: bold; width: 100%;">
-            <div style="display: flex; gap: 15px; justify-content: center; width: 100%;">
+            <div style="display: flex; gap: 15px; justify-content: center; width: 100%; margin-top: 10px;">
                 <button id="ecoDialogCancel" class="btn-action" style="display: none; flex: 1; justify-content: center; border: 2px solid var(--border);">Cancelar</button>
                 <button id="ecoDialogConfirm" class="btn-add" style="flex: 1; justify-content: center;">OK</button>
             </div>
@@ -640,7 +628,7 @@
         }
 
         // ==========================================
-        // LÓGICA DO ESTOQUE E CARDÁPIO (COM ACORDEÃO)
+        // LÓGICA DO ESTOQUE
         // ==========================================
         const API_ONCOFOOD_STOCK = '/oncofood_estoque';
 
@@ -672,7 +660,6 @@
                 });
                 checkLowStockAlerts(newData);
                 
-                // Se a aba Dashboard estiver aberta, atualiza ela também
                 if (document.getElementById('tab-dashboard').classList.contains('active')) {
                     renderDashboard();
                 }
@@ -704,7 +691,7 @@
                 }
 
                 EcoDialog.alert(
-                    `Os seguintes itens atingiram o alerta de estoque mínimo:<br><br><div style="text-align:left; background:#fff3e0; padding:15px; border-radius:10px; border:1px solid #ffd0a0; font-size:14px; color:#e65100; margin-top: 15px;">${msg}</div><br>Favor providenciar o reabastecimento.`, 
+                    `Os seguintes itens atingiram o alerta de estoque mínimo:<br><div style="text-align:left; background:#fff3e0; padding:15px; border-radius:10px; border:1px solid #ffd0a0; font-size:14px; color:#e65100; margin-top: 15px;">${msg}</div><br>Favor providenciar o reabastecimento.`, 
                     "Alerta de Estoque Baixo", 
                     "warning"
                 );
@@ -835,7 +822,6 @@
             });
         }
 
-        // Renderiza os dois conteineres com Acordeão
         function renderInventory() {
             const foodContainer = document.getElementById('inventoryContainerFood');
             const cleanContainer = document.getElementById('inventoryContainerCleaning');
@@ -874,7 +860,7 @@
                         const priceDisplay = item.tipo_estoque === 'alimento' && item.preco ? `<div style="font-size:14px; font-weight:800; color:var(--green); text-align:center;">R$ ${item.preco.toFixed(2).replace('.',',')}</div>` : '';
                         
                         html += `
-                            <div class="card-onco" style="border-top: 4px solid ${catObj.cor};">
+                            <div class="card" style="border-top: 4px solid ${catObj.cor};">
                                 <img src="${imgSrc}" class="stock-image" onerror="this.src='${fallbackImg}'" alt="${item.nome}">
                                 <h3 style="margin:0 0 5px 0; font-family:'Bricolage Grotesque'; font-size:18px; color:var(--text); font-weight:800; text-align:center;">${item.nome}</h3>
                                 ${priceDisplay}
@@ -924,11 +910,10 @@
                     else activeOrders[o.id_firebase] = o;
                 });
                 
-                // Lógica do Som de Alerta (Somente para pedidos pendentes)
                 let newActiveCount = Object.values(activeOrders).filter(o => o.status === 'pending').length;
                 if (!isInitialLoad && newActiveCount > currentActiveCount) {
                     const audio = document.getElementById('som-alerta');
-                    if(audio) audio.play().catch(e => console.log("Áudio bloqueado pelo navegador", e));
+                    if(audio) audio.play().catch(e => console.log("Áudio bloqueado", e));
                 }
                 currentActiveCount = newActiveCount;
                 
@@ -978,11 +963,11 @@
             order.data_atualizacao = new Date().toISOString();
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'PUT', order);
-                await loadOrders(true); // true para não apitar o som
+                await loadOrders(true); 
             } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
-        // NOVIDADE: Devolução do estoque ao cancelar pedido
+        // CANCELAR PEDIDO E DEVOLVER AO ESTOQUE
         async function deleteOrder(id) {
             if (!await EcoDialog.confirm("Cancelar e excluir este pedido permanentemente? Os itens retornarão ao estoque.", "Atenção", "error")) return;
             try {
@@ -998,7 +983,7 @@
                     }
                 }
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'DELETE');
-                await loadInventory(false); // Atualiza UI de estoque sem apitar pop-up
+                await loadInventory(false); 
                 await loadOrders(true);
             } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
@@ -1048,8 +1033,8 @@
             const borderColor = o.status === 'pending' ? 'var(--danger)' : o.status === 'preparing' ? 'var(--accent)' : o.status === 'ready' ? '#38bdf8' : 'var(--green)';
 
             return `
-                <div class="card-onco" style="border-left: 6px solid ${borderColor}; padding-left: 16px;">
-                    <div class="card-header-onco">
+                <div class="card" style="border-left: 6px solid ${borderColor}; padding-left: 16px;">
+                    <div class="card-header">
                         <div class="patient-info">
                             <h3>${o.paciente}</h3>
                             <div class="patient-box"><i class="fas fa-bed"></i> ${o.leito}</div>
@@ -1086,7 +1071,7 @@
         // ==========================================
         async function renderDashboard() {
             try {
-                // 1. Calcula Receita (Puxando de Transporte)
+                // 1. Receita
                 let totalReceita = 0;
                 try {
                     const transData = await apiFetch('/transporte');
@@ -1096,10 +1081,9 @@
                         }
                     });
                 } catch(e) {}
-                
                 document.getElementById('dash-receita').textContent = totalReceita.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 
-                // 2. Calcula Saídas
+                // 2. Saídas e Itens
                 let stats = {};
                 Object.values(inventoryItems).forEach(i => {
                     if(i.tipo_estoque !== 'limpeza') {
@@ -1124,7 +1108,7 @@
                 document.getElementById('dash-saidas').textContent = totalSaidas;
                 document.getElementById('dash-itens').textContent = statsArray.length;
 
-                // 3. Top 5 Itens
+                // 3. Top 5
                 const topItens = [...statsArray].sort((a, b) => b.saidas - a.saidas).slice(0, 5);
                 if(topItens.length === 0 || topItens[0].saidas === 0) {
                     document.getElementById('dash-top-list').innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted); font-size:14px;">Sem dados suficientes.</div>';
@@ -1139,7 +1123,7 @@
 
                 // 4. Lista Geral
                 if(statsArray.length === 0) {
-                    document.getElementById('dash-general-list').innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted); font-size:14px;">Nenhum item cadastrado no cardápio.</div>';
+                    document.getElementById('dash-general-list').innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted); font-size:14px;">Nenhum item cadastrado.</div>';
                 } else {
                     document.getElementById('dash-general-list').innerHTML = statsArray.sort((a,b) => b.saidas - a.saidas).map(i => `
                         <div class="dash-list-item">
@@ -1149,10 +1133,7 @@
                         </div>
                     `).join('');
                 }
-
-            } catch(e) {
-                console.error("Erro ao gerar dashboard", e);
-            }
+            } catch(e) { console.error("Erro ao gerar dashboard", e); }
         }
     </script>
 </body>
