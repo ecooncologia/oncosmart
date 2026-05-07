@@ -34,6 +34,7 @@
         
         /* Status Cores e Animações */
         .call-card.called { border-left-color: #F59E0B; background: #FFFBEB; animation: pulse-orange 2s infinite; }
+        .call-card.cobranca { border-left-color: #EF4444; background: #FEF2F2; animation: pulse-red 2s infinite; }
         .call-card.on_sofa { border-left-color: #0EA5E9; background: #E0F2FE; }
         .call-card.attending { border-left-color: #3B82F6; background: #EFF6FF; opacity: 0.8; }
         .call-card.returning { border-left-color: #8B5CF6; background: #F3E8FF; animation: pulse-purple 2s infinite; }
@@ -42,6 +43,7 @@
         .call-card.externo { border-right: 6px solid #805AD5; }
 
         @keyframes pulse-orange { 0%, 100% { box-shadow: 0 0 0 0 rgba(221, 107, 32, 0.3); } 50% { box-shadow: 0 0 0 10px rgba(221, 107, 32, 0); } }
+        @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } }
         @keyframes pulse-purple { 0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); } 50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); } }
 
         .status-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; color: white; text-transform: uppercase; margin-bottom: 12px; }
@@ -51,6 +53,7 @@
         .bg-blue { background: #3B82F6; } 
         .bg-purple { background: #8B5CF6; } 
         .bg-green { background: #10B981; } 
+        .bg-red { background: #EF4444; }
 
         .external-form { display: flex; gap: 15px; margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #ddd; align-items: flex-end; }
         
@@ -151,6 +154,7 @@
         const itemsPerPage = 25;
         let cachedAssessments = [];
         let cachedCalls = [];
+        let cachedCobrancas = [];
 
         const translations = {
             care: { 'silence': 'Silêncio', 'conversation': 'Conversa', 'questions': 'Dúvidas' },
@@ -175,7 +179,6 @@
                 updateSoundBtn();
             }
             
-            // --- WEB WORKER PARA BACKGROUND TIMER ---
             const workerBlob = new Blob([`
                 setInterval(() => { postMessage("tick"); }, 3000);
             `], { type: "application/javascript" });
@@ -195,12 +198,21 @@
                     fetch(`${API_BASE_URL}/painAssessments?_t=${Date.now()}`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/patientCalls?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
+                
+                // Busca a parte de Cobranças em um try-catch para não quebrar se o nó não existir ainda
+                let rawCobrancas = {};
+                try {
+                    const resCobrancas = await fetch(`${API_BASE_URL}/transporte?_t=${Date.now()}`, { headers: API_HEADERS });
+                    if(resCobrancas.ok) rawCobrancas = await resCobrancas.json();
+                } catch(e) {}
+
                 const rawAssessments = await resAssessments.json();
                 const rawCalls = await resCalls.json();
 
-                // Guarda em cache para a paginação poder usar sem precisar buscar no banco toda hora
+                // Guarda em cache para a paginação
                 cachedAssessments = Object.entries(normalizeData(rawAssessments)).map(([k, v]) => ({...v, key: k}));
                 cachedCalls = Object.entries(normalizeData(rawCalls)).map(([k, v]) => ({...v, id: k}));
+                cachedCobrancas = Object.entries(normalizeData(rawCobrancas)).map(([k, v]) => ({...v, id: k}));
 
                 renderGrid();
                 document.getElementById('last-update').textContent = 'Atualizado: ' + new Date().toLocaleTimeString();
@@ -214,16 +226,20 @@
             const now = new Date();
 
             if(currentOrigin === 'historico') {
-                // HISTÓRICO: Traz todos que estão finalizados
+                // HISTÓRICO: Traz todos os chamados e cobranças finalizadas
                 const completedCalls = cachedCalls.filter(c => c.status === 'completed');
-                
                 completedCalls.forEach(c => {
                     const a = cachedAssessments.find(ass => ass.key === c.patientId) || {};
                     list.push({ type: 'call', data: { ...a, ...c, id: c.id } });
                 });
+
+                const completedCobrancas = cachedCobrancas.filter(c => c.status === 'pago' || c.status === 'completed');
+                completedCobrancas.forEach(c => {
+                    list.push({ type: 'cobranca', data: c });
+                });
+
             } else {
-                // FILAS ATIVAS: Mantém o limite de 24h
-                // CORREÇÃO: Mostra se NÃO foi atendido OU se tem uma chamada pendente presa no sistema!
+                // FILAS ATIVAS DE TRANSPORTE
                 const assessmentsFiltered = cachedAssessments.filter(a => {
                     const hasActiveCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
                     const isRecent = (now - new Date(a.timestamp) < 86400000);
@@ -239,27 +255,38 @@
                         list.push({ type: call ? 'call' : 'assessment', data: call ? {...a, ...call, id: call.id} : a });
                     }
                 });
+
+                // FILAS ATIVAS DE COBRANÇA (Aparece na Recepção Interna, já que vem do Totem)
+                if (currentOrigin === 'interna') {
+                    const pendingCobrancas = cachedCobrancas.filter(c => c.status === 'pendente_pagamento');
+                    pendingCobrancas.forEach(c => {
+                        list.push({ type: 'cobranca', data: c });
+                    });
+                }
             }
 
-            // Alerta de Som
-            const actionItems = list.filter(i => i.data.status === 'called' || i.data.status === 'returning').length;
+            // Alerta de Som (Soma chamados de transporte e cobranças pendentes)
+            const actionItems = list.filter(i => 
+                (i.type === 'call' && (i.data.status === 'called' || i.data.status === 'returning')) ||
+                (i.type === 'cobranca' && i.data.status === 'pendente_pagamento')
+            ).length;
+
             if (audioEnabled && actionItems > lastCount && currentOrigin !== 'historico') {
                 document.getElementById('notification-sound').play().catch(()=>{});
             }
             lastCount = actionItems;
 
-            // Atualiza o contador de total de registros reais
             document.getElementById('total-badge').innerText = list.length;
 
             // ORDENAÇÃO
             if (currentOrigin === 'historico') {
-                list.sort((a,b) => new Date(b.data.transportEndTime || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.timestamp || 0));
+                list.sort((a,b) => new Date(b.data.transportEndTime || b.data.data_pagamento || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.data_pagamento || a.data.timestamp || 0));
             } else {
-                list.sort((a,b) => new Date(a.data.timestamp || 0) - new Date(b.data.timestamp || 0));
+                list.sort((a,b) => new Date(a.data.data_solicitacao || a.data.timestamp || 0) - new Date(b.data.data_solicitacao || b.data.timestamp || 0));
             }
 
             if(list.length === 0) { 
-                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">Nenhum paciente na lista.</p>'; 
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">Nenhum paciente ou cobrança na lista.</p>'; 
                 document.getElementById('pagination-controls').style.display = 'none';
                 return; 
             }
@@ -278,6 +305,53 @@
             // --- RENDERIZAÇÃO DA PÁGINA ATUAL ---
             paginatedList.forEach(item => {
                 const d = item.data;
+
+                // ==========================================
+                // RENDER: CARD DE COBRANÇA (ONCOFOOD)
+                // ==========================================
+                if (item.type === 'cobranca') {
+                    const timeStr = d.data_solicitacao ? new Date(d.data_solicitacao).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                    const valFmt = d.valor_cobrar ? parseFloat(d.valor_cobrar).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 'R$ 0,00';
+                    
+                    let statusText = d.status === 'pendente_pagamento' ? 'AGUARDANDO PAGAMENTO' : 'PAGAMENTO EFETUADO';
+                    let badgeColor = d.status === 'pendente_pagamento' ? '#EF4444' : '#10B981';
+                    let cardClass = 'call-card';
+                    
+                    if (d.status === 'pendente_pagamento') cardClass += ' cobranca'; // Ativa a animação vermelha pulsante
+                    
+                    let btn = '';
+                    if (d.status === 'pendente_pagamento') {
+                        btn = `<button class="btn-action btn-success" onclick="payCobranca('${d.id}')"><i class="fas fa-hand-holding-usd"></i> EFETUADO PAGAMENTO</button>`;
+                    }
+
+                    grid.innerHTML += `
+                        <div class="${cardClass}" style="border-left-color: ${badgeColor};">
+                            <div class="patient-header">
+                                <div class="patient-name">${d.paciente} <span style="background: #10B981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px; vertical-align: middle;"><i class="fas fa-receipt"></i> COBRANÇA</span></div>
+                                <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
+                            </div>
+                            
+                            <div style="font-size: 14px; font-weight: 700; color: #374151; margin-top: 10px; margin-bottom: 5px;">
+                                ${d.descricao || 'Cobrança do Sistema'}
+                            </div>
+                            <div style="font-size: 20px; font-weight: 900; color: #059669; margin-bottom: 15px;">
+                                ${valFmt}
+                            </div>
+                            
+                            <span class="status-pill" style="background:${badgeColor}">${statusText}</span>
+                            
+                            <div class="route-indicator" style="background: #fef2f2; color: #991b1b; border-color: #fecaca;">
+                                MÁQUINA DE CARTÃO <i class="fas fa-arrow-right"></i> RECEPÇÃO
+                            </div>
+                            ${btn}
+                        </div>
+                    `;
+                    return; // Interrompe o loop deste item (já que é uma cobrança) e pula para o próximo
+                }
+
+                // ==========================================
+                // RENDER: CARD NORMAL DE TRANSPORTE
+                // ==========================================
                 const isExternal = d.origin === 'externa';
                 let statusText = 'Aguardando Enf.';
                 let badgeColor = '#9CA3AF'; 
@@ -290,7 +364,6 @@
                 }
                 else if (d.status === 'called') {
                     statusText = 'CHAMADO PELA ENFERMAGEM'; badgeColor = '#F59E0B'; cardClass += ' called';
-                    
                     if (isExternal) {
                         btn = `<button class="btn-action btn-info" onclick="updateStatus('${d.id}', 'on_sofa')"><i class="fas fa-couch"></i> LEVAR AO SOFÁ</button>`;
                     } else {
@@ -324,10 +397,7 @@
                 const painVal = d.painLevel ?? d.pain_level ?? d.dor ?? '?';
                 const emotionVal = translations.emotion[d.emotion] || d.emotion || '---';
 
-                // NOVO: Verifica se existe o posto cadastrado no fluxo e gera a tag visual
                 const postoDestino = d.posto ? `<div style="background: #1E293B; color: #F8FAFC; font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 8px; display: inline-block; margin-bottom: 12px; border: 2px solid #CBD5E0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-map-marker-alt" style="color: #F59E0B; margin-right: 5px;"></i> IR PARA: ${d.posto.toUpperCase()}</div><br>` : '';
-
-                // NOVO: Indicador visual se é primeira consulta
                 const badgePrimeiraConsulta = d.primeiraConsulta ? `<span style="background: #E11D48; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px; vertical-align: middle;">1ª CONSULTA</span>` : '';
 
                 grid.innerHTML += `
@@ -368,15 +438,42 @@
         // Função de Troca de Página
         function changePage(direction) {
             currentPage += direction;
-            renderGrid(); // Redesenha a tela instantaneamente usando o cache local
-            
-            // Rola a tela suavemente para o topo da lista
+            renderGrid();
             document.querySelector('.nav-scroller').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ==========================================
+        // AÇÃO: EFETUAR PAGAMENTO COBRANÇA
+        // ==========================================
+        async function payCobranca(id) {
+            if(confirm("Confirmar pagamento na maquininha? O card será movido para o histórico.")) {
+                try {
+                    // BLINDADO
+                    const res = await fetch(`${API_BASE_URL}/transporte`, { headers: API_HEADERS });
+                    const all = await res.json();
+                    const current = all[id];
+                    
+                    if (current) {
+                        current.status = 'pago';
+                        current.data_pagamento = new Date().toISOString();
+                        
+                        await fetch(`${API_BASE_URL}/transporte/${id}`, { 
+                            method: 'PUT', 
+                            headers: { 'Content-Type': 'application/json', ...API_HEADERS }, 
+                            body: JSON.stringify(current) 
+                        });
+                        loadData();
+                    }
+                } catch(e) {
+                    console.error("Erro ao pagar:", e);
+                    alert("Erro ao confirmar pagamento. Tente novamente.");
+                }
+            }
         }
 
         async function registerPatient() {
             const name = document.getElementById('ext-patient-name').value.trim();
-            const primeiraConsulta = document.getElementById('ext-primeira-consulta').checked; // CAPTURA DO NOVO CAMPO
+            const primeiraConsulta = document.getElementById('ext-primeira-consulta').checked;
 
             if(!name) return alert("Nome obrigatório");
             
@@ -386,20 +483,15 @@
                 timestamp: new Date().toISOString(), 
                 atendido: false, 
                 id_firebase: 'ext_' + Date.now(),
-                primeiraConsulta: primeiraConsulta // INSERÇÃO NO BANCO DE DADOS
+                primeiraConsulta: primeiraConsulta
             };
             
-            // BLINDADO
             await fetch(`${API_BASE_URL}/painAssessments`, { 
                 method:'POST', 
-                headers:{
-                    'Content-Type':'application/json',
-                    ...API_HEADERS
-                }, 
+                headers:{ 'Content-Type':'application/json', ...API_HEADERS }, 
                 body:JSON.stringify(data) 
             });
             
-            // RESET DOS CAMPOS
             document.getElementById('ext-patient-name').value = '';
             document.getElementById('ext-primeira-consulta').checked = false;
             
@@ -407,7 +499,6 @@
         }
 
         async function updateStatus(id, status) {
-            // BLINDADO
             const res = await fetch(`${API_BASE_URL}/patientCalls`, { headers: API_HEADERS });
             const all = await res.json();
             const current = all[id];
@@ -418,10 +509,7 @@
                 
                 await fetch(`${API_BASE_URL}/patientCalls/${id}`, { 
                     method:'PUT', 
-                    headers:{
-                        'Content-Type':'application/json',
-                        ...API_HEADERS
-                    }, 
+                    headers:{ 'Content-Type':'application/json', ...API_HEADERS }, 
                     body:JSON.stringify(current) 
                 });
                 loadData();
@@ -432,7 +520,6 @@
             const confirmMsg = currentOrigin === 'externa' ? "Encaminhar para consulta médica?" : "Paciente entregue na sala?";
             if(confirm(confirmMsg)) {
                 try {
-                    // BLINDADO
                     const resCalls = await fetch(`${API_BASE_URL}/patientCalls`, { headers: API_HEADERS });
                     const allCalls = await resCalls.json();
                     const currentCall = allCalls[id];
@@ -443,10 +530,7 @@
                         
                         await fetch(`${API_BASE_URL}/patientCalls/${id}`, { 
                             method: 'PUT', 
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...API_HEADERS
-                            }, 
+                            headers: { 'Content-Type': 'application/json', ...API_HEADERS }, 
                             body: JSON.stringify(currentCall) 
                         });
 
@@ -459,10 +543,7 @@
                                 currentAss.atendido = true; 
                                 await fetch(`${API_BASE_URL}/painAssessments/${currentCall.patientId}`, { 
                                     method: 'PUT', 
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        ...API_HEADERS
-                                    }, 
+                                    headers: { 'Content-Type': 'application/json', ...API_HEADERS }, 
                                     body: JSON.stringify(currentAss) 
                                 });
                             }
@@ -477,7 +558,7 @@
 
         function setOrigin(orig, btn) {
             currentOrigin = orig;
-            currentPage = 1; // Reseta para a primeira página sempre que trocar de aba
+            currentPage = 1;
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById('form-externa').style.display = orig === 'externa' ? 'block' : 'none';
