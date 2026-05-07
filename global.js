@@ -714,6 +714,22 @@ function injectMenuStyles() {
                 display: none !important;
             }
         }
+
+        /* ===== RECOLHIMENTO NO TABLET (A MÁGICA ACONTECE AQUI) ===== */
+        @media (min-width: 901px) and (max-width: 1100px) {
+            body.sidebar-collapsed #global-nav .sidebar-user-card,
+            body.sidebar-collapsed #global-nav .sidebar-section-label,
+            body.sidebar-collapsed #global-nav .smart-dropdown,
+            body.sidebar-collapsed #global-nav .sidebar-footer {
+                display: none !important;
+            }
+            
+            body.sidebar-collapsed #global-nav {
+                margin-bottom: 0 !important;
+                padding-bottom: 10px !important;
+                transition: all 0.3s ease;
+            }
+        }
     `;
 
     document.head.appendChild(style);
@@ -802,11 +818,13 @@ window.toggleSidebar = function(forceState = null) {
     const nav = document.getElementById('global-nav');
     if (!nav) return;
 
-    if (isTabletOrMobile()) {
+    // Se for estritamente mobile (< 901px), mantém o comportamento original de não recolher
+    if (window.innerWidth <= 900) {
         syncSidebarState(true);
         return;
     }
 
+    // Agora o tablet (entre 901px e 1100px) vai obedecer o toggle e fechar!
     const nextState = forceState !== null
         ? forceState
         : !nav.classList.contains('expanded');
