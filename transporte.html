@@ -89,6 +89,56 @@
         .page-btn:hover:not(:disabled) { background: var(--primary); color: white; }
         .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .page-info { font-size: 14px; font-weight: 700; color: var(--secondary); }
+
+        /* --- ESTILOS TOOLTIP (ÍCONE I) --- */
+        .info-tooltip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            color: #6B7280;
+            margin-left: 8px;
+            font-size: 16px;
+        }
+        .info-tooltip:hover { color: #3B82F6; }
+        .info-tooltip .tooltip-text {
+            visibility: hidden;
+            width: max-content;
+            max-width: 250px;
+            background-color: #1F2937;
+            color: #fff;
+            text-align: left;
+            border-radius: 8px;
+            padding: 10px 14px;
+            position: absolute;
+            z-index: 100;
+            bottom: 140%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            pointer-events: none;
+        }
+        .info-tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1F2937 transparent transparent transparent;
+        }
+        .info-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            bottom: 150%;
+        }
     </style>
 </head>
 <body>
@@ -317,11 +367,24 @@
                     let badgeColor = d.status === 'pendente_pagamento' ? '#EF4444' : '#10B981';
                     let cardClass = 'call-card';
                     
-                    if (d.status === 'pendente_pagamento') cardClass += ' cobranca'; // Ativa a animação vermelha pulsante
+                    if (d.status === 'pendente_pagamento') cardClass += ' cobranca'; 
                     
                     let btn = '';
                     if (d.status === 'pendente_pagamento') {
                         btn = `<button class="btn-action btn-success" onclick="payCobranca('${d.id}')"><i class="fas fa-hand-holding-usd"></i> EFETUADO PAGAMENTO</button>`;
+                    }
+
+                    // TOOLTIP DE INFORMAÇÃO DOS ITENS
+                    let tooltipHtml = '';
+                    if (d.detalhes_pedido) {
+                        // Formata a string separada por vírgula em uma lista com quebra de linha
+                        const itensLista = d.detalhes_pedido.replace(/, /g, '<br>• ');
+                        tooltipHtml = `
+                            <div class="info-tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <span class="tooltip-text"><b>Itens do Pedido:</b><br>• ${itensLista}</span>
+                            </div>
+                        `;
                     }
 
                     grid.innerHTML += `
@@ -331,8 +394,8 @@
                                 <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
                             </div>
                             
-                            <div style="font-size: 14px; font-weight: 700; color: #374151; margin-top: 10px; margin-bottom: 5px;">
-                                ${d.descricao || 'Cobrança do Sistema'}
+                            <div style="font-size: 14px; font-weight: 700; color: #374151; margin-top: 10px; margin-bottom: 5px; display: flex; align-items: center;">
+                                ${d.descricao || 'Cobrança do Sistema'} ${tooltipHtml}
                             </div>
                             <div style="font-size: 20px; font-weight: 900; color: #059669; margin-bottom: 15px;">
                                 ${valFmt}
