@@ -626,6 +626,7 @@ function injectMenuStyles() {
             flex-direction: row;
         }
 
+        /* ===== RECOLHIMENTO NO TABLET E MOBILE (A MÁGICA ACONTECE AQUI) ===== */
         @media (max-width: 1100px) {
             #global-nav,
             #global-nav.expanded {
@@ -696,7 +697,6 @@ function injectMenuStyles() {
                 font-size: 15px;
             }
 
-            /* tablet/mobile: submenu pode abrir normalmente */
             #global-nav .smart-dropdown-content {
                 display: none;
             }
@@ -705,18 +705,12 @@ function injectMenuStyles() {
                 display: flex !important;
             }
 
-            #global-nav .sidebar-footer {
-                display: none !important;
-            }
-
             #smart-tooltip,
             #smart-tooltip-arrow {
                 display: none !important;
             }
-        }
 
-        /* ===== RECOLHIMENTO NO TABLET (A MÁGICA ACONTECE AQUI) ===== */
-        @media (min-width: 901px) and (max-width: 1100px) {
+            /* --- REGRA DE OCULTAR QUANDO RECOLHIDO --- */
             body.sidebar-collapsed #global-nav .sidebar-user-card,
             body.sidebar-collapsed #global-nav .sidebar-section-label,
             body.sidebar-collapsed #global-nav .smart-dropdown,
@@ -743,8 +737,11 @@ function isTabletOrMobile() {
 }
 
 function getDefaultSidebarExpanded() {
-    if (isTabletOrMobile()) return true;
-    return localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
+    // Se for tablet ou celular, o menu já inicia FECHADO para poupar espaço!
+    if (isTabletOrMobile()) return false;
+    
+    // No Desktop, lê a preferência salva. Se não houver, inicia ABERTO.
+    return localStorage.getItem(SIDEBAR_STORAGE_KEY) !== 'false';
 }
 
 function applyBodySidebarClass(isExpanded) {
@@ -814,17 +811,12 @@ function syncSidebarState(isExpanded) {
     }
 }
 
+// CORREÇÃO APLICADA AQUI: Remoção da trava de largura
 window.toggleSidebar = function(forceState = null) {
     const nav = document.getElementById('global-nav');
     if (!nav) return;
 
-    // Se for estritamente mobile (< 901px), mantém o comportamento original de não recolher
-    if (window.innerWidth <= 900) {
-        syncSidebarState(true);
-        return;
-    }
-
-    // Agora o tablet (entre 901px e 1100px) vai obedecer o toggle e fechar!
+    // Em qualquer tela, alterna entre aberto ou fechado livremente ao clicar na logo.
     const nextState = forceState !== null
         ? forceState
         : !nav.classList.contains('expanded');
@@ -878,8 +870,13 @@ function ensureResponsiveSidebarListener() {
     window.__smartSidebarResizeBound = true;
 
     let resizeTimer;
+    let lastWidth = window.innerWidth;
 
     window.addEventListener('resize', () => {
+        // Previne triggers acidentais no mobile ao rolar a página (esconder URL bar muda a altura, mas não a largura)
+        if (window.innerWidth === lastWidth) return;
+        lastWidth = window.innerWidth;
+
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
             const shouldExpand = getDefaultSidebarExpanded();
@@ -978,6 +975,7 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
     const nav = document.getElementById('global-nav');
     if (!nav) return;
 
+    // Vai puxar o false (fechado) automaticamente nas telas menores agora.
     const isSidebarExpanded = getDefaultSidebarExpanded();
     applyBodySidebarClass(isSidebarExpanded);
 
