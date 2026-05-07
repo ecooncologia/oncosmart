@@ -32,7 +32,7 @@
             --danger-light: #fee2e2;
             
             /* Cores de Fundo e Texto */
-            --bg: #F5F7F6;
+            --bg: #e9eef5; /* Ajustado para a cor de fundo nativa do seu sistema */
             --surface: #FFFFFF;
             --text: #0f172a;
             --muted: #64748b;
@@ -46,25 +46,23 @@
             font-family: 'DM Sans', sans-serif;
         }
 
-        html, body {
-            margin: 0; padding: 0; min-height: 100vh;
-            background-color: var(--bg);
-            display: flex; flex-direction: column;
-        }
-
-        .oncofood-container { 
-            flex: 1; 
-            width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px 40px; 
-            box-sizing: border-box; background-color: var(--bg);
-            transition: all 0.3s ease;
+        /* Envolvemos o conteúdo para não conflitar com a navegação nativa do .container */
+        .oncofood-wrapper {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
         
-        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: var(--primary); padding: 24px 30px; border-radius: var(--r-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); flex-shrink: 0; color: white;}
+        /* Cabeçalho da Página */
+        .dash-header { display: flex; justify-content: space-between; align-items: center; background: var(--primary); padding: 24px 30px; border-radius: var(--r-md); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); flex-shrink: 0; color: white;}
         .dash-header-title h1 { margin: 0; font-size: 26px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 12px; }
         .dash-header-title p { margin: 6px 0 0; color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 500; }
         .dash-header-title i { color: var(--accent); }
         
-        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 3px solid var(--border); padding-bottom: 0; overflow-x: auto;}
+        .tabs-nav { display: flex; gap: 8px; border-bottom: 3px solid var(--border); padding-bottom: 0; overflow-x: auto;}
         .tab-btn { padding: 14px 24px; border: none; background: transparent; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--muted); cursor: pointer; border-radius: 12px 12px 0 0; transition: 0.3s; font-size: 14px; display: flex; align-items: center; gap: 8px; border-bottom: 4px solid transparent; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;}
         .tab-btn:hover:not(.active) { color: var(--primary); background: rgba(0, 121, 107, 0.05); }
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); margin-bottom: -3px; background: rgba(0, 121, 107, 0.08); }
@@ -104,10 +102,10 @@
         .category-block.open .items-grid { display: grid; }
 
         /* Cards Modernos */
-        .card { background: var(--surface); border-radius: var(--r-md); padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.04); border: 2px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; position: relative; overflow: hidden;}
-        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); border-color: var(--border); }
+        .card-onco { background: var(--surface); border-radius: var(--r-md); padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.04); border: 2px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; transition: 0.3s; position: relative; overflow: hidden;}
+        .card-onco:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); border-color: var(--border); }
         
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px dashed #e2e8f0; }
+        .card-header-onco { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px dashed #e2e8f0; }
         .patient-info h3 { margin: 0 0 6px 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; color: var(--text); font-weight: 800; }
         .patient-box { font-size: 12px; font-weight: 800; color: var(--accent); background: var(--accent-light); padding: 6px 10px; border-radius: 8px; display: inline-block; }
         .order-time { font-size: 12px; color: var(--muted); font-weight: 700; text-align: right; display: flex; align-items: center; gap: 4px;}
@@ -133,7 +131,6 @@
         .btn-danger { grid-column: span 2; background: transparent; color: var(--danger); border: 2px dashed #fca5a5; padding: 12px; border-radius: 10px; cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; transition: 0.2s; font-size: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; text-transform: uppercase;}
         .btn-danger:hover { background: var(--danger-light); border-color: var(--danger); border-style: solid;}
 
-        /* Imagem do Estoque (Object-fit Contain) */
         .stock-image { width: calc(100% + 40px); height: 140px; object-fit: contain; margin: -20px -20px 15px -20px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 10px; box-sizing: border-box;}
         
         .stock-controls { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 2px solid #e2e8f0; margin-top: auto;}
@@ -166,7 +163,6 @@
         .btn-close:hover { color: var(--danger); transform: rotate(90deg);}
         .modal-body { padding: 24px 30px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
 
-        /* Ajustes no Modal de Alerta para Permitir Scroll Interno se houver muitos itens */
         #ecoDialogModal .modal-content { max-width: 440px; text-align: center; padding: 40px 30px; border-radius: var(--r-lg);}
         #ecoDialogIcon { font-size: 56px; margin-bottom: 15px; }
         #ecoDialogTitle { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 12px; }
@@ -175,7 +171,6 @@
             font-size: 15px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; font-weight: 500;
             max-height: 45vh; overflow-y: auto; padding-right: 8px; text-align: left;
         }
-        /* Custom Scrollbar no Alerta */
         #ecoDialogText::-webkit-scrollbar { width: 6px; }
         #ecoDialogText::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         #ecoDialogText::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -206,6 +201,12 @@
         .dash-list-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed var(--border); font-size: 14px; font-weight: 600; color: var(--text); }
         .dash-list-item:last-child { border-bottom: none; padding-bottom: 0;}
 
+        /* Apenas garante que se minimizar no mobile fique visualmente correto */
+        @media (max-width: 900px) {
+            .oncofood-container { padding: 15px; }
+            .dash-header { padding: 18px 20px; flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+
     </style>
 </head>
 <body>
@@ -214,7 +215,7 @@
 
     <audio id="som-alerta" src="alerta.mp3" preload="auto"></audio>
 
-    <div class="oncofood-container">
+    <div class="container oncofood-container">
         <div class="dash-header">
             <div class="dash-header-title">
                 <h1><i class="fas fa-utensils"></i> Gestão de Copa & Nutrição</h1>
@@ -251,7 +252,7 @@
         </div>
 
         <div id="tab-pedidos_ativos" class="tab-content">
-            <div class="controls" style="margin-bottom: 20px;">
+            <div class="controls" style="margin-bottom: 20px; background: white; padding: 24px; border-radius: var(--r-md); box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 2px solid #e2e8f0;">
                 <div class="controls-group">
                     <div class="input-group" style="flex: 2;">
                         <label class="label-title">Paciente</label>
@@ -417,7 +418,7 @@
         <div class="modal-content" style="max-width: 440px; text-align: center; padding: 40px 30px; border-radius: var(--r-lg);">
             <div id="ecoDialogIcon" style="font-size: 56px; margin-bottom: 15px;"></div>
             <h3 id="ecoDialogTitle" style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 12px;">Título</h3>
-            <div id="ecoDialogText"></div>
+            <p id="ecoDialogText" style="font-size: 15px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; font-weight: 500; max-height: 45vh; overflow-y: auto; padding-right: 8px; text-align: left;"></p>
             <input type="text" id="ecoDialogInput" class="input-field" style="display: none; margin-bottom: 24px; text-align: center; font-size: 18px; font-weight: bold; width: 100%;">
             <div style="display: flex; gap: 15px; justify-content: center; width: 100%;">
                 <button id="ecoDialogCancel" class="btn-action" style="display: none; flex: 1; justify-content: center; border: 2px solid var(--border);">Cancelar</button>
@@ -639,7 +640,7 @@
         }
 
         // ==========================================
-        // LÓGICA DO ESTOQUE E CARDÁPIO
+        // LÓGICA DO ESTOQUE E CARDÁPIO (COM ACORDEÃO)
         // ==========================================
         const API_ONCOFOOD_STOCK = '/oncofood_estoque';
 
@@ -703,7 +704,7 @@
                 }
 
                 EcoDialog.alert(
-                    `Os seguintes itens atingiram o alerta de estoque mínimo:<br><div style="text-align:left; background:#fff3e0; padding:15px; border-radius:10px; border:1px solid #ffd0a0; font-size:14px; color:#e65100; margin-top: 15px;">${msg}</div><br>Favor providenciar o reabastecimento.`, 
+                    `Os seguintes itens atingiram o alerta de estoque mínimo:<br><br><div style="text-align:left; background:#fff3e0; padding:15px; border-radius:10px; border:1px solid #ffd0a0; font-size:14px; color:#e65100; margin-top: 15px;">${msg}</div><br>Favor providenciar o reabastecimento.`, 
                     "Alerta de Estoque Baixo", 
                     "warning"
                 );
@@ -763,7 +764,7 @@
                 estoque_minimo: parseInt(document.getElementById('newItemMinStock').value) || 10,
                 descricao: document.getElementById('newItemDesc').value.trim(),
                 imagem: document.getElementById('newItemImage').value.trim(),
-                tipo_estoque: type,
+                tipo_estoque: type, 
                 criado_por: loggedUser
             };
 
@@ -827,13 +828,14 @@
             const sel = document.getElementById('orderItem');
             sel.innerHTML = '<option value="">-- Selecione o que deseja pedir --</option>';
             Object.values(inventoryItems)
-                .filter(i => i.tipo_estoque !== 'limpeza')
+                .filter(i => i.tipo_estoque !== 'limpeza') 
                 .sort((a,b) => a.nome.localeCompare(b.nome)).forEach(i => {
                 const status = i.estoque <= 0 ? ' (ESGOTADO)' : '';
                 sel.add(new Option(`${i.nome}${status}`, i.id_firebase, false, i.estoque <= 0));
             });
         }
 
+        // Renderiza os dois conteineres com Acordeão
         function renderInventory() {
             const foodContainer = document.getElementById('inventoryContainerFood');
             const cleanContainer = document.getElementById('inventoryContainerCleaning');
@@ -872,7 +874,7 @@
                         const priceDisplay = item.tipo_estoque === 'alimento' && item.preco ? `<div style="font-size:14px; font-weight:800; color:var(--green); text-align:center;">R$ ${item.preco.toFixed(2).replace('.',',')}</div>` : '';
                         
                         html += `
-                            <div class="card" style="border-top: 4px solid ${catObj.cor};">
+                            <div class="card-onco" style="border-top: 4px solid ${catObj.cor};">
                                 <img src="${imgSrc}" class="stock-image" onerror="this.src='${fallbackImg}'" alt="${item.nome}">
                                 <h3 style="margin:0 0 5px 0; font-family:'Bricolage Grotesque'; font-size:18px; color:var(--text); font-weight:800; text-align:center;">${item.nome}</h3>
                                 ${priceDisplay}
@@ -922,10 +924,11 @@
                     else activeOrders[o.id_firebase] = o;
                 });
                 
+                // Lógica do Som de Alerta (Somente para pedidos pendentes)
                 let newActiveCount = Object.values(activeOrders).filter(o => o.status === 'pending').length;
                 if (!isInitialLoad && newActiveCount > currentActiveCount) {
                     const audio = document.getElementById('som-alerta');
-                    if(audio) audio.play().catch(e => console.log("Áudio bloqueado", e));
+                    if(audio) audio.play().catch(e => console.log("Áudio bloqueado pelo navegador", e));
                 }
                 currentActiveCount = newActiveCount;
                 
@@ -975,16 +978,16 @@
             order.data_atualizacao = new Date().toISOString();
             try {
                 await apiFetch(`${API_ONCOFOOD_ORDERS}/${id}`, 'PUT', order);
-                await loadOrders(true); 
+                await loadOrders(true); // true para não apitar o som
             } catch(e) { await EcoDialog.alert("Erro: " + e.message, "Erro", "error"); }
         }
 
+        // NOVIDADE: Devolução do estoque ao cancelar pedido
         async function deleteOrder(id) {
             if (!await EcoDialog.confirm("Cancelar e excluir este pedido permanentemente? Os itens retornarão ao estoque.", "Atenção", "error")) return;
             try {
                 let order = activeOrders[id] || historyOrders[id];
                 if (order && order.itens) {
-                    // Devolve o item ao estoque
                     for (let it of order.itens) {
                         let baseName = it.nome.split(' (')[0];
                         let stockItem = inventoryItems[it.id] || Object.values(inventoryItems).find(i => i.nome === baseName);
@@ -1045,8 +1048,8 @@
             const borderColor = o.status === 'pending' ? 'var(--danger)' : o.status === 'preparing' ? 'var(--accent)' : o.status === 'ready' ? '#38bdf8' : 'var(--green)';
 
             return `
-                <div class="card" style="border-left: 6px solid ${borderColor}; padding-left: 16px;">
-                    <div class="card-header">
+                <div class="card-onco" style="border-left: 6px solid ${borderColor}; padding-left: 16px;">
+                    <div class="card-header-onco">
                         <div class="patient-info">
                             <h3>${o.paciente}</h3>
                             <div class="patient-box"><i class="fas fa-bed"></i> ${o.leito}</div>
