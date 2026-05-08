@@ -470,6 +470,7 @@
                     await loadDoctors();
                     await loadPacientesDb();
                     
+                    // A aba de plantões puxa direto. A aba da Unimed aguarda o clique no Buscar
                     renderRepasseTable(); 
                 } else {
                     setTimeout(startApp, 100);
@@ -594,13 +595,29 @@
                 
                 oracleDataCache = resOracle.ok ? await resOracle.json() : [];
 
-                // Filtragem do Repasse Unimed (Ignorando Soft Deletes)
+                // 💡 FILTRO MESTRE: Unimed ignora soft deletes, usa competenciaAlvo (Mês atual) e Particular usa compPlantao (Mês Seguinte)
                 let arrayBot = Object.values(unimedData).filter(row => {
                     let statusUnimed = String(row.status || '').toLowerCase();
                     if (statusUnimed === 'excluido' || statusUnimed === 'excluído' || statusUnimed === 'cancelado' || statusUnimed === 'inativo') {
                         return false;
                     }
-                    return row.competencia === competenciaAlvo;
+                    
+                    let isPartExt = false;
+                    if (row.dados_extras) {
+                        try {
+                            let ext = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
+                            // Identifica se a origem é particular ou liminar
+                            isPartExt = ext.origem === 'venda_particular' || ext.origem === 'particular' || ext.origem === 'liminar';
+                        } catch(e){}
+                    }
+                    let isParticularDb = isPartExt || String(row.tipo || '').toUpperCase() === 'PARTICULAR';
+
+                    // Se for particular/liminar, puxa pelo mês seguinte (compPlantao)
+                    if (isParticularDb) {
+                        return row.competencia === compPlantao;
+                    } else {
+                        return row.competencia === competenciaAlvo;
+                    }
                 });
 
                 let dadosFiltrados = arrayBot;
@@ -696,7 +713,7 @@
                                 try {
                                     let isPartExt = false;
                                     if (d.dados_extras) {
-                                        let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : d.dados_extras;
+                                        let ext = typeof d.dados_extras === 'string' ? JSON.parse(d.dados_extras) : (d.dados_extras || {});
                                         isPartExt = ext.origem === 'venda_particular' || ext.origem === 'particular';
                                     }
                                     return (isPartExt || String(d.tipo).toUpperCase() === 'PARTICULAR') && 
@@ -716,12 +733,12 @@
                                     if (dbProcNameMatch) {
                                         valorBaseParaComissao = parseFloat(dbProcNameMatch.custo_medicamento || 0);
                                     } else {
-                                        valorBaseParaComissao = parseFloat(v.valor_final || 0);
+                                        valorBaseParaComissao = parseFloat(v.valor_final || v.valor || 0);
                                     }
                                 }
 
                                 dadosFiltrados.push({
-                                    id: 'virt_part_' + vId, 
+                                    id_firebase: 'virt_part_' + vId, 
                                     paciente: String(v.paciente).toUpperCase().trim(),
                                     data_atendimento: dStr,
                                     competencia: vComp,
@@ -749,7 +766,7 @@
                     let originais = [];
                     let extras = {};
                     if (row.dados_extras) {
-                        extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : row.dados_extras;
+                        extras = typeof row.dados_extras === 'string' ? JSON.parse(row.dados_extras) : (row.dados_extras || {});
                     }
                     
                     if (row.itens_originais) originais = row.itens_originais;
@@ -936,7 +953,6 @@
             
             const tbody = document.querySelector('#dataTable tbody');
 
-            // Se os dados estiverem vazios (tela recém aberta) e o usuário tentar buscar:
             if (excelData.length === 0) {
                 document.getElementById('dashUnimedTotal').innerText = "R$ 0,00";
                 document.getElementById('dashImpostoTotal').innerText = "R$ 0,00";
