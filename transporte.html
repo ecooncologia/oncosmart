@@ -57,11 +57,11 @@
 
         .external-form { display: flex; gap: 15px; margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #ddd; align-items: flex-end; }
         
-        #ext-patient-name, #int-patient-name, #int-patient-duration {
+        #ext-patient-name {
             width: 100%; padding: 10px 15px; font-size: 14px; height: 42px;
             border: 1px solid #CBD5E0; border-radius: 6px; transition: border-color 0.2s;
         }
-        #ext-patient-name:focus, #int-patient-name:focus, #int-patient-duration:focus { outline: none; border-color: var(--primary); }
+        #ext-patient-name:focus { outline: none; border-color: var(--primary); }
 
         .audio-btn-float { position: fixed; bottom: 25px; right: 25px; z-index: 9999; border-radius: 50px; padding: 15px 25px; font-weight: 800; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; border:none; color:white; cursor:pointer; }
         
@@ -159,23 +159,6 @@
             </div>
         </div>
 
-        <div id="form-interna" style="display:block;">
-            <div class="external-form" style="border-left: 6px solid #10B981;">
-                <div style="flex:2;">
-                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Nome do Paciente (Recepção Interna)</label>
-                    <input type="text" id="int-patient-name" class="form-control" placeholder="Digite o nome do paciente...">
-                </div>
-                <div style="flex:1;">
-                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Tempo de Duração (Previsão)</label>
-                    <input type="text" id="int-patient-duration" class="form-control" placeholder="Ex: 30 min, 1 hora...">
-                </div>
-
-                <button class="btn btn-success" onclick="registerInternalPatient()" style="height: 42px; padding: 0 25px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; color:white; display:flex; align-items:center; gap:8px;">
-                    <i class="fas fa-plus-circle"></i> CADASTRAR
-                </button>
-            </div>
-        </div>
-
         <div id="form-externa" style="display:none;">
             <div class="external-form">
                 <div style="flex:1;">
@@ -190,7 +173,7 @@
                     </div>
                 </div>
 
-                <button class="btn btn-success" onclick="registerExternalPatient()" style="height: 42px; padding: 0 25px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; color:white; display:flex; align-items:center; gap:8px;">
+                <button class="btn btn-success" onclick="registerPatient()" style="height: 42px; padding: 0 25px; font-weight:bold;">
                     <i class="fas fa-paper-plane"></i> ENVIAR
                 </button>
             </div>
@@ -394,6 +377,7 @@
                     // TOOLTIP DE INFORMAÇÃO DOS ITENS
                     let tooltipHtml = '';
                     if (d.detalhes_pedido) {
+                        // Formata a string separada por vírgula em uma lista com quebra de linha
                         const itensLista = d.detalhes_pedido.replace(/, /g, '<br>• ');
                         tooltipHtml = `
                             <div class="info-tooltip">
@@ -425,7 +409,7 @@
                             ${btn}
                         </div>
                     `;
-                    return; 
+                    return; // Interrompe o loop deste item (já que é uma cobrança) e pula para o próximo
                 }
 
                 // ==========================================
@@ -473,8 +457,6 @@
                 const timeToUse = d.timestamp || d.transportEndTime || d.date || 0;
                 const timeStr = timeToUse ? new Date(timeToUse).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
                 
-                const durationHtml = d.duration ? `<div style="font-size:11px; color:#8B5CF6; font-weight:700; margin-top:4px;"><i class="fas fa-stopwatch"></i> Previsão: ${d.duration}</div>` : '';
-
                 const painVal = d.painLevel ?? d.pain_level ?? d.dor ?? '?';
                 const emotionVal = translations.emotion[d.emotion] || d.emotion || '---';
 
@@ -486,7 +468,6 @@
                         <div class="patient-header">
                             <div class="patient-name">${ptName} ${badgePrimeiraConsulta}</div>
                             <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
-                            ${durationHtml}
                         </div>
                         
                         ${postoDestino}
@@ -553,34 +534,7 @@
             }
         }
 
-        async function registerInternalPatient() {
-            const name = document.getElementById('int-patient-name').value.trim();
-            const duration = document.getElementById('int-patient-duration').value.trim();
-
-            if(!name) return alert("Nome obrigatório");
-            
-            const data = { 
-                name: name, 
-                origin: 'interna', 
-                duration: duration,
-                timestamp: new Date().toISOString(), 
-                atendido: false, 
-                id_firebase: 'int_' + Date.now()
-            };
-            
-            await fetch(`${API_BASE_URL}/painAssessments`, { 
-                method:'POST', 
-                headers:{ 'Content-Type':'application/json', ...API_HEADERS }, 
-                body:JSON.stringify(data) 
-            });
-            
-            document.getElementById('int-patient-name').value = '';
-            document.getElementById('int-patient-duration').value = '';
-            
-            loadData();
-        }
-
-        async function registerExternalPatient() {
+        async function registerPatient() {
             const name = document.getElementById('ext-patient-name').value.trim();
             const primeiraConsulta = document.getElementById('ext-primeira-consulta').checked;
 
@@ -671,7 +625,6 @@
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById('form-externa').style.display = orig === 'externa' ? 'block' : 'none';
-            document.getElementById('form-interna').style.display = orig === 'interna' ? 'block' : 'none';
             document.getElementById('viewTitle').innerText = btn.innerText;
             loadData();
         }
