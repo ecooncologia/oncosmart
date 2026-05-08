@@ -57,11 +57,11 @@
 
         .external-form { display: flex; gap: 15px; margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #ddd; align-items: flex-end; }
         
-        #ext-patient-name {
+        #ext-patient-name, #int-patient-name, #int-patient-duration {
             width: 100%; padding: 10px 15px; font-size: 14px; height: 42px;
             border: 1px solid #CBD5E0; border-radius: 6px; transition: border-color 0.2s;
         }
-        #ext-patient-name:focus { outline: none; border-color: var(--primary); }
+        #ext-patient-name:focus, #int-patient-name:focus, #int-patient-duration:focus { outline: none; border-color: var(--primary); }
 
         .audio-btn-float { position: fixed; bottom: 25px; right: 25px; z-index: 9999; border-radius: 50px; padding: 15px 25px; font-weight: 800; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; border:none; color:white; cursor:pointer; }
         
@@ -154,8 +154,29 @@
         <div class="nav-scroller">
             <div class="nav-tabs">
                 <button class="nav-tab active" onclick="setOrigin('interna', this)">🏠 Recepção Interna</button>
+                <button class="nav-tab" onclick="setOrigin('cadastro', this)"><i class="fas fa-user-plus"></i> Cadastro Pacientes</button>
                 <button class="nav-tab" onclick="setOrigin('externa', this)">🏢 Recepção Externa</button>
                 <button class="nav-tab" onclick="setOrigin('historico', this)">✅ Histórico</button>
+            </div>
+        </div>
+
+        <div id="form-cadastro" style="display:none;">
+            <div class="card" style="max-width: 600px; margin: 20px auto; padding: 30px; border-top: 6px solid var(--primary);">
+                <h2 style="margin-top: 0; color: var(--primary); font-size: 20px;"><i class="fas fa-user-plus"></i> Cadastro para Totem</h2>
+                <p style="font-size: 13px; color: var(--text-light); margin-bottom: 25px;">Cadastre o paciente e a duração. Ele aparecerá automaticamente no Totem de Avaliação.</p>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Nome do Paciente</label>
+                    <input type="text" id="int-patient-name" class="form-control" placeholder="Digite o nome completo do paciente...">
+                </div>
+                <div style="margin-bottom: 25px;">
+                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Tempo de Duração (Previsão)</label>
+                    <input type="text" id="int-patient-duration" class="form-control" placeholder="Ex: 30 min, 2h, longa, curta...">
+                </div>
+
+                <button class="btn btn-success" onclick="registerInternalPatient()" style="width: 100%; height: 46px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fas fa-save"></i> CADASTRAR E ENVIAR AO TOTEM
+                </button>
             </div>
         </div>
 
@@ -173,13 +194,13 @@
                     </div>
                 </div>
 
-                <button class="btn btn-success" onclick="registerPatient()" style="height: 42px; padding: 0 25px; font-weight:bold;">
+                <button class="btn btn-success" onclick="registerExternalPatient()" style="height: 42px; padding: 0 25px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; color:white; display:flex; align-items:center; gap:8px;">
                     <i class="fas fa-paper-plane"></i> ENVIAR
                 </button>
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="main-grid-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="font-size: 18px; font-weight: 700; color: var(--primary); margin:0;" id="viewTitle">Recepção Interna</h2>
                 <div style="display:flex; gap:10px; align-items:center;">
@@ -199,7 +220,6 @@
         let audioEnabled = false;
         let lastCount = 0;
 
-        // Variáveis de Paginação
         let currentPage = 1;
         const itemsPerPage = 25;
         let cachedAssessments = [];
@@ -234,22 +254,20 @@
             `], { type: "application/javascript" });
             const worker = new Worker(URL.createObjectURL(workerBlob));
             
-            worker.onmessage = () => {
-                loadData();
-            };
+            worker.onmessage = () => { loadData(); };
 
             loadData();
         });
 
         async function loadData() {
+            if (currentOrigin === 'cadastro') return; // Não atualiza grid se estiver na tela de cadastro
+
             try {
-                // BLINDADO
                 const [resAssessments, resCalls] = await Promise.all([
                     fetch(`${API_BASE_URL}/painAssessments?_t=${Date.now()}`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/patientCalls?_t=${Date.now()}`, { headers: API_HEADERS })
                 ]);
                 
-                // Busca a parte de Cobranças em um try-catch para não quebrar se o nó não existir ainda
                 let rawCobrancas = {};
                 try {
                     const resCobrancas = await fetch(`${API_BASE_URL}/transporte?_t=${Date.now()}`, { headers: API_HEADERS });
@@ -259,7 +277,6 @@
                 const rawAssessments = await resAssessments.json();
                 const rawCalls = await resCalls.json();
 
-                // Guarda em cache para a paginação
                 cachedAssessments = Object.entries(normalizeData(rawAssessments)).map(([k, v]) => ({...v, key: k}));
                 cachedCalls = Object.entries(normalizeData(rawCalls)).map(([k, v]) => ({...v, id: k}));
                 cachedCobrancas = Object.entries(normalizeData(rawCobrancas)).map(([k, v]) => ({...v, id: k}));
@@ -276,7 +293,6 @@
             const now = new Date();
 
             if(currentOrigin === 'historico') {
-                // HISTÓRICO: Traz todos os chamados e cobranças finalizadas
                 const completedCalls = cachedCalls.filter(c => c.status === 'completed');
                 completedCalls.forEach(c => {
                     const a = cachedAssessments.find(ass => ass.key === c.patientId) || {};
@@ -289,7 +305,6 @@
                 });
 
             } else {
-                // FILAS ATIVAS DE TRANSPORTE
                 const assessmentsFiltered = cachedAssessments.filter(a => {
                     const hasActiveCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
                     const isRecent = (now - new Date(a.timestamp) < 86400000);
@@ -306,7 +321,6 @@
                     }
                 });
 
-                // FILAS ATIVAS DE COBRANÇA (Aparece na Recepção Interna, já que vem do Totem)
                 if (currentOrigin === 'interna') {
                     const pendingCobrancas = cachedCobrancas.filter(c => c.status === 'pendente_pagamento');
                     pendingCobrancas.forEach(c => {
@@ -315,7 +329,6 @@
                 }
             }
 
-            // Alerta de Som (Soma chamados de transporte e cobranças pendentes)
             const actionItems = list.filter(i => 
                 (i.type === 'call' && (i.data.status === 'called' || i.data.status === 'returning')) ||
                 (i.type === 'cobranca' && i.data.status === 'pendente_pagamento')
@@ -328,7 +341,6 @@
 
             document.getElementById('total-badge').innerText = list.length;
 
-            // ORDENAÇÃO
             if (currentOrigin === 'historico') {
                 list.sort((a,b) => new Date(b.data.transportEndTime || b.data.data_pagamento || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.data_pagamento || a.data.timestamp || 0));
             } else {
@@ -341,10 +353,8 @@
                 return; 
             }
 
-            // --- LÓGICA DE PAGINAÇÃO ---
             const totalItems = list.length;
             const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-            
             if (currentPage > totalPages) currentPage = totalPages;
             if (currentPage < 1) currentPage = 1;
 
@@ -352,7 +362,6 @@
             const endIndex = startIndex + itemsPerPage;
             const paginatedList = list.slice(startIndex, endIndex);
 
-            // --- RENDERIZAÇÃO DA PÁGINA ATUAL ---
             paginatedList.forEach(item => {
                 const d = item.data;
 
@@ -374,10 +383,8 @@
                         btn = `<button class="btn-action btn-success" onclick="payCobranca('${d.id}')"><i class="fas fa-hand-holding-usd"></i> EFETUADO PAGAMENTO</button>`;
                     }
 
-                    // TOOLTIP DE INFORMAÇÃO DOS ITENS
                     let tooltipHtml = '';
                     if (d.detalhes_pedido) {
-                        // Formata a string separada por vírgula em uma lista com quebra de linha
                         const itensLista = d.detalhes_pedido.replace(/, /g, '<br>• ');
                         tooltipHtml = `
                             <div class="info-tooltip">
@@ -409,7 +416,7 @@
                             ${btn}
                         </div>
                     `;
-                    return; // Interrompe o loop deste item (já que é uma cobrança) e pula para o próximo
+                    return; 
                 }
 
                 // ==========================================
@@ -457,6 +464,7 @@
                 const timeToUse = d.timestamp || d.transportEndTime || d.date || 0;
                 const timeStr = timeToUse ? new Date(timeToUse).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
                 
+                const durationHtml = d.duration ? `<div style="font-size:11px; color:#8B5CF6; font-weight:700; margin-top:4px;"><i class="fas fa-stopwatch"></i> Previsão: ${d.duration}</div>` : '';
                 const painVal = d.painLevel ?? d.pain_level ?? d.dor ?? '?';
                 const emotionVal = translations.emotion[d.emotion] || d.emotion || '---';
 
@@ -468,6 +476,7 @@
                         <div class="patient-header">
                             <div class="patient-name">${ptName} ${badgePrimeiraConsulta}</div>
                             <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
+                            ${durationHtml}
                         </div>
                         
                         ${postoDestino}
@@ -484,7 +493,6 @@
                 `;
             });
 
-            // --- DESENHA OS BOTÕES DE PAGINAÇÃO ---
             const paginationDiv = document.getElementById('pagination-controls');
             if (totalItems > itemsPerPage) {
                 paginationDiv.style.display = 'flex';
@@ -498,20 +506,15 @@
             }
         }
 
-        // Função de Troca de Página
         function changePage(direction) {
             currentPage += direction;
             renderGrid();
             document.querySelector('.nav-scroller').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // ==========================================
-        // AÇÃO: EFETUAR PAGAMENTO COBRANÇA
-        // ==========================================
         async function payCobranca(id) {
             if(confirm("Confirmar pagamento na maquininha? O card será movido para o histórico.")) {
                 try {
-                    // BLINDADO
                     const res = await fetch(`${API_BASE_URL}/transporte`, { headers: API_HEADERS });
                     const all = await res.json();
                     const current = all[id];
@@ -534,7 +537,52 @@
             }
         }
 
-        async function registerPatient() {
+        // CADASTRO RECEPÇÃO INTERNA (Envia para o Totem como pendente)
+        async function registerInternalPatient() {
+            const name = document.getElementById('int-patient-name').value.trim();
+            const duration = document.getElementById('int-patient-duration').value.trim();
+
+            if(!name) return alert("Nome obrigatório");
+            
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            btn.disabled = true;
+
+            const data = { 
+                name: name, 
+                origin: 'interna', 
+                duration: duration,
+                timestamp: new Date().toISOString(), 
+                atendido: false, 
+                status: 'pending', 
+                id_firebase: 'int_' + Date.now()
+            };
+            
+            try {
+                await fetch(`${API_BASE_URL}/painAssessments`, { 
+                    method:'POST', 
+                    headers:{ 'Content-Type':'application/json', ...API_HEADERS }, 
+                    body:JSON.stringify(data) 
+                });
+                
+                document.getElementById('int-patient-name').value = '';
+                document.getElementById('int-patient-duration').value = '';
+                
+                alert('Paciente enviado ao Totem com sucesso!');
+                
+                // Retorna para a aba Recepção Interna
+                document.querySelector('.nav-tabs button:first-child').click();
+            } catch(e) {
+                console.error("Erro:", e);
+                alert("Erro ao cadastrar.");
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+
+        async function registerExternalPatient() {
             const name = document.getElementById('ext-patient-name').value.trim();
             const primeiraConsulta = document.getElementById('ext-primeira-consulta').checked;
 
@@ -624,9 +672,19 @@
             currentPage = 1;
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            
             document.getElementById('form-externa').style.display = orig === 'externa' ? 'block' : 'none';
-            document.getElementById('viewTitle').innerText = btn.innerText;
-            loadData();
+            document.getElementById('form-cadastro').style.display = orig === 'cadastro' ? 'block' : 'none';
+            
+            const gridCard = document.getElementById('main-grid-card');
+            
+            if (orig === 'cadastro') {
+                gridCard.style.display = 'none'; // Esconde o grid de cards na aba de cadastro
+            } else {
+                gridCard.style.display = 'block';
+                document.getElementById('viewTitle').innerText = btn.innerText;
+                loadData();
+            }
         }
 
         function toggleSound() {
