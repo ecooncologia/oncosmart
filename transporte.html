@@ -55,7 +55,7 @@
         .bg-green { background: #10B981; } 
         .bg-red { background: #EF4444; }
 
-        .external-form { display: flex; gap: 15px; margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #ddd; align-items: flex-end; }
+        .external-form { display: flex; gap: 15px; margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid #ddd; align-items: flex-end; flex-wrap: wrap;}
         
         #ext-patient-name, #int-patient-name, #int-patient-duration {
             width: 100%; padding: 10px 15px; font-size: 14px; height: 42px;
@@ -154,28 +154,23 @@
         <div class="nav-scroller">
             <div class="nav-tabs">
                 <button class="nav-tab active" onclick="setOrigin('interna', this)">🏠 Recepção Interna</button>
-                <button class="nav-tab" onclick="setOrigin('cadastro', this)"><i class="fas fa-user-plus"></i> Cadastro Pacientes</button>
                 <button class="nav-tab" onclick="setOrigin('externa', this)">🏢 Recepção Externa</button>
                 <button class="nav-tab" onclick="setOrigin('historico', this)">✅ Histórico</button>
             </div>
         </div>
 
-        <div id="form-cadastro" style="display:none;">
-            <div class="card" style="max-width: 600px; margin: 20px auto; padding: 30px; border-top: 6px solid var(--primary);">
-                <h2 style="margin-top: 0; color: var(--primary); font-size: 20px;"><i class="fas fa-user-plus"></i> Cadastro para Totem</h2>
-                <p style="font-size: 13px; color: var(--text-light); margin-bottom: 25px;">Cadastre o paciente e a duração. Ele aparecerá automaticamente no Totem de Avaliação.</p>
-                
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Nome do Paciente</label>
+        <div id="form-cadastro-interna" style="display:block;">
+            <div class="external-form" style="border-left: 6px solid var(--primary);">
+                <div style="flex:2; min-width: 200px;">
+                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Pré-cadastro de Paciente (Aparecerá no Totem amanhã)</label>
                     <input type="text" id="int-patient-name" class="form-control" placeholder="Digite o nome completo do paciente...">
                 </div>
-                <div style="margin-bottom: 25px;">
+                <div style="flex:1; min-width: 150px;">
                     <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Tempo de Duração (Previsão)</label>
-                    <input type="text" id="int-patient-duration" class="form-control" placeholder="Ex: 30 min, 2h, longa, curta...">
+                    <input type="text" id="int-patient-duration" class="form-control" placeholder="Ex: 30 min, 2h, longa...">
                 </div>
-
-                <button class="btn btn-success" onclick="registerInternalPatient()" style="width: 100%; height: 46px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <i class="fas fa-save"></i> CADASTRAR E ENVIAR AO TOTEM
+                <button class="btn btn-success" onclick="registerInternalPatient()" style="height: 42px; padding: 0 25px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; color:white; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-calendar-plus"></i> PRÉ-CADASTRAR
                 </button>
             </div>
         </div>
@@ -220,6 +215,7 @@
         let audioEnabled = false;
         let lastCount = 0;
 
+        // Variáveis de Paginação
         let currentPage = 1;
         const itemsPerPage = 25;
         let cachedAssessments = [];
@@ -260,8 +256,6 @@
         });
 
         async function loadData() {
-            if (currentOrigin === 'cadastro') return; // Não atualiza grid se estiver na tela de cadastro
-
             try {
                 const [resAssessments, resCalls] = await Promise.all([
                     fetch(`${API_BASE_URL}/painAssessments?_t=${Date.now()}`, { headers: API_HEADERS }),
@@ -306,6 +300,9 @@
 
             } else {
                 const assessmentsFiltered = cachedAssessments.filter(a => {
+                    // Oculta pré-cadastros do dia seguinte na aba ativa!
+                    if (a.status === 'pre_cadastro') return false; 
+                    
                     const hasActiveCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
                     const isRecent = (now - new Date(a.timestamp) < 86400000);
                     return (!a.atendido || hasActiveCall) && isRecent;
@@ -366,7 +363,7 @@
                 const d = item.data;
 
                 // ==========================================
-                // RENDER: CARD DE COBRANÇA (ONCOFOOD)
+                // RENDER: CARD DE COBRANÇA
                 // ==========================================
                 if (item.type === 'cobranca') {
                     const timeStr = d.data_solicitacao ? new Date(d.data_solicitacao).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
@@ -375,7 +372,6 @@
                     let statusText = d.status === 'pendente_pagamento' ? 'AGUARDANDO PAGAMENTO' : 'PAGAMENTO EFETUADO';
                     let badgeColor = d.status === 'pendente_pagamento' ? '#EF4444' : '#10B981';
                     let cardClass = 'call-card';
-                    
                     if (d.status === 'pendente_pagamento') cardClass += ' cobranca'; 
                     
                     let btn = '';
@@ -537,7 +533,9 @@
             }
         }
 
-        // CADASTRO RECEPÇÃO INTERNA (Envia para o Totem como pendente)
+        // ======================================================================
+        // PRÉ-CADASTRO INTERNO (Oculto na tela atual, visível no Totem amanhã)
+        // ======================================================================
         async function registerInternalPatient() {
             const name = document.getElementById('int-patient-name').value.trim();
             const duration = document.getElementById('int-patient-duration').value.trim();
@@ -549,13 +547,19 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             btn.disabled = true;
 
+            // Calcula o dia de amanhã para filtrar no Totem
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dataAgendamento = tomorrow.toISOString().split('T')[0];
+
             const data = { 
                 name: name, 
                 origin: 'interna', 
                 duration: duration,
+                data_agendamento: dataAgendamento, // Marcação de dia seguinte
                 timestamp: new Date().toISOString(), 
                 atendido: false, 
-                status: 'pending', 
+                status: 'pre_cadastro', // Fica invisível na fila de transporte até fazer o Totem
                 id_firebase: 'int_' + Date.now()
             };
             
@@ -569,10 +573,8 @@
                 document.getElementById('int-patient-name').value = '';
                 document.getElementById('int-patient-duration').value = '';
                 
-                alert('Paciente enviado ao Totem com sucesso!');
-                
-                // Retorna para a aba Recepção Interna
-                document.querySelector('.nav-tabs button:first-child').click();
+                alert('Pré-cadastro realizado com sucesso!\nO paciente aparecerá no Totem amanhã.');
+                loadData();
             } catch(e) {
                 console.error("Erro:", e);
                 alert("Erro ao cadastrar.");
@@ -674,17 +676,11 @@
             btn.classList.add('active');
             
             document.getElementById('form-externa').style.display = orig === 'externa' ? 'block' : 'none';
-            document.getElementById('form-cadastro').style.display = orig === 'cadastro' ? 'block' : 'none';
+            // Exibe formulário do pré-cadastro somente na aba Interna
+            document.getElementById('form-cadastro-interna').style.display = orig === 'interna' ? 'block' : 'none';
             
-            const gridCard = document.getElementById('main-grid-card');
-            
-            if (orig === 'cadastro') {
-                gridCard.style.display = 'none'; // Esconde o grid de cards na aba de cadastro
-            } else {
-                gridCard.style.display = 'block';
-                document.getElementById('viewTitle').innerText = btn.innerText;
-                loadData();
-            }
+            document.getElementById('viewTitle').innerText = btn.innerText;
+            loadData();
         }
 
         function toggleSound() {
