@@ -19,7 +19,7 @@
 
     <style>
         /* --- DESIGN ORIGINAL --- */
-        .calls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 20px; }
+        .calls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         
         .call-card { 
             border-left: 6px solid #ccc; 
@@ -139,6 +139,16 @@
             opacity: 1;
             bottom: 150%;
         }
+
+        /* --- SIDEBAR PRÉ-CADASTRO --- */
+        .precadastro-box { background: white; border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.2s;}
+        .precadastro-box:hover { border-color: var(--primary); transform: translateX(-2px); }
+        .precadastro-name { font-weight: 700; color: var(--text-dark); font-size: 13px; margin-bottom: 4px;}
+        .precadastro-time { font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 4px;}
+        /* Custom Scrollbar for Sidebar */
+        #lista-precadastro::-webkit-scrollbar { width: 4px; }
+        #lista-precadastro::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        #lista-precadastro::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -160,16 +170,16 @@
         </div>
 
         <div id="form-cadastro-interna" style="display:block;">
-            <div class="external-form" style="border-left: 6px solid var(--primary);">
+            <div class="external-form" style="border-left: 6px solid var(--primary); background: #f8fafc;">
                 <div style="flex:2; min-width: 200px;">
-                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Pré-cadastro de Paciente (Aparecerá no Totem amanhã)</label>
-                    <input type="text" id="int-patient-name" class="form-control" placeholder="Digite o nome completo do paciente...">
+                    <label style="font-size:12px; font-weight:800; color:var(--primary); margin-bottom:5px; display:block;">Pré-cadastro de Paciente (Aparecerá no Totem amanhã)</label>
+                    <input type="text" id="int-patient-name" class="form-control" style="background:white;" placeholder="Digite o nome completo do paciente...">
                 </div>
                 <div style="flex:1; min-width: 150px;">
-                    <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Tempo de Duração (Previsão)</label>
-                    <input type="text" id="int-patient-duration" class="form-control" placeholder="Ex: 30 min, 2h, longa...">
+                    <label style="font-size:12px; font-weight:800; color:var(--primary); margin-bottom:5px; display:block;">Tempo de Duração (Previsão)</label>
+                    <input type="text" id="int-patient-duration" class="form-control" style="background:white;" placeholder="Ex: 30 min, 2h, longa...">
                 </div>
-                <button class="btn btn-success" onclick="registerInternalPatient()" style="height: 42px; padding: 0 25px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; color:white; display:flex; align-items:center; gap:8px;">
+                <button class="btn btn-success" onclick="registerInternalPatient()" style="height: 42px; padding: 0 25px; font-weight:800; border:none; border-radius:6px; cursor:pointer; color:white; display:flex; align-items:center; gap:8px;">
                     <i class="fas fa-calendar-plus"></i> PRÉ-CADASTRAR
                 </button>
             </div>
@@ -204,9 +214,23 @@
                 </div>
             </div>
             
-            <div id="grid" class="calls-grid"></div>
-            
-            <div id="pagination-controls" class="pagination" style="display: none;"></div>
+            <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                
+                <div style="flex: 1; min-width: 300px;">
+                    <div id="grid" class="calls-grid" style="margin-top: 0;"></div>
+                    <div id="pagination-controls" class="pagination" style="display: none;"></div>
+                </div>
+
+                <div id="sidebar-precadastro" style="width: 280px; background: #f8fafc; border: 1px solid var(--border-light); border-radius: 12px; padding: 15px;">
+                    <h3 style="font-size: 13px; color: var(--primary); margin-top: 0; margin-bottom: 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-weight: 800; display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fas fa-calendar-check"></i> Agendados (Amanhã)</span>
+                        <span id="badge-pre" style="background: var(--primary); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">0</span>
+                    </h3>
+                    <div id="lista-precadastro" style="display: flex; flex-direction: column; gap: 0; max-height: 500px; overflow-y: auto; padding-right: 4px;">
+                        </div>
+                </div>
+
+            </div>
         </div>
     </div>
 
@@ -286,6 +310,36 @@
             let list = [];
             const now = new Date();
 
+            // 1. POPULAR SIDEBAR DE PRÉ-CADASTROS (Somente aba interna)
+            if (currentOrigin === 'interna') {
+                document.getElementById('sidebar-precadastro').style.display = 'block';
+                const preCadastros = cachedAssessments.filter(a => a.status === 'pre_cadastro');
+                const listaPre = document.getElementById('lista-precadastro');
+                document.getElementById('badge-pre').innerText = preCadastros.length;
+                
+                if (listaPre) {
+                    if (preCadastros.length === 0) {
+                        listaPre.innerHTML = '<div style="font-size: 12px; color: #94a3b8; text-align: center; padding: 20px 10px;">Nenhum agendamento pendente.</div>';
+                    } else {
+                        listaPre.innerHTML = preCadastros.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(p => {
+                            const dateStr = p.data_agendamento ? new Date(p.data_agendamento + 'T00:00:00').toLocaleDateString('pt-BR') : '--/--/----';
+                            return `
+                            <div class="precadastro-box">
+                                <div class="precadastro-name">${p.name || p.nome}</div>
+                                <div class="precadastro-time">
+                                    <i class="far fa-calendar-alt"></i> ${dateStr} &nbsp;|&nbsp; 
+                                    <i class="fas fa-stopwatch"></i> ${p.duration || '--'}
+                                </div>
+                            </div>
+                        `}).join('');
+                    }
+                }
+            } else {
+                document.getElementById('sidebar-precadastro').style.display = 'none';
+            }
+
+
+            // 2. POPULAR GRID PRINCIPAL
             if(currentOrigin === 'historico') {
                 const completedCalls = cachedCalls.filter(c => c.status === 'completed');
                 completedCalls.forEach(c => {
@@ -345,7 +399,7 @@
             }
 
             if(list.length === 0) { 
-                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">Nenhum paciente ou cobrança na lista.</p>'; 
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8; padding:40px; border: 2px dashed #cbd5e1; border-radius: 12px; background: white;">Nenhum paciente ou cobrança na lista principal.</p>'; 
                 document.getElementById('pagination-controls').style.display = 'none';
                 return; 
             }
@@ -534,7 +588,7 @@
         }
 
         // ======================================================================
-        // PRÉ-CADASTRO INTERNO (Oculto na tela atual, visível no Totem amanhã)
+        // PRÉ-CADASTRO INTERNO (Para cair na lista do Totem amanhã)
         // ======================================================================
         async function registerInternalPatient() {
             const name = document.getElementById('int-patient-name').value.trim();
@@ -547,7 +601,6 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             btn.disabled = true;
 
-            // Calcula o dia de amanhã para filtrar no Totem
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             const dataAgendamento = tomorrow.toISOString().split('T')[0];
@@ -556,10 +609,10 @@
                 name: name, 
                 origin: 'interna', 
                 duration: duration,
-                data_agendamento: dataAgendamento, // Marcação de dia seguinte
+                data_agendamento: dataAgendamento, // Salva com a data de amanhã
                 timestamp: new Date().toISOString(), 
                 atendido: false, 
-                status: 'pre_cadastro', // Fica invisível na fila de transporte até fazer o Totem
+                status: 'pre_cadastro', 
                 id_firebase: 'int_' + Date.now()
             };
             
@@ -573,7 +626,7 @@
                 document.getElementById('int-patient-name').value = '';
                 document.getElementById('int-patient-duration').value = '';
                 
-                alert('Pré-cadastro realizado com sucesso!\nO paciente aparecerá no Totem amanhã.');
+                alert('Pré-cadastro realizado com sucesso!\nO paciente já aparece na lista lateral e amanhã estará no Totem.');
                 loadData();
             } catch(e) {
                 console.error("Erro:", e);
@@ -676,7 +729,6 @@
             btn.classList.add('active');
             
             document.getElementById('form-externa').style.display = orig === 'externa' ? 'block' : 'none';
-            // Exibe formulário do pré-cadastro somente na aba Interna
             document.getElementById('form-cadastro-interna').style.display = orig === 'interna' ? 'block' : 'none';
             
             document.getElementById('viewTitle').innerText = btn.innerText;
