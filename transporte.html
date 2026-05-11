@@ -62,6 +62,13 @@
         
         select.form-control { cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234A5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 1em; padding-right: 30px;}
 
+        /* CSS AUTOCOMPLETE */
+        .autocomplete-wrapper { position: relative; width: 100%; }
+        .autocomplete-items { position: absolute; border: 1px solid #e2e8f0; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 0 0 8px 8px; }
+        .autocomplete-items div { padding: 12px 15px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #334155; display: flex; align-items: center; gap: 8px;}
+        .autocomplete-items div:hover { background-color: #f8fafc; color: var(--primary); }
+        .autocomplete-icon { color: #94a3b8; }
+
         .audio-btn-float { position: fixed; bottom: 25px; right: 25px; z-index: 9999; border-radius: 50px; padding: 15px 25px; font-weight: 800; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; border:none; color:white; cursor:pointer; }
         
         .patient-name { font-size: 18px; font-weight: 800; color: var(--secondary); text-transform: uppercase; margin-bottom: 5px; }
@@ -132,7 +139,10 @@
                 <input type="hidden" id="edit-pre-id">
                 <div style="flex:2; min-width: 200px;">
                     <label style="font-size:12px; font-weight:800; color:var(--primary); margin-bottom:5px; display:block;">Pré-cadastro de Paciente (Aparecerá no Totem amanhã)</label>
-                    <input type="text" id="int-patient-name" class="form-control" style="background:white;" placeholder="Digite o nome completo do paciente...">
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="int-patient-name" class="form-control" style="background:white;" placeholder="Digite o nome completo do paciente..." oninput="filterPatients(this.value)" autocomplete="off">
+                        <div id="autocomplete-list" class="autocomplete-items"></div>
+                    </div>
                 </div>
                 <div style="flex:1; min-width: 150px;">
                     <label style="font-size:12px; font-weight:800; color:var(--primary); margin-bottom:5px; display:block;">Tempo de Duração (Previsão)</label>
@@ -224,6 +234,8 @@
         let cachedAssessments = [];
         let cachedCalls = [];
         let cachedCobrancas = [];
+        
+        let allUniqueNames = []; // Global para o autocomplete
 
         const translations = {
             care: { 'silence': 'Silêncio', 'conversation': 'Conversa', 'questions': 'Dúvidas' },
@@ -257,6 +269,35 @@
             loadData();
         });
 
+        // FECHA O AUTOCOMPLETE SE CLICAR FORA
+        document.addEventListener('click', function (e) {
+            if (e.target.id !== 'int-patient-name') {
+                document.getElementById('autocomplete-list').innerHTML = '';
+            }
+        });
+
+        // FILTRO DO AUTOCOMPLETE
+        function filterPatients(val) {
+            const list = document.getElementById('autocomplete-list');
+            list.innerHTML = '';
+            if (!val) return;
+            
+            const matches = allUniqueNames.filter(name => name.toLowerCase().includes(val.toLowerCase()));
+            
+            matches.slice(0, 8).forEach(match => { // Limita a 8 opções para não quebrar o layout
+                const div = document.createElement('div');
+                const regex = new RegExp(`(${val})`, "gi");
+                const highlighted = match.replace(regex, "<strong style='color:var(--primary);'>$1</strong>");
+                
+                div.innerHTML = `<i class="fas fa-user-clock autocomplete-icon"></i> <span>${highlighted}</span>`;
+                div.addEventListener('click', function() {
+                    document.getElementById('int-patient-name').value = match;
+                    list.innerHTML = '';
+                });
+                list.appendChild(div);
+            });
+        }
+
         async function loadData() {
             try {
                 const [resAssessments, resCalls] = await Promise.all([
@@ -272,6 +313,14 @@
 
                 const rawAssessments = await resAssessments.json();
                 const rawCalls = await resCalls.json();
+
+                // EXTRAI NOMES ÚNICOS PARA O AUTOCOMPLETE
+                const namesSet = new Set();
+                Object.values(rawAssessments || {}).forEach(p => {
+                    if (p.name) namesSet.add(p.name);
+                    if (p.nome) namesSet.add(p.nome);
+                });
+                allUniqueNames = Array.from(namesSet).sort();
 
                 cachedAssessments = Object.entries(normalizeData(rawAssessments)).map(([k, v]) => ({...v, key: k}));
                 cachedCalls = Object.entries(normalizeData(rawCalls)).map(([k, v]) => ({...v, id: k}));
@@ -319,7 +368,7 @@
             }
         }
 
-            async function registerInternalPatient() {
+        async function registerInternalPatient() {
             const name = document.getElementById('int-patient-name').value.trim();
             const duration = document.getElementById('int-patient-duration').value;
             const editId = document.getElementById('edit-pre-id').value;
@@ -335,9 +384,9 @@
             const today = new Date();
             let daysToAdd = 1; // Padrão: amanhã
             if (today.getDay() === 5) { // 5 = Sexta-feira
-                daysToAdd = 3; // Pula Sábado(1) e Domingo(2), agenda para Segunda(3)
+                daysToAdd = 3; // Pula Sábado e Domingo
             } else if (today.getDay() === 6) { // 6 = Sábado
-                daysToAdd = 2; // Pula Domingo, agenda para Segunda
+                daysToAdd = 2; // Pula Domingo
             }
             
             const targetDate = new Date(today);
@@ -397,11 +446,13 @@
                 
                 // Sidebar mostra APENAS os agendamentos de HOJE ou do FUTURO
                 const preCadastros = cachedAssessments.filter(a => {
-                    let dataAgendada = a.data_agendamento || hojeStr;
+                    let dataAgendada = String(a.data_agendamento || hojeStr).trim();
                     if(dataAgendada.includes('/')) {
                         const pArr = dataAgendada.split('/');
-                        dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
+                        if(pArr.length === 3) dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
                     }
+                    if(dataAgendada.includes('T')) dataAgendada = dataAgendada.split('T')[0];
+                    
                     return a.status === 'pre_cadastro' && dataAgendada >= hojeStr;
                 });
 
@@ -450,13 +501,15 @@
                 const completedCobrancas = cachedCobrancas.filter(c => c.status === 'pago' || c.status === 'completed');
                 completedCobrancas.forEach(c => { listCobrancas.push({ type: 'cobranca', data: c }); });
 
-                // HISTÓRICO DE EXPIrados (NÃO COMPARECEU) - Pacientes pré-cadastrados com data < hoje
+                // HISTÓRICO DE EXPIRADOS (NÃO COMPARECEU) - Pacientes pré-cadastrados com data < hoje
                 const expiredPre = cachedAssessments.filter(a => {
-                    let dataAgendada = a.data_agendamento || hojeStr;
+                    let dataAgendada = String(a.data_agendamento || hojeStr).trim();
                     if(dataAgendada.includes('/')) {
                         const pArr = dataAgendada.split('/');
-                        dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
+                        if(pArr.length === 3) dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
                     }
+                    if(dataAgendada.includes('T')) dataAgendada = dataAgendada.split('T')[0];
+                    
                     return a.status === 'pre_cadastro' && dataAgendada < hojeStr;
                 });
                 
@@ -598,7 +651,7 @@
                 if(isExternal) cardClass += ' externo';
                 let btn = '';
 
-                if (!d.status || d.status === 'pending') { statusText = 'AGUARDANDO CHAMADO'; badgeColor = '#9CA3AF'; }
+                if (!d.status || d.status === 'pending' || d.status === 'aguardando_chamada') { statusText = 'AGUARDANDO CHAMADO'; badgeColor = '#9CA3AF'; }
                 else if (d.status === 'called') {
                     statusText = 'CHAMADO PELA ENFERMAGEM'; badgeColor = '#F59E0B'; cardClass += ' called';
                     if (isExternal) btn = `<button class="btn-action btn-info" onclick="updateStatus('${d.id}', 'on_sofa')"><i class="fas fa-couch"></i> LEVAR AO SOFÁ</button>`;
