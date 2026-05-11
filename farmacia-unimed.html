@@ -189,7 +189,7 @@
 
             if(!confirm(msgConfirmacao)) return;
 
-            // 1. Salva o status na tabela do paciente
+            // 1. Atualiza a tela primeiro para dar feedback rápido
             paciente.status_farmacia = statusEstoque;
             renderTabela(); 
 
@@ -201,7 +201,7 @@
                 });
 
                 // 2. Dispara o e-mail pela rota nova
-                await fetch(`${API_BASE_URL}/fluxo-unimed/farmacia`, {
+                const resMail = await fetch(`${API_BASE_URL}/fluxo-unimed/farmacia`, {
                     method: 'POST', 
                     headers: API_HEADERS,
                     body: JSON.stringify({ 
@@ -212,9 +212,17 @@
                     })
                 });
 
+                // 🚨 NOVA VALIDAÇÃO: Se o servidor retornar 500, força o erro!
+                if (!resMail.ok) {
+                    throw new Error(`Erro do servidor. Não foi possível enviar o e-mail.`);
+                }
+
                 alert('Enfermagem notificada com sucesso!');
             } catch (e) {
-                alert("Houve um erro ao processar a notificação.");
+                // Se der erro de verdade, desfaz o botão na tela
+                paciente.status_farmacia = '';
+                renderTabela();
+                alert("Houve um erro no servidor ao tentar enviar o e-mail. Verifique o terminal (pm2 logs).");
                 console.error(e);
             }
         }
