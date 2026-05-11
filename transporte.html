@@ -319,7 +319,7 @@
             }
         }
 
-        async function registerInternalPatient() {
+            async function registerInternalPatient() {
             const name = document.getElementById('int-patient-name').value.trim();
             const duration = document.getElementById('int-patient-duration').value;
             const editId = document.getElementById('edit-pre-id').value;
@@ -331,14 +331,23 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             btn.disabled = true;
 
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const dataAgendamento = tomorrow.toISOString().split('T')[0];
+            // LÓGICA INTELIGENTE DE FIM DE SEMANA
+            const today = new Date();
+            let daysToAdd = 1; // Padrão: amanhã
+            if (today.getDay() === 5) { // 5 = Sexta-feira
+                daysToAdd = 3; // Pula Sábado(1) e Domingo(2), agenda para Segunda(3)
+            } else if (today.getDay() === 6) { // 6 = Sábado
+                daysToAdd = 2; // Pula Domingo, agenda para Segunda
+            }
+            
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + daysToAdd);
+            const dataAgendamento = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0') + '-' + String(targetDate.getDate()).padStart(2, '0');
 
             try {
                 if (editId) {
                     const p = cachedAssessments.find(a => a.id_firebase === editId || a.key === editId);
-                    const updatedData = { ...p, name: name, duration: duration };
+                    const updatedData = { ...p, name: name, duration: duration, atendido: false };
                     
                     await fetch(`${API_BASE_URL}/painAssessments/${editId}`, { 
                         method:'PUT', headers:{ 'Content-Type':'application/json', ...API_HEADERS }, body:JSON.stringify(updatedData) 
@@ -347,7 +356,7 @@
                 } else {
                     const data = { 
                         name: name, origin: 'interna', duration: duration, data_agendamento: dataAgendamento,
-                        timestamp: new Date().toISOString(), atendido: true, status: 'pre_cadastro', id_firebase: 'int_' + Date.now()
+                        timestamp: new Date().toISOString(), atendido: false, status: 'pre_cadastro', id_firebase: 'int_' + Date.now()
                     };
                     await fetch(`${API_BASE_URL}/painAssessments`, { 
                         method:'POST', headers:{ 'Content-Type':'application/json', ...API_HEADERS }, body:JSON.stringify(data) 
