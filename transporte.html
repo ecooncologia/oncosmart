@@ -147,13 +147,9 @@
                 <div style="flex:1; min-width: 150px;">
                     <label style="font-size:12px; font-weight:800; color:var(--primary); margin-bottom:5px; display:block;">Tempo de Duração (Previsão)</label>
                     <select id="int-patient-duration" class="form-control" style="background:white;">
-                        <option value="" disabled selected>Selecione o tempo...</option>
-                        <option value="30 min">30 min</option>
-                        <option value="1 hora">1 hora</option>
-                        <option value="1h 30m">1 hora e 30 min</option>
-                        <option value="2 horas">2 horas</option>
-                        <option value="3 horas">3 horas</option>
-                        <option value="Longa Duração">Longa Duração (4h+)</option>
+                        <option value="" disabled selected>Selecione a duração...</option>
+                        <option value="curta">Curta Duração</option>
+                        <option value="longa">Longa Duração</option>
                     </select>
                 </div>
                 
@@ -235,7 +231,7 @@
         let cachedCalls = [];
         let cachedCobrancas = [];
         
-        let allUniqueNames = []; // Global para o autocomplete
+        let allUniqueNames = []; 
 
         const translations = {
             care: { 'silence': 'Silêncio', 'conversation': 'Conversa', 'questions': 'Dúvidas' },
@@ -269,14 +265,12 @@
             loadData();
         });
 
-        // FECHA O AUTOCOMPLETE SE CLICAR FORA
         document.addEventListener('click', function (e) {
             if (e.target.id !== 'int-patient-name') {
                 document.getElementById('autocomplete-list').innerHTML = '';
             }
         });
 
-        // FILTRO DO AUTOCOMPLETE
         function filterPatients(val) {
             const list = document.getElementById('autocomplete-list');
             list.innerHTML = '';
@@ -284,7 +278,7 @@
             
             const matches = allUniqueNames.filter(name => name.toLowerCase().includes(val.toLowerCase()));
             
-            matches.slice(0, 8).forEach(match => { // Limita a 8 opções para não quebrar o layout
+            matches.slice(0, 8).forEach(match => { 
                 const div = document.createElement('div');
                 const regex = new RegExp(`(${val})`, "gi");
                 const highlighted = match.replace(regex, "<strong style='color:var(--primary);'>$1</strong>");
@@ -314,7 +308,6 @@
                 const rawAssessments = await resAssessments.json();
                 const rawCalls = await resCalls.json();
 
-                // EXTRAI NOMES ÚNICOS PARA O AUTOCOMPLETE
                 const namesSet = new Set();
                 Object.values(rawAssessments || {}).forEach(p => {
                     if (p.name) namesSet.add(p.name);
@@ -380,13 +373,12 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             btn.disabled = true;
 
-            // LÓGICA INTELIGENTE DE FIM DE SEMANA
             const today = new Date();
-            let daysToAdd = 1; // Padrão: amanhã
-            if (today.getDay() === 5) { // 5 = Sexta-feira
-                daysToAdd = 3; // Pula Sábado e Domingo
-            } else if (today.getDay() === 6) { // 6 = Sábado
-                daysToAdd = 2; // Pula Domingo
+            let daysToAdd = 1; 
+            if (today.getDay() === 5) { 
+                daysToAdd = 3; 
+            } else if (today.getDay() === 6) { 
+                daysToAdd = 2; 
             }
             
             const targetDate = new Date(today);
@@ -436,15 +428,12 @@
             let listCobrancas = [];
             const now = new Date();
             
-            // Pega a data atual do fuso do navegador
             const todayObj = new Date();
             const hojeStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth() + 1).padStart(2, '0') + '-' + String(todayObj.getDate()).padStart(2, '0');
 
-            // 1. POPULAR SIDEBAR DE PRÉ-CADASTROS
             if (currentOrigin === 'interna') {
                 document.getElementById('sidebar-precadastro').style.display = 'block';
                 
-                // Sidebar mostra APENAS os agendamentos de HOJE ou do FUTURO
                 const preCadastros = cachedAssessments.filter(a => {
                     let dataAgendada = String(a.data_agendamento || hojeStr).trim();
                     if(dataAgendada.includes('/')) {
@@ -468,6 +457,7 @@
                             if(!dateStr.includes('/')) {
                                 dateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
                             }
+                            const durText = p.duration === 'longa' ? 'Longa Duração' : (p.duration === 'curta' ? 'Curta Duração' : p.duration);
                             return `
                             <div class="precadastro-box">
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -479,7 +469,7 @@
                                 </div>
                                 <div class="precadastro-time">
                                     <i class="far fa-calendar-alt"></i> ${dateStr} &nbsp;|&nbsp; 
-                                    <i class="fas fa-stopwatch"></i> ${p.duration || '--'}
+                                    <i class="fas fa-stopwatch"></i> ${durText || '--'}
                                 </div>
                             </div>
                         `}).join('');
@@ -490,7 +480,6 @@
             }
 
 
-            // 2. SEPARAÇÃO DAS LISTAS DE CARDS
             if(currentOrigin === 'historico') {
                 const completedCalls = cachedCalls.filter(c => c.status === 'completed');
                 completedCalls.forEach(c => {
@@ -501,7 +490,6 @@
                 const completedCobrancas = cachedCobrancas.filter(c => c.status === 'pago' || c.status === 'completed');
                 completedCobrancas.forEach(c => { listCobrancas.push({ type: 'cobranca', data: c }); });
 
-                // HISTÓRICO DE EXPIRADOS (NÃO COMPARECEU) - Pacientes pré-cadastrados com data < hoje
                 const expiredPre = cachedAssessments.filter(a => {
                     let dataAgendada = String(a.data_agendamento || hojeStr).trim();
                     if(dataAgendada.includes('/')) {
@@ -519,10 +507,19 @@
 
             } else {
                 const assessmentsFiltered = cachedAssessments.filter(a => {
-                    if (a.status === 'pre_cadastro') return false; // Esconde do painel principal ativo
+                    if (a.status === 'pre_cadastro') return false; 
+                    
                     const hasActiveCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
                     const isRecent = (now - new Date(a.timestamp) < 86400000);
-                    return (!a.atendido || hasActiveCall) && isRecent;
+                    
+                    // AQUI ESTÁ O FILTRO INTELIGENTE DO TRANSPORTE:
+                    if (a.origin === 'interna') {
+                        // Pacientes internos SÓ aparecem no Transporte se tiverem uma chamada ativa da enfermagem
+                        return hasActiveCall && isRecent;
+                    } else {
+                        // Externos aparecem desde o início
+                        return (!a.atendido || hasActiveCall) && isRecent;
+                    }
                 });
                 
                 assessmentsFiltered.forEach(a => {
@@ -538,7 +535,6 @@
                 }
             }
 
-            // Alerta Sonoro
             const actionItems = listCalls.filter(i => i.data && (i.data.status === 'called' || i.data.status === 'returning')).length + 
                                 listCobrancas.filter(i => i.data && i.data.status === 'pendente_pagamento').length;
 
@@ -548,7 +544,6 @@
             lastCount = actionItems;
             document.getElementById('total-badge').innerText = listCalls.length + listCobrancas.length;
 
-            // 3. RENDERIZAÇÃO DAS COBRANÇAS
             if(listCobrancas.length > 0) {
                 containerCobrancas.style.display = 'block';
                 listCobrancas.sort((a,b) => new Date(b.data.data_solicitacao || 0) - new Date(a.data.data_solicitacao || 0));
@@ -592,7 +587,6 @@
             }
 
 
-            // 4. LÓGICA DE PAGINAÇÃO PARA CHAMADAS DE TRANSPORTE
             if (currentOrigin === 'historico') {
                 listCalls.sort((a,b) => new Date(b.data.transportEndTime || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.timestamp || 0));
             } else {
@@ -614,23 +608,22 @@
             const endIndex = startIndex + itemsPerPage;
             const paginatedList = listCalls.slice(startIndex, endIndex);
 
-            // RENDERIZAÇÃO DOS CARDS
             paginatedList.forEach(item => {
                 const d = item.data;
 
-                // SE FOR HISTÓRICO EXPIRADO (NÃO COMPARECEU)
                 if (item.type === 'expired') {
                     let dateStr = d.data_agendamento || '--/--/----';
                     if(!dateStr.includes('/')) {
                         dateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
                     }
+                    const durText = d.duration === 'longa' ? 'Longa Duração' : (d.duration === 'curta' ? 'Curta Duração' : d.duration);
 
                     gridCalls.innerHTML += `
                         <div class="call-card" style="border-left-color: #64748b; opacity: 0.85;">
                             <div class="patient-header">
                                 <div class="patient-name">${d.name || d.nome}</div>
                                 <div style="font-size:11px;color:#666; margin-bottom: 2px;">📅 Agendado para: <b>${dateStr}</b></div>
-                                <div style="font-size:11px;color:#666">⏳ Previsão: <b>${d.duration || '--'}</b></div>
+                                <div style="font-size:11px;color:#666">⏳ Previsão: <b>${durText || '--'}</b></div>
                             </div>
                             <div style="margin-top: 15px;">
                                 <span class="status-pill" style="background:#64748b; margin-bottom: 0;"><i class="fas fa-user-times"></i> NÃO COMPARECEU</span>
@@ -643,7 +636,6 @@
                     return; 
                 }
 
-                // CARDS NORMAIS DE TRANSPORTE
                 const isExternal = d.origin === 'externa';
                 let statusText = 'Aguardando Enf.';
                 let badgeColor = '#9CA3AF'; 
@@ -679,7 +671,8 @@
 
                 const ptName = d.patientName || d.name || 'Paciente Indefinido';
                 const timeStr = d.timestamp ? new Date(d.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
-                const durationHtml = d.duration ? `<div style="font-size:11px; color:#8B5CF6; font-weight:700; margin-top:4px;"><i class="fas fa-stopwatch"></i> Previsão: ${d.duration}</div>` : '';
+                const durTextDisplay = d.duration === 'longa' ? 'Longa Duração' : (d.duration === 'curta' ? 'Curta Duração' : d.duration);
+                const durationHtml = d.duration ? `<div style="font-size:11px; color:#8B5CF6; font-weight:700; margin-top:4px;"><i class="fas fa-stopwatch"></i> Previsão: ${durTextDisplay}</div>` : '';
                 const painVal = d.painLevel ?? d.pain_level ?? d.dor ?? '?';
                 const emotionVal = translations.emotion[d.emotion] || d.emotion || '---';
                 const postoDestino = d.posto ? `<div style="background: #1E293B; color: #F8FAFC; font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 8px; display: inline-block; margin-bottom: 12px; border: 2px solid #CBD5E0;"><i class="fas fa-map-marker-alt" style="color: #F59E0B; margin-right: 5px;"></i> IR PARA: ${d.posto.toUpperCase()}</div><br>` : '';
@@ -699,8 +692,6 @@
                 `;
             });
 
-            // DESENHA OS BOTÕES DE PAGINAÇÃO
-            const paginationDiv = document.getElementById('pagination-controls');
             if (totalItems > itemsPerPage) {
                 paginationDiv.style.display = 'flex';
                 paginationDiv.innerHTML = `
