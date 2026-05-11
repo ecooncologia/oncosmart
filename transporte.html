@@ -164,12 +164,14 @@
                     <label style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:5px; display:block;">Nome Completo do Paciente</label>
                     <input type="text" id="ext-patient-name" class="form-control" placeholder="Digite aqui...">
                 </div>
+                
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 2px; padding: 0 10px;">
                     <label for="ext-primeira-consulta" style="font-size:12px; font-weight:bold; color:#718096; margin-bottom:12px; display:block; cursor:pointer;">1ª Consulta?</label>
                     <div style="height: 30px; display: flex; align-items: center;">
                         <input type="checkbox" id="ext-primeira-consulta" style="width: 20px; height: 20px; cursor: pointer; accent-color: #10B981;">
                     </div>
                 </div>
+
                 <button class="btn btn-success" onclick="registerExternalPatient()" style="height: 42px; padding: 0 25px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; color:white; display:flex; align-items:center; gap:8px;">
                     <i class="fas fa-paper-plane"></i> ENVIAR
                 </button>
@@ -186,6 +188,7 @@
             </div>
             
             <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                
                 <div style="flex: 1; min-width: 300px;">
                     <div id="grid" class="calls-grid" style="margin-top: 0;"></div>
                     <div id="pagination-controls" class="pagination" style="display: none;"></div>
@@ -206,6 +209,7 @@
                     <div id="lista-precadastro" style="display: flex; flex-direction: column; gap: 0; max-height: 500px; overflow-y: auto; padding-right: 4px;">
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -244,10 +248,12 @@
                 updateSoundBtn();
             }
             
-            const workerBlob = new Blob([`setInterval(() => { postMessage("tick"); }, 3000);`], { type: "application/javascript" });
+            const workerBlob = new Blob([`
+                setInterval(() => { postMessage("tick"); }, 3000);
+            `], { type: "application/javascript" });
             const worker = new Worker(URL.createObjectURL(workerBlob));
+            
             worker.onmessage = () => { loadData(); };
-
             loadData();
         });
 
@@ -264,8 +270,11 @@
                     if(resCobrancas.ok) rawCobrancas = await resCobrancas.json();
                 } catch(e) {}
 
-                cachedAssessments = Object.entries(normalizeData(await resAssessments.json())).map(([k, v]) => ({...v, key: k}));
-                cachedCalls = Object.entries(normalizeData(await resCalls.json())).map(([k, v]) => ({...v, id: k}));
+                const rawAssessments = await resAssessments.json();
+                const rawCalls = await resCalls.json();
+
+                cachedAssessments = Object.entries(normalizeData(rawAssessments)).map(([k, v]) => ({...v, key: k}));
+                cachedCalls = Object.entries(normalizeData(rawCalls)).map(([k, v]) => ({...v, id: k}));
                 cachedCobrancas = Object.entries(normalizeData(rawCobrancas)).map(([k, v]) => ({...v, id: k}));
 
                 renderGrid();
@@ -304,7 +313,9 @@
                 try {
                     await fetch(`${API_BASE_URL}/painAssessments/${id}`, { method: 'DELETE', headers: API_HEADERS });
                     loadData();
-                } catch(e) { alert("Erro ao excluir."); }
+                } catch(e) {
+                    alert("Erro ao excluir.");
+                }
             }
         }
 
@@ -328,9 +339,7 @@
                 if (editId) {
                     const p = cachedAssessments.find(a => a.id_firebase === editId || a.key === editId);
                     const updatedData = { ...p, name: name, duration: duration };
-                    // MANTÉM ATENDIDO TRUE PARA ESCONDER DA ENFERMAGEM
-                    updatedData.atendido = true; 
-
+                    
                     await fetch(`${API_BASE_URL}/painAssessments/${editId}`, { 
                         method:'PUT', headers:{ 'Content-Type':'application/json', ...API_HEADERS }, body:JSON.stringify(updatedData) 
                     });
@@ -338,9 +347,7 @@
                 } else {
                     const data = { 
                         name: name, origin: 'interna', duration: duration, data_agendamento: dataAgendamento,
-                        timestamp: new Date().toISOString(), 
-                        atendido: true, // ESCONDE DA ENFERMAGEM (O Totem vai mudar pra false depois)
-                        status: 'pre_cadastro', id_firebase: 'int_' + Date.now()
+                        timestamp: new Date().toISOString(), atendido: true, status: 'pre_cadastro', id_firebase: 'int_' + Date.now()
                     };
                     await fetch(`${API_BASE_URL}/painAssessments`, { 
                         method:'POST', headers:{ 'Content-Type':'application/json', ...API_HEADERS }, body:JSON.stringify(data) 
@@ -348,6 +355,7 @@
                     document.getElementById('int-patient-name').value = '';
                     document.getElementById('int-patient-duration').value = '';
                 }
+                
                 loadData();
             } catch(e) {
                 console.error("Erro:", e);
@@ -369,10 +377,25 @@
             let listCalls = [];
             let listCobrancas = [];
             const now = new Date();
+            
+            // Pega a data atual do fuso do navegador
+            const todayObj = new Date();
+            const hojeStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth() + 1).padStart(2, '0') + '-' + String(todayObj.getDate()).padStart(2, '0');
 
+            // 1. POPULAR SIDEBAR DE PRÉ-CADASTROS
             if (currentOrigin === 'interna') {
                 document.getElementById('sidebar-precadastro').style.display = 'block';
-                const preCadastros = cachedAssessments.filter(a => a.status === 'pre_cadastro');
+                
+                // Sidebar mostra APENAS os agendamentos de HOJE ou do FUTURO
+                const preCadastros = cachedAssessments.filter(a => {
+                    let dataAgendada = a.data_agendamento || hojeStr;
+                    if(dataAgendada.includes('/')) {
+                        const pArr = dataAgendada.split('/');
+                        dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
+                    }
+                    return a.status === 'pre_cadastro' && dataAgendada >= hojeStr;
+                });
+
                 const listaPre = document.getElementById('lista-precadastro');
                 document.getElementById('badge-pre').innerText = preCadastros.length;
                 
@@ -381,7 +404,10 @@
                         listaPre.innerHTML = '<div style="font-size: 12px; color: #94a3b8; text-align: center; padding: 20px 10px;">Nenhum agendamento pendente.</div>';
                     } else {
                         listaPre.innerHTML = preCadastros.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(p => {
-                            const dateStr = p.data_agendamento ? new Date(p.data_agendamento + 'T00:00:00').toLocaleDateString('pt-BR') : '--/--/----';
+                            let dateStr = p.data_agendamento || '--/--/----';
+                            if(!dateStr.includes('/')) {
+                                dateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+                            }
                             return `
                             <div class="precadastro-box">
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -403,6 +429,8 @@
                 document.getElementById('sidebar-precadastro').style.display = 'none';
             }
 
+
+            // 2. SEPARAÇÃO DAS LISTAS DE CARDS
             if(currentOrigin === 'historico') {
                 const completedCalls = cachedCalls.filter(c => c.status === 'completed');
                 completedCalls.forEach(c => {
@@ -412,12 +440,24 @@
 
                 const completedCobrancas = cachedCobrancas.filter(c => c.status === 'pago' || c.status === 'completed');
                 completedCobrancas.forEach(c => { listCobrancas.push({ type: 'cobranca', data: c }); });
+
+                // HISTÓRICO DE EXPIrados (NÃO COMPARECEU) - Pacientes pré-cadastrados com data < hoje
+                const expiredPre = cachedAssessments.filter(a => {
+                    let dataAgendada = a.data_agendamento || hojeStr;
+                    if(dataAgendada.includes('/')) {
+                        const pArr = dataAgendada.split('/');
+                        dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
+                    }
+                    return a.status === 'pre_cadastro' && dataAgendada < hojeStr;
+                });
+                
+                expiredPre.forEach(a => { 
+                    listCalls.push({ type: 'expired', data: a }); 
+                });
+
             } else {
                 const assessmentsFiltered = cachedAssessments.filter(a => {
-                    if (a.status === 'pre_cadastro') return false; 
-                    // Se estiver com atendido == true e não for pre_cadastro (ou seja, resolvido), ignora.
-                    if (a.atendido) return false;
-                    
+                    if (a.status === 'pre_cadastro') return false; // Esconde do painel principal ativo
                     const hasActiveCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
                     const isRecent = (now - new Date(a.timestamp) < 86400000);
                     return (!a.atendido || hasActiveCall) && isRecent;
@@ -436,8 +476,9 @@
                 }
             }
 
-            const actionItems = listCalls.filter(i => i.data.status === 'called' || i.data.status === 'returning').length + 
-                                listCobrancas.filter(i => i.data.status === 'pendente_pagamento').length;
+            // Alerta Sonoro
+            const actionItems = listCalls.filter(i => i.data && (i.data.status === 'called' || i.data.status === 'returning')).length + 
+                                listCobrancas.filter(i => i.data && i.data.status === 'pendente_pagamento').length;
 
             if (audioEnabled && actionItems > lastCount && currentOrigin !== 'historico') {
                 document.getElementById('notification-sound').play().catch(()=>{});
@@ -445,6 +486,7 @@
             lastCount = actionItems;
             document.getElementById('total-badge').innerText = listCalls.length + listCobrancas.length;
 
+            // 3. RENDERIZAÇÃO DAS COBRANÇAS
             if(listCobrancas.length > 0) {
                 containerCobrancas.style.display = 'block';
                 listCobrancas.sort((a,b) => new Date(b.data.data_solicitacao || 0) - new Date(a.data.data_solicitacao || 0));
@@ -487,6 +529,8 @@
                 containerCobrancas.style.display = 'none';
             }
 
+
+            // 4. LÓGICA DE PAGINAÇÃO PARA CHAMADAS DE TRANSPORTE
             if (currentOrigin === 'historico') {
                 listCalls.sort((a,b) => new Date(b.data.transportEndTime || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.timestamp || 0));
             } else {
@@ -508,8 +552,36 @@
             const endIndex = startIndex + itemsPerPage;
             const paginatedList = listCalls.slice(startIndex, endIndex);
 
+            // RENDERIZAÇÃO DOS CARDS
             paginatedList.forEach(item => {
                 const d = item.data;
+
+                // SE FOR HISTÓRICO EXPIRADO (NÃO COMPARECEU)
+                if (item.type === 'expired') {
+                    let dateStr = d.data_agendamento || '--/--/----';
+                    if(!dateStr.includes('/')) {
+                        dateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+                    }
+
+                    gridCalls.innerHTML += `
+                        <div class="call-card" style="border-left-color: #64748b; opacity: 0.85;">
+                            <div class="patient-header">
+                                <div class="patient-name">${d.name || d.nome}</div>
+                                <div style="font-size:11px;color:#666; margin-bottom: 2px;">📅 Agendado para: <b>${dateStr}</b></div>
+                                <div style="font-size:11px;color:#666">⏳ Previsão: <b>${d.duration || '--'}</b></div>
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <span class="status-pill" style="background:#64748b; margin-bottom: 0;"><i class="fas fa-user-times"></i> NÃO COMPARECEU</span>
+                            </div>
+                            <button class="btn" style="width:100%; background:#fff; border:2px solid #fee2e2; color:#EF4444; margin-top:15px; padding:10px; border-radius:8px; cursor:pointer; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'" onclick="deletePreCadastro('${d.id_firebase || d.key}')">
+                                <i class="fas fa-trash"></i> Excluir Registro
+                            </button>
+                        </div>
+                    `;
+                    return; 
+                }
+
+                // CARDS NORMAIS DE TRANSPORTE
                 const isExternal = d.origin === 'externa';
                 let statusText = 'Aguardando Enf.';
                 let badgeColor = '#9CA3AF'; 
@@ -565,6 +637,7 @@
                 `;
             });
 
+            // DESENHA OS BOTÕES DE PAGINAÇÃO
             const paginationDiv = document.getElementById('pagination-controls');
             if (totalItems > itemsPerPage) {
                 paginationDiv.style.display = 'flex';
@@ -582,6 +655,26 @@
             currentPage += direction;
             renderGrid();
             document.querySelector('.nav-scroller').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        async function payCobranca(id) {
+            if(confirm("Confirmar pagamento na maquininha? O card será movido para o histórico.")) {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/transporte`, { headers: API_HEADERS });
+                    const all = await res.json();
+                    const current = all[id];
+                    
+                    if (current) {
+                        current.status = 'pago';
+                        current.data_pagamento = new Date().toISOString();
+                        
+                        await fetch(`${API_BASE_URL}/transporte/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...API_HEADERS }, body: JSON.stringify(current) });
+                        loadData();
+                    }
+                } catch(e) {
+                    alert("Erro ao confirmar pagamento. Tente novamente.");
+                }
+            }
         }
 
         async function registerExternalPatient() {
