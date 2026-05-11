@@ -214,6 +214,9 @@
                     const itemDate = new Date(val.timestamp);
                     if (now - itemDate > 86400000) return;
 
+                    // TRAVA AQUI: Se for pre_cadastro, ele NEM ENTRA na lista da Enfermagem
+                    if (val.status === 'pre_cadastro') return;
+
                     if (!val.atendido || activeCalls[key]) {
                         assessments.push({ ...val, key: key });
                     }
