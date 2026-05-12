@@ -227,7 +227,12 @@
                 }
                 
                 const rawDate = budget.data || budget.data_criacao || budget.created_at;
-                const dataFmt = rawDate ? new Date(rawDate).toLocaleDateString('pt-BR') : '-';
+                let dataFmt = '-';
+                if (rawDate) {
+                    // Pega apenas a data (YYYY-MM-DD), corta os pedaços e monta como DD/MM/YYYY
+                    const [ano, mes, dia] = rawDate.split('T')[0].split('-');
+                    dataFmt = `${dia}/${mes}/${ano}`;
+                }
                 
                 // TRAVA VISUAL: Força a conversão para float e crava em 2 casas decimais estritamente
                 let valor = parseFloat(budget.valor_final || budget.total || 0);
