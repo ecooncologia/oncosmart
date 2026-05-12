@@ -5,6 +5,7 @@
     --primary-soft: #d1fae5;
 
     --accent: #85BFCD;
+    --secondary: #1e293b; /* <-- ADICIONE ESTA LINHA */
 
     /* CORREÇÃO DO CONTRASTE: Fundo levemente mais escuro para os cards brancos aparecerem */
     --bg-color: #e9eef5; 
