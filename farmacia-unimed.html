@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Farmácia - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        
+        .controls { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: flex-end; }
+        
+        .action-buttons-container { display: flex; flex-direction: column; gap: 8px; width: 150px; margin: 0 auto; }
+        
+        .btn-table {
+            color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;
+            font-weight: bold; font-size: 11px; transition: 0.2s; display: flex; gap: 6px; 
+            align-items: center; justify-content: center; width: 100%; box-sizing: border-box;
+        }
+        
+        .btn-t-success { background: #10b981; } 
+        .btn-t-success:hover { background: #059669; }
+        
+        .btn-t-danger { background: #ef4444; } 
+        .btn-t-danger:hover { background: #dc2626; }
+
+        .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; padding-bottom: 10px; }
+        .table-responsive { overflow-x: auto; width: 100%; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+        .data-table th { background: #0284c7; color: white; padding: 12px 14px; text-align: left; position: sticky; top: 0; z-index: 10; font-size: 11px; text-transform: uppercase; }
+        .data-table td { padding: 10px 14px; border-bottom: 1px solid #eee; color: #374151; vertical-align: middle; }
+        .data-table tbody tr:hover { background-color: #f0f9ff; }
+        
+        .status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 10px; text-transform: uppercase; display: inline-block; text-align: center; margin-top: 5px; width: 100%; box-sizing: border-box;}
+        .st-ok { background: #d1fae5; color: #059669; border: 1px solid #a7f3d0; }
+        .st-falta { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+
+        .info-block { display: flex; flex-direction: column; gap: 3px; }
+        .info-label { font-size: 9px; color: #6b7280; font-weight: bold; text-transform: uppercase; }
+        .info-val { font-size: 12px; font-weight: 600; color: #111827; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="controls">
+            <div>
+                <h2 style="margin:0; color:#1f2937; display:flex; align-items:center; gap:10px;"><i class="fas fa-pills" style="color:#0284c7;"></i> Painel da Farmácia - Liberações Unimed</h2>
+                <p style="margin:5px 0 0; color:#6b7280; font-size:13px;">Confira os protocolos autorizados e sinalize a disponibilidade no estoque para a enfermagem.</p>
+            </div>
+        </div>
+
+        <div class="sheet-container">
+            <div class="table-responsive">
+                <table class="data-table" id="tabelaFarmacia">
+                    <thead>
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Protocolo (Medicamento)</th>
+                            <th>Diagnóstico</th>
+                            <th>Datas e Prazos</th>
+                            <th style="text-align: center;">Validação de Estoque</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="5" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando autorizações...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pacientesFluxo = {};
+
+        async function startApp() {
+            if (typeof initGlobal !== 'undefined') {
+                initGlobal('farmacia-unimed', 'Painel da Farmácia');
+                await carregarDados();
+                // Atualiza a tela a cada 30 segundos para buscar novas aprovações
+                setInterval(carregarDados, 30000);
+            } else {
+                setTimeout(startApp, 100);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', startApp);
+
+        async function carregarDados() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { headers: API_HEADERS });
+                if(res.ok) {
+                    const data = await res.json();
+                    pacientesFluxo = data;
+                }
+            } catch(e) { pacientesFluxo = {}; }
+            renderTabela();
+        }
+
+        function formatarDataBR(dataString) {
+            if(!dataString) return '-';
+            const partes = dataString.split('-');
+            if(partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            return dataString;
+        }
+
+        function renderTabela() {
+            const tbody = document.querySelector('#tabelaFarmacia tbody');
+            let html = '';
+
+            // 💡 O SEGREDO ESTÁ AQUI: Filtra apenas os pacientes que o Nicolas já autorizou
+            let listaAutorizados = Object.values(pacientesFluxo).filter(p => p.status === 'autorizado');
+            
+            // Ordena pela data de autorização ou criação (mais antigos primeiro, para dar prioridade)
+            listaAutorizados.sort((a,b) => new Date(a.data_criacao || 0) - new Date(b.data_criacao || 0));
+
+            if(listaAutorizados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#6b7280;"><i class="fas fa-check-circle" style="font-size:24px; color:#10b981; display:block; margin-bottom:10px;"></i>Nenhum paciente aguardando validação da farmácia no momento.</td></tr>';
+                return;
+            }
+
+            listaAutorizados.forEach(p => {
+                let acoesHtml = `<div class="action-buttons-container">`;
+                
+                // Se a farmácia já respondeu, mostra um badge. Se não, mostra os botões.
+                if (p.status_farmacia === 'em_estoque') {
+                    acoesHtml += `<span class="status-badge st-ok"><i class="fas fa-check"></i> Estoque Confirmado</span>`;
+                    acoesHtml += `<button style="background:none; border:none; color:#64748b; font-size:10px; cursor:pointer; text-decoration:underline; margin-top:5px;" onclick="desfazerEstoque('${p.id_firebase}')">Desfazer</button>`;
+                } else if (p.status_farmacia === 'faltante') {
+                    acoesHtml += `<span class="status-badge st-falta"><i class="fas fa-times"></i> Em Falta</span>`;
+                    acoesHtml += `<button style="background:none; border:none; color:#64748b; font-size:10px; cursor:pointer; text-decoration:underline; margin-top:5px;" onclick="desfazerEstoque('${p.id_firebase}')">Desfazer</button>`;
+                } else {
+                    acoesHtml += `<button class="btn-table btn-t-success" onclick="informarEstoque('${p.id_firebase}', 'em_estoque')"><i class="fas fa-box-open"></i> Possui no Estoque</button>`;
+                    acoesHtml += `<button class="btn-table btn-t-danger" onclick="informarEstoque('${p.id_firebase}', 'faltante')"><i class="fas fa-exclamation-triangle"></i> Faltante (Avisar)</button>`;
+                }
+                
+                acoesHtml += `</div>`;
+
+                html += `
+                    <tr>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val" style="color:#0284c7; font-size:14px;">${p.nome}</span>
+                                <span class="info-label">TTO: <span style="color:#4b5563;">${p.tto || '-'}</span></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val" style="color:#be185d; font-weight:900; font-size:13px;">${p.protocolo || 'NÃO INFORMADO'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val">${p.diagnostico || '-'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-label">Solicitado em: <span style="color:#111827;">${formatarDataBR(p.data_solicitacao)}</span></span>
+                                <span class="info-label">Intervalo Ciclos: <span style="color:#111827;">${p.intervalo ? p.intervalo+' dias' : '-'}</span></span>
+                            </div>
+                        </td>
+                        <td style="vertical-align: middle;">
+                            ${acoesHtml}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        async function informarEstoque(id, statusEstoque) {
+            const paciente = pacientesFluxo[id];
+            
+            const msgConfirmacao = statusEstoque === 'em_estoque' 
+                ? "Confirmar que o medicamento está DISPONÍVEL no estoque? A enfermagem será notificada." 
+                : "Confirmar FALTA deste medicamento? A enfermagem será alertada para providenciar.";
+
+            if(!confirm(msgConfirmacao)) return;
+
+            // 1. Atualiza a tela primeiro para dar feedback rápido
+            paciente.status_farmacia = statusEstoque;
+            renderTabela(); 
+
+            try {
+                await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { 
+                    method: 'POST', 
+                    headers: API_HEADERS, 
+                    body: JSON.stringify(paciente) 
+                });
+
+                // 2. Dispara o e-mail pela rota nova
+                const resMail = await fetch(`${API_BASE_URL}/fluxo-unimed/farmacia`, {
+                    method: 'POST', 
+                    headers: API_HEADERS,
+                    body: JSON.stringify({ 
+                        pacienteNome: paciente.nome, 
+                        protocolo: paciente.protocolo, 
+                        statusEstoque: statusEstoque, 
+                        pacienteDados: paciente 
+                    })
+                });
+
+                // 🚨 NOVA VALIDAÇÃO: Se o servidor retornar 500, força o erro!
+                if (!resMail.ok) {
+                    throw new Error(`Erro do servidor. Não foi possível enviar o e-mail.`);
+                }
+
+                alert('Enfermagem notificada com sucesso!');
+            } catch (e) {
+                // Se der erro de verdade, desfaz o botão na tela
+                paciente.status_farmacia = '';
+                renderTabela();
+                alert("Houve um erro no servidor ao tentar enviar o e-mail. Verifique o terminal (pm2 logs).");
+                console.error(e);
+            }
+        }
+
+        async function desfazerEstoque(id) {
+            if(!confirm("Desfazer a seleção de estoque? O e-mail já enviado não pode ser cancelado.")) return;
+            
+            pacientesFluxo[id].status_farmacia = '';
+            renderTabela();
+            
+            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { 
+                method: 'POST', 
+                headers: API_HEADERS, 
+                body: JSON.stringify(pacientesFluxo[id]) 
+            });
+        }
+    </script>
+</body>
+</html>
