@@ -606,7 +606,7 @@
                         'Content-Type':'application/json',
                         ...API_HEADERS
                     }, 
-                    body:JSON.stringify({...t, desc: t.desc + baseEntry + anexoHtml, nova_nota: txt}) 
+                    body:JSON.stringify({...t, desc: t.desc + baseEntry + anexoHtml}) 
                 });
                 btn.disabled = false;
                 btn.innerText = "Enviar";
