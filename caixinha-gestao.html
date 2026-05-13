@@ -270,8 +270,9 @@
             dadosMes.pagamentos[colabId] = novoStatus;
             dbPagamentos[mesRef] = dadosMes;
 
+            // ===== CORREÇÃO APLICADA AQUI ABAIXO =====
             await fetch(`${API_BASE_URL}/caixinha_pagamentos/${mesRef}`, {
-                method: 'POST',
+                method: 'PUT', // Estava como POST e foi corrigido para PUT para validar o ID na URL
                 headers: { 'Content-Type': 'application/json', ...API_HEADERS },
                 body: JSON.stringify(dadosMes)
             });
@@ -400,7 +401,7 @@
             if(d.comprovante.startsWith('data:image')) {
                 view.innerHTML = `<img src="${d.comprovante}" style="max-width:100%; max-height:60vh; border-radius:8px;">`;
             } else {
-                view.innerHTML = `<a href="${d.comprovante}" download="comprovante" class="btn btn-secondary"><i class="fas fa-download"></i> Baixar Arquivo</a>`;
+                view.innerHTML = `<a href="${d.comprovante}" download="comprovante" class="btn btn-secondary" style="padding:10px; border-radius:8px; text-decoration:none; color:white; background:#64748b;"><i class="fas fa-download"></i> Baixar Arquivo</a>`;
             }
             
             document.getElementById('modalComprovante').style.display = 'flex';
