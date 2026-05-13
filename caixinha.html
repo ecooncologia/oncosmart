@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caixinha da ECO - ONCO SMART</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0px; overflow-x: auto; }
+        .tab-btn { background: #F9FAFB; border: 1px solid #e2e8f0; border-bottom: none; padding: 12px 24px; font-size: 14px; font-weight: 700; color: var(--text-light); cursor: pointer; border-radius: 12px 12px 0 0; transition: 0.2s; white-space: nowrap; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-btn:hover:not(.active) { background: #e2e8f0; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
+        .kpi-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 15px; }
+        .kpi-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .kpi-icon.blue { background: #e0f2fe; color: #0284c7; }
+        .kpi-icon.green { background: #d1fae5; color: #059669; }
+        .kpi-icon.red { background: #fee2e2; color: #dc2626; }
+        .kpi-info h4 { margin: 0; font-size: 12px; color: #64748b; text-transform: uppercase; }
+        .kpi-info h2 { margin: 5px 0 0; font-size: 24px; color: #1e293b; }
+
+        .admin-only { display: none; }
+        
+        .list-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); margin-bottom: 20px; }
+        .list-card h3 { margin-top: 0; color: var(--secondary); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #f8fafc; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 12px; font-size: 13px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        
+        .status-badge { padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; display: inline-block; }
+        .st-pago { background: #d1fae5; color: #059669; border: 1px solid #a7f3d0; }
+        .st-pendente { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+
+        .btn-action { padding: 6px 12px; border-radius: 6px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; color: white; }
+        .btn-pay { background: #10b981; }
+        .btn-pay:hover { background: #059669; }
+        .btn-remind { background: #3b82f6; }
+        .btn-remind:hover { background: #2563eb; }
+        .btn-undo { background: #64748b; }
+        
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; }
+        .form-inline { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .form-inline { flex-direction: column; align-items: stretch; }
+        }
+
+        .avatar-circle { width: 35px; height: 35px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; margin-right: 10px; }
+        
+        /* Modals */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .file-upload-wrapper { border: 1px dashed #cbd5e1; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; background: #f8fafc; transition: 0.2s; margin-bottom: 15px; }
+        .file-upload-wrapper:hover { background: #f1f5f9; border-color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="color:var(--secondary); margin:0;"><i class="fas fa-piggy-bank"></i> Caixinha ECO</h2>
+            
+            <!-- Botão escondido para facilitar os testes da Jocineide ou Desenvolvedor -->
+            <button class="btn btn-outline" id="btnForceAdmin" onclick="toggleAdminMode()" style="font-size:11px; padding:5px 10px;">Forçar Visão Admin</button>
+        </div>
+
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard Público</button>
+            <button class="tab-btn admin-only" onclick="switchTab('gestao', this)">Gestão do Mês</button>
+            <button class="tab-btn admin-only" onclick="switchTab('despesas', this)">Despesas / Comprovantes</button>
+            <button class="tab-btn admin-only" onclick="switchTab('colaboradores', this)">Colaboradores</button>
+        </div>
+
+        <!-- TAB: DASHBOARD -->
+        <div id="tab-dashboard" class="tab-content">
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon blue"><i class="fas fa-wallet"></i></div>
+                    <div class="kpi-info"><h4>Saldo Total Atual</h4><h2 id="kpiSaldoTotal">R$ 0,00</h2></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green"><i class="fas fa-hand-holding-usd"></i></div>
+                    <div class="kpi-info"><h4>Arrecadado neste Mês</h4><h2 id="kpiArrecadadoMes">R$ 0,00</h2></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon red"><i class="fas fa-receipt"></i></div>
+                    <div class="kpi-info"><h4>Despesas neste Mês</h4><h2 id="kpiDespesasMes">R$ 0,00</h2></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="list-card">
+                    <h3><i class="fas fa-birthday-cake" style="color:#f59e0b;"></i> Aniversariantes do Mês</h3>
+                    <div id="aniversariantesList" style="font-size:13px; color:#64748b;">Nenhum aniversariante cadastrado.</div>
+                </div>
+                <div class="list-card">
+                    <h3><i class="fas fa-history" style="color:#64748b;"></i> Últimas Despesas / Recibos</h3>
+                    <div class="table-responsive">
+                        <table id="ultimasDespesasTable">
+                            <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Comprovante</th></tr></thead>
+                            <tbody><tr><td colspan="4" style="text-align:center;">Carregando...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: GESTÃO DO MÊS -->
+        <div id="tab-gestao" class="tab-content" style="display:none;">
+            <div class="list-card">
+                <div class="toolbar">
+                    <h3><i class="fas fa-tasks"></i> Controle de Pagamentos</h3>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <label style="margin:0;">Mês de Referência:</label>
+                        <input type="month" id="gestaoMesRef" class="form-control" style="width:180px;" onchange="renderGestaoTable()">
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table id="gestaoTable">
+                        <thead><tr><th>Colaborador</th><th>Valor Padrão</th><th>Status</th><th style="text-align:right;">Ações</th></tr></thead>
+                        <tbody><tr><td colspan="4" style="text-align:center;">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: DESPESAS -->
+        <div id="tab-despesas" class="tab-content" style="display:none;">
+            <div class="list-card">
+                <h3><i class="fas fa-file-invoice-dollar"></i> Registrar Nova Despesa</h3>
+                <div class="form-inline">
+                    <input type="date" id="despData" class="form-control" style="flex:1;">
+                    <input type="text" id="despDesc" class="form-control" placeholder="Descrição (ex: Bolo da Maria)" style="flex:2;">
+                    <input type="number" id="despValor" class="form-control" placeholder="Valor (R$)" style="flex:1;" step="0.01">
+                    
+                    <div class="file-upload-wrapper" style="margin-bottom:0; flex:1; padding:10px;" onclick="document.getElementById('despArquivo').click()">
+                        <i class="fas fa-upload"></i> Anexar Foto
+                        <input type="file" id="despArquivo" style="display:none;" onchange="document.getElementById('despNomeArq').innerText = this.files[0] ? this.files[0].name : ''">
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="salvarDespesa()" id="btnSalvarDespesa" style="flex:1;">Salvar</button>
+                </div>
+                <div id="despNomeArq" style="font-size:11px; color:#666; margin-top:-10px; margin-bottom:20px; text-align:right;"></div>
+
+                <h3><i class="fas fa-list"></i> Histórico Completo de Despesas</h3>
+                <div class="table-responsive">
+                    <table id="despesasTable">
+                        <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Comprovante</th><th style="text-align:right;">Excluir</th></tr></thead>
+                        <tbody><tr><td colspan="5" style="text-align:center;">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: COLABORADORES -->
+        <div id="tab-colaboradores" class="tab-content" style="display:none;">
+            <div class="list-card">
+                <h3><i class="fas fa-users"></i> Adicionar à Caixinha</h3>
+                <div class="form-inline">
+                    <input type="text" id="colabNome" class="form-control" placeholder="Nome Completo" style="flex:2;">
+                    <input type="email" id="colabEmail" class="form-control" placeholder="E-mail" style="flex:2;">
+                    <input type="text" id="colabAniversario" class="form-control" placeholder="Aniversário (DD/MM)" style="flex:1;">
+                    <button class="btn btn-success" onclick="salvarColaborador()">Adicionar</button>
+                </div>
+
+                <h3><i class="fas fa-list-ul"></i> Lista de Participantes</h3>
+                <div class="table-responsive">
+                    <table id="colabsTable">
+                        <thead><tr><th>Nome</th><th>E-mail</th><th>Aniversário</th><th style="text-align:right;">Ações</th></tr></thead>
+                        <tbody><tr><td colspan="4" style="text-align:center;">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Visualizar Comprovante -->
+    <div id="modalComprovante" class="modal-overlay">
+        <div class="modal-box" style="text-align:center;">
+            <h3 style="color:var(--secondary); margin-top:0;">Comprovante</h3>
+            <div id="comprovanteView" style="margin-bottom:20px;"></div>
+            <button class="btn btn-secondary" style="width:100%;" onclick="fecharModal('modalComprovante')">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let isAdmin = false;
+        
+        // Bancos Locais em Memória
+        let dbColabs = {};
+        let dbPagamentos = {};
+        let dbDespesas = {};
+        
+        const MENSALIDADE = 10.00; // Valor fixo da caixinha
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGlobal('caixinha', 'Caixinha ECO');
+            
+            const u = localStorage.getItem('ecoUser');
+            if(u) {
+                currentUser = JSON.parse(u);
+                
+                // Libera para quem for Admin ou se o email for da Jocineide
+                if (currentUser.permissoes && (currentUser.permissoes.admin || currentUser.permissoes.helpdesk_admin) || (currentUser.email && currentUser.email.toLowerCase().includes('jocineide'))) {
+                    isAdmin = true;
+                }
+            }
+
+            aplicarPermissoes();
+
+            // Setar mês atual no input de Gestão
+            const now = new Date();
+            const mesAtualStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            document.getElementById('gestaoMesRef').value = mesAtualStr;
+
+            await carregarDadosDB();
+        });
+
+        function aplicarPermissoes() {
+            const adminEls = document.querySelectorAll('.admin-only');
+            adminEls.forEach(el => {
+                el.style.display = isAdmin ? 'inline-block' : 'none';
+            });
+            
+            if(!isAdmin && document.querySelector('.tab-btn.active').getAttribute('onclick').includes('gestao')) {
+                switchTab('dashboard', document.querySelector('.tabs-container button'));
+            }
+        }
+
+        function toggleAdminMode() {
+            isAdmin = !isAdmin;
+            aplicarPermissoes();
+            alert(isAdmin ? "Modo Administrador (Jocineide) ATIVADO!" : "Modo Colaborador Normal ATIVADO!");
+        }
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            document.getElementById('tab-' + tabId).style.display = 'block';
+            
+            if(el) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                el.classList.add('active');
+            }
+        }
+
+        async function carregarDadosDB() {
+            try {
+                // Trazendo dados usando a rota genérica que já temos blindada
+                const [resColabs, resPags, resDesp] = await Promise.all([
+                    fetch(`${API_BASE_URL}/caixinha_colabs`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/caixinha_pagamentos`, { headers: API_HEADERS }),
+                    fetch(`${API_BASE_URL}/caixinha_despesas`, { headers: API_HEADERS })
+                ]);
+
+                dbColabs = normalizeData(await resColabs.json());
+                dbPagamentos = normalizeData(await resPags.json());
+                dbDespesas = normalizeData(await resDesp.json());
+
+                atualizarDashboard();
+                renderGestaoTable();
+                renderDespesasTable();
+                renderColabsTable();
+
+            } catch (error) {
+                console.error("Erro ao carregar dados da caixinha:", error);
+            }
+        }
+
+        // =====================================
+        // DASHBOARD & CALCULO DE SALDOS
+        // =====================================
+        function atualizarDashboard() {
+            const now = new Date();
+            const mesAtualStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            const mesAnoAniv = String(now.getMonth()+1).padStart(2,'0');
+
+            let totalArrecadadoGeral = 0;
+            let totalArrecadadoMes = 0;
+            let totalDespesasGeral = 0;
+            let totalDespesasMes = 0;
+
+            // Soma Pagamentos
+            Object.entries(dbPagamentos).forEach(([mesKey, dadosMes]) => {
+                if(dadosMes && dadosMes.pagamentos) {
+                    Object.values(dadosMes.pagamentos).forEach(status => {
+                        if(status === 'pago') {
+                            totalArrecadadoGeral += MENSALIDADE;
+                            if(mesKey === mesAtualStr) totalArrecadadoMes += MENSALIDADE;
+                        }
+                    });
+                }
+            });
+
+            // Soma Despesas
+            Object.values(dbDespesas).forEach(d => {
+                const val = parseFloat(d.valor || 0);
+                totalDespesasGeral += val;
+                if(d.data && d.data.startsWith(mesAtualStr)) {
+                    totalDespesasMes += val;
+                }
+            });
+
+            const saldoTotal = totalArrecadadoGeral - totalDespesasGeral;
+
+            document.getElementById('kpiSaldoTotal').innerText = `R$ ${saldoTotal.toFixed(2).replace('.',',')}`;
+            document.getElementById('kpiArrecadadoMes').innerText = `R$ ${totalArrecadadoMes.toFixed(2).replace('.',',')}`;
+            document.getElementById('kpiDespesasMes').innerText = `R$ ${totalDespesasMes.toFixed(2).replace('.',',')}`;
+
+            // Aniversariantes do Mês
+            const anivs = Object.values(dbColabs).filter(c => c.data_aniversario && c.data_aniversario.split('/')[1] === mesAnoAniv);
+            
+            const listEl = document.getElementById('aniversariantesList');
+            if(anivs.length === 0) {
+                listEl.innerHTML = '<span style="font-style:italic;">Nenhum aniversariante neste mês.</span>';
+            } else {
+                listEl.innerHTML = anivs.map(c => `
+                    <div style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9;">
+                        <div class="avatar-circle">${c.nome.charAt(0)}</div>
+                        <div><strong style="color:var(--secondary);">${c.nome}</strong><br><small><i class="fas fa-calendar-day"></i> Dia ${c.data_aniversario.split('/')[0]}</small></div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // =====================================
+        // GESTÃO DO MÊS
+        // =====================================
+        function renderGestaoTable() {
+            const mesRef = document.getElementById('gestaoMesRef').value;
+            const tbody = document.querySelector('#gestaoTable tbody');
+            
+            if(!mesRef) return;
+            
+            const listColabs = Object.values(dbColabs);
+            if(listColabs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Nenhum colaborador cadastrado.</td></tr>';
+                return;
+            }
+
+            // Pega ou cria o mês no DB
+            const dadosMes = dbPagamentos[mesRef] || { id_firebase: mesRef, pagamentos: {} };
+
+            const trs = listColabs.map(c => {
+                const status = dadosMes.pagamentos[c.id_firebase] || 'pendente';
+                
+                let acoes = '';
+                let statusHtml = '';
+                
+                if(status === 'pago') {
+                    statusHtml = `<span class="status-badge st-pago"><i class="fas fa-check"></i> Pago</span>`;
+                    acoes = `<button class="btn-action btn-undo" onclick="marcarPagamento('${mesRef}', '${c.id_firebase}', 'pendente')"><i class="fas fa-undo"></i> Desfazer</button>`;
+                } else {
+                    statusHtml = `<span class="status-badge st-pendente">Pendente</span>`;
+                    acoes = `
+                        <button class="btn-action btn-pay" onclick="marcarPagamento('${mesRef}', '${c.id_firebase}', 'pago')"><i class="fas fa-check"></i> Marcar Pago</button>
+                        <button class="btn-action btn-remind" onclick="cobrarColaborador('${c.nome}', '${c.email}', '${mesRef}')"><i class="fas fa-envelope"></i> Cobrar</button>
+                    `;
+                }
+
+                return `
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center;">
+                            <div class="avatar-circle" style="width:30px; height:30px; font-size:12px;">${c.nome.charAt(0)}</div>
+                            <div><strong>${c.nome}</strong><br><small style="color:#64748b;">${c.email}</small></div>
+                        </div>
+                    </td>
+                    <td style="font-weight:bold; color:var(--text-light);">R$ 10,00</td>
+                    <td>${statusHtml}</td>
+                    <td style="text-align:right;">${acoes}</td>
+                </tr>`;
+            }).join('');
+
+            tbody.innerHTML = trs;
+        }
+
+        async function marcarPagamento(mesRef, colabId, novoStatus) {
+            let dadosMes = dbPagamentos[mesRef];
+            if(!dadosMes) dadosMes = { id_firebase: mesRef, pagamentos: {} };
+            if(!dadosMes.pagamentos) dadosMes.pagamentos = {};
+            
+            dadosMes.pagamentos[colabId] = novoStatus;
+            dbPagamentos[mesRef] = dadosMes;
+
+            // Salva no banco via Rota Genérica
+            await fetch(`${API_BASE_URL}/caixinha_pagamentos/${mesRef}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                body: JSON.stringify(dadosMes)
+            });
+
+            renderGestaoTable();
+            atualizarDashboard();
+        }
+
+        async function cobrarColaborador(nome, email, mesRef) {
+            if(!confirm(`Deseja enviar um e-mail de cobrança para ${nome}?`)) return;
+            
+            const [ano, mes] = mesRef.split('-');
+            const mesFormatado = `${mes}/${ano}`;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/caixinha/cobrar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify({
+                        colaboradorNome: nome,
+                        colaboradorEmail: email,
+                        mesReferencia: mesFormatado
+                    })
+                });
+
+                const ret = await res.json();
+                if(ret.sucesso) alert("Cobrança enviada com sucesso para " + email);
+                else alert("Erro ao enviar: " + ret.erro);
+
+            } catch(e) {
+                alert("Falha na comunicação com o servidor.");
+            }
+        }
+
+        // =====================================
+        // DESPESAS
+        // =====================================
+        function processFile(file, callback) {
+            if (!file) return callback(null);
+            if (file.size > 2 * 1024 * 1024) { 
+                alert("A foto/comprovante deve ter no máximo 2MB."); 
+                return callback(null); 
+            }
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => callback({ name: file.name, type: file.type, base64: reader.result });
+            reader.onerror = () => callback(null);
+        }
+
+        function salvarDespesa() {
+            const data = document.getElementById('despData').value;
+            const desc = document.getElementById('despDesc').value;
+            const val = document.getElementById('despValor').value;
+            const fileInput = document.getElementById('despArquivo');
+
+            if(!data || !desc || !val) return alert("Preencha Data, Descrição e Valor.");
+
+            const btn = document.getElementById('btnSalvarDespesa');
+            btn.disabled = true;
+            btn.innerText = "Salvando...";
+
+            const executarSalvar = async (imgB64) => {
+                const id_firebase = `desp_${Date.now()}`;
+                const payload = {
+                    id_firebase,
+                    data,
+                    descricao: desc,
+                    valor: parseFloat(val).toFixed(2),
+                    comprovante: imgB64
+                };
+
+                await fetch(`${API_BASE_URL}/caixinha_despesas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify(payload)
+                });
+
+                // Limpa campos
+                document.getElementById('despData').value = '';
+                document.getElementById('despDesc').value = '';
+                document.getElementById('despValor').value = '';
+                document.getElementById('despArquivo').value = '';
+                document.getElementById('despNomeArq').innerText = '';
+                btn.disabled = false;
+                btn.innerText = "Salvar";
+
+                await carregarDadosDB();
+            };
+
+            if (fileInput.files.length > 0) {
+                processFile(fileInput.files[0], (fData) => {
+                    if(fData) executarSalvar(fData.base64);
+                    else executarSalvar(null);
+                });
+            } else {
+                executarSalvar(null);
+            }
+        }
+
+        function renderDespesasTable() {
+            const list = Object.values(dbDespesas).sort((a,b) => b.data.localeCompare(a.data)); // Mais recentes primeiro
+            
+            const tbodyCompleta = document.querySelector('#despesasTable tbody');
+            const tbodyUltimas = document.querySelector('#ultimasDespesasTable tbody');
+
+            if(list.length === 0) {
+                tbodyCompleta.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhuma despesa registrada.</td></tr>';
+                tbodyUltimas.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma despesa.</td></tr>';
+                return;
+            }
+
+            // Para Tabela Completa (Admin)
+            tbodyCompleta.innerHTML = list.map(d => {
+                const dataBR = d.data.split('-').reverse().join('/');
+                const btnComp = d.comprovante ? `<button class="btn-action btn-undo" onclick="verComprovante('${d.id_firebase}')"><i class="fas fa-image"></i> Ver Anexo</button>` : '-';
+                return `<tr>
+                    <td style="font-weight:bold;">${dataBR}</td>
+                    <td>${d.descricao}</td>
+                    <td style="color:#dc2626; font-weight:bold;">R$ ${d.valor.replace('.',',')}</td>
+                    <td>${btnComp}</td>
+                    <td style="text-align:right;"><button class="btn-action" style="background:#ef4444;" onclick="excluirDespesa('${d.id_firebase}')"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+            }).join('');
+
+            // Para Dashboard (Público - Limita a 5)
+            tbodyUltimas.innerHTML = list.slice(0, 5).map(d => {
+                const dataBR = d.data.split('-').reverse().join('/');
+                const btnComp = d.comprovante ? `<button class="btn-action btn-undo" onclick="verComprovante('${d.id_firebase}')"><i class="fas fa-eye"></i></button>` : '-';
+                return `<tr>
+                    <td style="font-size:11px;">${dataBR}</td>
+                    <td>${d.descricao}</td>
+                    <td style="color:#dc2626; font-weight:bold;">R$ ${d.valor.replace('.',',')}</td>
+                    <td>${btnComp}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function verComprovante(id) {
+            const d = dbDespesas[id];
+            if(!d || !d.comprovante) return;
+            
+            const view = document.getElementById('comprovanteView');
+            if(d.comprovante.startsWith('data:image')) {
+                view.innerHTML = `<img src="${d.comprovante}" style="max-width:100%; max-height:60vh; border-radius:8px;">`;
+            } else {
+                view.innerHTML = `<a href="${d.comprovante}" download="comprovante" class="btn btn-secondary"><i class="fas fa-download"></i> Baixar Arquivo</a>`;
+            }
+            
+            document.getElementById('modalComprovante').style.display = 'flex';
+        }
+
+        function fecharModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        async function excluirDespesa(id) {
+            if(!confirm("Excluir esta despesa definitivamente?")) return;
+            
+            await fetch(`${API_BASE_URL}/caixinha_despesas/${id}`, { method: 'DELETE', headers: API_HEADERS });
+            await carregarDadosDB();
+        }
+
+        // =====================================
+        // COLABORADORES
+        // =====================================
+        async function salvarColaborador() {
+            const nome = document.getElementById('colabNome').value;
+            const email = document.getElementById('colabEmail').value;
+            const aniv = document.getElementById('colabAniversario').value;
+
+            if(!nome || !email) return alert("Nome e Email são obrigatórios.");
+
+            const id_firebase = `colab_${Date.now()}`;
+            await fetch(`${API_BASE_URL}/caixinha_colabs`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                body: JSON.stringify({ id_firebase, nome, email, data_aniversario: aniv })
+            });
+
+            document.getElementById('colabNome').value = '';
+            document.getElementById('colabEmail').value = '';
+            document.getElementById('colabAniversario').value = '';
+            
+            await carregarDadosDB();
+        }
+
+        function renderColabsTable() {
+            const list = Object.values(dbColabs).sort((a,b) => a.nome.localeCompare(b.nome));
+            const tbody = document.querySelector('#colabsTable tbody');
+
+            if(list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhum participante.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(c => `
+                <tr>
+                    <td><strong>${c.nome}</strong></td>
+                    <td>${c.email}</td>
+                    <td>${c.data_aniversario || '-'}</td>
+                    <td style="text-align:right;"><button class="btn-action" style="background:#ef4444;" onclick="excluirColaborador('${c.id_firebase}')"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function excluirColaborador(id) {
+            if(!confirm("Remover este colaborador da caixinha? O histórico dele não será apagado, mas ele não aparecerá mais nos meses novos.")) return;
+            
+            await fetch(`${API_BASE_URL}/caixinha_colabs/${id}`, { method: 'DELETE', headers: API_HEADERS });
+            await carregarDadosDB();
+        }
+
+        // Auxiliar
+        function normalizeData(apiData) {
+            if (!apiData) return {};
+            const normalized = {};
+            Object.entries(apiData).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                    try { normalized[key] = JSON.parse(val); } catch(e) { normalized[key] = val; }
+                } else { normalized[key] = val; }
+            });
+            return normalized;
+        }
+    </script>
+</body>
+</html>
