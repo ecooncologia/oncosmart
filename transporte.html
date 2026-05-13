@@ -130,10 +130,12 @@
             <div class="nav-tabs">
                 <button class="nav-tab active" onclick="setOrigin('interna', this)">🏠 Recepção Interna</button>
                 <button class="nav-tab" onclick="setOrigin('externa', this)">🏢 Recepção Externa</button>
-                <button class="nav-tab" onclick="setOrigin('historico', this)">✅ Histórico</button>
+                <button class="nav-tab" onclick="setOrigin('historico', this)">✅ Histórico Médico</button>
+                <button class="nav-tab" onclick="setOrigin('historico_pagamentos', this)">💳 Histórico de Pagamentos</button>
             </div>
         </div>
 
+        <!-- FORMULÁRIO PRÉ-CADASTRO INTERNO -->
         <div id="form-cadastro-interna" style="display:block;">
             <div class="external-form" style="border-left: 6px solid var(--primary); background: #f8fafc;">
                 <input type="hidden" id="edit-pre-id">
@@ -164,6 +166,7 @@
             </div>
         </div>
 
+        <!-- FORMULÁRIO RECEPÇÃO EXTERNA -->
         <div id="form-externa" style="display:none;">
             <div class="external-form">
                 <div style="flex:1;">
@@ -195,18 +198,20 @@
             
             <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                 
+                <!-- GRID ESQUERDO -->
                 <div style="flex: 1; min-width: 300px;">
                     <div id="grid" class="calls-grid" style="margin-top: 0;"></div>
                     <div id="pagination-controls" class="pagination" style="display: none;"></div>
 
                     <div id="cobrancas-container" style="display: none; margin-top: 30px;">
-                        <h3 style="font-size: 16px; font-weight: 800; color: #EF4444; border-bottom: 2px dashed #fecaca; padding-bottom: 10px; margin-bottom: 15px;">
-                            <i class="fas fa-receipt"></i> Pedidos de Acompanhantes (Pagamentos)
+                        <h3 id="cobrancas-title" style="font-size: 16px; font-weight: 800; color: #EF4444; border-bottom: 2px dashed #fecaca; padding-bottom: 10px; margin-bottom: 15px;">
+                            <i class="fas fa-receipt"></i> Pedidos de Acompanhantes (Aguardando Pagamento)
                         </h3>
                         <div id="grid-cobrancas" class="calls-grid" style="margin-top: 0;"></div>
                     </div>
                 </div>
 
+                <!-- SIDEBAR DIREITO -->
                 <div id="sidebar-precadastro" style="width: 280px; background: #f8fafc; border: 1px solid var(--border-light); border-radius: 12px; padding: 15px;">
                     <h3 style="font-size: 13px; color: var(--primary); margin-top: 0; margin-bottom: 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-weight: 800; display: flex; justify-content: space-between; align-items: center;">
                         <span><i class="fas fa-calendar-check"></i> Agendados (Amanhã)</span>
@@ -267,12 +272,14 @@
 
         document.addEventListener('click', function (e) {
             if (e.target.id !== 'int-patient-name') {
-                document.getElementById('autocomplete-list').innerHTML = '';
+                const list = document.getElementById('autocomplete-list');
+                if(list) list.innerHTML = '';
             }
         });
 
         function filterPatients(val) {
             const list = document.getElementById('autocomplete-list');
+            if(!list) return;
             list.innerHTML = '';
             if (!val) return;
             
@@ -375,11 +382,8 @@
 
             const today = new Date();
             let daysToAdd = 1; 
-            if (today.getDay() === 5) { 
-                daysToAdd = 3; 
-            } else if (today.getDay() === 6) { 
-                daysToAdd = 2; 
-            }
+            if (today.getDay() === 5) { daysToAdd = 3; } 
+            else if (today.getDay() === 6) { daysToAdd = 2; }
             
             const targetDate = new Date(today);
             targetDate.setDate(targetDate.getDate() + daysToAdd);
@@ -431,276 +435,242 @@
             const todayObj = new Date();
             const hojeStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth() + 1).padStart(2, '0') + '-' + String(todayObj.getDate()).padStart(2, '0');
 
-            if (currentOrigin === 'interna') {
-                document.getElementById('sidebar-precadastro').style.display = 'block';
-                
-                const preCadastros = cachedAssessments.filter(a => {
-                    let dataAgendada = String(a.data_agendamento || hojeStr).trim();
-                    if(dataAgendada.includes('/')) {
-                        const pArr = dataAgendada.split('/');
-                        if(pArr.length === 3) dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
-                    }
-                    if(dataAgendada.includes('T')) dataAgendada = dataAgendada.split('T')[0];
-                    
-                    return a.status === 'pre_cadastro' && dataAgendada >= hojeStr;
-                });
-
-                const listaPre = document.getElementById('lista-precadastro');
-                document.getElementById('badge-pre').innerText = preCadastros.length;
-                
-                if (listaPre) {
-                    if (preCadastros.length === 0) {
-                        listaPre.innerHTML = '<div style="font-size: 12px; color: #94a3b8; text-align: center; padding: 20px 10px;">Nenhum agendamento pendente.</div>';
-                    } else {
-                        listaPre.innerHTML = preCadastros.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(p => {
-                            let dateStr = p.data_agendamento || '--/--/----';
-                            if(!dateStr.includes('/')) {
-                                dateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
-                            }
-                            const durText = p.duration === 'longa' ? 'Longa Duração' : (p.duration === 'curta' ? 'Curta Duração' : p.duration);
-                            return `
-                            <div class="precadastro-box">
-                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                    <div class="precadastro-name">${p.name || p.nome}</div>
-                                    <div style="display:flex; gap:6px;">
-                                        <button class="btn-pre-action edit" onclick="editPreCadastro('${p.id_firebase || p.key}')"><i class="fas fa-pencil-alt"></i></button>
-                                        <button class="btn-pre-action delete" onclick="deletePreCadastro('${p.id_firebase || p.key}')"><i class="fas fa-trash"></i></button>
-                                    </div>
-                                </div>
-                                <div class="precadastro-time">
-                                    <i class="far fa-calendar-alt"></i> ${dateStr} &nbsp;|&nbsp; 
-                                    <i class="fas fa-stopwatch"></i> ${durText || '--'}
-                                </div>
-                            </div>
-                        `}).join('');
-                    }
-                }
+            // ESCONDE O GRID DE PACIENTES SE ESTIVER NA ABA DE PAGAMENTOS
+            if (currentOrigin === 'historico_pagamentos') {
+                gridCalls.style.display = 'none';
+                document.getElementById('pagination-controls').style.display = 'none';
             } else {
-                document.getElementById('sidebar-precadastro').style.display = 'none';
+                gridCalls.style.display = 'grid';
             }
 
+            if (currentOrigin === 'interna') {
+                document.getElementById('sidebar-precadastro').style.display = 'block';
+                const preCadastros = cachedAssessments.filter(a => {
+                    let dAg = String(a.data_agendamento || hojeStr).trim();
+                    if(dAg.includes('/')) {
+                        const pArr = dAg.split('/');
+                        if(pArr.length === 3) dAg = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
+                    }
+                    if(dAg.includes('T')) dAg = dAg.split('T')[0];
+                    return a.status === 'pre_cadastro' && dAg >= hojeStr;
+                });
+                document.getElementById('badge-pre').innerText = preCadastros.length;
+                document.getElementById('lista-precadastro').innerHTML = preCadastros.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(p => {
+                    let dS = p.data_agendamento || '--/--/----';
+                    if(!dS.includes('/')) dS = new Date(dS + 'T00:00:00').toLocaleDateString('pt-BR');
+                    const dur = p.duration === 'longa' ? 'Longa Duração' : (p.duration === 'curta' ? 'Curta Duração' : p.duration);
+                    return `
+                    <div class="precadastro-box">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div class="precadastro-name">${p.name || p.nome}</div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-pre-action edit" onclick="editPreCadastro('${p.id_firebase || p.key}')"><i class="fas fa-pencil-alt"></i></button>
+                                <button class="btn-pre-action delete" onclick="deletePreCadastro('${p.id_firebase || p.key}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="precadastro-time"><i class="far fa-calendar-alt"></i> ${dS} &nbsp;|&nbsp; <i class="fas fa-stopwatch"></i> ${dur || '--'}</div>
+                    </div>`}).join('');
+            } else { document.getElementById('sidebar-precadastro').style.display = 'none'; }
 
+            // LÓGICA DE ABAS E FILTROS
             if(currentOrigin === 'historico') {
-                const completedCalls = cachedCalls.filter(c => c.status === 'completed');
-                completedCalls.forEach(c => {
+                cachedCalls.filter(c => c.status === 'completed').forEach(c => {
                     const a = cachedAssessments.find(ass => ass.key === c.patientId) || {};
                     listCalls.push({ type: 'call', data: { ...a, ...c, id: c.id } });
                 });
-
-                const completedCobrancas = cachedCobrancas.filter(c => c.status === 'pago' || c.status === 'completed');
-                completedCobrancas.forEach(c => { listCobrancas.push({ type: 'cobranca', data: c }); });
-
-                const expiredPre = cachedAssessments.filter(a => {
-                    let dataAgendada = String(a.data_agendamento || hojeStr).trim();
-                    if(dataAgendada.includes('/')) {
-                        const pArr = dataAgendada.split('/');
-                        if(pArr.length === 3) dataAgendada = `${pArr[2]}-${pArr[1]}-${pArr[0]}`;
-                    }
-                    if(dataAgendada.includes('T')) dataAgendada = dataAgendada.split('T')[0];
-                    
-                    return a.status === 'pre_cadastro' && dataAgendada < hojeStr;
-                });
-                
-                expiredPre.forEach(a => { 
-                    listCalls.push({ type: 'expired', data: a }); 
-                });
-
-            } else {
+                cachedAssessments.filter(a => {
+                    let dAg = String(a.data_agendamento || hojeStr).trim();
+                    if(dAg.includes('/')) { const pA = dAg.split('/'); if(pA.length===3) dAg=`${pA[2]}-${pA[1]}-${pA[0]}`; }
+                    if(dAg.includes('T')) dAg = dAg.split('T')[0];
+                    return a.status === 'pre_cadastro' && dAg < hojeStr;
+                }).forEach(a => { listCalls.push({ type: 'expired', data: a }); });
+            } 
+            else if(currentOrigin === 'historico_pagamentos') {
+                cachedCobrancas.filter(c => c.status === 'pago' || c.status === 'completed').forEach(c => { listCobrancas.push({ type: 'cobranca', data: c }); });
+            }
+            else {
                 const assessmentsFiltered = cachedAssessments.filter(a => {
                     if (a.status === 'pre_cadastro') return false; 
-                    
-                    const hasActiveCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
+                    const hasCall = cachedCalls.some(c => c.patientId === a.key && c.status !== 'completed');
                     const isRecent = (now - new Date(a.timestamp) < 86400000);
-                    
-                    // AQUI ESTÁ O FILTRO INTELIGENTE DO TRANSPORTE:
-                    if (a.origin === 'interna') {
-                        // Pacientes internos SÓ aparecem no Transporte se tiverem uma chamada ativa da enfermagem
-                        return hasActiveCall && isRecent;
-                    } else {
-                        // Externos aparecem desde o início
-                        return (!a.atendido || hasActiveCall) && isRecent;
-                    }
+                    if (a.origin === 'interna') return hasCall && isRecent;
+                    else return (!a.atendido || hasCall) && isRecent;
                 });
-                
                 assessmentsFiltered.forEach(a => {
                     const call = cachedCalls.find(c => c.patientId === a.key && c.status !== 'completed');
-                    const isExternal = a.origin === 'externa';
-                    const showInView = (currentOrigin === 'externa' && isExternal) || (currentOrigin === 'interna' && !isExternal);
+                    const showInView = (currentOrigin === 'externa' && a.origin === 'externa') || (currentOrigin === 'interna' && a.origin !== 'externa');
                     if (showInView) listCalls.push({ type: call ? 'call' : 'assessment', data: call ? {...a, ...call, id: call.id} : a });
                 });
-
                 if (currentOrigin === 'interna') {
-                    const pendingCobrancas = cachedCobrancas.filter(c => c.status === 'pendente_pagamento');
-                    pendingCobrancas.forEach(c => { listCobrancas.push({ type: 'cobranca', data: c }); });
+                    cachedCobrancas.filter(c => c.status === 'pendente_pagamento').forEach(c => { listCobrancas.push({ type: 'cobranca', data: c }); });
                 }
             }
 
             const actionItems = listCalls.filter(i => i.data && (i.data.status === 'called' || i.data.status === 'returning')).length + 
                                 listCobrancas.filter(i => i.data && i.data.status === 'pendente_pagamento').length;
-
-            if (audioEnabled && actionItems > lastCount && currentOrigin !== 'historico') {
+            if (audioEnabled && actionItems > lastCount && currentOrigin !== 'historico' && currentOrigin !== 'historico_pagamentos') {
                 document.getElementById('notification-sound').play().catch(()=>{});
             }
             lastCount = actionItems;
             document.getElementById('total-badge').innerText = listCalls.length + listCobrancas.length;
 
+            // RENDER COBRANÇAS
             if(listCobrancas.length > 0) {
                 containerCobrancas.style.display = 'block';
-                listCobrancas.sort((a,b) => new Date(b.data.data_solicitacao || 0) - new Date(a.data.data_solicitacao || 0));
+                const cTitle = document.getElementById('cobrancas-title');
                 
+                if(currentOrigin === 'historico_pagamentos') {
+                    cTitle.style.color = '#10B981';
+                    cTitle.style.borderBottomColor = '#bbf7d0';
+                    cTitle.innerHTML = '<i class="fas fa-receipt"></i> Histórico de Pagamentos Efetuados';
+                } else {
+                    cTitle.style.color = '#EF4444';
+                    cTitle.style.borderBottomColor = '#fecaca';
+                    cTitle.innerHTML = '<i class="fas fa-receipt"></i> Pedidos de Acompanhantes (Aguardando Pagamento)';
+                }
+
+                listCobrancas.sort((a,b) => new Date(b.data.data_solicitacao || 0) - new Date(a.data.data_solicitacao || 0));
                 listCobrancas.forEach(item => {
                     const d = item.data;
-                    const timeStr = d.data_solicitacao ? new Date(d.data_solicitacao).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
-                    const valFmt = d.valor_cobrar ? parseFloat(d.valor_cobrar).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 'R$ 0,00';
-                    let statusText = d.status === 'pendente_pagamento' ? 'AGUARDANDO PAGAMENTO' : 'PAGAMENTO EFETUADO';
-                    let badgeColor = d.status === 'pendente_pagamento' ? '#EF4444' : '#10B981';
-                    let cardClass = 'call-card cobranca';
-                    
-                    let btn = '';
-                    if (d.status === 'pendente_pagamento') {
-                        btn = `<button class="btn-action btn-success" onclick="payCobranca('${d.id}')"><i class="fas fa-hand-holding-usd"></i> EFETUADO PAGAMENTO</button>`;
-                    }
-
-                    let tooltipHtml = '';
+                    const time = d.data_solicitacao ? new Date(d.data_solicitacao).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                    const val = d.valor_cobrar ? parseFloat(d.valor_cobrar).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : 'R$ 0,00';
+                    let st = d.status === 'pendente_pagamento' ? 'AGUARDANDO PAGAMENTO' : 'PAGAMENTO EFETUADO';
+                    let cl = d.status === 'pendente_pagamento' ? '#EF4444' : '#10B981';
+                    let btn = d.status === 'pendente_pagamento' ? `<button class="btn-action btn-success" onclick="payCobranca('${d.id}')"><i class="fas fa-hand-holding-usd"></i> EFETUADO PAGAMENTO</button>` : '';
+                    let tool = '';
                     if (d.detalhes_pedido) {
-                        const itensLista = d.detalhes_pedido.replace(/, /g, '<br>• ');
-                        tooltipHtml = `<div class="info-tooltip"><i class="fas fa-info-circle"></i><span class="tooltip-text"><b>Itens do Pedido:</b><br>• ${itensLista}</span></div>`;
+                        const its = d.detalhes_pedido.replace(/, /g, '<br>• ');
+                        tool = `<div class="info-tooltip"><i class="fas fa-info-circle"></i><span class="tooltip-text"><b>Itens do Pedido:</b><br>• ${its}</span></div>`;
                     }
-
                     gridCobrancas.innerHTML += `
-                        <div class="${cardClass}" style="border-left-color: ${badgeColor};">
+                        <div class="call-card cobranca" style="border-left-color: ${cl};">
                             <div class="patient-header">
                                 <div class="patient-name">${d.paciente}</div>
-                                <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
+                                <div style="font-size:11px;color:#666">🕒 ${time}</div>
                             </div>
                             <div style="font-size: 14px; font-weight: 700; color: #374151; margin-top: 10px; margin-bottom: 5px; display: flex; align-items: center;">
-                                ${d.descricao || 'Cobrança do Sistema'} ${tooltipHtml}
+                                ${d.descricao || 'Cobrança do Sistema'} ${tool}
                             </div>
-                            <div style="font-size: 20px; font-weight: 900; color: #059669; margin-bottom: 15px;">${valFmt}</div>
+                            <div style="font-size: 20px; font-weight: 900; color: #059669; margin-bottom: 15px;">${val}</div>
+                            <span class="status-pill" style="background:${cl}">${st}</span>
+                            ${btn}
+                        </div>`;
+                });
+            } else { 
+                if (currentOrigin === 'historico_pagamentos') {
+                    containerCobrancas.style.display = 'block';
+                    document.getElementById('cobrancas-title').innerHTML = '<i class="fas fa-receipt"></i> Histórico de Pagamentos Efetuados';
+                    document.getElementById('cobrancas-title').style.color = '#10B981';
+                    document.getElementById('cobrancas-title').style.borderBottomColor = '#bbf7d0';
+                    gridCobrancas.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8; padding:40px; border: 2px dashed #cbd5e1; border-radius: 12px; background: white;">Nenhum pagamento no histórico.</p>';
+                } else {
+                    containerCobrancas.style.display = 'none'; 
+                }
+            }
+
+            // RENDER CHAMADAS (EXCETO NA ABA DE PAGAMENTOS)
+            if (currentOrigin !== 'historico_pagamentos') {
+                if (currentOrigin === 'historico') listCalls.sort((a,b) => new Date(b.data.transportEndTime || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.timestamp || 0));
+                else listCalls.sort((a,b) => new Date(a.data.timestamp || 0) - new Date(b.data.timestamp || 0));
+
+                if(listCalls.length === 0) { 
+                    gridCalls.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8; padding:40px; border: 2px dashed #cbd5e1; border-radius: 12px; background: white;">Nenhum paciente na fila de transporte.</p>'; 
+                    document.getElementById('pagination-controls').style.display = 'none';
+                    return; 
+                }
+
+                const totalPages = Math.ceil(listCalls.length / itemsPerPage) || 1;
+                const paginated = listCalls.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+                paginated.forEach(item => {
+                    const d = item.data;
+                    if (item.type === 'expired') {
+                        let dS = d.data_agendamento || '--/--/----';
+                        if(!dS.includes('/')) dS = new Date(dS + 'T00:00:00').toLocaleDateString('pt-BR');
+                        const dur = d.duration === 'longa' ? 'Longa Duração' : (d.duration === 'curta' ? 'Curta Duração' : d.duration);
+                        gridCalls.innerHTML += `
+                            <div class="call-card" style="border-left-color: #64748b; opacity: 0.85;">
+                                <div class="patient-header">
+                                    <div class="patient-name">${d.name || d.nome}</div>
+                                    <div style="font-size:11px;color:#666; margin-bottom: 2px;">📅 Agendado para: <b>${dS}</b></div>
+                                    <div style="font-size:11px;color:#666">⏳ Previsão: <b>${dur || '--'}</b></div>
+                                </div>
+                                <div style="margin-top: 15px;">
+                                    <span class="status-pill" style="background:#64748b; margin-bottom: 0;"><i class="fas fa-user-times"></i> NÃO COMPARECEU</span>
+                                </div>
+                                <button class="btn" style="width:100%; background:#fff; border:2px solid #fee2e2; color:#EF4444; margin-top:15px; padding:10px; border-radius:8px; cursor:pointer; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'" onclick="deletePreCadastro('${d.id_firebase || d.key}')">
+                                    <i class="fas fa-trash"></i> Excluir Registro
+                                </button>
+                            </div>`;
+                        return; 
+                    }
+
+                    const isExternal = d.origin === 'externa';
+                    let statusText = 'Aguardando Enf.';
+                    let badgeColor = '#9CA3AF'; 
+                    let cardClass = 'call-card';
+                    if(isExternal) cardClass += ' externo';
+                    let btn = '';
+
+                    if (!d.status || d.status === 'pending' || d.status === 'aguardando_chamada') { statusText = 'AGUARDANDO CHAMADO'; badgeColor = '#9CA3AF'; }
+                    else if (d.status === 'called') {
+                        statusText = 'CHAMADO PELA ENFERMAGEM'; badgeColor = '#F59E0B'; cardClass += ' called';
+                        if (isExternal) btn = `<button class="btn-action btn-info" onclick="updateStatus('${d.id}', 'on_sofa')"><i class="fas fa-couch"></i> LEVAR AO SOFÁ</button>`;
+                        else btn = `<button class="btn-action btn-primary" onclick="updateStatus('${d.id}', 'transporting')"><i class="fas fa-walking"></i> INICIAR TRANSPORTE</button>`;
+                    } 
+                    else if (d.status === 'transporting') {
+                        statusText = 'EM TRANSPORTE'; badgeColor = '#3B82F6'; cardClass += ' transporting';
+                        btn = `<button class="btn-action btn-success" onclick="finishTransport('${d.id}')"><i class="fas fa-check-circle"></i> FINALIZAR (ENTREGUE)</button>`;
+                    }
+                    else if (d.status === 'on_sofa') {
+                        statusText = 'NO SOFÁ / SALA'; badgeColor = '#0EA5E9'; cardClass += ' on_sofa';
+                        btn = `<div style="text-align:center; color:#0EA5E9; font-size:12px; margin-top:10px;"><i class="fas fa-clock"></i> Aguardando Enfermagem</div>`;
+                    }
+                    else if (d.status === 'attending') {
+                        statusText = 'EM ATENDIMENTO'; badgeColor = '#6366f1'; cardClass += ' attending';
+                        btn = `<div style="text-align:center; color:#6366f1; font-size:12px; margin-top:10px;"><i class="fas fa-user-nurse"></i> Procedimento em curso</div>`;
+                    }
+                    else if (d.status === 'returning') {
+                        statusText = 'RETORNO (MÉDICO)'; badgeColor = '#8B5CF6'; cardClass += ' returning';
+                        btn = `<button class="btn-action btn-success" onclick="finishTransport('${d.id}')"><i class="fas fa-check-circle"></i> FINALIZAR (MÉDICO)</button>`;
+                    }
+                    else if (d.status === 'completed') {
+                        statusText = 'FINALIZADO'; badgeColor = '#10B981'; cardClass += ' completed';
+                    }
+
+                    const ptName = d.patientName || d.name || 'Paciente Indefinido';
+                    const timeStr = d.timestamp ? new Date(d.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                    const durTextDisplay = d.duration === 'longa' ? 'Longa Duração' : (d.duration === 'curta' ? 'Curta Duração' : d.duration);
+                    const durationHtml = d.duration ? `<div style="font-size:11px; color:#8B5CF6; font-weight:700; margin-top:4px;"><i class="fas fa-stopwatch"></i> Previsão: ${durTextDisplay}</div>` : '';
+                    const painVal = d.painLevel ?? d.pain_level ?? d.dor ?? '?';
+                    const emotionVal = translations.emotion[d.emotion] || d.emotion || '---';
+                    const postoDestino = d.posto ? `<div style="background: #1E293B; color: #F8FAFC; font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 8px; display: inline-block; margin-bottom: 12px; border: 2px solid #CBD5E0;"><i class="fas fa-map-marker-alt" style="color: #F59E0B; margin-right: 5px;"></i> IR PARA: ${d.posto.toUpperCase()}</div><br>` : '';
+
+                    gridCalls.innerHTML += `
+                        <div class="${cardClass}">
+                            <div class="patient-header">
+                                <div class="patient-name">${ptName}</div>
+                                <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
+                                ${durationHtml}
+                            </div>
+                            ${postoDestino}
                             <span class="status-pill" style="background:${badgeColor}">${statusText}</span>
+                            ${!isExternal ? `<div style="font-size:13px;margin-top:5px;"><b>Dor:</b> ${painVal}/10 | <b>Humor:</b> ${emotionVal}</div>` : ''}
                             ${btn}
                         </div>
                     `;
                 });
-            } else {
-                containerCobrancas.style.display = 'none';
-            }
 
-
-            if (currentOrigin === 'historico') {
-                listCalls.sort((a,b) => new Date(b.data.transportEndTime || b.data.timestamp || 0) - new Date(a.data.transportEndTime || a.data.timestamp || 0));
-            } else {
-                listCalls.sort((a,b) => new Date(a.data.timestamp || 0) - new Date(b.data.timestamp || 0));
-            }
-
-            if(listCalls.length === 0) { 
-                gridCalls.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8; padding:40px; border: 2px dashed #cbd5e1; border-radius: 12px; background: white;">Nenhum paciente na fila de transporte.</p>'; 
-                document.getElementById('pagination-controls').style.display = 'none';
-                return; 
-            }
-
-            const totalItems = listCalls.length;
-            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-            if (currentPage > totalPages) currentPage = totalPages;
-            if (currentPage < 1) currentPage = 1;
-
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const paginatedList = listCalls.slice(startIndex, endIndex);
-
-            paginatedList.forEach(item => {
-                const d = item.data;
-
-                if (item.type === 'expired') {
-                    let dateStr = d.data_agendamento || '--/--/----';
-                    if(!dateStr.includes('/')) {
-                        dateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
-                    }
-                    const durText = d.duration === 'longa' ? 'Longa Duração' : (d.duration === 'curta' ? 'Curta Duração' : d.duration);
-
-                    gridCalls.innerHTML += `
-                        <div class="call-card" style="border-left-color: #64748b; opacity: 0.85;">
-                            <div class="patient-header">
-                                <div class="patient-name">${d.name || d.nome}</div>
-                                <div style="font-size:11px;color:#666; margin-bottom: 2px;">📅 Agendado para: <b>${dateStr}</b></div>
-                                <div style="font-size:11px;color:#666">⏳ Previsão: <b>${durText || '--'}</b></div>
-                            </div>
-                            <div style="margin-top: 15px;">
-                                <span class="status-pill" style="background:#64748b; margin-bottom: 0;"><i class="fas fa-user-times"></i> NÃO COMPARECEU</span>
-                            </div>
-                            <button class="btn" style="width:100%; background:#fff; border:2px solid #fee2e2; color:#EF4444; margin-top:15px; padding:10px; border-radius:8px; cursor:pointer; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'" onclick="deletePreCadastro('${d.id_firebase || d.key}')">
-                                <i class="fas fa-trash"></i> Excluir Registro
-                            </button>
-                        </div>
+                if (totalItems > itemsPerPage) {
+                    document.getElementById('pagination-controls').style.display = 'flex';
+                    document.getElementById('pagination-controls').innerHTML = `
+                        <button class="page-btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> Anterior</button>
+                        <span class="page-info">Página ${currentPage} de ${totalPages}</span>
+                        <button class="page-btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Próxima <i class="fas fa-chevron-right"></i></button>
                     `;
-                    return; 
+                } else {
+                    document.getElementById('pagination-controls').style.display = 'none';
                 }
-
-                const isExternal = d.origin === 'externa';
-                let statusText = 'Aguardando Enf.';
-                let badgeColor = '#9CA3AF'; 
-                let cardClass = 'call-card';
-                if(isExternal) cardClass += ' externo';
-                let btn = '';
-
-                if (!d.status || d.status === 'pending' || d.status === 'aguardando_chamada') { statusText = 'AGUARDANDO CHAMADO'; badgeColor = '#9CA3AF'; }
-                else if (d.status === 'called') {
-                    statusText = 'CHAMADO PELA ENFERMAGEM'; badgeColor = '#F59E0B'; cardClass += ' called';
-                    if (isExternal) btn = `<button class="btn-action btn-info" onclick="updateStatus('${d.id}', 'on_sofa')"><i class="fas fa-couch"></i> LEVAR AO SOFÁ</button>`;
-                    else btn = `<button class="btn-action btn-primary" onclick="updateStatus('${d.id}', 'transporting')"><i class="fas fa-walking"></i> INICIAR TRANSPORTE</button>`;
-                } 
-                else if (d.status === 'transporting') {
-                    statusText = 'EM TRANSPORTE'; badgeColor = '#3B82F6'; cardClass += ' transporting';
-                    btn = `<button class="btn-action btn-success" onclick="finishTransport('${d.id}')"><i class="fas fa-check-circle"></i> FINALIZAR (ENTREGUE)</button>`;
-                }
-                else if (d.status === 'on_sofa') {
-                    statusText = 'NO SOFÁ / SALA'; badgeColor = '#0EA5E9'; cardClass += ' on_sofa';
-                    btn = `<div style="text-align:center; color:#0EA5E9; font-size:12px; margin-top:10px;"><i class="fas fa-clock"></i> Aguardando Enfermagem</div>`;
-                }
-                else if (d.status === 'attending') {
-                    statusText = 'EM ATENDIMENTO'; badgeColor = '#6366f1'; cardClass += ' attending';
-                    btn = `<div style="text-align:center; color:#6366f1; font-size:12px; margin-top:10px;"><i class="fas fa-user-nurse"></i> Procedimento em curso</div>`;
-                }
-                else if (d.status === 'returning') {
-                    statusText = 'RETORNO (MÉDICO)'; badgeColor = '#8B5CF6'; cardClass += ' returning';
-                    btn = `<button class="btn-action btn-success" onclick="finishTransport('${d.id}')"><i class="fas fa-check-circle"></i> FINALIZAR (MÉDICO)</button>`;
-                }
-                else if (d.status === 'completed') {
-                    statusText = 'FINALIZADO'; badgeColor = '#10B981'; cardClass += ' completed';
-                }
-
-                const ptName = d.patientName || d.name || 'Paciente Indefinido';
-                const timeStr = d.timestamp ? new Date(d.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
-                const durTextDisplay = d.duration === 'longa' ? 'Longa Duração' : (d.duration === 'curta' ? 'Curta Duração' : d.duration);
-                const durationHtml = d.duration ? `<div style="font-size:11px; color:#8B5CF6; font-weight:700; margin-top:4px;"><i class="fas fa-stopwatch"></i> Previsão: ${durTextDisplay}</div>` : '';
-                const painVal = d.painLevel ?? d.pain_level ?? d.dor ?? '?';
-                const emotionVal = translations.emotion[d.emotion] || d.emotion || '---';
-                const postoDestino = d.posto ? `<div style="background: #1E293B; color: #F8FAFC; font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 8px; display: inline-block; margin-bottom: 12px; border: 2px solid #CBD5E0;"><i class="fas fa-map-marker-alt" style="color: #F59E0B; margin-right: 5px;"></i> IR PARA: ${d.posto.toUpperCase()}</div><br>` : '';
-
-                gridCalls.innerHTML += `
-                    <div class="${cardClass}">
-                        <div class="patient-header">
-                            <div class="patient-name">${ptName}</div>
-                            <div style="font-size:11px;color:#666">🕒 ${timeStr}</div>
-                            ${durationHtml}
-                        </div>
-                        ${postoDestino}
-                        <span class="status-pill" style="background:${badgeColor}">${statusText}</span>
-                        ${!isExternal ? `<div style="font-size:13px;margin-top:5px;"><b>Dor:</b> ${painVal}/10 | <b>Humor:</b> ${emotionVal}</div>` : ''}
-                        ${btn}
-                    </div>
-                `;
-            });
-
-            if (totalItems > itemsPerPage) {
-                paginationDiv.style.display = 'flex';
-                paginationDiv.innerHTML = `
-                    <button class="page-btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> Anterior</button>
-                    <span class="page-info">Página ${currentPage} de ${totalPages}</span>
-                    <button class="page-btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Próxima <i class="fas fa-chevron-right"></i></button>
-                `;
-            } else {
-                paginationDiv.style.display = 'none';
             }
         }
 
@@ -711,17 +681,30 @@
         }
 
         async function payCobranca(id) {
-            if(confirm("Confirmar pagamento na maquininha? O card será movido para o histórico.")) {
+            if(confirm("Confirmar pagamento na maquininha? O pedido será enviado à cozinha e movido para o histórico.")) {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/transporte`, { headers: API_HEADERS });
-                    const all = await res.json();
-                    const current = all[id];
+                    const resT = await fetch(`${API_BASE_URL}/transporte`, { headers: API_HEADERS });
+                    const allT = await resT.json();
+                    const cob = allT[id];
                     
-                    if (current) {
-                        current.status = 'pago';
-                        current.data_pagamento = new Date().toISOString();
+                    if (cob) {
+                        // DISPARA PEDIDO PRO ONCOFOOD COMO TEXTO
+                        if (cob.detalhes_pedido) {
+                            const payloadFood = {
+                                id_firebase: 'pedido_acc_' + Date.now(),
+                                paciente: cob.paciente + ' (Acompanhante)',
+                                leito: 'Triagem / Recepção', status: 'pending',
+                                itens: [{ id: 'item_totem', nome: cob.detalhes_pedido, qtd: 1 }],
+                                solicitado_por: 'Recepção (Pós-Pagamento)',
+                                data_solicitacao: new Date().toISOString()
+                            };
+                            await fetch(`${API_BASE_URL}/oncofood_pedidos`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(payloadFood) });
+                        }
+
+                        cob.status = 'pago';
+                        cob.data_pagamento = new Date().toISOString();
                         
-                        await fetch(`${API_BASE_URL}/transporte/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...API_HEADERS }, body: JSON.stringify(current) });
+                        await fetch(`${API_BASE_URL}/transporte/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...API_HEADERS }, body: JSON.stringify(cob) });
                         loadData();
                     }
                 } catch(e) {
