@@ -55,7 +55,8 @@ const APP_PAGES = [
     { id: 'farmacia-unimed', label: 'Estoque Autorizações', file: 'farmacia-unimed.html', perm: 'farmacia-unimed', icon: 'fas fa-dice-d6' },
     
     // 🆕 NOVO - Página da Caixinha
-    { id: 'caixinha', label: 'Caixinha ECO', file: 'caixinha.html', perm: 'caixinha', icon: 'fas fa-piggy-bank' }
+    { id: 'caixinha', label: 'Caixinha ECO', file: 'caixinha.html', perm: 'caixinha', icon: 'fas fa-piggy-bank' },
+    { id: 'caixinha_gestao', label: 'Gestão Caixinha', file: 'caixinha-gestao.html', perm: 'caixinha_gestao', icon: 'fas fa-cash-register' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
@@ -68,7 +69,7 @@ const MENU_SECTORS = [
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
     // 🆕 NOVO - Caixinha adicionada nos Agregados
-    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing', 'acompanhamento-unimed', 'caixinha'] }
+    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing', 'acompanhamento-unimed', 'caixinha', 'caixinha-gestao'] }
 ];
 
 // =============================================
