@@ -52,19 +52,23 @@ const APP_PAGES = [
     { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas', icon: 'fas fa-file-medical-alt' },
     { id: 'acompanhamento-unimed', label: 'Autorizações Unimed', file: 'acompanhamento-unimed.html', perm: 'acompanhamento-unimed', icon: 'fas fa-clipboard-check' },
     { id: 'custo-vita', label: 'Custo Operação VITA', file: 'custo-vita.html', perm: 'custo-vita', icon: 'fas fa-chart-line' },
-    { id: 'farmacia-unimed', label: 'Estoque Autorizações', file: 'farmacia-unimed.html', perm: 'farmacia-unimed', icon: 'fas fa-dice-d6' }
+    { id: 'farmacia-unimed', label: 'Estoque Autorizações', file: 'farmacia-unimed.html', perm: 'farmacia-unimed', icon: 'fas fa-dice-d6' },
+    
+    // 🆕 Caixinha Modularizada
+    { id: 'caixinha', label: 'Caixinha ECO', file: 'caixinha.html', perm: 'caixinha', icon: 'fas fa-piggy-bank' },
+    { id: 'caixinha_gestao', label: 'Gestão Caixinha', file: 'caixinha-gestao.html', perm: 'caixinha_gestao', icon: 'fas fa-cash-register' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
 const MENU_SECTORS = [
-    { name: "Financeiro", icon: "fas fa-chart-line", pages: ['dashboard', 'budget', 'budgets', 'sales', 'repass', 'dashboard-repasse', 'procedures', 'custo-vita'] },
+    { name: "Financeiro", icon: "fas fa-chart-line", pages: ['dashboard', 'budget', 'budgets', 'sales', 'repass', 'dashboard-repasse', 'procedures', 'custo-vita', 'caixinha_gestao'] },
     { name: "Recepção", icon: "fas fa-concierge-bell", pages: ['transporte', 'stenci', 'selos', 'tuss'] },
     { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts', 'protocolos'] },
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
     { name: "Farmácia", icon: "fas fa-clinic-medical", pages: ['farmacia-unimed'] },
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
-    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing', 'acompanhamento-unimed'] }
+    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing', 'acompanhamento-unimed', 'caixinha'] }
 ];
 
 // =============================================
@@ -628,7 +632,7 @@ function injectMenuStyles() {
             flex-direction: row;
         }
 
-        /* ===== RECOLHIMENTO NO TABLET E MOBILE (A MÁGICA ACONTECE AQUI) ===== */
+        /* ===== RECOLHIMENTO NO TABLET E MOBILE ===== */
         @media (max-width: 1100px) {
             #global-nav,
             #global-nav.expanded {
@@ -739,10 +743,7 @@ function isTabletOrMobile() {
 }
 
 function getDefaultSidebarExpanded() {
-    // Se for tablet ou celular, o menu já inicia FECHADO para poupar espaço!
     if (isTabletOrMobile()) return false;
-    
-    // No Desktop, lê a preferência salva. Se não houver, inicia ABERTO.
     return localStorage.getItem(SIDEBAR_STORAGE_KEY) !== 'false';
 }
 
@@ -813,12 +814,10 @@ function syncSidebarState(isExpanded) {
     }
 }
 
-// CORREÇÃO APLICADA AQUI: Remoção da trava de largura
 window.toggleSidebar = function(forceState = null) {
     const nav = document.getElementById('global-nav');
     if (!nav) return;
 
-    // Em qualquer tela, alterna entre aberto ou fechado livremente ao clicar na logo.
     const nextState = forceState !== null
         ? forceState
         : !nav.classList.contains('expanded');
@@ -875,7 +874,6 @@ function ensureResponsiveSidebarListener() {
     let lastWidth = window.innerWidth;
 
     window.addEventListener('resize', () => {
-        // Previne triggers acidentais no mobile ao rolar a página (esconder URL bar muda a altura, mas não a largura)
         if (window.innerWidth === lastWidth) return;
         lastWidth = window.innerWidth;
 
@@ -977,7 +975,6 @@ async function checkPermissionsAndRenderMenu(user, activeId, photoSrc) {
     const nav = document.getElementById('global-nav');
     if (!nav) return;
 
-    // Vai puxar o false (fechado) automaticamente nas telas menores agora.
     const isSidebarExpanded = getDefaultSidebarExpanded();
     applyBodySidebarClass(isSidebarExpanded);
 
