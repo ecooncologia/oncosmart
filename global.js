@@ -52,7 +52,10 @@ const APP_PAGES = [
     { id: 'guias_cirurgicas', label: 'Guias Cirúrgicas', file: 'guias-cirurgicas.html', perm: 'guias_cirurgicas', icon: 'fas fa-file-medical-alt' },
     { id: 'acompanhamento-unimed', label: 'Autorizações Unimed', file: 'acompanhamento-unimed.html', perm: 'acompanhamento-unimed', icon: 'fas fa-clipboard-check' },
     { id: 'custo-vita', label: 'Custo Operação VITA', file: 'custo-vita.html', perm: 'custo-vita', icon: 'fas fa-chart-line' },
-    { id: 'farmacia-unimed', label: 'Estoque Autorizações', file: 'farmacia-unimed.html', perm: 'farmacia-unimed', icon: 'fas fa-dice-d6' }
+    { id: 'farmacia-unimed', label: 'Estoque Autorizações', file: 'farmacia-unimed.html', perm: 'farmacia-unimed', icon: 'fas fa-dice-d6' },
+    
+    // 🆕 NOVO - Página da Caixinha
+    { id: 'caixinha', label: 'Caixinha ECO', file: 'caixinha.html', perm: 'caixinha', icon: 'fas fa-piggy-bank' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
@@ -64,7 +67,8 @@ const MENU_SECTORS = [
     { name: "Farmácia", icon: "fas fa-clinic-medical", pages: ['farmacia-unimed'] },
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
     { name: "Tec & Inovação", icon: "fas fa-laptop-code", pages: ['helpdesk_admin', 'admin'] },
-    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing', 'acompanhamento-unimed'] }
+    // 🆕 NOVO - Caixinha adicionada nos Agregados
+    { name: "Agregados", icon: "fas fa-puzzle-piece", pages: ['helpdesk', 'kanban', 'oncofood', 'marketing', 'acompanhamento-unimed', 'caixinha'] }
 ];
 
 // =============================================

@@ -77,7 +77,6 @@
         <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h2 style="color:var(--secondary); margin:0;"><i class="fas fa-piggy-bank"></i> Caixinha ECO</h2>
             
-            <!-- Botão escondido para facilitar os testes da Jocineide ou Desenvolvedor -->
             <button class="btn btn-outline" id="btnForceAdmin" onclick="toggleAdminMode()" style="font-size:11px; padding:5px 10px;">Forçar Visão Admin</button>
         </div>
 
@@ -88,7 +87,6 @@
             <button class="tab-btn admin-only" onclick="switchTab('colaboradores', this)">Colaboradores</button>
         </div>
 
-        <!-- TAB: DASHBOARD -->
         <div id="tab-dashboard" class="tab-content">
             <div class="dashboard-grid">
                 <div class="kpi-card">
@@ -122,7 +120,6 @@
             </div>
         </div>
 
-        <!-- TAB: GESTÃO DO MÊS -->
         <div id="tab-gestao" class="tab-content" style="display:none;">
             <div class="list-card">
                 <div class="toolbar">
@@ -142,7 +139,6 @@
             </div>
         </div>
 
-        <!-- TAB: DESPESAS -->
         <div id="tab-despesas" class="tab-content" style="display:none;">
             <div class="list-card">
                 <h3><i class="fas fa-file-invoice-dollar"></i> Registrar Nova Despesa</h3>
@@ -170,13 +166,15 @@
             </div>
         </div>
 
-        <!-- TAB: COLABORADORES -->
         <div id="tab-colaboradores" class="tab-content" style="display:none;">
             <div class="list-card">
                 <h3><i class="fas fa-users"></i> Adicionar à Caixinha</h3>
                 <div class="form-inline">
-                    <input type="text" id="colabNome" class="form-control" placeholder="Nome Completo" style="flex:2;">
-                    <input type="email" id="colabEmail" class="form-control" placeholder="E-mail" style="flex:2;">
+                    <select id="colabSelect" class="form-control" style="flex:2;" onchange="fillColabData()">
+                        <option value="">Carregando usuários do sistema...</option>
+                    </select>
+                    <input type="text" id="colabNome" class="form-control" placeholder="Nome Completo" style="flex:1;" readonly>
+                    <input type="email" id="colabEmail" class="form-control" placeholder="E-mail" style="flex:1;" readonly>
                     <input type="text" id="colabAniversario" class="form-control" placeholder="Aniversário (DD/MM)" style="flex:1;">
                     <button class="btn btn-success" onclick="salvarColaborador()">Adicionar</button>
                 </div>
@@ -192,7 +190,6 @@
         </div>
     </div>
 
-    <!-- Modal Visualizar Comprovante -->
     <div id="modalComprovante" class="modal-overlay">
         <div class="modal-box" style="text-align:center;">
             <h3 style="color:var(--secondary); margin-top:0;">Comprovante</h3>
@@ -206,6 +203,7 @@
         let isAdmin = false;
         
         // Bancos Locais em Memória
+        let allSystemUsers = {}; // Puxa os dados gerais dos usuários do sistema
         let dbColabs = {};
         let dbPagamentos = {};
         let dbDespesas = {};
@@ -220,7 +218,7 @@
                 currentUser = JSON.parse(u);
                 
                 // Libera para quem for Admin ou se o email for da Jocineide
-                if (currentUser.permissoes && (currentUser.permissoes.admin || currentUser.permissoes.helpdesk_admin) || (currentUser.email && currentUser.email.toLowerCase().includes('jocineide'))) {
+                if (currentUser.permissoes && (currentUser.permissoes.admin || currentUser.permissoes.caixinha_gestao)) {
                     isAdmin = true;
                 }
             }
@@ -264,16 +262,27 @@
 
         async function carregarDadosDB() {
             try {
-                // Trazendo dados usando a rota genérica que já temos blindada
-                const [resColabs, resPags, resDesp] = await Promise.all([
+                // Trazendo dados usando a rota genérica que já temos blindada + usuários do sistema
+                const [resUsuarios, resColabs, resPags, resDesp] = await Promise.all([
+                    fetch(`${API_BASE_URL}/usuarios`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/caixinha_colabs`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/caixinha_pagamentos`, { headers: API_HEADERS }),
                     fetch(`${API_BASE_URL}/caixinha_despesas`, { headers: API_HEADERS })
                 ]);
 
+                allSystemUsers = normalizeData(await resUsuarios.json());
                 dbColabs = normalizeData(await resColabs.json());
                 dbPagamentos = normalizeData(await resPags.json());
                 dbDespesas = normalizeData(await resDesp.json());
+
+                // Popula o select de usuários para adicionar à caixinha
+                const selectEl = document.getElementById('colabSelect');
+                selectEl.innerHTML = '<option value="">Selecione um usuário do sistema...</option>';
+                Object.entries(allSystemUsers)
+                    .sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || ''))
+                    .forEach(([key, u]) => {
+                        selectEl.innerHTML += `<option value="${key}">${u.nome || 'Sem Nome'} (${u.email})</option>`;
+                    });
 
                 atualizarDashboard();
                 renderGestaoTable();
@@ -352,7 +361,7 @@
             
             const listColabs = Object.values(dbColabs);
             if(listColabs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Nenhum colaborador cadastrado.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Nenhum colaborador cadastrado. Vá na aba "Colaboradores" para adicionar participantes.</td></tr>';
                 return;
             }
 
@@ -412,20 +421,23 @@
             atualizarDashboard();
         }
 
+        // ====== DISPARO DE E-MAIL (API NODE.JS) ======
         async function cobrarColaborador(nome, email, mesRef) {
-            if(!confirm(`Deseja enviar um e-mail de cobrança para ${nome}?`)) return;
+            if(!confirm(`Deseja enviar um e-mail de cobrança para ${nome} (${email})?`)) return;
             
             const [ano, mes] = mesRef.split('-');
             const mesFormatado = `${mes}/${ano}`;
 
             try {
+                // Esse POST enviará os dados corretos que puxamos do banco.
                 const res = await fetch(`${API_BASE_URL}/caixinha/cobrar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', ...API_HEADERS },
                     body: JSON.stringify({
                         colaboradorNome: nome,
                         colaboradorEmail: email,
-                        mesReferencia: mesFormatado
+                        mesReferencia: mesFormatado,
+                        valor: "R$ 10,00"
                     })
                 });
 
@@ -434,7 +446,7 @@
                 else alert("Erro ao enviar: " + ret.erro);
 
             } catch(e) {
-                alert("Falha na comunicação com o servidor.");
+                alert("Falha na comunicação com o servidor. Verifique se o backend está preparado para a rota /caixinha/cobrar");
             }
         }
 
@@ -569,20 +581,42 @@
         // =====================================
         // COLABORADORES
         // =====================================
+        function fillColabData() {
+            const select = document.getElementById('colabSelect');
+            const nomeInput = document.getElementById('colabNome');
+            const emailInput = document.getElementById('colabEmail');
+
+            if (!select.value) {
+                nomeInput.value = '';
+                emailInput.value = '';
+                return;
+            }
+
+            const u = allSystemUsers[select.value];
+            if (u) {
+                nomeInput.value = u.nome || '';
+                emailInput.value = u.email || '';
+            }
+        }
+
         async function salvarColaborador() {
+            const select = document.getElementById('colabSelect').value;
             const nome = document.getElementById('colabNome').value;
             const email = document.getElementById('colabEmail').value;
             const aniv = document.getElementById('colabAniversario').value;
 
-            if(!nome || !email) return alert("Nome e Email são obrigatórios.");
+            if(!nome || !email || !select) return alert("Por favor, selecione um usuário do sistema válido.");
 
-            const id_firebase = `colab_${Date.now()}`;
+            // Usamos a chave do firebase principal para ter integridade com a listagem principal
+            const id_firebase = select; 
+            
             await fetch(`${API_BASE_URL}/caixinha_colabs`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...API_HEADERS },
                 body: JSON.stringify({ id_firebase, nome, email, data_aniversario: aniv })
             });
 
+            document.getElementById('colabSelect').value = '';
             document.getElementById('colabNome').value = '';
             document.getElementById('colabEmail').value = '';
             document.getElementById('colabAniversario').value = '';

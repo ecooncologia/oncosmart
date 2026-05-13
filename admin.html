@@ -331,13 +331,17 @@
         
         let expandedCategoryNodes = new Set();
 
+        // ==========================================
+        // MATRIZ DE PERMISSÕES ATUALIZADA (CAIXINHA)
+        // ==========================================
         const permissionMap = [
             { group: "Geral", icon: "fa-globe", items: [
                 { id: "dashboard", label: "Dashboard" },
                 { id: "eventos", label: "Eventos" },
                 { id: "tuss", label: "Tabela TUSS" },
                 { id: "atas", label: "Mural de ATAS" },
-                { id: "helpdesk", label: "Helpdesk (Usuário)" }
+                { id: "helpdesk", label: "Helpdesk (Usuário)" },
+                { id: "caixinha", label: "Caixinha ECO (Geral)" } // NOVA PERMISSÃO (Ver no menu)
             ]},
             { group: "Clínico", icon: "fa-user-nurse", items: [
                 { id: "transporte", label: "Triagem (Recepção)" },
@@ -354,7 +358,8 @@
                 { id: "repass", label: "Repasse Médico" },
                 { id: "dashboard-repasse", label: "Dashboard Repasse" },
                 { id: "procedimentos", label: "Procedimentos" },
-                { id: "custo-vita", label: "Custo Vita" } // AQUI ESTÁ O CUSTO VITA
+                { id: "custo-vita", label: "Custo Vita" },
+                { id: "caixinha_gestao", label: "Gestão Caixinha (Admin)" } // NOVA PERMISSÃO (Editar Caixinha)
             ]},
             { group: "Sistemas", icon: "fa-laptop-code", items: [
                 { id: "helpdesk_admin", label: "Helpdesk (Admin TI)" },
