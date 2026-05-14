@@ -56,14 +56,15 @@ const APP_PAGES = [
     
     // 🆕 Caixinha Modularizada
     { id: 'caixinha', label: 'Caixinha ECO', file: 'caixinha.html', perm: 'caixinha', icon: 'fas fa-piggy-bank' },
-    { id: 'caixinha_gestao', label: 'Gestão Caixinha', file: 'caixinha-gestao.html', perm: 'caixinha_gestao', icon: 'fas fa-cash-register' }
+    { id: 'caixinha_gestao', label: 'Gestão Caixinha', file: 'caixinha-gestao.html', perm: 'caixinha_gestao', icon: 'fas fa-cash-register' },
+    { id: 'enfermagem-unimed', label: 'Enfermagem Unimed', file: 'enfermagem-unimed.html', perm: 'enfermagem-unimed', icon: 'fas fa-file-medical-alt' }
 ];
 
 // 2. ORGANIZAÇÃO DOS SETORES E SEUS MENUS
 const MENU_SECTORS = [
     { name: "Financeiro", icon: "fas fa-chart-line", pages: ['dashboard', 'budget', 'budgets', 'sales', 'repass', 'dashboard-repasse', 'procedures', 'custo-vita', 'caixinha_gestao'] },
     { name: "Recepção", icon: "fas fa-concierge-bell", pages: ['transporte', 'stenci', 'selos', 'tuss'] },
-    { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts', 'protocolos'] },
+    { name: "Enfermagem", icon: "fas fa-user-nurse", pages: ['enfermagem', 'doctors', 'pacientes', 'shifts', 'protocolos','enfermagem-unimed'] },
     { name: "Gerência", icon: "fas fa-briefcase", pages: ['indicadores_enf', 'helpdesk_dash', 'eventos', 'atas'] },
     { name: "Farmácia", icon: "fas fa-clinic-medical", pages: ['farmacia-unimed'] },
     { name: "Central de Guias", icon: "fas fa-file-medical", pages: ['guias_cirurgicas'] },
