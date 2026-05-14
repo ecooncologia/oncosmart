@@ -409,12 +409,12 @@
                             <div class="info-block" style="gap:5px;">
                                 ${statusHtml}
                                 <div>
-                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Contato:</span>
-                                    <input type="date" class="date-input" value="${p.dataContato || ''}" onchange="salvarCampoRapido('${p.id_firebase}', 'dataContato', this.value)">
+                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Contato (Enf):</span>
+                                    <input type="date" class="date-input" value="${p.dataContato || ''}" disabled style="background:#f3f4f6; cursor:not-allowed;">
                                 </div>
                                 <div>
-                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Agendamento:</span>
-                                    <input type="date" class="date-input" value="${p.dataAgendamento || ''}" onchange="salvarCampoRapido('${p.id_firebase}', 'dataAgendamento', this.value)">
+                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Agendamento (Enf):</span>
+                                    <input type="date" class="date-input" value="${p.dataAgendamento || ''}" disabled style="background:#f3f4f6; cursor:not-allowed;">
                                 </div>
                             </div>
                         </td>

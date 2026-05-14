@@ -70,11 +70,12 @@
                             <th>Protocolo (Medicamento)</th>
                             <th>Diagnóstico</th>
                             <th>Datas e Prazos</th>
+                            <th>Agendamento (Enfermagem)</th>
                             <th style="text-align: center;">Validação de Estoque</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="5" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando autorizações...</td></tr>
+                        <tr><td colspan="6" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Carregando autorizações...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -125,7 +126,7 @@
             listaAutorizados.sort((a,b) => new Date(a.data_criacao || 0) - new Date(b.data_criacao || 0));
 
             if(listaAutorizados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#6b7280;"><i class="fas fa-check-circle" style="font-size:24px; color:#10b981; display:block; margin-bottom:10px;"></i>Nenhum paciente aguardando validação da farmácia no momento.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#6b7280;"><i class="fas fa-check-circle" style="font-size:24px; color:#10b981; display:block; margin-bottom:10px;"></i>Nenhum paciente aguardando validação da farmácia no momento.</td></tr>';
                 return;
             }
 
@@ -168,6 +169,12 @@
                             <div class="info-block">
                                 <span class="info-label">Solicitado em: <span style="color:#111827;">${formatarDataBR(p.data_solicitacao)}</span></span>
                                 <span class="info-label">Intervalo Ciclos: <span style="color:#111827;">${p.intervalo ? p.intervalo+' dias' : '-'}</span></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-label">Contato: <span style="color:#111827; font-weight:bold;">${formatarDataBR(p.dataContato)}</span></span>
+                                <span class="info-label">Agendado: <span style="color:#be185d; font-weight:bold;">${formatarDataBR(p.dataAgendamento)}</span></span>
                             </div>
                         </td>
                         <td style="vertical-align: middle;">
