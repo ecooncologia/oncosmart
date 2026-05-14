@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Enfermagem - ECO Sistema</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kpCeqqJ.png">
+    <script>
+        const versaoApp = Date.now();
+        document.write('<link rel="stylesheet" href="styles.css?v=' + versaoApp + '">');
+        document.write('<script src="global.js?v=' + versaoApp + '"><\/script>');
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .container { width: 100%; padding: 20px; box-sizing: border-box; }
+        .controls { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .sheet-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-table th { background: #be185d; color: white; padding: 12px; text-align: left; text-transform: uppercase; font-size: 11px; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        
+        .date-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 6px; font-size: 12px; outline: none; width: 130px; }
+        .date-input:focus { border-color: #be185d; box-shadow: 0 0 0 2px rgba(190, 24, 93, 0.1); }
+
+        .info-block { display: flex; flex-direction: column; gap: 3px; }
+        .info-label { font-size: 9px; color: #6b7280; font-weight: bold; text-transform: uppercase; }
+        .info-val { font-size: 13px; font-weight: 600; color: #111827; }
+        
+        .badge-estoque { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .bg-ok { background: #d1fae5; color: #059669; }
+        .bg-falta { background: #fee2e2; color: #dc2626; }
+        .bg-wait { background: #f3f4f6; color: #6b7280; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="global-header" class="header"></div>
+        <div id="global-nav"></div>
+
+        <div class="controls">
+            <h2 style="margin:0; color:#1f2937; display:flex; align-items:center; gap:10px;"><i class="fas fa-user-nurse" style="color:#be185d;"></i> Agendamento Enfermagem</h2>
+            <p style="margin:5px 0 0; color:#6b7280; font-size:13px;">Insira as datas de contato e agendamento para os tratamentos autorizados.</p>
+        </div>
+
+        <div class="sheet-container">
+            <table class="data-table" id="tabelaEnfermagem">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Tratamento / Protocolo</th>
+                        <th>Status Farmácia</th>
+                        <th>Data de Contato</th>
+                        <th>Data de Agendamento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" style="text-align:center; padding:40px;">Carregando dados...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let pacientesFluxo = {};
+
+        async function startApp() {
+            if (typeof initGlobal !== 'undefined') {
+                initGlobal('enfermagem-unimed', 'Agendamento Enfermagem');
+                await carregarDados();
+                setInterval(carregarDados, 30000);
+            } else {
+                setTimeout(startApp, 100);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', startApp);
+
+        async function carregarDados() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { headers: API_HEADERS });
+                if(res.ok) { pacientesFluxo = await res.json(); }
+            } catch(e) { pacientesFluxo = {}; }
+            renderTabela();
+        }
+
+        function renderTabela() {
+            const tbody = document.querySelector('#tabelaEnfermagem tbody');
+            let html = '';
+
+            // Filtra apenas autorizados
+            const lista = Object.values(pacientesFluxo).filter(p => p.status === 'autorizado');
+            lista.sort((a,b) => new Date(b.data_criacao) - new Date(a.data_criacao));
+
+            if(lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#94a3b8;">Nenhum paciente aguardando agendamento.</td></tr>';
+                return;
+            }
+
+            lista.forEach(p => {
+                let badgeEstoque = `<span class="badge-estoque bg-wait">Aguardando</span>`;
+                if(p.status_farmacia === 'em_estoque') badgeEstoque = `<span class="badge-estoque bg-ok">Em Estoque</span>`;
+                if(p.status_farmacia === 'faltante') badgeEstoque = `<span class="badge-estoque bg-falta">Faltante</span>`;
+
+                html += `
+                    <tr>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val" style="color:#0284c7;">${p.nome}</span>
+                                <span class="info-label">Cart: ${p.carteirinha || 'N/A'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="info-block">
+                                <span class="info-val">${p.protocolo || '-'}</span>
+                                <span class="info-label">${p.tto || '-'}</span>
+                            </div>
+                        </td>
+                        <td>${badgeEstoque}</td>
+                        <td>
+                            <input type="date" class="date-input" value="${p.dataContato || ''}" 
+                                onchange="atualizarData('${p.id_firebase}', 'dataContato', this.value)">
+                        </td>
+                        <td>
+                            <input type="date" class="date-input" value="${p.dataAgendamento || ''}" 
+                                onchange="atualizarData('${p.id_firebase}', 'dataAgendamento', this.value)">
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function atualizarData(id, campo, valor) {
+            pacientesFluxo[id][campo] = valor;
+            try {
+                await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, {
+                    method: 'POST', 
+                    headers: API_HEADERS, 
+                    body: JSON.stringify(pacientesFluxo[id])
+                });
+            } catch(e) { alert("Erro ao salvar data."); }
+        }
+    </script>
+</body>
+</html>
