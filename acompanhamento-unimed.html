@@ -22,41 +22,16 @@
         .btn-primary { background: #00995D; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; gap: 8px; align-items: center; transition: 0.2s; }
         .btn-primary:hover { opacity: 0.9; }
 
-        /* NOVOS ESTILOS PARA OS BOTÕES DA TABELA (AÇÕES) */
-        .action-buttons-container {
-            display: flex;
-            flex-direction: column;
-            gap: 6px; /* Espaço entre os botões */
-            width: 130px; /* Largura fixa para ficarem idênticos */
-            margin: 0 auto;
-        }
+        .action-buttons-container { display: flex; flex-direction: column; gap: 6px; width: 130px; margin: 0 auto; }
         
-        .btn-table {
-            color: white; 
-            border: none; 
-            padding: 8px 10px; 
-            border-radius: 6px; 
-            cursor: pointer;
-            font-weight: bold; 
-            font-size: 11px; 
-            transition: 0.2s;
-            display: flex; 
-            gap: 6px; 
-            align-items: center; 
-            justify-content: center;
-            width: 100%; 
-            box-sizing: border-box;
-        }
+        .btn-table { color: white; border: none; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.2s; display: flex; gap: 6px; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; }
         
         .btn-t-edit { background: #3b82f6; } 
         .btn-t-edit:hover { background: #2563eb; }
-        
         .btn-t-send { background: #f59e0b; } 
         .btn-t-send:hover { background: #d97706; }
-        
         .btn-t-deny { background: #ef4444; } 
         .btn-t-deny:hover { background: #dc2626; }
-        
         .btn-t-auth { background: #10b981; } 
         .btn-t-auth:hover { background: #059669; }
 
@@ -75,13 +50,11 @@
         .st-negado { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 
         .date-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 6px; font-size: 11px; outline: none; color: #374151; width: 110px;}
-        .date-input:focus { border-color: #00995D; box-shadow: 0 0 0 2px rgba(0, 153, 93, 0.1); }
-
+        
         .info-block { display: flex; flex-direction: column; gap: 3px; }
         .info-label { font-size: 9px; color: #6b7280; font-weight: bold; text-transform: uppercase; }
         .info-val { font-size: 12px; font-weight: 600; color: #111827; }
 
-        /* Modal Styles */
         .modal-overlay { display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-overlay.active { display: flex; }
         .modal-content { background: white; width: 800px; max-width: 95%; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 90vh; }
@@ -96,6 +69,11 @@
         .form-label { font-size: 11px; font-weight: 800; color: #4b5563; text-transform: uppercase; }
         .form-input, .form-select { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; box-sizing: border-box; outline:none; font-size: 13px; font-family: inherit;}
         .form-input:focus, .form-select:focus { border-color: #00995D; box-shadow: 0 0 0 3px rgba(0, 153, 93, 0.1); }
+
+        /* Estilo para campos com botão de adicionar */
+        .input-with-btn { display: flex; gap: 8px; }
+        .btn-add-option { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 12px; cursor: pointer; transition: 0.2s; }
+        .btn-add-option:hover { background: #cbd5e1; color: #1e293b; }
     </style>
 </head>
 <body>
@@ -143,7 +121,6 @@
             </div>
             <div class="modal-body">
                 <div class="form-grid">
-                    
                     <div class="form-group full-width">
                         <label class="form-label">Nome Completo do Paciente *</label>
                         <input type="text" id="inpNome" class="form-input" placeholder="Ex: MARIA DA SILVA" style="text-transform: uppercase;">
@@ -152,7 +129,6 @@
                     <div class="form-group">
                         <label class="form-label">Carteirinha Unimed *</label>
                         <input type="text" id="inpCarteirinha" class="form-input" placeholder="00000000000000000">
-                        <span style="font-size:9px; color:#6b7280;">Usado pelo robô para pesquisa</span>
                     </div>
 
                     <div class="form-group">
@@ -161,71 +137,60 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">TTO (Tipo de Tratamento) *</label>
-                        <select id="inpTto" class="form-select">
-                            <option value="">-- Selecione --</option>
-                            <option value="Paciente Novo na Clínica">Paciente Novo na Clínica</option>
-                            <option value="Troca de Tratamento">Troca de Tratamento</option>
-                            <option value="Complemento de Tratamento">Complemento de Tratamento</option>
-                        </select>
+                        <label class="form-label">Tipo de Tratamento *</label>
+                        <div class="input-with-btn">
+                            <select id="inpTto" class="form-select"></select>
+                            <button class="btn-add-option" onclick="adicionarNovaOpcao('tto_opcoes', 'inpTto')" title="Cadastrar novo TTO"><i class="fas fa-plus"></i></button>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Origem *</label>
-                        <select id="inpOrigem" class="form-select">
-                            <option value="">-- Selecione --</option>
-                            <option value="Médico Externo">Médico que mandou (Externo)</option>
-                            <option value="Próprio Paciente">Próprio Paciente</option>
-                            <option value="Hospital VITA">Hospital VITA</option>
-                            <option value="Eliel">Eliel</option>
-                        </select>
+                        <div class="input-with-btn">
+                            <select id="inpOrigem" class="form-select"></select>
+                            <button class="btn-add-option" onclick="adicionarNovaOpcao('origem_opcoes', 'inpOrigem')" title="Cadastrar nova Origem"><i class="fas fa-plus"></i></button>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Médico Encaminhador</label>
-                        <select id="inpEncaminhador" class="form-select">
-                            <option value="">Carregando médicos...</option>
-                        </select>
+                        <select id="inpEncaminhador" class="form-select"></select>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Médico Prescritor (Responsável na Guia) *</label>
-                        <select id="inpPrescritor" class="form-select">
-                            <option value="">Carregando médicos...</option>
-                        </select>
-                        <span style="font-size:9px; color:#6b7280;">Dica: Externos saem no nome do Dr Alessandro</span>
+                        <select id="inpPrescritor" class="form-select"></select>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Diagnóstico</label>
-                        <input type="text" id="inpDiagnostico" class="form-input" placeholder="Ex: C50 Neoplasia maligna da mama" style="text-transform: uppercase;">
+                        <input type="text" id="inpDiagnostico" class="form-input" placeholder="Ex: C50 Neoplasia" style="text-transform: uppercase;">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Protocolo (Medicamento)</label>
-                        <input type="text" id="inpProtocolo" class="form-input" placeholder="Ex: PACLITAXEL + TRASTUZUMABE" style="text-transform: uppercase;">
+                        <input type="text" id="inpProtocolo" class="form-input" placeholder="Ex: PACLITAXEL" style="text-transform: uppercase;">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Intervalo entre Ciclos (Dias)</label>
-                        <input type="number" id="inpIntervalo" class="form-input" placeholder="Ex: 21">
+                        <label class="form-label">Intervalo Ciclos (Dias)</label>
+                        <input type="number" id="inpIntervalo" class="form-input">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Data de Recebimento (Doc Completa)</label>
+                        <label class="form-label">Data Recebimento</label>
                         <input type="date" id="inpDataRecebimento" class="form-input">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Data de Solicitação (Envio Unimed)</label>
+                        <label class="form-label">Data Solicitação (Unimed)</label>
                         <input type="date" id="inpDataSolicitacao" class="form-input">
                     </div>
-
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-primary" style="background:#9ca3af;" onclick="fecharModal()">Cancelar</button>
-                <button class="btn-primary" id="btnSalvarModal" onclick="salvarPaciente()"><i class="fas fa-save"></i> Cadastrar no Fluxo</button>
+                <button class="btn-primary" id="btnSalvarModal" onclick="salvarPaciente()"><i class="fas fa-save"></i> Salvar</button>
             </div>
         </div>
     </div>
@@ -233,11 +198,13 @@
     <script>
         let pacientesFluxo = {};
         let dbMedicos = {};
+        let fluxosConfig = { tto_opcoes: [], origem_opcoes: [] };
         let editandoId = null; 
 
         async function startApp() {
             if (typeof initGlobal !== 'undefined') {
                 initGlobal('fluxo-unimed', 'Navegação de Pacientes Unimed');
+                await carregarConfigs();
                 await carregarMedicos();
                 await carregarDados();
             } else {
@@ -246,24 +213,58 @@
         }
         document.addEventListener('DOMContentLoaded', startApp);
 
-        // ==========================================
-        // CARREGAMENTO E DEPENDÊNCIAS
-        // ==========================================
+        // Carrega opções dinâmicas de TTO e Origem do system_configs
+        async function carregarConfigs() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
+                const data = await res.json();
+                if (data.fluxo_unimed_opcoes) {
+                    fluxosConfig = data.fluxo_unimed_opcoes;
+                }
+                renderizarSelectsDinamicos();
+            } catch (e) { console.error("Erro ao carregar configurações", e); }
+        }
+
+        function renderizarSelectsDinamicos() {
+            const ttoSelect = document.getElementById('inpTto');
+            const origemSelect = document.getElementById('inpOrigem');
+
+            ttoSelect.innerHTML = '<option value="">-- Selecione --</option>' + fluxosConfig.tto_opcoes.map(o => `<option value="${o}">${o}</option>`).join('');
+            origemSelect.innerHTML = '<option value="">-- Selecione --</option>' + fluxosConfig.origem_opcoes.map(o => `<option value="${o}">${o}</option>`).join('');
+        }
+
+        async function adicionarNovaOpcao(tipo, selectId) {
+            const novaOpcao = prompt("Digite o nome da nova opção:");
+            if (!novaOpcao || novaOpcao.trim() === "") return;
+
+            const valorFinal = novaOpcao.trim();
+            if (fluxosConfig[tipo].includes(valorFinal)) return alert("Esta opção já existe.");
+
+            fluxosConfig[tipo].push(valorFinal);
+            fluxosConfig[tipo].sort();
+
+            try {
+                await fetch(`${API_BASE_URL}/system_configs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...API_HEADERS },
+                    body: JSON.stringify({ id_firebase: 'fluxo_unimed_opcoes', ...fluxosConfig })
+                });
+                renderizarSelectsDinamicos();
+                document.getElementById(selectId).value = valorFinal;
+            } catch (e) { alert("Erro ao salvar nova opção."); }
+        }
+
         async function carregarMedicos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
                 if(res.ok) {
                     const data = await res.json();
                     Object.entries(data).forEach(([key, val]) => {
-                        if (typeof val === 'string' && val.startsWith('{')) { try { dbMedicos[key] = JSON.parse(val); } catch(e){} } 
-                        else { dbMedicos[key] = val; }
+                        dbMedicos[key] = (typeof val === 'string' && val.startsWith('{')) ? JSON.parse(val) : val;
                     });
-
                     const selEnc = document.getElementById('inpEncaminhador');
                     const selPresc = document.getElementById('inpPrescritor');
-                    selEnc.innerHTML = '<option value="">-- Selecione --</option>';
-                    selPresc.innerHTML = '<option value="">-- Selecione --</option>';
-
+                    selEnc.innerHTML = selPresc.innerHTML = '<option value="">-- Selecione --</option>';
                     Object.entries(dbMedicos).sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '')).forEach(([id, doc]) => {
                         selEnc.add(new Option(doc.nome, id));
                         selPresc.add(new Option(doc.nome, id));
@@ -275,10 +276,7 @@
         async function carregarDados() {
             try {
                 const res = await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { headers: API_HEADERS });
-                if(res.ok) {
-                    const data = await res.json();
-                    pacientesFluxo = data;
-                }
+                if(res.ok) pacientesFluxo = await res.json();
             } catch(e) { pacientesFluxo = {}; }
             renderTabela();
         }
@@ -287,17 +285,12 @@
             if (!dataInicialStr) return 0;
             const dataInicial = new Date(dataInicialStr + "T00:00:00"); 
             const hoje = new Date();
-            
             if (isNaN(dataInicial.getTime())) return 0;
-
             let diasUteis = 0;
             let tempDate = new Date(dataInicial.getTime());
-
             while (tempDate <= hoje) {
                 const diaSemana = tempDate.getDay();
-                if (diaSemana !== 0 && diaSemana !== 6) {
-                    diasUteis++;
-                }
+                if (diaSemana !== 0 && diaSemana !== 6) diasUteis++;
                 tempDate.setDate(tempDate.getDate() + 1);
             }
             return diasUteis;
@@ -306,192 +299,91 @@
         function formatarDataBR(dataString) {
             if(!dataString) return '-';
             const partes = dataString.split('-');
-            if(partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
-            return dataString;
+            return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataString;
         }
 
-        // ==========================================
-        // RENDERIZAÇÃO DA TABELA
-        // ==========================================
         function renderTabela() {
             const tbody = document.querySelector('#tabelaFluxo tbody');
             let html = '';
-
             const lista = Object.values(pacientesFluxo).sort((a,b) => new Date(b.data_criacao || 0) - new Date(a.data_criacao || 0));
 
             if(lista.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px; color:#6b7280;">Nenhum paciente no fluxo atualmente.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px; color:#6b7280;">Nenhum paciente no fluxo.</td></tr>';
                 return;
             }
 
             lista.forEach(p => {
                 const nomeEncam = p.encaminhador && dbMedicos[p.encaminhador] ? dbMedicos[p.encaminhador].nome : (p.encaminhador || 'Não informado');
                 const nomePresc = p.medico_prescritor && dbMedicos[p.medico_prescritor] ? dbMedicos[p.medico_prescritor].nome : 'Não informado';
-
                 const diasAnalise = calcularDiasUteis(p.data_solicitacao);
                 let corDias = diasAnalise >= 5 ? '#dc2626' : (diasAnalise >= 3 ? '#d97706' : '#059669');
                 
-                let statusHtml = `<span class="status-badge st-pendente"><i class="fas fa-clock"></i> Pendente Info</span>`;
-                if(p.status === 'pendente') statusHtml = `<span class="status-badge st-pendente"><i class="fas fa-robot"></i> Fila Robô</span>`;
+                let statusHtml = `<span class="status-badge st-pendente"><i class="fas fa-robot"></i> Fila Robô</span>`;
                 if(p.status === 'em_analise') statusHtml = `<span class="status-badge st-analise"><i class="fas fa-search"></i> Em Análise</span>`;
                 if(p.status === 'nicolas') statusHtml = `<span class="status-badge st-nicolas"><i class="fas fa-user-md"></i> Nicolas Verificar</span>`;
                 if(p.status === 'autorizado') statusHtml = `<span class="status-badge st-autorizado"><i class="fas fa-check-circle"></i> Autorizado</span>`;
                 if(p.status === 'negado') statusHtml = `<span class="status-badge st-negado"><i class="fas fa-times-circle"></i> Negado</span>`;
 
-                let printHtml = '<span style="color:#9ca3af; font-size:10px; font-style:italic;">Aguardando Varredura</span>';
-                if(p.print_url) {
-                    printHtml = `<a href="${API_BASE_URL}${p.print_url}" target="_blank" style="color:#0284c7; text-decoration:none; font-weight:bold; font-size:11px; display:inline-block; margin-bottom:4px;"><i class="fas fa-image"></i> Ver Print da Guia</a>`;
-                }
+                let printHtml = p.print_url ? `<a href="${API_BASE_URL}${p.print_url}" target="_blank" style="color:#0284c7; font-weight:bold; font-size:11px;"><i class="fas fa-image"></i> Ver Print da Guia</a>` : '<span style="color:#9ca3af; font-size:10px;">Aguardando Varredura</span>';
 
-                // Coluna de Ações reorganizada com os botões de Reverter Status
-                let acoesHtml = `<div class="action-buttons-container">`;
-                
-                acoesHtml += `<button class="btn-table btn-t-edit" onclick="abrirModalEditar('${p.id_firebase}')" title="Editar dados do paciente"><i class="fas fa-edit"></i> Editar</button>`;
-
+                let acoesHtml = `<div class="action-buttons-container"><button class="btn-table btn-t-edit" onclick="abrirModalEditar('${p.id_firebase}')"><i class="fas fa-edit"></i> Editar</button>`;
                 if(p.status === 'pendente' || p.status === 'em_analise') {
-                    acoesHtml += `<button class="btn-table btn-t-send" onclick="alterarStatus('${p.id_firebase}', 'nicolas', '${p.nome}')" title="Avisa o Nicolas por e-mail para verificar a dosagem."><i class="fas fa-paper-plane"></i> Enviar Nicolas</button>`;
-                    acoesHtml += `<button class="btn-table btn-t-deny" onclick="alterarStatus('${p.id_firebase}', 'negado')" title="Marcar como negado pela Unimed."><i class="fas fa-ban"></i> Negar</button>`;
+                    acoesHtml += `<button class="btn-table btn-t-send" onclick="alterarStatus('${p.id_firebase}', 'nicolas', '${p.nome}')"><i class="fas fa-paper-plane"></i> Enviar Nicolas</button><button class="btn-table btn-t-deny" onclick="alterarStatus('${p.id_firebase}', 'negado')"><i class="fas fa-ban"></i> Negar</button>`;
                 } else if(p.status === 'nicolas') {
-                    acoesHtml += `<button class="btn-table btn-t-auth" onclick="alterarStatus('${p.id_firebase}', 'autorizado', '${p.nome}')" title="Aprova a dosagem e avisa Enfermagem/Farmácia."><i class="fas fa-check-double"></i> Aprovar</button>`;
-                } else if (p.status === 'autorizado') {
-                    acoesHtml += `<span style="font-size:11px; color:#059669; font-weight:bold; display:block; text-align:center; padding-top: 5px;"><i class="fas fa-check"></i> Finalizado</span>`;
-                    acoesHtml += `<button class="btn-table" style="background:#64748b; margin-top:5px;" onclick="reverterStatus('${p.id_firebase}', 'nicolas')" title="Retornar para testes"><i class="fas fa-undo"></i> Retornar Status</button>`;
-                } else if (p.status === 'negado') {
-                    acoesHtml += `<span style="font-size:11px; color:#dc2626; font-weight:bold; display:block; text-align:center; padding-top: 5px;"><i class="fas fa-ban"></i> Negado</span>`;
-                    acoesHtml += `<button class="btn-table" style="background:#64748b; margin-top:5px;" onclick="reverterStatus('${p.id_firebase}', 'em_analise')" title="Retornar para testes"><i class="fas fa-undo"></i> Retornar Status</button>`;
+                    acoesHtml += `<button class="btn-table btn-t-auth" onclick="alterarStatus('${p.id_firebase}', 'autorizado', '${p.nome}')"><i class="fas fa-check-double"></i> Aprovar</button>`;
+                } else {
+                    const icone = p.status === 'autorizado' ? 'fa-check' : 'fa-ban';
+                    const cor = p.status === 'autorizado' ? '#059669' : '#dc2626';
+                    acoesHtml += `<span style="font-size:11px; color:${cor}; font-weight:bold; text-align:center; display:block; padding-top:5px;"><i class="fas ${icone}"></i> ${p.status === 'autorizado' ? 'Finalizado' : 'Negado'}</span>`;
+                    acoesHtml += `<button class="btn-table" style="background:#64748b; margin-top:5px;" onclick="reverterStatus('${p.id_firebase}', '${p.status === 'autorizado' ? 'nicolas' : 'em_analise'}')"><i class="fas fa-undo"></i> Retornar Status</button>`;
                 }
-
                 acoesHtml += `</div>`;
 
                 html += `
                     <tr>
-                        <td>
-                            <div class="info-block">
-                                <span class="info-val" style="color:#0284c7;">${p.nome}</span>
-                                <span class="info-label">Cart: <span style="color:#111827; font-family:monospace; font-size:10px;">${p.carteirinha || 'N/A'}</span></span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="info-block">
-                                <span class="info-val">${p.tto || '-'}</span>
-                                <span class="info-label">Origem: <span style="color:#4b5563;">${p.origem || '-'}</span></span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="info-block">
-                                <span class="info-label">Prescritor (Guia)</span>
-                                <span class="info-val" style="color:#be185d; font-size:10px;"><i class="fas fa-stethoscope"></i> ${nomePresc}</span>
-                                <span class="info-label" style="margin-top:2px;">Encaminhador</span>
-                                <span class="info-val" style="color:#c2410c; font-size:10px;"><i class="fas fa-share-square"></i> ${nomeEncam}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="info-block">
-                                <span class="info-val" style="font-size:10px; white-space:normal; max-width:180px;">${p.protocolo || '-'}</span>
-                                <span class="info-label">Diag: ${p.diagnostico || '-'} | Intervalo: ${p.intervalo ? p.intervalo+' dias' : '-'}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="info-block">
-                                <span class="info-label">Recebido em: <span style="color:#111827;">${formatarDataBR(p.data_recebimento)}</span></span>
-                                <span class="info-label">Solicitado em: <span style="color:#111827;">${formatarDataBR(p.data_solicitacao)}</span></span>
-                                <span class="info-label" style="margin-top:3px; color:${corDias};">Dias em Análise: <span style="font-size:12px; font-weight:900;">${diasAnalise}</span> dia(s) útil(eis)</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="info-block">
-                                ${printHtml}
-                                <span class="info-label">Última Varredura:</span>
-                                <span class="info-val" style="font-size:10px; font-family:monospace;">${p.ultima_varredura ? p.ultima_varredura : 'Aguardando...'}</span>
-                            </div>
-                        </td>
+                        <td><div class="info-block"><span class="info-val" style="color:#0284c7;">${p.nome}</span><span class="info-label">Cart: ${p.carteirinha || 'N/A'}</span></div></td>
+                        <td><div class="info-block"><span class="info-val">${p.tto || '-'}</span><span class="info-label">Origem: ${p.origem || '-'}</span></div></td>
+                        <td><div class="info-block"><span class="info-label">Prescritor</span><span class="info-val" style="color:#be185d; font-size:10px;">${nomePresc}</span><span class="info-label">Encaminhador</span><span class="info-val" style="color:#c2410c; font-size:10px;">${nomeEncam}</span></div></td>
+                        <td><div class="info-block"><span class="info-val" style="font-size:10px;">${p.protocolo || '-'}</span><span class="info-label">Diag: ${p.diagnostico || '-'}</span></div></td>
+                        <td><div class="info-block"><span class="info-label">Solicitado: ${formatarDataBR(p.data_solicitacao)}</span><span class="info-label" style="color:${corDias};">Analise: <b>${diasAnalise}</b> d. úteis</span></div></td>
+                        <td><div class="info-block">${printHtml}<span class="info-label">Varredura:</span><span class="info-val" style="font-size:10px;">${p.ultima_varredura || 'Aguardando...'}</span></div></td>
                         <td>
                             <div class="info-block" style="gap:5px;">
                                 ${statusHtml}
-                                <div>
-                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Contato (Enf):</span>
-                                    <input type="date" class="date-input" value="${p.dataContato || ''}" disabled style="background:#f3f4f6; cursor:not-allowed;">
-                                </div>
-                                <div>
-                                    <span class="info-label" style="display:block; margin-bottom:2px;">Dt. Agendamento (Enf):</span>
-                                    <input type="date" class="date-input" value="${p.dataAgendamento || ''}" disabled style="background:#f3f4f6; cursor:not-allowed;">
-                                </div>
+                                <div><span class="info-label">Contato (Enf):</span><input type="date" class="date-input" value="${p.dataContato || ''}" disabled style="background:#f3f4f6;"></div>
+                                <div><span class="info-label">Agendamento (Enf):</span><input type="date" class="date-input" value="${p.dataAgendamento || ''}" disabled style="background:#f3f4f6;"></div>
+                                <div style="margin-top:5px; padding-top:5px; border-top:1px solid #eee;"><span class="info-label">Obs. Enf:</span><div style="font-size:10px; color:#4b5563; white-space:normal; max-width:140px;">${p.obsEnfermagem || '-'}</div></div>
                             </div>
                         </td>
-                        <td style="vertical-align: middle;">
-                            ${acoesHtml}
-                        </td>
+                        <td style="vertical-align: middle;">${acoesHtml}</td>
                     </tr>
                 `;
             });
-
             tbody.innerHTML = html;
         }
 
-        // ==========================================
-        // FLUXOS DE NEGÓCIO E E-MAILS
-        // ==========================================
-        async function salvarCampoRapido(id, campo, valor) {
-            pacientesFluxo[id][campo] = valor;
-            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, {
-                method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id])
-            });
-        }
-
         async function alterarStatus(id, novoStatus, nomePaciente = null) {
-            const mensagens = {
-                'nicolas': "Deseja enviar para verificação do Nicolas? Um e-mail será disparado.",
-                'autorizado': "Confirmar autorização e verificar dosagem? Enfermagem/Farmácia serão notificados.",
-                'negado': "Tem certeza que deseja marcar este tratamento como NEGADO na Unimed?"
-            };
-
+            const mensagens = { nicolas: "Enviar para verificação do Nicolas?", autorizado: "Confirmar autorização?", negado: "Marcar como NEGADO?" };
             if(!confirm(mensagens[novoStatus])) return;
-            
             pacientesFluxo[id].status = novoStatus;
             renderTabela(); 
-            
             await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
-            
-            if (novoStatus === 'nicolas' || novoStatus === 'autorizado') {
-                const acaoMail = novoStatus === 'nicolas' ? 'nicolas' : 'farmacia_enfermagem';
-                try {
-                    await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, {
-                        method: 'POST', headers: API_HEADERS,
-                        body: JSON.stringify({ pacienteNome: nomePaciente || pacientesFluxo[id].nome, acao: acaoMail, pacienteDados: pacientesFluxo[id] })
-                    });
-                    alert('Notificações de e-mail enviadas com sucesso!');
-                } catch (e) {
-                    alert('Status alterado, mas houve um erro ao enviar e-mails.');
-                }
+            if (['nicolas', 'autorizado'].includes(novoStatus)) {
+                await fetch(`${API_BASE_URL}/fluxo-unimed/notificar`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify({ pacienteNome: nomePaciente || pacientesFluxo[id].nome, acao: novoStatus === 'nicolas' ? 'nicolas' : 'farmacia_enfermagem', pacienteDados: pacientesFluxo[id] }) });
+                alert('Notificado!');
             }
         }
 
-        // NOVA FUNÇÃO: Reverte o status para testes
         async function reverterStatus(id, novoStatus) {
-            if(!confirm("Deseja retornar o status deste paciente para testes? (Nenhum e-mail será enviado nesta ação)")) return;
-            
+            if(!confirm("Retornar status para testes?")) return;
             pacientesFluxo[id].status = novoStatus;
             renderTabela(); 
-            
-            try {
-                await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { 
-                    method: 'POST', 
-                    headers: API_HEADERS, 
-                    body: JSON.stringify(pacientesFluxo[id]) 
-                });
-            } catch (e) {
-                alert("Erro ao retornar o status no banco de dados.");
-            }
+            await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(pacientesFluxo[id]) });
         }
 
-        // ==========================================
-        // MODAL DE CADASTRO E EDIÇÃO
-        // ==========================================
         function abrirModalAdd() {
             editandoId = null; 
-            document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-clipboard-list"></i> Cadastro de Paciente no Fluxo';
-            document.getElementById('btnSalvarModal').innerHTML = '<i class="fas fa-save"></i> Cadastrar no Fluxo';
-            
+            document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-user-plus"></i> Cadastro de Paciente';
             const inputs = document.querySelectorAll('#modalAdd input:not(#inpConvenio), #modalAdd select');
             inputs.forEach(inp => inp.value = '');
             document.getElementById('modalAdd').classList.add('active');
@@ -499,84 +391,36 @@
 
         function abrirModalEditar(id) {
             editandoId = id; 
-            const paciente = pacientesFluxo[id];
-
+            const p = pacientesFluxo[id];
             document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Paciente';
-            document.getElementById('btnSalvarModal').innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
-
-            document.getElementById('inpNome').value = paciente.nome || '';
-            document.getElementById('inpCarteirinha').value = paciente.carteirinha || '';
-            document.getElementById('inpTto').value = paciente.tto || '';
-            document.getElementById('inpOrigem').value = paciente.origem || '';
-            document.getElementById('inpEncaminhador').value = paciente.encaminhador || '';
-            document.getElementById('inpPrescritor').value = paciente.medico_prescritor || '';
-            document.getElementById('inpDiagnostico').value = paciente.diagnostico || '';
-            document.getElementById('inpProtocolo').value = paciente.protocolo || '';
-            document.getElementById('inpIntervalo').value = paciente.intervalo || '';
-            document.getElementById('inpDataRecebimento').value = paciente.data_recebimento || '';
-            document.getElementById('inpDataSolicitacao').value = paciente.data_solicitacao || '';
-
+            document.getElementById('inpNome').value = p.nome || '';
+            document.getElementById('inpCarteirinha').value = p.carteirinha || '';
+            document.getElementById('inpTto').value = p.tto || '';
+            document.getElementById('inpOrigem').value = p.origem || '';
+            document.getElementById('inpEncaminhador').value = p.encaminhador || '';
+            document.getElementById('inpPrescritor').value = p.medico_prescritor || '';
+            document.getElementById('inpDiagnostico').value = p.diagnostico || '';
+            document.getElementById('inpProtocolo').value = p.protocolo || '';
+            document.getElementById('inpIntervalo').value = p.intervalo || '';
+            document.getElementById('inpDataRecebimento').value = p.data_recebimento || '';
+            document.getElementById('inpDataSolicitacao').value = p.data_solicitacao || '';
             document.getElementById('modalAdd').classList.add('active');
         }
 
-        function fecharModal() {
-            document.getElementById('modalAdd').classList.remove('active');
-        }
+        function fecharModal() { document.getElementById('modalAdd').classList.remove('active'); }
 
         async function salvarPaciente() {
             const nome = document.getElementById('inpNome').value.trim().toUpperCase();
-            const carteirinha = document.getElementById('inpCarteirinha').value.trim();
-            const tto = document.getElementById('inpTto').value;
-            const origem = document.getElementById('inpOrigem').value;
-            const prescritor = document.getElementById('inpPrescritor').value;
-            
-            if(!nome || !carteirinha || !tto || !origem || !prescritor) {
-                return alert("Por favor, preencha todos os campos obrigatórios marcados com *.");
-            }
-
-            const btn = document.getElementById('btnSalvarModal');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-            btn.disabled = true;
-
+            const cart = document.getElementById('inpCarteirinha').value.trim();
+            if(!nome || !cart || !document.getElementById('inpTto').value) return alert("Preencha os campos obrigatórios.");
             const idToSave = editandoId ? editandoId : ('flu_' + Date.now());
-            
-            const baseObj = editandoId ? pacientesFluxo[editandoId] : {
-                status: 'pendente',
-                dataContato: '',
-                dataAgendamento: '',
-                data_criacao: new Date().toISOString(),
-                print_url: '',
-                ultima_varredura: ''
-            };
-
-            const dadosSalvar = {
-                ...baseObj,
-                id_firebase: idToSave,
-                nome: nome,
-                carteirinha: carteirinha,
-                convenio: 'UNIMED',
-                tto: tto,
-                origem: origem,
-                encaminhador: document.getElementById('inpEncaminhador').value,
-                medico_prescritor: prescritor,
-                diagnostico: document.getElementById('inpDiagnostico').value.trim().toUpperCase(),
-                protocolo: document.getElementById('inpProtocolo').value.trim().toUpperCase(),
-                intervalo: document.getElementById('inpIntervalo').value,
-                data_recebimento: document.getElementById('inpDataRecebimento').value,
-                data_solicitacao: document.getElementById('inpDataSolicitacao') ? document.getElementById('inpDataSolicitacao').value : ''
-            };
-
+            const baseObj = editandoId ? pacientesFluxo[editandoId] : { status: 'pendente', data_criacao: new Date().toISOString() };
+            const dados = { ...baseObj, id_firebase: idToSave, nome: nome, carteirinha: cart, convenio: 'UNIMED', tto: document.getElementById('inpTto').value, origem: document.getElementById('inpOrigem').value, encaminhador: document.getElementById('inpEncaminhador').value, medico_prescritor: document.getElementById('inpPrescritor').value, diagnostico: document.getElementById('inpDiagnostico').value.toUpperCase(), protocolo: document.getElementById('inpProtocolo').value.toUpperCase(), intervalo: document.getElementById('inpIntervalo').value, data_recebimento: document.getElementById('inpDataRecebimento').value, data_solicitacao: document.getElementById('inpDataSolicitacao').value };
             try {
-                await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(dadosSalvar) });
-                pacientesFluxo[idToSave] = dadosSalvar;
-                fecharModal();
-                renderTabela();
-            } catch(e) {
-                alert("Erro ao salvar dados do paciente.");
-            } finally {
-                btn.innerHTML = editandoId ? '<i class="fas fa-save"></i> Salvar Alterações' : '<i class="fas fa-save"></i> Cadastrar no Fluxo';
-                btn.disabled = false;
-            }
+                await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, { method: 'POST', headers: API_HEADERS, body: JSON.stringify(dados) });
+                pacientesFluxo[idToSave] = dados;
+                fecharModal(); carregarDados();
+            } catch(e) { alert("Erro ao salvar."); }
         }
     </script>
 </body>
