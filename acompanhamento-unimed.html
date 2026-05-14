@@ -74,6 +74,14 @@
         .input-with-btn { display: flex; gap: 8px; }
         .btn-add-option { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 12px; cursor: pointer; transition: 0.2s; }
         .btn-add-option:hover { background: #cbd5e1; color: #1e293b; }
+
+        /* Estilo para a Lista de Opções no Modal Gerenciador */
+        .options-list { margin-top: 15px; border: 1px solid #eee; border-radius: 8px; max-height: 200px; overflow-y: auto; }
+        .option-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f9fafb; }
+        .option-item:last-child { border-bottom: none; }
+        .option-item:hover { background: #f8fafc; }
+        .btn-del-option { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; padding: 4px; }
+        .btn-del-option:hover { color: #dc2626; }
     </style>
 </head>
 <body>
@@ -140,7 +148,7 @@
                         <label class="form-label">TTO (Tipo de Tratamento) *</label>
                         <div class="input-with-btn">
                             <select id="inpTto" class="form-select"></select>
-                            <button class="btn-add-option" onclick="adicionarNovaOpcao('tto_opcoes', 'inpTto')" title="Cadastrar novo TTO"><i class="fas fa-plus"></i></button>
+                            <button class="btn-add-option" onclick="abrirGerenciadorOpcoes('tto_opcoes', 'TTO')" title="Gerenciar opções de TTO"><i class="fas fa-cog"></i></button>
                         </div>
                     </div>
 
@@ -148,7 +156,7 @@
                         <label class="form-label">Origem *</label>
                         <div class="input-with-btn">
                             <select id="inpOrigem" class="form-select"></select>
-                            <button class="btn-add-option" onclick="adicionarNovaOpcao('origem_opcoes', 'inpOrigem')" title="Cadastrar nova Origem"><i class="fas fa-plus"></i></button>
+                            <button class="btn-add-option" onclick="abrirGerenciadorOpcoes('origem_opcoes', 'Origem')" title="Gerenciar opções de Origem"><i class="fas fa-cog"></i></button>
                         </div>
                     </div>
 
@@ -195,10 +203,30 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modalGerenciarOpcoes" style="z-index: 1100;">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header" style="background: #475569;">
+                <span><i class="fas fa-list-ul"></i> Gerenciar Opções: <span id="labelTipoOpcao"></span></span>
+                <button onclick="fecharGerenciador()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Adicionar Nova Opção:</label>
+                <div class="input-with-btn">
+                    <input type="text" id="newOptionInput" class="form-input" placeholder="Digite aqui...">
+                    <button class="btn-primary" onclick="confirmarAdicaoOpcao()"><i class="fas fa-plus"></i></button>
+                </div>
+                
+                <div class="options-list" id="listaOpcoesDinamica">
+                    </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let pacientesFluxo = {};
         let dbMedicos = {};
         let fluxosConfig = { tto_opcoes: [], origem_opcoes: [] };
+        let currentManagingType = ''; 
         let editandoId = null; 
 
         async function startApp() {
@@ -213,47 +241,86 @@
         }
         document.addEventListener('DOMContentLoaded', startApp);
 
-        // Carrega opções dinâmicas de TTO e Origem do system_configs
         async function carregarConfigs() {
             try {
                 const res = await fetch(`${API_BASE_URL}/system_configs`, { headers: API_HEADERS });
                 const data = await res.json();
-                if (data.fluxo_unimed_opcoes) {
-                    fluxosConfig = data.fluxo_unimed_opcoes;
-                }
+                if (data.fluxo_unimed_opcoes) fluxosConfig = data.fluxo_unimed_opcoes;
                 renderizarSelectsDinamicos();
-            } catch (e) { console.error("Erro ao carregar configurações", e); }
+            } catch (e) { console.error("Erro ao carregar configs", e); }
         }
 
         function renderizarSelectsDinamicos() {
-            const ttoSelect = document.getElementById('inpTto');
-            const origemSelect = document.getElementById('inpOrigem');
-
-            ttoSelect.innerHTML = '<option value="">-- Selecione --</option>' + fluxosConfig.tto_opcoes.map(o => `<option value="${o}">${o}</option>`).join('');
-            origemSelect.innerHTML = '<option value="">-- Selecione --</option>' + fluxosConfig.origem_opcoes.map(o => `<option value="${o}">${o}</option>`).join('');
+            document.getElementById('inpTto').innerHTML = '<option value="">-- Selecione --</option>' + fluxosConfig.tto_opcoes.map(o => `<option value="${o}">${o}</option>`).join('');
+            document.getElementById('inpOrigem').innerHTML = '<option value="">-- Selecione --</option>' + fluxosConfig.origem_opcoes.map(o => `<option value="${o}">${o}</option>`).join('');
         }
 
-        async function adicionarNovaOpcao(tipo, selectId) {
-            const novaOpcao = prompt("Digite o nome da nova opção:");
-            if (!novaOpcao || novaOpcao.trim() === "") return;
+        // --- LÓGICA DO GERENCIADOR DE OPÇÕES ---
+        function abrirGerenciadorOpcoes(tipo, label) {
+            currentManagingType = tipo;
+            document.getElementById('labelTipoOpcao').innerText = label;
+            document.getElementById('newOptionInput').value = '';
+            renderListaOpcoesModal();
+            document.getElementById('modalGerenciarOpcoes').classList.add('active');
+        }
 
-            const valorFinal = novaOpcao.trim();
-            if (fluxosConfig[tipo].includes(valorFinal)) return alert("Esta opção já existe.");
+        function fecharGerenciador() {
+            document.getElementById('modalGerenciarOpcoes').classList.remove('active');
+        }
 
-            fluxosConfig[tipo].push(valorFinal);
-            fluxosConfig[tipo].sort();
+        function renderListaOpcoesModal() {
+            const container = document.getElementById('listaOpcoesDinamica');
+            const itens = fluxosConfig[currentManagingType] || [];
+            
+            if (itens.length === 0) {
+                container.innerHTML = '<div style="padding:15px; text-align:center; color:#94a3b8; font-style:italic;">Nenhuma opção cadastrada.</div>';
+                return;
+            }
 
+            container.innerHTML = itens.map((item, index) => `
+                <div class="option-item">
+                    <span>${item}</span>
+                    <button class="btn-del-option" onclick="removerOpcao('${index}')" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            `).join('');
+        }
+
+        async function confirmarAdicaoOpcao() {
+            const input = document.getElementById('newOptionInput');
+            const valor = input.value.trim();
+            if (!valor) return;
+
+            if (fluxosConfig[currentManagingType].includes(valor)) return alert("Esta opção já existe.");
+
+            fluxosConfig[currentManagingType].push(valor);
+            fluxosConfig[currentManagingType].sort();
+            
+            await salvarConfigNoBanco();
+            input.value = '';
+            renderListaOpcoesModal();
+            renderizarSelectsDinamicos();
+        }
+
+        async function removerOpcao(index) {
+            if (!confirm("Deseja remover esta opção da lista?")) return;
+            
+            fluxosConfig[currentManagingType].splice(index, 1);
+            await salvarConfigNoBanco();
+            renderListaOpcoesModal();
+            renderizarSelectsDinamicos();
+        }
+
+        async function salvarConfigNoBanco() {
             try {
                 await fetch(`${API_BASE_URL}/system_configs`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', ...API_HEADERS },
                     body: JSON.stringify({ id_firebase: 'fluxo_unimed_opcoes', ...fluxosConfig })
                 });
-                renderizarSelectsDinamicos();
-                document.getElementById(selectId).value = valorFinal;
-            } catch (e) { alert("Erro ao salvar nova opção."); }
+            } catch (e) { alert("Erro ao salvar no banco."); }
         }
 
+        // --- RESTANTE DO FLUXO (MEDICOS, DADOS, TABELA) ---
         async function carregarMedicos() {
             try {
                 const res = await fetch(`${API_BASE_URL}/medicos`, { headers: API_HEADERS });
