@@ -23,7 +23,8 @@
         .data-table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
         
         .date-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 6px; font-size: 12px; outline: none; width: 130px; }
-        .date-input:focus { border-color: #be185d; box-shadow: 0 0 0 2px rgba(190, 24, 93, 0.1); }
+        .obs-input { border: 1px solid #d1d5db; border-radius: 6px; padding: 6px; font-size: 11px; outline: none; width: 200px; height: 45px; resize: none; font-family: inherit; }
+        .obs-input:focus, .date-input:focus { border-color: #be185d; box-shadow: 0 0 0 2px rgba(190, 24, 93, 0.1); }
 
         .info-block { display: flex; flex-direction: column; gap: 3px; }
         .info-label { font-size: 9px; color: #6b7280; font-weight: bold; text-transform: uppercase; }
@@ -42,7 +43,7 @@
 
         <div class="controls">
             <h2 style="margin:0; color:#1f2937; display:flex; align-items:center; gap:10px;"><i class="fas fa-user-nurse" style="color:#be185d;"></i> Agendamento Enfermagem</h2>
-            <p style="margin:5px 0 0; color:#6b7280; font-size:13px;">Insira as datas de contato e agendamento para os tratamentos autorizados.</p>
+            <p style="margin:5px 0 0; color:#6b7280; font-size:13px;">Gerencie o contato e agendamento dos tratamentos autorizados.</p>
         </div>
 
         <div class="sheet-container">
@@ -54,10 +55,11 @@
                         <th>Status Farmácia</th>
                         <th>Data de Contato</th>
                         <th>Data de Agendamento</th>
+                        <th>Observações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="5" style="text-align:center; padding:40px;">Carregando dados...</td></tr>
+                    <tr><td colspan="6" style="text-align:center; padding:40px;">Carregando dados...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -89,12 +91,11 @@
             const tbody = document.querySelector('#tabelaEnfermagem tbody');
             let html = '';
 
-            // Filtra apenas autorizados
             const lista = Object.values(pacientesFluxo).filter(p => p.status === 'autorizado');
             lista.sort((a,b) => new Date(b.data_criacao) - new Date(a.data_criacao));
 
             if(lista.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#94a3b8;">Nenhum paciente aguardando agendamento.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#94a3b8;">Nenhum paciente aguardando agendamento.</td></tr>';
                 return;
             }
 
@@ -120,11 +121,15 @@
                         <td>${badgeEstoque}</td>
                         <td>
                             <input type="date" class="date-input" value="${p.dataContato || ''}" 
-                                onchange="atualizarData('${p.id_firebase}', 'dataContato', this.value)">
+                                onchange="atualizarCampo('${p.id_firebase}', 'dataContato', this.value)">
                         </td>
                         <td>
                             <input type="date" class="date-input" value="${p.dataAgendamento || ''}" 
-                                onchange="atualizarData('${p.id_firebase}', 'dataAgendamento', this.value)">
+                                onchange="atualizarCampo('${p.id_firebase}', 'dataAgendamento', this.value)">
+                        </td>
+                        <td>
+                            <textarea class="obs-input" placeholder="Notas do agendamento..." 
+                                onchange="atualizarCampo('${p.id_firebase}', 'obsEnfermagem', this.value)">${p.obsEnfermagem || ''}</textarea>
                         </td>
                     </tr>
                 `;
@@ -132,7 +137,7 @@
             tbody.innerHTML = html;
         }
 
-        async function atualizarData(id, campo, valor) {
+        async function atualizarCampo(id, campo, valor) {
             pacientesFluxo[id][campo] = valor;
             try {
                 await fetch(`${API_BASE_URL}/fluxo_pacientes_unimed`, {
@@ -140,7 +145,7 @@
                     headers: API_HEADERS, 
                     body: JSON.stringify(pacientesFluxo[id])
                 });
-            } catch(e) { alert("Erro ao salvar data."); }
+            } catch(e) { alert("Erro ao salvar dados."); }
         }
     </script>
 </body>
