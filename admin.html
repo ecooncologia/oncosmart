@@ -147,6 +147,7 @@
                     <div class="config-nav-item" onclick="switchConfigTab('financeiro', this)"><i class="fas fa-file-invoice-dollar"></i> Financeiro</div>
                     <div class="config-nav-item" onclick="switchConfigTab('clinico', this)"><i class="fas fa-user-nurse"></i> Clínico</div>
                     <div class="config-nav-item" onclick="switchConfigTab('admin', this)" style="border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 15px;"><i class="fas fa-shield-alt"></i> Permissões (Admin)</div>
+                    <div class="config-nav-item" onclick="switchConfigTab('aparencia', this)" style="border-top: 1px solid #e2e8f0; margin-top: 6px; padding-top: 12px;"><i class="fas fa-palette"></i> Aparência</div>
                 </div>
 
                 <div class="config-main">
@@ -226,6 +227,18 @@
                             <div class="config-box-body open">
                                 <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 15px;">Defina quais páginas cada setor tem acesso por padrão. Você poderá "puxar" esse padrão ao editar um usuário específico.</p>
                                 <div class="list-manager" id="list-admin-setores" style="max-height: 450px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="cfg-aparencia" class="config-section-content">
+                        <div class="config-box">
+                            <div class="config-box-header open">
+                                <h4 class="config-box-title"><i class="fas fa-palette"></i> Tema do Sistema</h4>
+                            </div>
+                            <div class="config-box-body open">
+                                <p style="font-size: 12px; color: var(--text-light); margin: 0 0 16px 0;">Escolha um tema padrão para sua experiência. A preferência é salva no seu navegador.</p>
+                                <div id="theme-picker-grid" class="theme-picker-grid"></div>
                             </div>
                         </div>
                     </div>
@@ -411,12 +424,59 @@
         // CONFIGURAÇÕES DO SISTEMA E RBAC (SETORES)
         // ==========================================
         function openConfigModal() { document.getElementById('modalConfig').style.display = 'flex'; renderAllConfigs(); }
-        
+
         function switchConfigTab(tabName, element) {
             document.querySelectorAll('.config-nav-item').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.config-section-content').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
             document.getElementById('cfg-' + tabName).classList.add('active');
+            if (tabName === 'aparencia') renderThemePicker();
+        }
+
+        // ==========================================
+        // THEME PICKER
+        // ==========================================
+        const THEMES = [
+            { id: 'default',  name: 'ECO Verde',  primary: '#00855B', bg: '#f0f4f8', sidebar: '#ffffff' },
+            { id: 'violet',   name: 'Violet',      primary: '#7c3aed', bg: '#f5f3ff', sidebar: '#ffffff' },
+            { id: 'blue',     name: 'Blue',        primary: '#2563eb', bg: '#eff6ff', sidebar: '#ffffff' },
+            { id: 'rose',     name: 'Rose',        primary: '#e11d48', bg: '#fff1f2', sidebar: '#ffffff' },
+            { id: 'orange',   name: 'Orange',      primary: '#ea580c', bg: '#fff7ed', sidebar: '#ffffff' },
+            { id: 'teal',     name: 'Teal',        primary: '#0d9488', bg: '#f0fdfa', sidebar: '#ffffff' },
+            { id: 'dark',     name: 'Dark',        primary: '#34d399', bg: '#0f172a', sidebar: '#1e293b' },
+            { id: 'midnight', name: 'Midnight',    primary: '#60a5fa', bg: '#07111f', sidebar: '#0f1f33' },
+            { id: 'carbon',   name: 'Carbon',      primary: '#a3a3a3', bg: '#111111', sidebar: '#1c1c1c' },
+        ];
+
+        function renderThemePicker() {
+            const current = (function(){ try { return localStorage.getItem('ecoTheme') || 'default'; } catch(e) { return 'default'; } })();
+            const grid = document.getElementById('theme-picker-grid');
+            if (!grid) return;
+            grid.innerHTML = THEMES.map(t => `
+                <div class="theme-card ${current === t.id ? 'active' : ''}" onclick="selectTheme('${t.id}')">
+                    <div class="theme-preview" style="background:${t.bg}">
+                        <div class="theme-preview-sidebar" style="background:${t.sidebar};border-right:1px solid rgba(0,0,0,0.07)"></div>
+                        <div class="theme-preview-content">
+                            <div style="height:7px;border-radius:2px;background:${t.primary};margin-bottom:5px"></div>
+                            <div style="height:4px;border-radius:2px;background:rgba(0,0,0,0.10);margin-bottom:3px"></div>
+                            <div style="height:4px;border-radius:2px;background:rgba(0,0,0,0.10);margin-bottom:3px;width:70%"></div>
+                            <div style="height:4px;border-radius:2px;background:rgba(0,0,0,0.10);width:55%"></div>
+                        </div>
+                    </div>
+                    <div class="theme-card-footer">
+                        <span class="theme-card-name">${t.name}</span>
+                        <div class="theme-dots">
+                            <div class="theme-dot" style="background:${t.primary}"></div>
+                            <div class="theme-dot" style="background:${t.bg};border:1px solid rgba(0,0,0,0.12)"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectTheme(id) {
+            if (typeof applyTheme === 'function') applyTheme(id);
+            renderThemePicker();
         }
 
         function toggleConfigBox(boxId, iconId) {
